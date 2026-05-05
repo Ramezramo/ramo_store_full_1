@@ -1,0 +1,131 @@
+<?php
+
+namespace App\Constants;
+
+class AppConstants
+{
+    public const DEBUG_MODE = true;
+    public const ADMIN_ROLE = 'admin';
+    public const USER_ROLE = 'user';
+    public const GUEST_ROLE = 'guest';
+    public const ACTIVE_STATUS = 1;
+    public const INACTIVE_STATUS = 0;
+    public const PAGINATION_LIMIT = 15;
+    public const API_VERSION = 'v1';
+
+    /**
+     * Legacy constant kept for backward compatibility (e.g. Notification classes
+     * that reference it as a static property default). Do not use in new code —
+     * call imageBase() / imageUrl() instead.
+     */
+    public const DOMAIN = '';
+
+    /**
+     * The storage sub-path appended to APP_URL when no IMAGE_BASE_URL is set.
+     * Changing IMAGE_PATH here or setting IMAGE_BASE_URL in .env is the only
+     * place you need to touch to redirect all image loading to a different server.
+     */
+    public const IMAGE_PATH = '/storage';
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Domain helpers
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /**
+     * The current app origin (no trailing slash).
+     * Reads APP_URL from config so it always matches the running environment.
+     */
+    public static function domain(): string
+    {
+        return rtrim(config('app.url', ''), '/');
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Image helpers  — single source of truth for ALL image URLs
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Base URL for stored images, with a trailing slash.
+     *
+     * Priority:
+     *   1. IMAGE_BASE_URL env var  →  use it as-is (point to CDN / original server)
+     *   2. Fallback                →  APP_URL + IMAGE_PATH  (local /storage)
+     *
+     * To redirect all images to an external server simply set:
+     *   IMAGE_BASE_URL=https://old-server.com/storage
+     * in your .env / Replit Secrets — no code changes needed anywhere.
+     */
+    public static function imageBase(): string
+    {
+        $override = env('IMAGE_BASE_URL');
+        if ($override) {
+            return rtrim($override, '/') . '/';
+        }
+        return rtrim(static::domain() . static::IMAGE_PATH, '/') . '/';
+    }
+
+    /**
+     * Build a full absolute URL for a single image path stored in the database.
+     * Returns null when $path is empty / null.
+     *
+     * Usage:
+     *   AppConstants::imageUrl('products/other_images/foo.jpg')
+     *   // → https://your-domain.com/storage/products/other_images/foo.jpg
+     */
+    public static function imageUrl(?string $path): ?string
+    {
+        if (!$path || trim($path) === '' || $path === 'empty') {
+            return null;
+        }
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+        return static::imageBase() . ltrim(str_replace('\\', '/', $path), '/');
+    }
+
+    /**
+     * Extract the best thumbnail URL from a product's raw `images` JSON column.
+     *
+     * The column is stored as:
+     *   {"thumbnail":"…", "other_images":[…], "natural_images":[…]}
+     *
+     * Falls back to first other_image, then first natural_image.
+     */
+    public static function productThumbnailUrl(mixed $imagesRaw): ?string
+    {
+        if (!$imagesRaw) return null;
+        $imgs = is_string($imagesRaw)
+            ? (json_decode($imagesRaw, true) ?? json_decode(stripslashes($imagesRaw), true) ?? [])
+            : (array) $imagesRaw;
+
+        $path = $imgs['thumbnail']
+            ?? (array_values((array)($imgs['other_images']  ?? []))[0] ?? null)
+            ?? (array_values((array)($imgs['natural_images'] ?? []))[0] ?? null);
+
+        return static::imageUrl($path);
+    }
+
+    /**
+     * Build full gallery URLs from a product's raw `images` JSON column.
+     * Returns a flat array of absolute URLs (other_images + natural_images).
+     *
+     * @return string[]
+     */
+    public static function productGalleryUrls(mixed $imagesRaw): array
+    {
+        if (!$imagesRaw) return [];
+        $imgs = is_string($imagesRaw)
+            ? (json_decode($imagesRaw, true) ?? [])
+            : (array) $imagesRaw;
+
+        $paths = array_merge(
+            (array) ($imgs['other_images']  ?? []),
+            (array) ($imgs['natural_images'] ?? [])
+        );
+
+        return array_values(array_filter(array_map(
+            fn($p) => static::imageUrl($p),
+            $paths
+        )));
+    }
+}

@@ -1,0 +1,2222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ramo Store — API Guide</title>
+<style>
+:root{--bg:#0d1117;--s1:#161b22;--s2:#21262d;--s3:#2d333b;--border:#30363d;--accent:#7c6af7;--green:#3fb950;--blue:#58a6ff;--orange:#e3b341;--red:#f85149;--purple:#bc8cff;--teal:#39d353;--muted:#8b949e;--text:#c9d1d9;--white:#f0f6fc;
+--get:#238636;--get-t:#3fb950;--post:#1158a4;--post-t:#58a6ff;--put:#9e6a03;--put-t:#e3b341;--delete:#8e1519;--delete-t:#f85149;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;line-height:1.6;}
+
+/* ── LAYOUT ── */
+.layout{display:flex;min-height:100vh;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:270px;min-width:270px;background:var(--s1);border-right:1px solid var(--border);padding:0;position:sticky;top:0;height:100vh;overflow-y:auto;flex-shrink:0;}
+.sidebar::-webkit-scrollbar{width:4px;}.sidebar::-webkit-scrollbar-thumb{background:var(--s3);}
+.logo{padding:20px 16px 16px;border-bottom:1px solid var(--border);}
+.logo h1{font-size:16px;font-weight:700;color:var(--white);letter-spacing:-.3px;}
+.logo p{font-size:11px;color:var(--muted);margin-top:2px;}
+.base-pill{display:inline-block;background:var(--s3);border-radius:4px;padding:4px 8px;font-family:monospace;font-size:10px;color:var(--blue);margin-top:8px;word-break:break-all;}
+.nav-section{padding:12px 16px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);}
+.nav-item{display:flex;align-items:center;gap:8px;padding:6px 16px;color:var(--text);text-decoration:none;font-size:12.5px;border-left:2px solid transparent;transition:all .12s;}
+.nav-item:hover{background:var(--s2);border-left-color:var(--accent);color:var(--white);}
+.nav-item.active{background:var(--s2);border-left-color:var(--accent);color:var(--white);}
+.m-badge{font-size:9px;font-weight:800;padding:1px 5px;border-radius:3px;min-width:36px;text-align:center;flex-shrink:0;}
+.m-GET{background:var(--get);color:var(--get-t);}
+.m-POST{background:var(--post);color:var(--post-t);}
+.m-PUT{background:var(--put);color:var(--put-t);}
+.m-DELETE{background:var(--delete);color:var(--delete-t);}
+
+/* ── MAIN ── */
+.main{flex:1;min-width:0;padding:32px 40px 80px;}
+
+/* ── HERO ── */
+.hero{margin-bottom:40px;padding-bottom:32px;border-bottom:1px solid var(--border);}
+.hero h2{font-size:26px;font-weight:800;color:var(--white);margin-bottom:6px;}
+.hero p{color:var(--muted);max-width:620px;}
+.info-grid{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px;}
+.info-card{background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-size:12px;}
+.info-card .ic-label{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;}
+.info-card .ic-val{color:var(--white);font-family:monospace;font-size:12px;}
+.info-card .ic-val a{color:var(--blue);text-decoration:none;}
+
+/* ── SECTION ── */
+.section{margin-bottom:48px;}
+.section-head{display:flex;align-items:center;gap:10px;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--border);}
+.section-head h3{font-size:18px;font-weight:700;color:var(--white);}
+.section-sub{font-size:12px;color:var(--muted);background:var(--s2);border-radius:4px;padding:2px 8px;}
+
+/* ── ENDPOINT CARD ── */
+.ep{background:var(--s1);border:1px solid var(--border);border-radius:8px;margin-bottom:12px;overflow:hidden;}
+.ep-head{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;user-select:none;transition:background .12s;}
+.ep-head:hover{background:var(--s2);}
+.ep-head .arrow{margin-left:auto;color:var(--muted);font-size:12px;transition:transform .2s;}
+.ep-head.open .arrow{transform:rotate(180deg);}
+.method{font-size:10px;font-weight:800;padding:3px 8px;border-radius:4px;min-width:52px;text-align:center;letter-spacing:.4px;flex-shrink:0;}
+.GET{background:var(--get);color:var(--get-t);}
+.POST{background:var(--post);color:var(--post-t);}
+.PUT{background:var(--put);color:var(--put-t);}
+.DELETE{background:var(--delete);color:var(--delete-t);}
+.ep-path{font-family:monospace;font-size:13px;color:var(--white);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ep-desc{font-size:11.5px;color:var(--muted);white-space:nowrap;}
+.badge-auth{font-size:10px;padding:2px 7px;border-radius:3px;background:#1c1a30;color:#a78bfa;border:1px solid #3d2f7a;white-space:nowrap;flex-shrink:0;}
+.badge-pub{font-size:10px;padding:2px 7px;border-radius:3px;background:#0d2618;color:var(--green);border:1px solid #1a4429;white-space:nowrap;flex-shrink:0;}
+.badge-vendor{font-size:10px;padding:2px 7px;border-radius:3px;background:#2a1a00;color:var(--orange);border:1px solid #5a3a00;white-space:nowrap;flex-shrink:0;}
+
+/* ── ENDPOINT BODY ── */
+.ep-body{display:none;border-top:1px solid var(--border);padding:20px 20px 24px;}
+.ep-body.open{display:block;}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:2px;margin-bottom:16px;background:var(--s3);border-radius:6px;padding:3px;}
+.tab{padding:5px 12px;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);transition:all .12s;border:none;background:none;}
+.tab.active{background:var(--s2);color:var(--white);}
+
+/* ── TABLES ── */
+.ptable{width:100%;border-collapse:collapse;margin-bottom:4px;}
+.ptable th{text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);padding:7px 10px;border-bottom:1px solid var(--border);background:var(--s2);}
+.ptable td{padding:9px 10px;border-bottom:1px solid var(--border);font-size:12.5px;vertical-align:top;}
+.ptable tr:last-child td{border-bottom:none;}
+.ptable tr:hover td{background:rgba(255,255,255,.02);}
+.pname{font-family:monospace;color:var(--blue);}
+.ptype{font-size:11px;color:var(--purple);}
+.req{font-size:10px;font-weight:700;color:var(--red);}
+.opt{font-size:10px;color:var(--muted);}
+.con{font-size:11px;color:var(--muted);}
+
+/* ── CODE BLOCKS ── */
+.code-wrap{position:relative;margin-bottom:12px;}
+.code-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:5px;margin-top:16px;}
+.code-label:first-child{margin-top:0;}
+.copy-btn{position:absolute;top:8px;right:8px;background:var(--s3);border:1px solid var(--border);color:var(--muted);border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;transition:all .15s;z-index:1;}
+.copy-btn:hover{background:var(--s2);color:var(--white);}
+.copy-btn.copied{background:#1a3a1f;color:var(--green);border-color:var(--green);}
+pre{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:14px 40px 14px 16px;overflow-x:auto;font-family:'Fira Code','Cascadia Code','Courier New',monospace;font-size:12.5px;line-height:1.75;color:#c9d1d9;}
+.string{color:#a5d6ff;}
+.key{color:#79c0ff;}
+.number{color:#f2cc60;}
+.bool{color:#ff7b72;}
+.comment{color:#6e7681;font-style:italic;}
+
+/* ── NOTES ── */
+.note{background:#0d2215;border-left:3px solid var(--green);border-radius:0 5px 5px 0;padding:10px 14px;font-size:12.5px;color:var(--text);margin-bottom:14px;}
+.warn{background:#2d1f00;border-left:3px solid var(--orange);border-radius:0 5px 5px 0;padding:10px 14px;font-size:12.5px;color:var(--text);margin-bottom:14px;}
+.danger{background:#2d0a0a;border-left:3px solid var(--red);border-radius:0 5px 5px 0;padding:10px 14px;font-size:12.5px;color:var(--text);margin-bottom:14px;}
+code{background:var(--s3);padding:1px 5px;border-radius:3px;font-family:monospace;font-size:12px;color:var(--blue);}
+
+/* ── AUTH FLOW ── */
+.auth-steps{display:flex;flex-direction:column;gap:0;}
+.auth-step{display:flex;gap:14px;padding:16px 0;border-bottom:1px solid var(--border);}
+.auth-step:last-child{border-bottom:none;}
+.step-num{min-width:28px;height:28px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;margin-top:2px;}
+.step-body h4{font-size:13px;font-weight:700;color:var(--white);margin-bottom:3px;}
+.step-body p{font-size:12px;color:var(--muted);}
+
+/* ── RESPONSE GRID ── */
+.res-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px;}
+@media(max-width:900px){.res-grid{grid-template-columns:1fr;}}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:6px;height:6px;}::-webkit-scrollbar-track{background:var(--s1);}::-webkit-scrollbar-thumb{background:var(--s3);border-radius:3px;}
+
+@media(max-width:800px){.sidebar{display:none;}.main{padding:20px;}pre{font-size:11px;}.res-grid{grid-template-columns:1fr;}}
+
+/* ── TOOLBAR ── */
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:28px;}
+.toolbar-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-right:4px;}
+.tb-btn{display:flex;align-items:center;gap:6px;background:var(--s2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 14px;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.tb-btn:hover{border-color:var(--accent);color:var(--white);background:var(--s3);}
+.tb-btn.tb-green:hover{border-color:var(--green);color:var(--green);}
+.tb-btn.tb-blue:hover{border-color:var(--blue);color:var(--blue);}
+.tb-btn.tb-purple:hover{border-color:var(--purple);color:var(--purple);}
+.tb-btn svg{width:14px;height:14px;flex-shrink:0;}
+.progress-wrap{display:flex;align-items:center;gap:10px;margin-left:auto;}
+.progress-text{font-size:12px;color:var(--muted);}
+.progress-bar-bg{width:120px;height:6px;background:var(--s3);border-radius:3px;overflow:hidden;}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:3px;transition:width .3s;}
+.progress-pct{font-size:11px;font-weight:700;color:var(--green);}
+
+/* ── DONE BUTTON on endpoint ── */
+.done-btn{display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;border:1.5px solid var(--border);background:transparent;cursor:pointer;flex-shrink:0;transition:all .15s;color:var(--muted);font-size:12px;margin-right:2px;}
+.done-btn:hover{border-color:var(--green);color:var(--green);}
+.ep.is-done{border-color:#2a5a2a;}
+.ep.is-done .ep-head{background:#0d1f0d;}
+.ep.is-done .done-btn{background:var(--green);border-color:var(--green);color:#000;}
+.nav-item.nav-done::after{content:"✓";margin-left:auto;font-size:10px;color:var(--green);}
+
+/* ── MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--s1);border:1px solid var(--border);border-radius:12px;width:100%;max-width:680px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);}
+.modal-head h3{font-size:15px;font-weight:700;color:var(--white);}
+.modal-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0 4px;line-height:1;}
+.modal-close:hover{color:var(--white);}
+.modal-body{flex:1;overflow-y:auto;padding:20px;}
+.modal-body pre{font-size:11.5px;line-height:1.65;white-space:pre-wrap;word-break:break-word;}
+.modal-foot{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;}
+.modal-foot .tb-btn{font-size:12px;}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+<nav class="sidebar">
+  <div class="logo">
+    <h1>Ramo Store API</h1>
+    <p>Full Reference Guide</p>
+    <div class="base-pill">https://a8c774fa-0c2e-4a23-8ee1-58cd9836dadf-00-1bmcvifo8bqnv.kirk.replit.dev</div>
+  </div>
+
+  <div class="nav-section">Overview</div>
+  <a class="nav-item" href="#auth">Authentication Guide</a>
+
+  <div class="nav-section">Native PHP — /ntv-php/</div>
+  <a class="nav-item" href="#ntv-device"><span class="m-badge m-POST">POST</span>Register Device</a>
+  <a class="nav-item" href="#ntv-confirm"><span class="m-badge m-POST">POST</span>App Version Check</a>
+  <a class="nav-item" href="#ntv-products"><span class="m-badge m-GET">GET</span>Products</a>
+  <a class="nav-item" href="#ntv-categories"><span class="m-badge m-GET">GET</span>Categories</a>
+  <a class="nav-item" href="#ntv-brands"><span class="m-badge m-GET">GET</span>Brands</a>
+  <a class="nav-item" href="#ntv-tags"><span class="m-badge m-GET">GET</span>Tags 🔐</a>
+  <a class="nav-item" href="#ntv-countries"><span class="m-badge m-GET">GET</span>Countries</a>
+  <a class="nav-item" href="#ntv-rates"><span class="m-badge m-GET">GET</span>Currency Rates</a>
+  <a class="nav-item" href="#ntv-config"><span class="m-badge m-GET">GET</span>App Config</a>
+  <a class="nav-item" href="#ntv-timeline"><span class="m-badge m-GET">GET</span>Timeline Config</a>
+  <a class="nav-item" href="#ntv-price"><span class="m-badge m-GET">GET</span>Product Price</a>
+
+  <div class="nav-section">Laravel — Customer Auth</div>
+  <a class="nav-item" href="#la-register"><span class="m-badge m-POST">POST</span>Register</a>
+  <a class="nav-item" href="#la-login"><span class="m-badge m-POST">POST</span>Login</a>
+  <a class="nav-item" href="#la-otp"><span class="m-badge m-POST">POST</span>Send OTP</a>
+  <a class="nav-item" href="#la-phone"><span class="m-badge m-POST">POST</span>Register by Phone</a>
+  <a class="nav-item" href="#la-forgot"><span class="m-badge m-POST">POST</span>Forgot Password</a>
+  <a class="nav-item" href="#la-me"><span class="m-badge m-GET">GET</span>Me</a>
+  <a class="nav-item" href="#la-logout"><span class="m-badge m-GET">GET</span>Logout</a>
+  <a class="nav-item" href="#la-delete"><span class="m-badge m-DELETE">DEL</span>Delete Account</a>
+
+  <div class="nav-section">Laravel — Orders</div>
+  <a class="nav-item" href="#la-order-create"><span class="m-badge m-POST">POST</span>Create Order</a>
+  <a class="nav-item" href="#la-orders-list"><span class="m-badge m-GET">GET</span>My Orders</a>
+  <a class="nav-item" href="#la-shipping"><span class="m-badge m-GET">GET</span>Shipping Methods</a>
+  <a class="nav-item" href="#la-payment"><span class="m-badge m-GET">GET</span>Payment Methods</a>
+  <a class="nav-item" href="#la-note-create"><span class="m-badge m-POST">POST</span>Create Note</a>
+  <a class="nav-item" href="#la-notes-get"><span class="m-badge m-GET">GET</span>Get Notes</a>
+
+  <div class="nav-section">Laravel — Coupons</div>
+  <a class="nav-item" href="#la-coupons-list"><span class="m-badge m-GET">GET</span>List Coupons</a>
+  <a class="nav-item" href="#la-coupons-store"><span class="m-badge m-POST">POST</span>Create Coupon</a>
+  <a class="nav-item" href="#la-coupons-validate"><span class="m-badge m-POST">POST</span>Validate Coupon</a>
+  <a class="nav-item" href="#la-coupons-apply"><span class="m-badge m-POST">POST</span>Apply Coupon</a>
+  <a class="nav-item" href="#la-coupons-update"><span class="m-badge m-PUT">PUT</span>Update Coupon</a>
+  <a class="nav-item" href="#la-coupons-delete"><span class="m-badge m-DELETE">DEL</span>Delete Coupon</a>
+
+  <div class="nav-section">Laravel — Vendor Auth</div>
+  <a class="nav-item" href="#la-v-register"><span class="m-badge m-POST">POST</span>Vendor Register</a>
+  <a class="nav-item" href="#la-v-login"><span class="m-badge m-POST">POST</span>Vendor Login</a>
+  <a class="nav-item" href="#la-v-profile"><span class="m-badge m-GET">GET</span>Get Profile</a>
+  <a class="nav-item" href="#la-v-update"><span class="m-badge m-POST">POST</span>Update Profile</a>
+
+  <div class="nav-section">Laravel — Vendor Products</div>
+  <a class="nav-item" href="#la-p-add"><span class="m-badge m-POST">POST</span>Add Product</a>
+  <a class="nav-item" href="#la-p-list"><span class="m-badge m-GET">GET</span>My Products</a>
+  <a class="nav-item" href="#la-p-view"><span class="m-badge m-GET">GET</span>View Product</a>
+  <a class="nav-item" href="#la-p-update"><span class="m-badge m-POST">POST</span>Update Product</a>
+  <a class="nav-item" href="#la-p-variation"><span class="m-badge m-POST">POST</span>Update Variation</a>
+  <a class="nav-item" href="#la-p-delete"><span class="m-badge m-DELETE">DEL</span>Delete Product</a>
+  <a class="nav-item" href="#la-order-state"><span class="m-badge m-POST">POST</span>Update Order State</a>
+
+  <div class="nav-section">Laravel — Vendor Stats</div>
+  <a class="nav-item" href="#la-stats"><span class="m-badge m-GET">GET</span>Statistics (7 endpoints)</a>
+</nav>
+
+<!-- ═══════════════════ MAIN ═══════════════════ -->
+<div class="main">
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <span class="toolbar-label">Actions</span>
+  <button class="tb-btn tb-purple" onclick="openAIPrompt()">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm.75 10.5h-1.5v-5h1.5v5zm0-6.5h-1.5V3.5h1.5V5z"/></svg>
+    Copy All as AI Prompt
+  </button>
+  <button class="tb-btn tb-blue" onclick="downloadPostman()">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 12l-4.5-4.5 1.06-1.06L7.5 9.38V2h1v7.38l2.94-2.94 1.06 1.06L8 12zm-6 2h12v-1H2v1z"/></svg>
+    Download Postman Collection
+  </button>
+  <button class="tb-btn tb-green" onclick="resetDone()">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 3a5 5 0 100 10A5 5 0 008 3zm0 1.5a3.5 3.5 0 110 7 3.5 3.5 0 010-7z"/></svg>
+    Reset Progress
+  </button>
+  <div class="progress-wrap">
+    <span class="progress-text">Progress</span>
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="prog-fill" style="width:0%"></div></div>
+    <span class="progress-pct" id="prog-pct">0%</span>
+    <span class="progress-text" id="prog-count">0 / 0</span>
+  </div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <h2>Ramo Store — API Reference</h2>
+  <p>Complete documentation with exact field names, types, constraints, and ready-to-copy request bodies. All data comes directly from the live source code.</p>
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="ic-label">Base URL</div>
+      <div class="ic-val"><a href="https://a8c774fa-0c2e-4a23-8ee1-58cd9836dadf-00-1bmcvifo8bqnv.kirk.replit.dev" target="_blank">a8c774fa...kirk.replit.dev</a></div>
+    </div>
+    <div class="info-card">
+      <div class="ic-label">Native PHP prefix</div>
+      <div class="ic-val">/ntv-php/</div>
+    </div>
+    <div class="info-card">
+      <div class="ic-label">Laravel API prefix</div>
+      <div class="ic-val">/api/</div>
+    </div>
+    <div class="info-card">
+      <div class="ic-label">Content-Type</div>
+      <div class="ic-val">application/json</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ AUTH GUIDE ═══ -->
+<div class="section" id="auth">
+  <div class="section-head"><h3>Authentication</h3></div>
+  <div class="auth-steps">
+    <div class="auth-step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>Native PHP — Device Token (AES-256)</h4>
+        <p>POST your device ID to <code>/ntv-php/ntv-register-device.php</code>. You get back an encrypted token. Send it as <code>Authorization: Bearer &lt;token&gt;</code> on protected native routes (e.g. tags).</p>
+      </div>
+    </div>
+    <div class="auth-step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>Laravel API — Laravel Sanctum Token</h4>
+        <p>Login via <code>POST /api/user/login</code> (customer) or <code>POST /api/vendor/login</code> (vendor). You receive a <code>cookie</code> token. Send it as <code>Authorization: Bearer &lt;cookie&gt;</code> on all protected Laravel routes.</p>
+      </div>
+    </div>
+    <div class="auth-step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>Vendor-only routes need the vendor middleware</h4>
+        <p>Some routes require both a valid token AND that the authenticated user has a vendor role. Logging in as a regular customer will return <code>403</code>.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     NATIVE PHP ENDPOINTS
+════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-head">
+    <h3>Native PHP Endpoints</h3>
+    <span class="section-sub">/ntv-php/</span>
+  </div>
+
+  <!-- ── Register Device ── -->
+  <div class="ep" id="ntv-device">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method POST">POST</span>
+      <span class="ep-path">/ntv-php/ntv-register-device.php</span>
+      <span class="ep-desc">Register device, receive encrypted token</span>
+      <span class="badge-pub">Public</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="note">Call this once per device. If the device ID already exists its token is rotated. The returned token is AES-256-CBC encrypted.</div>
+      <table class="ptable">
+        <tr><th>Field</th><th>Type</th><th></th><th>Description</th></tr>
+        <tr><td class="pname">d_id</td><td class="ptype">string</td><td class="req">Required</td><td>Unique device identifier (max 255 chars). Use UUID or IMEI.</td></tr>
+        <tr><td class="pname">aboutd</td><td class="ptype">object</td><td class="opt">Optional</td><td>Any device metadata — stored as JSON. Not validated.</td></tr>
+      </table>
+      <div class="code-label">Request Body</div>
+      <div class="code-wrap">
+        <button class="copy-btn" onclick="copy(this)">Copy</button>
+        <pre>{
+  <span class="key">"d_id"</span>: <span class="string">"device-uuid-abc123"</span>,
+  <span class="key">"aboutd"</span>: {
+    <span class="key">"platform"</span>: <span class="string">"android"</span>,
+    <span class="key">"model"</span>: <span class="string">"Samsung Galaxy S24"</span>,
+    <span class="key">"os_version"</span>: <span class="string">"14"</span>,
+    <span class="key">"app_version"</span>: <span class="string">"1.2.0"</span>
+  }
+}</pre>
+      </div>
+      <div class="res-grid">
+        <div>
+          <div class="code-label">Response — 200 Success</div>
+          <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+          <pre>{
+  <span class="key">"success"</span>: <span class="bool">true</span>,
+  <span class="key">"token"</span>: <span class="string">"Be1qNe9gOKcUp9yAlGB..."</span>
+}</pre></div>
+        </div>
+        <div>
+          <div class="code-label">Response — 403 Blocked</div>
+          <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+          <pre>{
+  <span class="key">"success"</span>: <span class="bool">false</span>,
+  <span class="key">"error"</span>: <span class="string">"Device access denied"</span>
+}</pre></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── App Version Check ── -->
+  <div class="ep" id="ntv-confirm">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method POST">POST</span>
+      <span class="ep-path">/ntv-php/ntv-server-confirmation.php</span>
+      <span class="ep-desc">Validate app version at startup</span>
+      <span class="badge-pub">Public</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="note">Call at app startup. Server checks <code>pkgver</code> against <code>supported_ver_from</code> and <code>supported_ver_to</code> in the <code>version_config</code> table. Must be <code>x.y.z</code> format.</div>
+      <table class="ptable">
+        <tr><th>Field</th><th>Type</th><th></th><th>Constraint</th></tr>
+        <tr><td class="pname">pkgver</td><td class="ptype">string</td><td class="req">Required</td><td class="con">Format: <code>x.y.z</code> — e.g. <code>1.2.0</code></td></tr>
+      </table>
+      <div class="code-label">Request Body</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{
+  <span class="key">"pkgver"</span>: <span class="string">"1.2.0"</span>
+}</pre></div>
+      <div class="res-grid">
+        <div><div class="code-label">Response — Accepted</div>
+        <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+        <pre>{ <span class="key">"status"</span>: <span class="string">"all-good"</span> }</pre></div></div>
+        <div><div class="code-label">Response — Rejected</div>
+        <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+        <pre>{ <span class="key">"status"</span>: <span class="string">"device-rejected"</span>, <span class="key">"error"</span>: <span class="string">"Unsupported version"</span> }</pre></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Products ── -->
+  <div class="ep" id="ntv-products">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method GET">GET</span>
+      <span class="ep-path">/ntv-php/ntv-get-products.php</span>
+      <span class="ep-desc">List / search / single product</span>
+      <span class="badge-pub">Public</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <table class="ptable">
+        <tr><th>Param</th><th>Type</th><th></th><th>Constraint / Notes</th></tr>
+        <tr><td class="pname">id</td><td class="ptype">integer</td><td class="opt">Optional</td><td class="con">Return a single product. When set, ignores all pagination params.</td></tr>
+        <tr><td class="pname">page</td><td class="ptype">integer</td><td class="opt">Optional</td><td class="con">Default: <code>1</code>. Max offset 50,000.</td></tr>
+        <tr><td class="pname">limit</td><td class="ptype">integer</td><td class="opt">Optional</td><td class="con">Default: <code>10</code>, max: <code>100</code></td></tr>
+        <tr><td class="pname">search</td><td class="ptype">string</td><td class="opt">Optional</td><td class="con">Full-text search on <code>search_text</code> column. Min 2 chars per word. Results ordered by relevance.</td></tr>
+        <tr><td class="pname">category</td><td class="ptype">integer</td><td class="opt">Optional</td><td class="con">Filter by category ID. Use IDs from <code>/ntv-get-categories.php</code>.</td></tr>
+        <tr><td class="pname">lang</td><td class="ptype">string</td><td class="opt">Optional</td><td class="con">Default: <code>en</code>. Supported: <code>en</code>, <code>ar</code>, <code>de</code>. Applies translation to name/description.</td></tr>
+      </table>
+      <div class="code-label">Examples (Query Strings)</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre><span class="comment">// Paginated list</span>
+GET /ntv-php/ntv-get-products.php?page=1&amp;limit=10&amp;lang=en
+
+<span class="comment">// Search</span>
+GET /ntv-php/ntv-get-products.php?search=shirt&amp;limit=5&amp;lang=ar
+
+<span class="comment">// Filter by category ID 19</span>
+GET /ntv-php/ntv-get-products.php?category=19&amp;page=1&amp;limit=20
+
+<span class="comment">// Single product by ID</span>
+GET /ntv-php/ntv-get-products.php?id=190</pre></div>
+      <div class="code-label">Response Structure</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{
+  <span class="key">"success"</span>: <span class="bool">true</span>,
+  <span class="key">"data"</span>: [
+    {
+      <span class="key">"id"</span>: <span class="number">190</span>,
+      <span class="key">"name"</span>: <span class="string">"Premium Shirt"</span>,
+      <span class="key">"description"</span>: <span class="string">"Full description..."</span>,
+      <span class="key">"short_description"</span>: <span class="string">"Short desc..."</span>,
+      <span class="key">"regular_price"</span>: <span class="string">"250.00"</span>,
+      <span class="key">"sale_price"</span>: <span class="string">"208.99"</span>,
+      <span class="key">"stock_quantity"</span>: <span class="number">45</span>,
+      <span class="key">"unit"</span>: <span class="string">"piece"</span>,
+      <span class="key">"product_type"</span>: <span class="string">"physical"</span>,
+      <span class="key">"images"</span>: {
+        <span class="key">"thumbnail"</span>: [<span class="string">"https://domain.com/img.jpg"</span>],
+        <span class="key">"gallery"</span>: [<span class="string">"https://..."</span>, <span class="string">"https://..."</span>]
+      },
+      <span class="key">"variations"</span>: [
+        {
+          <span class="key">"attributes"</span>: { <span class="key">"color"</span>: <span class="string">"Red"</span>, <span class="key">"size"</span>: <span class="string">"L"</span> },
+          <span class="key">"price"</span>: <span class="string">"250.00"</span>,
+          <span class="key">"sale_price"</span>: <span class="string">"208.99"</span>,
+          <span class="key">"stock_quantity"</span>: <span class="number">20</span>,
+          <span class="key">"images"</span>: [<span class="string">"https://..."</span>]
+        }
+      ],
+      <span class="key">"categories"</span>: [
+        { <span class="key">"id"</span>: <span class="number">19</span>, <span class="key">"name"</span>: <span class="string">"Shirts"</span>, <span class="key">"slug"</span>: <span class="string">"shirts"</span>, <span class="key">"parent_id"</span>: <span class="number">18</span> }
+      ]
+    }
+  ],
+  <span class="key">"pagination"</span>: { <span class="key">"total"</span>: <span class="number">19</span>, <span class="key">"page"</span>: <span class="number">1</span>, <span class="key">"limit"</span>: <span class="number">10</span>, <span class="key">"pages"</span>: <span class="number">2</span> },
+  <span class="key">"lang"</span>: <span class="string">"en"</span>
+}</pre></div>
+    </div>
+  </div>
+
+  <!-- ── Categories ── -->
+  <div class="ep" id="ntv-categories">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method GET">GET</span>
+      <span class="ep-path">/ntv-php/ntv-get-categories.php</span>
+      <span class="ep-desc">All product categories with hierarchy</span>
+      <span class="badge-pub">Public</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <table class="ptable">
+        <tr><th>Param</th><th>Type</th><th></th><th>Notes</th></tr>
+        <tr><td class="pname">per_page</td><td class="ptype">integer</td><td class="opt">Optional</td><td class="con">Default: <code>100</code>, max: <code>200</code></td></tr>
+        <tr><td class="pname">page</td><td class="ptype">integer</td><td class="opt">Optional</td><td class="con">Default: <code>1</code></td></tr>
+        <tr><td class="pname">hide_empty</td><td class="ptype">0 or 1</td><td class="opt">Optional</td><td class="con">Pass <code>1</code> to exclude categories where <code>products_count = 0</code></td></tr>
+        <tr><td class="pname">exclude</td><td class="ptype">integer</td><td class="opt">Optional</td><td class="con">Exclude a specific category ID from results</td></tr>
+        <tr><td class="pname">add_base_url</td><td class="ptype">0 or 1</td><td class="opt">Optional</td><td class="con">Prepend domain to image <code>src</code> fields</td></tr>
+      </table>
+      <div class="code-label">Example</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>GET /ntv-php/ntv-get-categories.php?hide_empty=1&amp;per_page=50&amp;add_base_url=1</pre></div>
+      <div class="code-label">Response Structure</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{
+  <span class="key">"data"</span>: [
+    {
+      <span class="key">"id"</span>: <span class="number">18</span>,
+      <span class="key">"name"</span>: <span class="string">"Men"</span>,
+      <span class="key">"slug"</span>: <span class="string">"men"</span>,
+      <span class="key">"parent"</span>: <span class="number">0</span>,
+      <span class="key">"description"</span>: <span class="string">""</span>,
+      <span class="key">"image"</span>: { <span class="key">"src"</span>: <span class="string">"https://..."</span>, <span class="key">"alt"</span>: <span class="string">""</span> },
+      <span class="key">"count"</span>: <span class="number">8</span>,
+      <span class="key">"products_count"</span>: <span class="number">8</span>,
+      <span class="key">"has_children"</span>: <span class="bool">true</span>,
+      <span class="key">"menu_order"</span>: <span class="number">0</span>
+    }
+  ],
+  <span class="key">"total"</span>: <span class="number">15</span>,
+  <span class="key">"page"</span>: <span class="number">1</span>,
+  <span class="key">"per_page"</span>: <span class="number">50</span>
+}</pre></div>
+    </div>
+  </div>
+
+  <!-- ── Brands ── -->
+  <div class="ep" id="ntv-brands">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method GET">GET</span>
+      <span class="ep-path">/ntv-php/ntv-brands.php</span>
+      <span class="ep-desc">All brands (Apple, Samsung, Sony…)</span>
+      <span class="badge-pub">Public</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <table class="ptable">
+        <tr><th>Param</th><th>Type</th><th></th><th>Notes</th></tr>
+        <tr><td class="pname">page</td><td class="ptype">integer</td><td class="opt">Optional</td><td class="con">Default: <code>1</code></td></tr>
+        <tr><td class="pname">limit</td><td class="ptype">integer</td><td class="opt">Optional</td><td class="con">Default: <code>20</code>, max: <code>100</code></td></tr>
+      </table>
+      <div class="code-label">Example</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>GET /ntv-php/ntv-brands.php?page=1&amp;limit=20</pre></div>
+      <div class="code-label">Response Structure</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{
+  <span class="key">"success"</span>: <span class="bool">true</span>,
+  <span class="key">"data"</span>: [
+    { <span class="key">"id"</span>: <span class="number">1</span>, <span class="key">"name"</span>: <span class="string">"Apple"</span>, <span class="key">"slug"</span>: <span class="string">"apple"</span> },
+    { <span class="key">"id"</span>: <span class="number">2</span>, <span class="key">"name"</span>: <span class="string">"Samsung"</span>, <span class="key">"slug"</span>: <span class="string">"samsung"</span> }
+  ],
+  <span class="key">"pagination"</span>: { <span class="key">"page"</span>: <span class="number">1</span>, <span class="key">"per_page"</span>: <span class="number">20</span>, <span class="key">"total"</span>: <span class="number">5</span>, <span class="key">"pages"</span>: <span class="number">1</span> }
+}</pre></div>
+    </div>
+  </div>
+
+  <!-- ── Tags ── -->
+  <div class="ep" id="ntv-tags">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method GET">GET</span>
+      <span class="ep-path">/ntv-php/ntv-tags.php</span>
+      <span class="ep-desc">All product tags</span>
+      <span class="badge-auth">🔐 Device Token</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="note">Requires a device Bearer token from <code>ntv-register-device.php</code>. Pass it in header: <code>Authorization: Bearer &lt;token&gt;</code></div>
+      <table class="ptable">
+        <tr><th>Param</th><th>Type</th><th></th><th>Notes</th></tr>
+        <tr><td class="pname">page</td><td class="ptype">integer</td><td class="opt">Optional</td><td class="con">Default: <code>1</code></td></tr>
+        <tr><td class="pname">limit</td><td class="ptype">integer</td><td class="opt">Optional</td><td class="con">Default: <code>20</code>, max: <code>100</code></td></tr>
+      </table>
+      <div class="code-label">Example Request</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>GET /ntv-php/ntv-tags.php?limit=50
+Authorization: Bearer Be1qNe9gOKcUp9yAlGB...</pre></div>
+      <div class="code-label">Response</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{
+  <span class="key">"success"</span>: <span class="bool">true</span>,
+  <span class="key">"data"</span>: [
+    { <span class="key">"id"</span>: <span class="number">1</span>, <span class="key">"name"</span>: <span class="string">"Sale"</span>, <span class="key">"slug"</span>: <span class="string">"sale"</span> },
+    { <span class="key">"id"</span>: <span class="number">2</span>, <span class="key">"name"</span>: <span class="string">"New"</span>, <span class="key">"slug"</span>: <span class="string">"new"</span> }
+  ],
+  <span class="key">"pagination"</span>: { <span class="key">"page"</span>: <span class="number">1</span>, <span class="key">"per_page"</span>: <span class="number">50</span>, <span class="key">"total"</span>: <span class="number">11</span>, <span class="key">"pages"</span>: <span class="number">1</span> }
+}</pre></div>
+    </div>
+  </div>
+
+  <!-- ── Countries ── -->
+  <div class="ep" id="ntv-countries">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method GET">GET</span>
+      <span class="ep-path">/ntv-php/ntv-countries.php</span>
+      <span class="ep-desc">All countries (code + name)</span>
+      <span class="badge-pub">Public</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <table class="ptable">
+        <tr><th>Param</th><th>Type</th><th></th><th>Notes</th></tr>
+        <tr><td class="pname">page</td><td class="ptype">integer</td><td class="opt">Optional</td><td class="con">Default: <code>1</code></td></tr>
+        <tr><td class="pname">limit</td><td class="ptype">integer</td><td class="opt">Optional</td><td class="con">Default: <code>20</code>, max: <code>100</code>. Total: 249 countries.</td></tr>
+      </table>
+      <div class="code-label">Example</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>GET /ntv-php/ntv-countries.php?limit=100&amp;page=1</pre></div>
+      <div class="code-label">Response</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{
+  <span class="key">"success"</span>: <span class="bool">true</span>,
+  <span class="key">"data"</span>: [
+    { <span class="key">"code"</span>: <span class="string">"AF"</span>, <span class="key">"name"</span>: <span class="string">"Afghanistan"</span> },
+    { <span class="key">"code"</span>: <span class="string">"EG"</span>, <span class="key">"name"</span>: <span class="string">"Egypt"</span> }
+  ],
+  <span class="key">"pagination"</span>: { <span class="key">"page"</span>: <span class="number">1</span>, <span class="key">"per_page"</span>: <span class="number">100</span>, <span class="key">"total"</span>: <span class="number">249</span>, <span class="key">"pages"</span>: <span class="number">3</span> }
+}</pre></div>
+    </div>
+  </div>
+
+  <!-- ── Currency Rates ── -->
+  <div class="ep" id="ntv-rates">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method GET">GET</span>
+      <span class="ep-path">/ntv-php/ntv-currency-rates.php</span>
+      <span class="ep-desc">Exchange rates vs EGP — no params needed</span>
+      <span class="badge-pub">Public</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="note">Returns hardcoded exchange rates relative to the Egyptian Pound (EGP = 1.0). No parameters required.</div>
+      <div class="code-label">Response</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{
+  <span class="key">"usd"</span>: { <span class="key">"rate"</span>: <span class="number">0.02</span>,  <span class="key">"source"</span>: <span class="string">"United States Dollar"</span> },
+  <span class="key">"eur"</span>: { <span class="key">"rate"</span>: <span class="number">0.019</span>, <span class="key">"source"</span>: <span class="string">"Euro"</span> },
+  <span class="key">"sar"</span>: { <span class="key">"rate"</span>: <span class="number">0.075</span>, <span class="key">"source"</span>: <span class="string">"Saudi Riyal"</span> },
+  <span class="key">"egp"</span>: { <span class="key">"rate"</span>: <span class="number">1.0</span>,   <span class="key">"source"</span>: <span class="string">"Central Bank of Egypt"</span> },
+  <span class="key">"gbp"</span>: { <span class="key">"rate"</span>: <span class="number">0.016</span>, <span class="key">"source"</span>: <span class="string">"Great British Pound"</span> },
+  <span class="key">"aed"</span>: { <span class="key">"rate"</span>: <span class="number">0.073</span>, <span class="key">"source"</span>: <span class="string">"United Arab Emirates Dirham"</span> }
+}</pre></div>
+    </div>
+  </div>
+
+  <!-- ── App Config ── -->
+  <div class="ep" id="ntv-config">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method GET">GET</span>
+      <span class="ep-path">/ntv-php/ntv-app-startup-config.php</span>
+      <span class="ep-desc">Full app configuration JSON from DB</span>
+      <span class="badge-pub">Public · GET only</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="note">No parameters needed. Returns the latest record from <code>app_config</code> table. Only GET method accepted.</div>
+      <div class="code-label">Response (key structure)</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{
+  <span class="key">"serverConfig"</span>:       { <span class="key">"type"</span>: <span class="string">"user"</span>, <span class="key">"vendorAvailable"</span>: <span class="bool">true</span>, <span class="key">"baseUrl"</span>: <span class="string">"..."</span>, <span class="key">"imageurl"</span>: <span class="string">"..."</span> },
+  <span class="key">"IdentityConfig"</span>:     { <span class="key">"AppName"</span>: <span class="string">"Urday Store"</span>, <span class="key">"FirstUserMessage"</span>: <span class="string">"..."</span> },
+  <span class="key">"advanceConfig"</span>:      { <span class="key">"DefaultLanguage"</span>: <span class="string">"en"</span>, <span class="key">"GridCount"</span>: <span class="number">3</span>, <span class="key">"EnableCart"</span>: <span class="bool">true</span>, <span class="key">"EnableRating"</span>: <span class="bool">true</span>, ... },
+  <span class="key">"loginSetting"</span>:       { <span class="key">"IsRequiredLogin"</span>: <span class="bool">false</span>, <span class="key">"showGoogleLogin"</span>: <span class="bool">true</span>, ... },
+  <span class="key">"paymentConfig"</span>:      { <span class="key">"EnableShipping"</span>: <span class="bool">true</span>, <span class="key">"GuestCheckout"</span>: <span class="bool">true</span>, ... },
+  <span class="key">"onBoardingConfig"</span>:   { <span class="key">"enableOnBoarding"</span>: <span class="bool">true</span>, <span class="key">"data"</span>: [...] },
+  <span class="key">"languagesInfo"</span>:      [ { <span class="key">"name"</span>: <span class="string">"English"</span>, <span class="key">"code"</span>: <span class="string">"en"</span> }, ... ],
+  <span class="key">"productDetail"</span>:      { <span class="key">"layout"</span>: <span class="string">"simpleType"</span>, <span class="key">"showVideo"</span>: <span class="bool">true</span>, ... },
+  <span class="key">"splashScreen"</span>:       { <span class="key">"enable"</span>: <span class="bool">true</span>, <span class="key">"duration"</span>: <span class="number">2000</span>, <span class="key">"type"</span>: <span class="string">"ramo-splash"</span> },
+  <span class="key">"defaultDrawer"</span>:      { <span class="key">"logo"</span>: <span class="string">"assets/images/logo.png"</span>, <span class="key">"items"</span>: [...] }
+}</pre></div>
+    </div>
+  </div>
+
+  <!-- ── Timeline Config ── -->
+  <div class="ep" id="ntv-timeline">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method GET">GET</span>
+      <span class="ep-path">/ntv-php/ntv-app-time-line-config.php</span>
+      <span class="ep-desc">Home-screen / timeline config by language</span>
+      <span class="badge-pub">Public</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <table class="ptable">
+        <tr><th>Param</th><th>Type</th><th></th><th>Notes</th></tr>
+        <tr><td class="pname">lang_code</td><td class="ptype">string</td><td class="opt">Optional</td><td class="con">Default: <code>en</code>. Format: 2-letter ISO 639-1 (<code>en</code>, <code>ar</code>, <code>de</code>). Fetches from <code>time_line_configs</code> by language.</td></tr>
+      </table>
+      <div class="code-label">Examples</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>GET /ntv-php/ntv-app-time-line-config.php?lang_code=en
+GET /ntv-php/ntv-app-time-line-config.php?lang_code=ar</pre></div>
+    </div>
+  </div>
+
+  <!-- ── Product Price ── -->
+  <div class="ep" id="ntv-price">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method GET">GET</span>
+      <span class="ep-path">/ntv-php/ntv-product-current-price.php</span>
+      <span class="ep-desc">Current effective price of a product's main variation</span>
+      <span class="badge-pub">Public</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="note">Returns <code>sale_price</code> if set and non-zero, otherwise falls back to <code>price</code>. Only products with a <code>main_variation = true</code> variation return a price.</div>
+      <table class="ptable">
+        <tr><th>Param</th><th>Type</th><th></th><th>Notes</th></tr>
+        <tr><td class="pname">id</td><td class="ptype">integer</td><td class="req">Required</td><td class="con">Must be a valid positive integer. Product must have a main variation row.</td></tr>
+      </table>
+      <div class="code-label">Example</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>GET /ntv-php/ntv-product-current-price.php?id=190</pre></div>
+      <div class="res-grid">
+        <div><div class="code-label">Response — Found</div>
+        <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+        <pre>{
+  <span class="key">"success"</span>: <span class="bool">true</span>,
+  <span class="key">"product_id"</span>: <span class="number">190</span>,
+  <span class="key">"sale_price"</span>: <span class="number">208.99</span>,
+  <span class="key">"message"</span>: <span class="string">"Main variation price retrieved successfully"</span>
+}</pre></div></div>
+        <div><div class="code-label">Response — Not found</div>
+        <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+        <pre>{
+  <span class="key">"success"</span>: <span class="bool">false</span>,
+  <span class="key">"error"</span>: <span class="string">"Main variation not found for this product"</span>
+}</pre></div></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end native section -->
+
+<!-- ═══════════════════════════════════════════════════
+     LARAVEL — CUSTOMER AUTH
+════════════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-head"><h3>Laravel — Customer Auth</h3><span class="section-sub">/api/user/</span></div>
+
+  <!-- Register -->
+  <div class="ep" id="la-register">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method POST">POST</span>
+      <span class="ep-path">/api/user/register</span>
+      <span class="ep-desc">Create customer account</span>
+      <span class="badge-pub">Public · throttle: 3/min</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <table class="ptable">
+        <tr><th>Field</th><th>Type</th><th></th><th>Constraint</th></tr>
+        <tr><td class="pname">first_name</td><td class="ptype">string</td><td class="req">Required</td><td class="con">max 255</td></tr>
+        <tr><td class="pname">last_name</td><td class="ptype">string</td><td class="req">Required</td><td class="con">max 255</td></tr>
+        <tr><td class="pname">name</td><td class="ptype">string</td><td class="req">Required</td><td class="con">Display name, max 255</td></tr>
+        <tr><td class="pname">email</td><td class="ptype">string</td><td class="req">Required</td><td class="con">Valid email, unique in <code>users</code> table</td></tr>
+        <tr><td class="pname">password</td><td class="ptype">string</td><td class="req">Required</td><td class="con">Min 8 chars, max 50. Must match <code>password_confirmation</code>.</td></tr>
+        <tr><td class="pname">password_confirmation</td><td class="ptype">string</td><td class="req">Required</td><td class="con">Must equal <code>password</code></td></tr>
+        <tr><td class="pname">phone</td><td class="ptype">string</td><td class="opt">Optional</td><td class="con">max 20</td></tr>
+        <tr><td class="pname">user_login</td><td class="ptype">string</td><td class="opt">Optional</td><td class="con">max 255</td></tr>
+        <tr><td class="pname">user_nicename</td><td class="ptype">string</td><td class="opt">Optional</td><td class="con">URL-friendly name, max 255</td></tr>
+        <tr><td class="pname">display_name</td><td class="ptype">string</td><td class="opt">Optional</td><td class="con">max 255</td></tr>
+        <tr><td class="pname">description</td><td class="ptype">string</td><td class="opt">Optional</td><td class="con">max 500</td></tr>
+        <tr><td class="pname">avatar</td><td class="ptype">string (url)</td><td class="opt">Optional</td><td class="con">Valid URL</td></tr>
+        <tr><td class="pname">url</td><td class="ptype">string (url)</td><td class="opt">Optional</td><td class="con">Valid URL</td></tr>
+        <tr><td class="pname">role</td><td class="ptype">string</td><td class="opt">Optional</td><td class="con">One of: <code>customer</code>, <code>admin</code></td></tr>
+      </table>
+      <div class="code-label">Request Body (minimum required)</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{
+  <span class="key">"first_name"</span>: <span class="string">"John"</span>,
+  <span class="key">"last_name"</span>: <span class="string">"Doe"</span>,
+  <span class="key">"name"</span>: <span class="string">"John Doe"</span>,
+  <span class="key">"email"</span>: <span class="string">"john@example.com"</span>,
+  <span class="key">"password"</span>: <span class="string">"MyPassword123"</span>,
+  <span class="key">"password_confirmation"</span>: <span class="string">"MyPassword123"</span>
+}</pre></div>
+      <div class="code-label">Request Body (full)</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{
+  <span class="key">"first_name"</span>: <span class="string">"John"</span>,
+  <span class="key">"last_name"</span>: <span class="string">"Doe"</span>,
+  <span class="key">"name"</span>: <span class="string">"John Doe"</span>,
+  <span class="key">"email"</span>: <span class="string">"john@example.com"</span>,
+  <span class="key">"password"</span>: <span class="string">"MyPassword123"</span>,
+  <span class="key">"password_confirmation"</span>: <span class="string">"MyPassword123"</span>,
+  <span class="key">"phone"</span>: <span class="string">"+201001234567"</span>,
+  <span class="key">"user_login"</span>: <span class="string">"johndoe"</span>,
+  <span class="key">"user_nicename"</span>: <span class="string">"john-doe"</span>,
+  <span class="key">"display_name"</span>: <span class="string">"John Doe"</span>,
+  <span class="key">"description"</span>: <span class="string">"Short bio here"</span>,
+  <span class="key">"avatar"</span>: <span class="string">"https://example.com/avatar.jpg"</span>,
+  <span class="key">"role"</span>: <span class="string">"customer"</span>
+}</pre></div>
+      <div class="code-label">Response — 200 Success</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{
+  <span class="key">"success"</span>: <span class="bool">true</span>,
+  <span class="key">"cookie"</span>: <span class="string">"1|abcdef123456..."</span>,
+  <span class="key">"user_id"</span>: <span class="number">42</span>,
+  <span class="key">"user_data"</span>: { <span class="key">"phone"</span>: <span class="string">"+201001234567"</span> }
+}</pre></div>
+    </div>
+  </div>
+
+  <!-- Login -->
+  <div class="ep" id="la-login">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method POST">POST</span>
+      <span class="ep-path">/api/user/login</span>
+      <span class="ep-desc">Login — get Sanctum token</span>
+      <span class="badge-pub">Public · throttle: 3/min</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <table class="ptable">
+        <tr><th>Field</th><th>Type</th><th></th><th>Constraint</th></tr>
+        <tr><td class="pname">email</td><td class="ptype">string</td><td class="req">Required</td><td class="con">Valid email, max 255</td></tr>
+        <tr><td class="pname">password</td><td class="ptype">string</td><td class="req">Required</td><td class="con">max 255</td></tr>
+      </table>
+      <div class="code-label">Request Body</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{
+  <span class="key">"email"</span>: <span class="string">"john@example.com"</span>,
+  <span class="key">"password"</span>: <span class="string">"MyPassword123"</span>
+}</pre></div>
+      <div class="res-grid">
+        <div><div class="code-label">Response — 200 Success</div>
+        <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+        <pre>{
+  <span class="key">"success"</span>: <span class="bool">true</span>,
+  <span class="key">"cookie"</span>: <span class="string">"1|abcdef123456..."</span>,
+  <span class="key">"user_id"</span>: <span class="number">42</span>,
+  <span class="key">"user_data"</span>: { <span class="key">"phone"</span>: <span class="string">"+201001234567"</span> }
+}</pre></div></div>
+        <div><div class="code-label">Response — 400 Invalid</div>
+        <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+        <pre>{
+  <span class="key">"success"</span>: <span class="bool">false</span>,
+  <span class="key">"message"</span>: <span class="string">"These credentials do not match."</span>
+}</pre></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OTP -->
+  <div class="ep" id="la-otp">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method POST">POST</span>
+      <span class="ep-path">/api/user/send-otp-number</span>
+      <span class="ep-desc">Send OTP to a phone number</span>
+      <span class="badge-pub">Public</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <table class="ptable">
+        <tr><th>Field</th><th>Type</th><th></th><th>Constraint</th></tr>
+        <tr><td class="pname">phone</td><td class="ptype">string</td><td class="req">Required</td><td class="con">max 20. OTP is cached for 5 minutes.</td></tr>
+      </table>
+      <div class="code-label">Request Body</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{ <span class="key">"phone"</span>: <span class="string">"+201001234567"</span> }</pre></div>
+      <div class="code-label">Response</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{
+  <span class="key">"success"</span>: <span class="bool">true</span>,
+  <span class="key">"message"</span>: <span class="string">"OTP sent successfully to +201001234567"</span>,
+  <span class="key">"data"</span>: { <span class="key">"phone"</span>: <span class="string">"+201001234567"</span>, <span class="key">"otp"</span>: <span class="number">482910</span> }
+}</pre></div>
+    </div>
+  </div>
+
+  <!-- Register by Phone -->
+  <div class="ep" id="la-phone">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method POST">POST</span>
+      <span class="ep-path">/api/user/register-with-phone</span>
+      <span class="ep-desc">Register or login using phone + OTP</span>
+      <span class="badge-pub">Public</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <table class="ptable">
+        <tr><th>Field</th><th>Type</th><th></th><th>Constraint</th></tr>
+        <tr><td class="pname">phone</td><td class="ptype">string</td><td class="req">Required</td><td class="con">max 20. Must match the phone used in <code>send-otp-number</code>.</td></tr>
+        <tr><td class="pname">otp</td><td class="ptype">string</td><td class="req">Required</td><td class="con">Exactly 6 characters. Expires after 5 min.</td></tr>
+        <tr><td class="pname">name</td><td class="ptype">string</td><td class="opt">Optional</td><td class="con">max 255. If not provided, auto-generated as <code>User_XXXXX</code>.</td></tr>
+      </table>
+      <div class="code-label">Request Body</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{
+  <span class="key">"phone"</span>: <span class="string">"+201001234567"</span>,
+  <span class="key">"otp"</span>: <span class="string">"482910"</span>,
+  <span class="key">"name"</span>: <span class="string">"John Doe"</span>
+}</pre></div>
+    </div>
+  </div>
+
+  <!-- Forgot Password -->
+  <div class="ep" id="la-forgot">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method POST">POST</span>
+      <span class="ep-path">/api/user/forgot-password</span>
+      <span class="ep-desc">Send password reset link to email</span>
+      <span class="badge-pub">Public · throttle: 3/min</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <table class="ptable">
+        <tr><th>Field</th><th>Type</th><th></th><th>Notes</th></tr>
+        <tr><td class="pname">email</td><td class="ptype">string</td><td class="req">Required</td><td class="con">Must be a registered email address</td></tr>
+      </table>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{ <span class="key">"email"</span>: <span class="string">"john@example.com"</span> }</pre></div>
+    </div>
+  </div>
+
+  <!-- Me / Logout / Delete -->
+  <div class="ep" id="la-me">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method GET">GET</span>
+      <span class="ep-path">/api/user/me</span>
+      <span class="ep-desc">Get authenticated user profile</span>
+      <span class="badge-auth">🔐 Sanctum Token</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="code-label">Header required</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>Authorization: Bearer 1|abcdef123456...</pre></div>
+    </div>
+  </div>
+
+  <div class="ep" id="la-logout">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method GET">GET</span>
+      <span class="ep-path">/api/user/logout</span>
+      <span class="ep-desc">Invalidate current token</span>
+      <span class="badge-auth">🔐 Sanctum Token</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>Authorization: Bearer 1|abcdef123456...</pre></div>
+    </div>
+  </div>
+
+  <div class="ep" id="la-delete">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method DELETE">DELETE</span>
+      <span class="ep-path">/api/user/delete-account</span>
+      <span class="ep-desc">Permanently delete account — irreversible</span>
+      <span class="badge-auth">🔐 Sanctum Token</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="danger">This is permanent. The user record and all linked data will be deleted. No recovery possible.</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>DELETE /api/user/delete-account
+Authorization: Bearer 1|abcdef123456...</pre></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ORDERS ═══ -->
+<div class="section">
+  <div class="section-head"><h3>Laravel — Orders</h3><span class="section-sub">/api/user/</span></div>
+
+  <div class="ep" id="la-order-create">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method POST">POST</span>
+      <span class="ep-path">/api/user/create-order</span>
+      <span class="ep-desc">Place a new order</span>
+      <span class="badge-auth">🔐 Sanctum · throttle: 3/min</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="warn">Currency is locked to <code>EG</code> country only. Payment methods: <code>cod</code>, <code>bank_transfer</code>, <code>vodafone_cash</code>, <code>fawry</code>, <code>wallet</code>, <code>credit_card</code>.</div>
+      <table class="ptable">
+        <tr><th>Field</th><th>Type</th><th></th><th>Constraint</th></tr>
+        <tr><td class="pname">currency</td><td class="ptype">string</td><td class="req">Required</td><td class="con">One of: <code>EGP</code>, <code>USD</code>, <code>EUR</code> (3 chars)</td></tr>
+        <tr><td class="pname">payment_method</td><td class="ptype">string</td><td class="req">Required</td><td class="con"><code>cod</code> | <code>bank_transfer</code> | <code>vodafone_cash</code> | <code>fawry</code> | <code>wallet</code> | <code>credit_card</code></td></tr>
+        <tr><td class="pname">payment_method_title</td><td class="ptype">string</td><td class="req">Required</td><td class="con">Human-readable label, max 100</td></tr>
+        <tr><td class="pname">billing</td><td class="ptype">object</td><td class="req">Required</td><td class="con">Full billing object (see below)</td></tr>
+        <tr><td class="pname">billing.first_name</td><td class="ptype">string</td><td class="req">Required</td><td class="con">max 100</td></tr>
+        <tr><td class="pname">billing.last_name</td><td class="ptype">string</td><td class="req">Required</td><td class="con">max 100</td></tr>
+        <tr><td class="pname">billing.email</td><td class="ptype">string</td><td class="req">Required</td><td class="con">Valid email, max 255</td></tr>
+        <tr><td class="pname">billing.phone</td><td class="ptype">string</td><td class="req">Required</td><td class="con">Valid Egyptian mobile number</td></tr>
+        <tr><td class="pname">billing.address_1</td><td class="ptype">string</td><td class="req">Required</td><td class="con">max 255</td></tr>
+        <tr><td class="pname">billing.address_2</td><td class="ptype">string</td><td class="opt">Optional</td><td class="con">max 255</td></tr>
+        <tr><td class="pname">billing.city</td><td class="ptype">string</td><td class="req">Required</td><td class="con">max 100</td></tr>
+        <tr><td class="pname">billing.state</td><td class="ptype">string</td><td class="req">Required</td><td class="con">max 100</td></tr>
+        <tr><td class="pname">billing.country</td><td class="ptype">string</td><td class="req">Required</td><td class="con">Must be <code>"EG"</code> (2 chars)</td></tr>
+        <tr><td class="pname">billing.postcode</td><td class="ptype">string</td><td class="opt">Optional</td><td class="con">max 20</td></tr>
+        <tr><td class="pname">billing.company</td><td class="ptype">string</td><td class="opt">Optional</td><td class="con">max 100</td></tr>
+        <tr><td class="pname">shipping</td><td class="ptype">object</td><td class="req">Required</td><td class="con">Same structure as <code>billing</code> (email optional in shipping)</td></tr>
+        <tr><td class="pname">line_items</td><td class="ptype">array</td><td class="req">Required</td><td class="con">Min 1 item, max 100</td></tr>
+        <tr><td class="pname">line_items[].product_id</td><td class="ptype">integer</td><td class="req">Required</td><td class="con">Must exist in <code>products_data</code></td></tr>
+        <tr><td class="pname">line_items[].quantity</td><td class="ptype">integer</td><td class="req">Required</td><td class="con">min: 1, max: 999</td></tr>
+        <tr><td class="pname">line_items[].main_variation_order</td><td class="ptype">boolean</td><td class="req">Required</td><td class="con"><code>true</code> = order main variation. <code>false</code> = must supply <code>variation_id</code>.</td></tr>
+        <tr><td class="pname">line_items[].variation_id</td><td class="ptype">integer</td><td class="opt">Conditional</td><td class="con">Required when <code>main_variation_order = false</code>. Must exist in <code>product_variations</code>.</td></tr>
+        <tr><td class="pname">coupon</td><td class="ptype">string</td><td class="opt">Optional</td><td class="con">max 30. Must exist in <code>coupons</code> table.</td></tr>
+      </table>
+      <div class="code-label">Request Body (full example)</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{
+  <span class="key">"currency"</span>: <span class="string">"EGP"</span>,
+  <span class="key">"payment_method"</span>: <span class="string">"cod"</span>,
+  <span class="key">"payment_method_title"</span>: <span class="string">"Cash on Delivery"</span>,
+  <span class="key">"coupon"</span>: <span class="string">"SAVE10"</span>,
+  <span class="key">"billing"</span>: {
+    <span class="key">"first_name"</span>: <span class="string">"John"</span>,
+    <span class="key">"last_name"</span>: <span class="string">"Doe"</span>,
+    <span class="key">"email"</span>: <span class="string">"john@example.com"</span>,
+    <span class="key">"phone"</span>: <span class="string">"01001234567"</span>,
+    <span class="key">"address_1"</span>: <span class="string">"123 Tahrir Square"</span>,
+    <span class="key">"address_2"</span>: <span class="string">"Apt 4B"</span>,
+    <span class="key">"city"</span>: <span class="string">"Cairo"</span>,
+    <span class="key">"state"</span>: <span class="string">"Cairo"</span>,
+    <span class="key">"postcode"</span>: <span class="string">"11511"</span>,
+    <span class="key">"country"</span>: <span class="string">"EG"</span>,
+    <span class="key">"company"</span>: <span class="string">"ACME Co."</span>
+  },
+  <span class="key">"shipping"</span>: {
+    <span class="key">"first_name"</span>: <span class="string">"John"</span>,
+    <span class="key">"last_name"</span>: <span class="string">"Doe"</span>,
+    <span class="key">"phone"</span>: <span class="string">"01001234567"</span>,
+    <span class="key">"address_1"</span>: <span class="string">"123 Tahrir Square"</span>,
+    <span class="key">"city"</span>: <span class="string">"Cairo"</span>,
+    <span class="key">"state"</span>: <span class="string">"Cairo"</span>,
+    <span class="key">"country"</span>: <span class="string">"EG"</span>
+  },
+  <span class="key">"line_items"</span>: [
+    {
+      <span class="key">"product_id"</span>: <span class="number">190</span>,
+      <span class="key">"quantity"</span>: <span class="number">2</span>,
+      <span class="key">"main_variation_order"</span>: <span class="bool">true</span>
+    },
+    {
+      <span class="key">"product_id"</span>: <span class="number">191</span>,
+      <span class="key">"quantity"</span>: <span class="number">1</span>,
+      <span class="key">"main_variation_order"</span>: <span class="bool">false</span>,
+      <span class="key">"variation_id"</span>: <span class="number">1066</span>
+    }
+  ]
+}</pre></div>
+    </div>
+  </div>
+
+  <div class="ep" id="la-orders-list">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method GET">GET</span>
+      <span class="ep-path">/api/user/get-all-user-orders</span>
+      <span class="ep-desc">List all orders of the logged-in customer</span>
+      <span class="badge-auth">🔐 Sanctum Token</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>GET /api/user/get-all-user-orders
+Authorization: Bearer 1|abcdef123456...</pre></div>
+    </div>
+  </div>
+
+  <div class="ep" id="la-shipping">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method GET">GET</span>
+      <span class="ep-path">/api/user/shipping-methods</span>
+      <span class="ep-desc">Available shipping methods</span>
+      <span class="badge-auth">🔐 Sanctum Token</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>GET /api/user/shipping-methods
+Authorization: Bearer 1|abcdef123456...</pre></div>
+    </div>
+  </div>
+
+  <div class="ep" id="la-payment">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method GET">GET</span>
+      <span class="ep-path">/api/user/payment-methods</span>
+      <span class="ep-desc">Available payment methods</span>
+      <span class="badge-auth">🔐 Sanctum Token</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>GET /api/user/payment-methods
+Authorization: Bearer 1|abcdef123456...</pre></div>
+    </div>
+  </div>
+
+  <div class="ep" id="la-note-create">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method POST">POST</span>
+      <span class="ep-path">/api/user/create-user-note</span>
+      <span class="ep-desc">Add a note to an order</span>
+      <span class="badge-auth">🔐 Sanctum Token</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="code-label">Request Body</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{
+  <span class="key">"order_id"</span>: <span class="number">10</span>,
+  <span class="key">"note"</span>: <span class="string">"Please ring the doorbell twice"</span>
+}</pre></div>
+    </div>
+  </div>
+
+  <div class="ep" id="la-notes-get">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method GET">GET</span>
+      <span class="ep-path">/api/user/get-order-notes</span>
+      <span class="ep-desc">Get all notes on user's orders</span>
+      <span class="badge-auth">🔐 Sanctum Token</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>GET /api/user/get-order-notes
+Authorization: Bearer 1|abcdef123456...</pre></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ COUPONS ═══ -->
+<div class="section">
+  <div class="section-head"><h3>Laravel — Coupons</h3><span class="section-sub">/api/ramo/coupons/</span></div>
+
+  <div class="ep" id="la-coupons-list">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method GET">GET</span>
+      <span class="ep-path">/api/ramo/coupons/show</span>
+      <span class="ep-desc">List all coupons</span>
+      <span class="badge-auth">🔐 Sanctum Token</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>GET /api/ramo/coupons/show
+Authorization: Bearer 1|abcdef123456...</pre></div>
+    </div>
+  </div>
+
+  <div class="ep" id="la-coupons-store">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method POST">POST</span>
+      <span class="ep-path">/api/ramo/coupons/store</span>
+      <span class="ep-desc">Create a new coupon</span>
+      <span class="badge-vendor">🔐 Vendor Token</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <table class="ptable">
+        <tr><th>Field</th><th>Type</th><th></th><th>Constraint</th></tr>
+        <tr><td class="pname">code</td><td class="ptype">string</td><td class="req">Required</td><td class="con">Unique, max 50 chars</td></tr>
+        <tr><td class="pname">amount</td><td class="ptype">number</td><td class="req">Required</td><td class="con">Discount value. Min: 0</td></tr>
+        <tr><td class="pname">status</td><td class="ptype">string</td><td class="req">Required</td><td class="con"><code>publish</code> | <code>draft</code> | <code>private</code></td></tr>
+        <tr><td class="pname">discount_type</td><td class="ptype">string</td><td class="req">Required</td><td class="con"><code>percent</code> | <code>fixed_cart</code> | <code>fixed_product</code></td></tr>
+        <tr><td class="pname">date_expires</td><td class="ptype">date</td><td class="opt">Optional</td><td class="con">Must be a future date. Format: <code>YYYY-MM-DD</code></td></tr>
+        <tr><td class="pname">usage_limit</td><td class="ptype">integer</td><td class="opt">Optional</td><td class="con">Total times this coupon can be used. Min: 0</td></tr>
+        <tr><td class="pname">usage_limit_per_user</td><td class="ptype">integer</td><td class="opt">Optional</td><td class="con">Times one user can use it. Min: 0</td></tr>
+        <tr><td class="pname">limit_usage_to_x_items</td><td class="ptype">integer</td><td class="opt">Optional</td><td class="con">Max cart items the discount applies to</td></tr>
+        <tr><td class="pname">minimum_amount</td><td class="ptype">number</td><td class="opt">Optional</td><td class="con">Minimum cart total to apply coupon</td></tr>
+        <tr><td class="pname">maximum_amount</td><td class="ptype">number</td><td class="opt">Optional</td><td class="con">Maximum cart total allowed</td></tr>
+        <tr><td class="pname">individual_use</td><td class="ptype">boolean</td><td class="opt">Optional</td><td class="con">Cannot be combined with other coupons</td></tr>
+        <tr><td class="pname">free_shipping</td><td class="ptype">boolean</td><td class="opt">Optional</td><td class="con">Grants free shipping when applied</td></tr>
+        <tr><td class="pname">exclude_sale_items</td><td class="ptype">boolean</td><td class="opt">Optional</td><td class="con">Does not apply to items already on sale</td></tr>
+        <tr><td class="pname">product_ids</td><td class="ptype">array</td><td class="opt">Optional</td><td class="con">Array of product IDs coupon applies to</td></tr>
+        <tr><td class="pname">excluded_product_ids</td><td class="ptype">array</td><td class="opt">Optional</td><td class="con">Array of product IDs excluded</td></tr>
+        <tr><td class="pname">product_categories</td><td class="ptype">array</td><td class="opt">Optional</td><td class="con">Category IDs coupon applies to</td></tr>
+        <tr><td class="pname">excluded_product_categories</td><td class="ptype">array</td><td class="opt">Optional</td><td class="con">Category IDs excluded</td></tr>
+        <tr><td class="pname">email_restrictions</td><td class="ptype">array</td><td class="opt">Optional</td><td class="con">Array of emails that can use this coupon</td></tr>
+        <tr><td class="pname">description</td><td class="ptype">string</td><td class="opt">Optional</td><td class="con">Internal description</td></tr>
+      </table>
+      <div class="code-label">Request Body (minimum)</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{
+  <span class="key">"code"</span>: <span class="string">"SAVE10"</span>,
+  <span class="key">"amount"</span>: <span class="number">10</span>,
+  <span class="key">"status"</span>: <span class="string">"publish"</span>,
+  <span class="key">"discount_type"</span>: <span class="string">"percent"</span>
+}</pre></div>
+      <div class="code-label">Request Body (full)</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{
+  <span class="key">"code"</span>: <span class="string">"SUMMER25"</span>,
+  <span class="key">"amount"</span>: <span class="number">25</span>,
+  <span class="key">"status"</span>: <span class="string">"publish"</span>,
+  <span class="key">"discount_type"</span>: <span class="string">"percent"</span>,
+  <span class="key">"date_expires"</span>: <span class="string">"2026-09-30"</span>,
+  <span class="key">"usage_limit"</span>: <span class="number">500</span>,
+  <span class="key">"usage_limit_per_user"</span>: <span class="number">1</span>,
+  <span class="key">"minimum_amount"</span>: <span class="number">200</span>,
+  <span class="key">"maximum_amount"</span>: <span class="number">5000</span>,
+  <span class="key">"individual_use"</span>: <span class="bool">true</span>,
+  <span class="key">"free_shipping"</span>: <span class="bool">false</span>,
+  <span class="key">"exclude_sale_items"</span>: <span class="bool">true</span>,
+  <span class="key">"product_ids"</span>: [<span class="number">190</span>, <span class="number">191</span>],
+  <span class="key">"product_categories"</span>: [<span class="number">18</span>, <span class="number">19</span>],
+  <span class="key">"email_restrictions"</span>: [<span class="string">"vip@example.com"</span>],
+  <span class="key">"description"</span>: <span class="string">"Summer sale — 25% off shirts"</span>
+}</pre></div>
+    </div>
+  </div>
+
+  <div class="ep" id="la-coupons-validate">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method POST">POST</span>
+      <span class="ep-path">/api/ramo/coupons/validate</span>
+      <span class="ep-desc">Check if coupon is valid for a cart total</span>
+      <span class="badge-auth">🔐 Sanctum Token</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <table class="ptable">
+        <tr><th>Field</th><th>Type</th><th></th><th>Constraint</th></tr>
+        <tr><td class="pname">code</td><td class="ptype">string</td><td class="req">Required</td><td class="con">max 50</td></tr>
+        <tr><td class="pname">cart_total</td><td class="ptype">number</td><td class="req">Required</td><td class="con">Current cart total. Min: 0. Used to validate minimum_amount / maximum_amount rules.</td></tr>
+        <tr><td class="pname">user_id</td><td class="ptype">integer</td><td class="opt">Optional</td><td class="con">Used to check per-user usage limits</td></tr>
+      </table>
+      <div class="code-label">Request Body</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{
+  <span class="key">"code"</span>: <span class="string">"SAVE10"</span>,
+  <span class="key">"cart_total"</span>: <span class="number">350.00</span>,
+  <span class="key">"user_id"</span>: <span class="number">42</span>
+}</pre></div>
+      <div class="res-grid">
+        <div><div class="code-label">Response — Valid</div>
+        <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+        <pre>{
+  <span class="key">"success"</span>: <span class="bool">true</span>,
+  <span class="key">"message"</span>: <span class="string">"Coupon is valid"</span>,
+  <span class="key">"data"</span>: {
+    <span class="key">"code"</span>: <span class="string">"SAVE10"</span>,
+    <span class="key">"discount_type"</span>: <span class="string">"percent"</span>,
+    <span class="key">"amount"</span>: <span class="number">10</span>
+  }
+}</pre></div></div>
+        <div><div class="code-label">Response — Invalid</div>
+        <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+        <pre>{
+  <span class="key">"success"</span>: <span class="bool">false</span>,
+  <span class="key">"message"</span>: <span class="string">"Cart total must be at least 200"</span>
+}</pre></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ep" id="la-coupons-apply">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method POST">POST</span>
+      <span class="ep-path">/api/ramo/coupons/apply</span>
+      <span class="ep-desc">Apply coupon — returns discounted total</span>
+      <span class="badge-auth">🔐 Sanctum Token</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="code-label">Request Body</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{
+  <span class="key">"code"</span>: <span class="string">"SAVE10"</span>,
+  <span class="key">"cart_total"</span>: <span class="number">350.00</span>
+}</pre></div>
+    </div>
+  </div>
+
+  <div class="ep" id="la-coupons-update">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method PUT">PUT</span>
+      <span class="ep-path">/api/ramo/coupons/update/{id}</span>
+      <span class="ep-desc">Update a coupon by ID</span>
+      <span class="badge-vendor">🔐 Vendor Token</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="note">All fields are optional — only send what you want to change.</div>
+      <div class="code-label">Request Body (example update)</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{
+  <span class="key">"amount"</span>: <span class="number">15</span>,
+  <span class="key">"date_expires"</span>: <span class="string">"2027-01-01"</span>,
+  <span class="key">"status"</span>: <span class="string">"draft"</span>
+}</pre></div>
+    </div>
+  </div>
+
+  <div class="ep" id="la-coupons-delete">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method DELETE">DELETE</span>
+      <span class="ep-path">/api/ramo/coupons/remove/{id}</span>
+      <span class="ep-desc">Delete a coupon by ID</span>
+      <span class="badge-vendor">🔐 Vendor Token</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>DELETE /api/ramo/coupons/remove/3
+Authorization: Bearer 1|abcdef123456...</pre></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ VENDOR AUTH ═══ -->
+<div class="section">
+  <div class="section-head"><h3>Laravel — Vendor Auth</h3><span class="section-sub">/api/vendor/</span></div>
+
+  <div class="ep" id="la-v-register">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method POST">POST</span>
+      <span class="ep-path">/api/vendor/register</span>
+      <span class="ep-desc">Register vendor + shop (multipart/form-data)</span>
+      <span class="badge-pub">Public</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="note">Send as <strong>multipart/form-data</strong> — not JSON — because it includes image file uploads.</div>
+      <table class="ptable">
+        <tr><th>Field</th><th>Type</th><th></th><th>Constraint</th></tr>
+        <tr><td class="pname">shop_name</td><td class="ptype">string</td><td class="req">Required</td><td class="con">max 255</td></tr>
+        <tr><td class="pname">first_name</td><td class="ptype">string</td><td class="req">Required</td><td class="con">max 255</td></tr>
+        <tr><td class="pname">last_name</td><td class="ptype">string</td><td class="req">Required</td><td class="con">max 255</td></tr>
+        <tr><td class="pname">phone</td><td class="ptype">string</td><td class="req">Required</td><td class="con">Format: <code>+?[0-9]{10,15}</code>. Unique per vendor.</td></tr>
+        <tr><td class="pname">email</td><td class="ptype">string</td><td class="req">Required</td><td class="con">Valid email, unique in vendor_users table</td></tr>
+        <tr><td class="pname">shop_address</td><td class="ptype">string</td><td class="req">Required</td><td class="con">max 1000</td></tr>
+        <tr><td class="pname">password</td><td class="ptype">string</td><td class="req">Required</td><td class="con">Min 8 chars. Must match <code>password_confirmation</code>.</td></tr>
+        <tr><td class="pname">password_confirmation</td><td class="ptype">string</td><td class="req">Required</td><td class="con">Must equal <code>password</code></td></tr>
+        <tr><td class="pname">profile_image</td><td class="ptype">file</td><td class="req">Required</td><td class="con">jpeg/png/webp, max 5MB</td></tr>
+        <tr><td class="pname">shop_logo</td><td class="ptype">file</td><td class="req">Required</td><td class="con">jpeg/png/webp, max 5MB</td></tr>
+        <tr><td class="pname">shop_banner</td><td class="ptype">file</td><td class="opt">Optional</td><td class="con">jpeg/png/webp, max 5MB</td></tr>
+        <tr><td class="pname">secondary_banner</td><td class="ptype">file</td><td class="opt">Optional</td><td class="con">jpeg/png/webp, max 5MB</td></tr>
+        <tr><td class="pname">bottom_banner</td><td class="ptype">file</td><td class="opt">Optional</td><td class="con">jpeg/png/webp, max 5MB</td></tr>
+      </table>
+      <div class="code-label">Example (form-data fields — use Postman or FormData)</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>shop_name         = "Jane's Boutique"
+first_name        = "Jane"
+last_name         = "Vendor"
+phone             = "+201009876543"
+email             = "vendor@example.com"
+shop_address      = "456 Nile Street, Alexandria, Egypt"
+password          = "MyVendor123"
+password_confirmation = "MyVendor123"
+profile_image     = &lt;FILE: profile.jpg&gt;
+shop_logo         = &lt;FILE: logo.png&gt;
+shop_banner       = &lt;FILE: banner.jpg&gt;</pre></div>
+    </div>
+  </div>
+
+  <div class="ep" id="la-v-login">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method POST">POST</span>
+      <span class="ep-path">/api/vendor/login</span>
+      <span class="ep-desc">Vendor login — returns Sanctum token</span>
+      <span class="badge-pub">Public · throttle: 6/min per IP</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <table class="ptable">
+        <tr><th>Field</th><th>Type</th><th></th><th>Notes</th></tr>
+        <tr><td class="pname">email</td><td class="ptype">string</td><td class="req">Required</td><td class="con">Valid email registered in vendor_users</td></tr>
+        <tr><td class="pname">password</td><td class="ptype">string</td><td class="req">Required</td><td class="con">min 1 char</td></tr>
+      </table>
+      <div class="code-label">Request Body</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{
+  <span class="key">"email"</span>: <span class="string">"vendor@example.com"</span>,
+  <span class="key">"password"</span>: <span class="string">"MyVendor123"</span>
+}</pre></div>
+      <div class="code-label">Response</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{
+  <span class="key">"success"</span>: <span class="bool">true</span>,
+  <span class="key">"token"</span>: <span class="string">"1|vendorToken123..."</span>,
+  <span class="key">"vendor"</span>: { <span class="key">"id"</span>: <span class="number">5</span>, <span class="key">"shop_name"</span>: <span class="string">"Jane's Boutique"</span>, <span class="key">"email"</span>: <span class="string">"vendor@example.com"</span> }
+}</pre></div>
+    </div>
+  </div>
+
+  <div class="ep" id="la-v-profile">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method GET">GET</span>
+      <span class="ep-path">/api/vendor/get-profile</span>
+      <span class="ep-desc">Get vendor profile and shop details</span>
+      <span class="badge-vendor">🔐 Vendor Token</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>GET /api/vendor/get-profile
+Authorization: Bearer 1|vendorToken123...</pre></div>
+    </div>
+  </div>
+
+  <div class="ep" id="la-v-update">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method POST">POST</span>
+      <span class="ep-path">/api/vendor/update-profile</span>
+      <span class="ep-desc">Update vendor profile (multipart/form-data)</span>
+      <span class="badge-vendor">🔐 Vendor Token</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="note">All fields are optional. Only send what you want to update. Send as <strong>multipart/form-data</strong>.</div>
+      <table class="ptable">
+        <tr><th>Field</th><th>Type</th><th></th><th>Notes</th></tr>
+        <tr><td class="pname">shop_name</td><td class="ptype">string</td><td class="opt">Optional</td><td class="con">max 255</td></tr>
+        <tr><td class="pname">first_name</td><td class="ptype">string</td><td class="opt">Optional</td><td class="con">max 255</td></tr>
+        <tr><td class="pname">last_name</td><td class="ptype">string</td><td class="opt">Optional</td><td class="con">max 255</td></tr>
+        <tr><td class="pname">shop_address</td><td class="ptype">string</td><td class="opt">Optional</td><td class="con">max 1000</td></tr>
+        <tr><td class="pname">shop_logo</td><td class="ptype">file</td><td class="opt">Optional</td><td class="con">jpeg/png/webp, max 5MB</td></tr>
+        <tr><td class="pname">profile_image</td><td class="ptype">file</td><td class="opt">Optional</td><td class="con">jpeg/png/webp, max 5MB</td></tr>
+        <tr><td class="pname">shop_banner</td><td class="ptype">file</td><td class="opt">Optional</td><td class="con">jpeg/png/webp, max 5MB</td></tr>
+        <tr><td class="pname">secondary_banner</td><td class="ptype">file</td><td class="opt">Optional</td><td class="con">jpeg/png/webp, max 5MB</td></tr>
+        <tr><td class="pname">bottom_banner</td><td class="ptype">file</td><td class="opt">Optional</td><td class="con">jpeg/png/webp, max 5MB</td></tr>
+        <tr><td class="pname">offer_banner</td><td class="ptype">file</td><td class="opt">Optional</td><td class="con">jpeg/png/webp, max 5MB</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ VENDOR PRODUCTS ═══ -->
+<div class="section">
+  <div class="section-head"><h3>Laravel — Vendor Products</h3><span class="section-sub">/api/vendor/</span></div>
+
+  <div class="ep" id="la-p-add">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method POST">POST</span>
+      <span class="ep-path">/api/vendor/add-product</span>
+      <span class="ep-desc">Add a new product (multipart/form-data)</span>
+      <span class="badge-vendor">🔐 Vendor Token · throttle: 10/min</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="note">Send as <strong>multipart/form-data</strong>. JSON fields (<code>categories</code>, <code>translations</code>, <code>attributes</code>, <code>tags</code>, <code>variations</code>) must be sent as JSON strings.</div>
+      <table class="ptable">
+        <tr><th>Field</th><th>Type</th><th></th><th>Constraint</th></tr>
+        <tr><td class="pname">name</td><td class="ptype">string</td><td class="req">Required</td><td class="con">max 255</td></tr>
+        <tr><td class="pname">description</td><td class="ptype">string</td><td class="req">Required</td><td class="con">max 5000</td></tr>
+        <tr><td class="pname">main_variation</td><td class="ptype">string</td><td class="req">Required</td><td class="con">Label of the main variation. max 255.</td></tr>
+        <tr><td class="pname">brand_id</td><td class="ptype">integer</td><td class="req">Required</td><td class="con">Must exist in <code>brands</code>. e.g. <code>1</code>=Apple</td></tr>
+        <tr><td class="pname">categories</td><td class="ptype">JSON string (array)</td><td class="req">Required</td><td class="con">Array of category IDs. Min 1, max 50. e.g. <code>[18, 19]</code></td></tr>
+        <tr><td class="pname">stock_quantity</td><td class="ptype">integer</td><td class="req">Required</td><td class="con">min: 1, max: 999999</td></tr>
+        <tr><td class="pname">regular_price</td><td class="ptype">number</td><td class="req">Required</td><td class="con">min: 0.01, max: 999999</td></tr>
+        <tr><td class="pname">discount_percentage</td><td class="ptype">number</td><td class="opt">Optional</td><td class="con">0–80.99. Used to calculate sale_price.</td></tr>
+        <tr><td class="pname">unit</td><td class="ptype">string</td><td class="req">Required</td><td class="con"><code>piece</code>|<code>kg</code>|<code>g</code>|<code>liter</code>|<code>ml</code>|<code>meter</code>|<code>cm</code>|<code>box</code>|<code>pack</code>|<code>set</code></td></tr>
+        <tr><td class="pname">unit_amount</td><td class="ptype">number</td><td class="req">Required</td><td class="con">min: 0.01, max: 999999</td></tr>
+        <tr><td class="pname">product_type</td><td class="ptype">string</td><td class="req">Required</td><td class="con"><code>physical</code> | <code>digital</code></td></tr>
+        <tr><td class="pname">whatsapp_number_available</td><td class="ptype">boolean</td><td class="req">Required</td><td class="con"><code>true</code> or <code>false</code></td></tr>
+        <tr><td class="pname">whatsapp_number</td><td class="ptype">string</td><td class="opt">Conditional</td><td class="con">Required if <code>whatsapp_number_available=true</code>. Egyptian mobile: <code>/^(\+?20|0)?1[0125][0-9]{8}$/</code></td></tr>
+        <tr><td class="pname">thumbnailImage</td><td class="ptype">file</td><td class="req">Required</td><td class="con">jpeg/png/jpg/webp, max 5MB</td></tr>
+        <tr><td class="pname">otherImages[]</td><td class="ptype">file[]</td><td class="req">Required</td><td class="con">Up to 10 files, each jpeg/png/jpg/webp, max 5MB</td></tr>
+        <tr><td class="pname">naturalImages[]</td><td class="ptype">file[]</td><td class="opt">Optional</td><td class="con">Up to 10 files</td></tr>
+        <tr><td class="pname">translations</td><td class="ptype">JSON string (array)</td><td class="opt">Optional</td><td class="con">Array of translation objects (see below)</td></tr>
+        <tr><td class="pname">attributes</td><td class="ptype">JSON string (array)</td><td class="opt">Optional</td><td class="con">Product attributes like color/size (see below)</td></tr>
+        <tr><td class="pname">tags</td><td class="ptype">JSON string (array)</td><td class="opt">Optional</td><td class="con">Array of tag IDs. Max 50.</td></tr>
+        <tr><td class="pname">variations</td><td class="ptype">JSON string (array)</td><td class="opt">Optional</td><td class="con">Variation definitions (see below)</td></tr>
+      </table>
+      <div class="code-label">Example — Form Data Fields</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>name                     = "Premium Cotton Shirt"
+description              = "High quality 100% cotton shirt, available in multiple colors."
+main_variation           = "White - L"
+brand_id                 = 1
+categories               = "[18, 19]"
+stock_quantity           = 100
+regular_price            = 250.00
+discount_percentage      = 10
+unit                     = "piece"
+unit_amount              = 1
+product_type             = "physical"
+whatsapp_number_available = false
+thumbnailImage           = &lt;FILE: thumb.jpg&gt;
+otherImages[]            = &lt;FILE: front.jpg&gt;
+otherImages[]            = &lt;FILE: back.jpg&gt;
+translations             = "[{\"locale\":\"ar\",\"name\":\"قميص قطني\",\"description\":\"قميص عالي الجودة\"}]"
+attributes               = "[{\"name\":\"color\",\"values\":[\"White\",\"Black\",\"Blue\"]},{\"name\":\"size\",\"values\":[\"S\",\"M\",\"L\",\"XL\"]}]"
+tags                     = "[1, 2]"</pre></div>
+      <div class="code-label">translations field structure (JSON string)</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>[
+  {
+    <span class="key">"locale"</span>: <span class="string">"ar"</span>,
+    <span class="key">"name"</span>: <span class="string">"قميص قطني فاخر"</span>,
+    <span class="key">"description"</span>: <span class="string">"قميص عالي الجودة من القطن الخالص"</span>
+  },
+  {
+    <span class="key">"locale"</span>: <span class="string">"de"</span>,
+    <span class="key">"name"</span>: <span class="string">"Premium Baumwollhemd"</span>,
+    <span class="key">"description"</span>: <span class="string">"Hochwertiges 100% Baumwollhemd"</span>
+  }
+]</pre></div>
+      <div class="code-label">attributes field structure (JSON string)</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>[
+  { <span class="key">"name"</span>: <span class="string">"color"</span>, <span class="key">"values"</span>: [<span class="string">"White"</span>, <span class="string">"Black"</span>, <span class="string">"Blue"</span>] },
+  { <span class="key">"name"</span>: <span class="string">"size"</span>,  <span class="key">"values"</span>: [<span class="string">"S"</span>, <span class="string">"M"</span>, <span class="string">"L"</span>, <span class="string">"XL"</span>] }
+]</pre></div>
+    </div>
+  </div>
+
+  <div class="ep" id="la-p-list">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method GET">GET</span>
+      <span class="ep-path">/api/vendor/products</span>
+      <span class="ep-desc">List all products belonging to logged-in vendor</span>
+      <span class="badge-vendor">🔐 Vendor Token</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>GET /api/vendor/products
+Authorization: Bearer 1|vendorToken123...</pre></div>
+    </div>
+  </div>
+
+  <div class="ep" id="la-p-view">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method GET">GET</span>
+      <span class="ep-path">/api/vendor/view-product/{id}</span>
+      <span class="ep-desc">View full details of one product</span>
+      <span class="badge-vendor">🔐 Vendor Token</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>GET /api/vendor/view-product/190
+Authorization: Bearer 1|vendorToken123...</pre></div>
+    </div>
+  </div>
+
+  <div class="ep" id="la-p-update">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method POST">POST</span>
+      <span class="ep-path">/api/vendor/product-update/{id}</span>
+      <span class="ep-desc">Update product — all fields optional</span>
+      <span class="badge-vendor">🔐 Vendor Token</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="note">Only include fields you want to update. Same field rules as <code>add-product</code>. Send as <strong>multipart/form-data</strong>.</div>
+      <div class="code-label">Example (partial update)</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>POST /api/vendor/product-update/190
+Authorization: Bearer 1|vendorToken123...
+
+regular_price        = 300.00
+discount_percentage  = 15
+stock_quantity       = 80
+description          = "Updated description with more detail."</pre></div>
+    </div>
+  </div>
+
+  <div class="ep" id="la-p-variation">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method POST">POST</span>
+      <span class="ep-path">/api/vendor/product-variation-upd/{id}</span>
+      <span class="ep-desc">Update a specific variation</span>
+      <span class="badge-vendor">🔐 Vendor Token</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="warn"><code>{id}</code> here is the <strong>variation ID</strong>, not the product ID. Do not send <code>product_id</code> in the body.</div>
+      <table class="ptable">
+        <tr><th>Field</th><th>Type</th><th></th><th>Constraint</th></tr>
+        <tr><td class="pname">color</td><td class="ptype">string</td><td class="opt">Optional</td><td class="con">max 50</td></tr>
+        <tr><td class="pname">size</td><td class="ptype">string</td><td class="opt">Optional</td><td class="con">max 25</td></tr>
+        <tr><td class="pname">regular_price</td><td class="ptype">number</td><td class="opt">Optional</td><td class="con">min: 0.01, max: 999999</td></tr>
+        <tr><td class="pname">sale_price</td><td class="ptype">number</td><td class="opt">Optional</td><td class="con">min: 0.01, max: 999999</td></tr>
+        <tr><td class="pname">stock_quantity</td><td class="ptype">integer</td><td class="opt">Optional</td><td class="con">min: 0, max: 999999</td></tr>
+        <tr><td class="pname">variationImages[]</td><td class="ptype">file[]</td><td class="opt">Optional</td><td class="con">jpeg/png/jpg/webp, max 5MB each. Replaces existing images.</td></tr>
+      </table>
+      <div class="code-label">Request Body (multipart/form-data)</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>POST /api/vendor/product-variation-upd/1065
+Authorization: Bearer 1|vendorToken123...
+
+color            = "Red"
+size             = "XL"
+regular_price    = 280.00
+sale_price       = 220.00
+stock_quantity   = 15
+variationImages[] = &lt;FILE: red-xl-front.jpg&gt;</pre></div>
+    </div>
+  </div>
+
+  <div class="ep" id="la-p-delete">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method DELETE">DELETE</span>
+      <span class="ep-path">/api/vendor/product-delete/{id}</span>
+      <span class="ep-desc">Delete a product and its data</span>
+      <span class="badge-vendor">🔐 Vendor Token</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>DELETE /api/vendor/product-delete/190
+Authorization: Bearer 1|vendorToken123...</pre></div>
+    </div>
+  </div>
+
+  <div class="ep" id="la-order-state">
+    <div class="ep-head" onclick="toggle(this)">
+      <span class="method POST">POST</span>
+      <span class="ep-path">/api/vendor/update-order-state</span>
+      <span class="ep-desc">Change the status of an order</span>
+      <span class="badge-vendor">🔐 Vendor Token</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="ep-body">
+      <div class="code-label">Request Body</div>
+      <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+      <pre>{
+  <span class="key">"order_id"</span>: <span class="number">10</span>,
+  <span class="key">"state"</span>: <span class="string">"shipped"</span>
+}</pre></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ VENDOR STATS ═══ -->
+<div class="section">
+  <div class="section-head"><h3>Laravel — Vendor Statistics</h3><span class="section-sub">/api/vendor/ — all GET, no body</span></div>
+  <div class="note">All statistics endpoints below require <strong>🔐 Vendor Token</strong>. No request body needed — just the Authorization header.</div>
+
+  <div id="la-stats"></div>
+
+  <div class="code-label">Header for all stat endpoints</div>
+  <div class="code-wrap"><button class="copy-btn" onclick="copy(this)">Copy</button>
+  <pre>Authorization: Bearer 1|vendorToken123...</pre></div>
+
+  <table class="ptable" style="margin-top:12px;">
+    <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+    <tr><td><span class="method GET" style="font-size:9px;padding:2px 5px;">GET</span></td><td class="pname">/api/vendor/order-statistics</td><td>Orders over time, totals, statuses</td></tr>
+    <tr><td><span class="method GET" style="font-size:9px;padding:2px 5px;">GET</span></td><td class="pname">/api/vendor/get-earning-statitics</td><td>Earnings breakdown over time</td></tr>
+    <tr><td><span class="method GET" style="font-size:9px;padding:2px 5px;">GET</span></td><td class="pname">/api/vendor/simulate-seller-info</td><td>Simulated seller dashboard info</td></tr>
+    <tr><td><span class="method GET" style="font-size:9px;padding:2px 5px;">GET</span></td><td class="pname">/api/vendor/orders-seller-info</td><td>Detailed order info for vendor</td></tr>
+    <tr><td><span class="method GET" style="font-size:9px;padding:2px 5px;">GET</span></td><td class="pname">/api/vendor/top-selling-product</td><td>Most sold products</td></tr>
+    <tr><td><span class="method GET" style="font-size:9px;padding:2px 5px;">GET</span></td><td class="pname">/api/vendor/popular-two-product</td><td>Two most popular products</td></tr>
+    <tr><td><span class="method GET" style="font-size:9px;padding:2px 5px;">GET</span></td><td class="pname">/api/vendor/stock-out-list</td><td>Products with zero stock</td></tr>
+    <tr><td><span class="method GET" style="font-size:9px;padding:2px 5px;">GET</span></td><td class="pname">/api/vendor/refunds</td><td>Refund requests list</td></tr>
+    <tr><td><span class="method GET" style="font-size:9px;padding:2px 5px;">GET</span></td><td class="pname">/api/vendor/all-category-cost</td><td>Revenue breakdown by category</td></tr>
+    <tr><td><span class="method GET" style="font-size:9px;padding:2px 5px;">GET</span></td><td class="pname">/api/vendor/get-shipping-method</td><td>Shipping methods for vendor</td></tr>
+    <tr><td><span class="method GET" style="font-size:9px;padding:2px 5px;">GET</span></td><td class="pname">/api/vendor/seller/notification</td><td>Vendor notifications</td></tr>
+    <tr><td><span class="method GET" style="font-size:9px;padding:2px 5px;">GET</span></td><td class="pname">/api/vendor/top-delivery-man</td><td>Top performing delivery person</td></tr>
+    <tr><td><span class="method PUT" style="font-size:9px;padding:2px 5px;">PUT</span></td><td class="pname">/api/vendor/language-change</td><td>Body: <code>{"language":"ar"}</code> — change vendor dashboard language</td></tr>
+  </table>
+</div>
+
+</div><!-- end main -->
+</div><!-- end layout -->
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modal-title">Modal</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body"><pre id="modal-content"></pre></div>
+    <div class="modal-foot">
+      <button class="tb-btn tb-green" id="modal-copy-btn" onclick="copyModal()">Copy to Clipboard</button>
+      <button class="tb-btn" id="modal-dl-btn" style="display:none" onclick="downloadModal()">Download JSON</button>
+      <button class="tb-btn" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════
+// TOGGLE ENDPOINT
+// ════════════════════════════════════════
+function toggle(header) {
+  const isOpen = header.classList.contains('open');
+  header.classList.toggle('open', !isOpen);
+  header.nextElementSibling.classList.toggle('open', !isOpen);
+}
+
+// ════════════════════════════════════════
+// COPY CODE BLOCK
+// ════════════════════════════════════════
+function copy(btn) {
+  const pre = btn.parentElement.querySelector('pre');
+  let text = pre.innerText || pre.textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ════════════════════════════════════════
+// DONE / PROGRESS
+// ════════════════════════════════════════
+const DONE_KEY = 'ramo_api_done_v1';
+let doneSet = new Set(JSON.parse(localStorage.getItem(DONE_KEY) || '[]'));
+
+function saveDone() { localStorage.setItem(DONE_KEY, JSON.stringify([...doneSet])); }
+
+function updateProgress() {
+  const total = document.querySelectorAll('.ep[id]').length;
+  const done  = doneSet.size;
+  const pct   = total ? Math.round(done / total * 100) : 0;
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-pct').textContent   = pct + '%';
+  document.getElementById('prog-count').textContent = done + ' / ' + total;
+}
+
+function toggleDone(epId, btn, e) {
+  e.stopPropagation();
+  const ep = document.getElementById(epId);
+  if (doneSet.has(epId)) {
+    doneSet.delete(epId);
+    ep.classList.remove('is-done');
+    btn.title = 'Mark as done';
+    btn.innerHTML = '✓';
+  } else {
+    doneSet.add(epId);
+    ep.classList.add('is-done');
+    btn.title = 'Mark as not done';
+    btn.innerHTML = '✓';
+  }
+  // Update nav item
+  const navLink = document.querySelector(`.nav-item[href="#${epId}"]`);
+  if (navLink) navLink.classList.toggle('nav-done', doneSet.has(epId));
+  saveDone();
+  updateProgress();
+}
+
+function resetDone() {
+  if (!confirm('Reset all progress?')) return;
+  doneSet.clear();
+  document.querySelectorAll('.ep.is-done').forEach(ep => ep.classList.remove('is-done'));
+  document.querySelectorAll('.nav-item.nav-done').forEach(a => a.classList.remove('nav-done'));
+  saveDone();
+  updateProgress();
+}
+
+function injectDoneButtons() {
+  document.querySelectorAll('.ep[id]').forEach(ep => {
+    const id   = ep.id;
+    const head = ep.querySelector('.ep-head');
+    if (!head) return;
+    const btn = document.createElement('button');
+    btn.className = 'done-btn';
+    btn.innerHTML = '✓';
+    btn.title = 'Mark as done';
+    btn.onclick = (e) => toggleDone(id, btn, e);
+    // Insert before the arrow span
+    const arrow = head.querySelector('.arrow');
+    head.insertBefore(btn, arrow);
+    // Restore saved state
+    if (doneSet.has(id)) {
+      ep.classList.add('is-done');
+      const navLink = document.querySelector(`.nav-item[href="#${id}"]`);
+      if (navLink) navLink.classList.add('nav-done');
+    }
+  });
+  updateProgress();
+}
+
+// ════════════════════════════════════════
+// MODAL HELPERS
+// ════════════════════════════════════════
+let _modalDownloadData = null;
+let _modalFilename     = '';
+
+function openModal(title, content, downloadData, filename) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-content').textContent = content;
+  document.getElementById('modal-overlay').classList.add('open');
+  const dlBtn = document.getElementById('modal-dl-btn');
+  if (downloadData) {
+    _modalDownloadData = downloadData;
+    _modalFilename     = filename;
+    dlBtn.style.display = '';
+  } else {
+    dlBtn.style.display = 'none';
+  }
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+function copyModal() {
+  const text = document.getElementById('modal-content').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('modal-copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy to Clipboard', 2000);
+  });
+}
+function downloadModal() {
+  const blob = new Blob([_modalDownloadData], { type: 'application/json' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = _modalFilename;
+  a.click();
+}
+
+// ════════════════════════════════════════
+// AI PROMPT GENERATOR
+// ════════════════════════════════════════
+function openAIPrompt() {
+  const BASE = 'https://a8c774fa-0c2e-4a23-8ee1-58cd9836dadf-00-1bmcvifo8bqnv.kirk.replit.dev';
+  const prompt = `You are working with the Ramo Store API. Here is the complete technical reference.
+
+BASE URL: ${BASE}
+
+═══════════════════════════════════════════════
+AUTHENTICATION
+═══════════════════════════════════════════════
+Two token systems are used:
+
+1. NATIVE PHP DEVICE TOKEN (AES-256):
+   - POST /ntv-php/ntv-register-device.php
+   - Body: { "d_id": "<unique_device_id>", "aboutd": { "platform": "android" } }
+   - Returns: { "success": true, "token": "<encrypted_token>" }
+   - Use as: Authorization: Bearer <token>
+   - Required only for: /ntv-php/ntv-tags.php
+
+2. LARAVEL SANCTUM TOKEN:
+   - Customer: POST /api/user/login → returns "cookie" field
+   - Vendor:   POST /api/vendor/login → returns "token" field
+   - Use as: Authorization: Bearer <cookie_or_token>
+   - Required for all /api/ routes marked as protected
+
+═══════════════════════════════════════════════
+NATIVE PHP ENDPOINTS
+═══════════════════════════════════════════════
+
+[POST] /ntv-php/ntv-register-device.php — PUBLIC
+Register a device and receive an AES-256 encrypted Bearer token.
+Body: { "d_id": "device-uuid-abc123", "aboutd": { "platform": "android", "model": "Samsung S24" } }
+Response: { "success": true, "token": "Be1qNe9g..." }
+
+[POST] /ntv-php/ntv-server-confirmation.php — PUBLIC
+Validate app version at startup before using any other endpoints.
+Body: { "pkgver": "1.2.0" }
+Response OK: { "status": "all-good" }
+Response FAIL: { "status": "device-rejected", "error": "Unsupported version" }
+
+[GET] /ntv-php/ntv-get-products.php — PUBLIC
+List, search, or get single product. Supports translations.
+Params: id(int), page(int, def:1), limit(int, max:100), search(string), category(int), lang(en|ar|de)
+Examples:
+  ?page=1&limit=10&lang=en
+  ?search=shirt&limit=5
+  ?category=19&page=1
+  ?id=190
+Response: { "success":true, "data":[{ "id":190, "name":"...", "regular_price":"250.00", "sale_price":"208.99", "stock_quantity":45, "images":{"thumbnail":[...],"gallery":[...]}, "variations":[{"attributes":{"color":"Red","size":"L"},"price":"250.00","sale_price":"208.99","stock_quantity":20}], "categories":[{"id":19,"name":"Shirts","slug":"shirts","parent_id":18}] }], "pagination":{"total":19,"page":1,"limit":10,"pages":2} }
+
+[GET] /ntv-php/ntv-get-categories.php — PUBLIC
+Params: per_page(int, max:200, def:100), page(int), hide_empty(0|1), exclude(int), add_base_url(0|1)
+Response: { "data":[{"id":18,"name":"Men","slug":"men","parent":0,"image":{"src":"...","alt":""},"count":8,"has_children":true}], "total":15 }
+Real category IDs in DB: 18=Men, 19=Shirts, 20=Shoes-Men, 21=T-Shirts, 22=Women
+
+[GET] /ntv-php/ntv-brands.php — PUBLIC
+Params: page(int), limit(int, max:100, def:20)
+Response: { "success":true, "data":[{"id":1,"name":"Apple"},{"id":2,"name":"Samsung"},{"id":3,"name":"Microsoft"},{"id":4,"name":"Sony"},{"id":5,"name":"Intel"}] }
+
+[GET] /ntv-php/ntv-tags.php — REQUIRES DEVICE TOKEN
+Header: Authorization: Bearer <device_token>
+Params: page(int), limit(int, max:100, def:20)
+Response: { "success":true, "data":[{"id":1,"name":"Sale","slug":"sale"}], "pagination":{...} }
+
+[GET] /ntv-php/ntv-countries.php — PUBLIC
+Params: page(int), limit(int, max:100). Total: 249 countries.
+Response: { "data":[{"code":"EG","name":"Egypt"}], "pagination":{"total":249,...} }
+
+[GET] /ntv-php/ntv-currency-rates.php — PUBLIC
+No params. Returns rates relative to EGP=1.0.
+Response: { "usd":{"rate":0.02,"source":"United States Dollar"}, "eur":{"rate":0.019}, "sar":{"rate":0.075}, "egp":{"rate":1.0}, "gbp":{"rate":0.016}, "aed":{"rate":0.073} }
+
+[GET] /ntv-php/ntv-app-startup-config.php — PUBLIC
+No params. Returns full app config JSON from DB.
+Keys: serverConfig, IdentityConfig, advanceConfig, loginSetting, paymentConfig, onBoardingConfig, languagesInfo, productDetail, splashScreen, defaultDrawer
+
+[GET] /ntv-php/ntv-app-time-line-config.php — PUBLIC
+Param: lang_code(string, def:en). Options: en, ar, de.
+Response: { "conf": "..." }
+
+[GET] /ntv-php/ntv-product-current-price.php — PUBLIC
+Param: id(int, required) — product ID
+Response: { "success":true, "product_id":190, "sale_price":208.99 }
+
+═══════════════════════════════════════════════
+LARAVEL API — CUSTOMER AUTH (/api/user/)
+═══════════════════════════════════════════════
+
+[POST] /api/user/register — PUBLIC (throttle: 3/min)
+REQUIRED: first_name, last_name, name, email (unique), password (min:8, max:50), password_confirmation
+OPTIONAL: phone(max:20), user_login, user_nicename, display_name, description(max:500), avatar(url), url(url), role(customer|admin)
+Body: { "first_name":"John","last_name":"Doe","name":"John Doe","email":"john@example.com","password":"MyPassword123","password_confirmation":"MyPassword123","phone":"+201001234567","role":"customer" }
+Response: { "success":true, "cookie":"1|abcdef...","user_id":42,"user_data":{"phone":"..."} }
+
+[POST] /api/user/login — PUBLIC (throttle: 3/min)
+Body: { "email":"john@example.com", "password":"MyPassword123" }
+Response: { "success":true, "cookie":"1|abcdef...","user_id":42 }
+
+[POST] /api/user/send-otp-number — PUBLIC
+Body: { "phone":"+201001234567" }
+Response: { "success":true, "data":{"phone":"...","otp":482910} }  ← OTP expires in 5 min
+
+[POST] /api/user/register-with-phone — PUBLIC
+Body: { "phone":"+201001234567","otp":"482910","name":"John Doe" }
+Note: otp must be exactly 6 chars. name is optional.
+
+[POST] /api/user/forgot-password — PUBLIC
+Body: { "email":"john@example.com" }
+
+[GET] /api/user/me — PROTECTED
+Header: Authorization: Bearer <sanctum_token>
+
+[GET] /api/user/logout — PROTECTED
+
+[DELETE] /api/user/delete-account — PROTECTED (irreversible)
+
+═══════════════════════════════════════════════
+LARAVEL API — ORDERS (/api/user/)
+═══════════════════════════════════════════════
+
+[POST] /api/user/create-order — PROTECTED (throttle: 3/min)
+IMPORTANT RULES:
+- billing.country and shipping.country MUST be "EG"
+- Phone must be valid Egyptian mobile: /^(20|0)?1[0125][0-9]{8}$/
+- currency: "EGP" | "USD" | "EUR"
+- payment_method: "cod" | "bank_transfer" | "vodafone_cash" | "fawry" | "wallet" | "credit_card"
+- line_items: min 1, max 100 items
+- main_variation_order: true = use main variation; false = must provide variation_id
+
+Full body:
+{
+  "currency": "EGP",
+  "payment_method": "cod",
+  "payment_method_title": "Cash on Delivery",
+  "coupon": "SAVE10",
+  "billing": {
+    "first_name":"John","last_name":"Doe","email":"john@example.com",
+    "phone":"01001234567","address_1":"123 Tahrir Square","address_2":"Apt 4B",
+    "city":"Cairo","state":"Cairo","postcode":"11511","country":"EG","company":"ACME Co."
+  },
+  "shipping": {
+    "first_name":"John","last_name":"Doe","phone":"01001234567",
+    "address_1":"123 Tahrir Square","city":"Cairo","state":"Cairo","country":"EG"
+  },
+  "line_items": [
+    { "product_id":190, "quantity":2, "main_variation_order":true },
+    { "product_id":191, "quantity":1, "main_variation_order":false, "variation_id":1066 }
+  ]
+}
+
+[GET] /api/user/get-all-user-orders — PROTECTED
+[GET] /api/user/shipping-methods — PROTECTED
+[GET] /api/user/payment-methods — PROTECTED
+[POST] /api/user/create-user-note — PROTECTED
+Body: { "order_id":10, "note":"Please ring the doorbell twice" }
+[GET] /api/user/get-order-notes — PROTECTED
+
+═══════════════════════════════════════════════
+LARAVEL API — COUPONS (/api/ramo/coupons/)
+═══════════════════════════════════════════════
+
+[GET]    /api/ramo/coupons/show — PROTECTED
+[GET]    /api/ramo/coupons/get/{id} — PROTECTED
+[DELETE] /api/ramo/coupons/remove/{id} — VENDOR ONLY
+
+[POST] /api/ramo/coupons/store — VENDOR ONLY
+REQUIRED: code(unique,max:50), amount(numeric≥0), status(publish|draft|private), discount_type(percent|fixed_cart|fixed_product)
+OPTIONAL: date_expires(date,future), usage_limit(int≥0), usage_limit_per_user(int≥0), minimum_amount(numeric), maximum_amount(numeric), individual_use(bool), free_shipping(bool), exclude_sale_items(bool), product_ids(array), excluded_product_ids(array), product_categories(array), excluded_product_categories(array), email_restrictions(array), description(string)
+Body: { "code":"SUMMER25","amount":25,"status":"publish","discount_type":"percent","date_expires":"2026-09-30","usage_limit":500,"minimum_amount":200,"individual_use":true,"exclude_sale_items":true }
+
+[POST] /api/ramo/coupons/validate — PROTECTED
+Body: { "code":"SAVE10","cart_total":350.00,"user_id":42 }
+Response OK: { "success":true,"data":{"code":"SAVE10","discount_type":"percent","amount":10} }
+Response FAIL: { "success":false,"message":"Cart total must be at least 200" }
+
+[POST] /api/ramo/coupons/apply — PROTECTED
+Body: { "code":"SAVE10","cart_total":350.00 }
+
+[PUT] /api/ramo/coupons/update/{id} — VENDOR ONLY
+All fields optional. Body: { "amount":15,"date_expires":"2027-01-01","status":"draft" }
+
+═══════════════════════════════════════════════
+LARAVEL API — VENDOR AUTH (/api/vendor/)
+═══════════════════════════════════════════════
+
+[POST] /api/vendor/register — PUBLIC (multipart/form-data)
+REQUIRED: shop_name, first_name, last_name, phone(unique,+?[0-9]{10,15}), email(unique), shop_address(max:1000), password(min:8), password_confirmation, profile_image(file,jpeg/png/webp,max:5MB), shop_logo(file,jpeg/png/webp,max:5MB)
+OPTIONAL: shop_banner(file), secondary_banner(file), bottom_banner(file)
+
+[POST] /api/vendor/login — PUBLIC (throttle: 6/min per IP)
+Body: { "email":"vendor@example.com","password":"MyVendor123" }
+Response: { "success":true,"token":"1|vendorToken...","vendor":{"id":5,"shop_name":"..."} }
+
+[GET]  /api/vendor/get-profile — VENDOR PROTECTED
+[POST] /api/vendor/update-profile — VENDOR PROTECTED (multipart/form-data)
+Optional fields: shop_name, first_name, last_name, shop_address, shop_logo(file), profile_image(file), shop_banner(file), secondary_banner(file), bottom_banner(file), offer_banner(file)
+
+═══════════════════════════════════════════════
+LARAVEL API — VENDOR PRODUCTS (/api/vendor/)
+═══════════════════════════════════════════════
+
+[POST] /api/vendor/add-product — VENDOR PROTECTED (multipart/form-data, throttle:10/min)
+JSON fields sent as JSON strings: categories, translations, attributes, tags, variations
+REQUIRED:
+  name(max:255), description(max:5000), main_variation(string), brand_id(exists:brands),
+  categories(JSON string array of IDs, min:1), stock_quantity(int,1-999999),
+  regular_price(numeric,0.01-999999), unit(piece|kg|g|liter|ml|meter|cm|box|pack|set),
+  unit_amount(numeric), product_type(physical|digital),
+  whatsapp_number_available(bool), thumbnailImage(file,jpeg/png/webp,max:5MB),
+  otherImages[](file[], max:10 files)
+OPTIONAL:
+  discount_percentage(0-80.99), naturalImages[](file[],max:10),
+  whatsapp_number(required if whatsapp_number_available=true, Egyptian mobile regex),
+  translations(JSON: [{"locale":"ar","name":"...","description":"..."}]),
+  attributes(JSON: [{"name":"color","values":["Red","Blue"]},{"name":"size","values":["S","M","L"]}]),
+  tags(JSON: [1,2,3]), variations(JSON array)
+
+Example form-data:
+  name=Premium Cotton Shirt
+  description=High quality 100% cotton shirt.
+  main_variation=White - L
+  brand_id=1
+  categories=[18,19]
+  stock_quantity=100
+  regular_price=250.00
+  discount_percentage=10
+  unit=piece
+  unit_amount=1
+  product_type=physical
+  whatsapp_number_available=false
+  thumbnailImage=<FILE>
+  otherImages[]=<FILE>
+  attributes=[{"name":"color","values":["White","Black"]},{"name":"size","values":["S","M","L","XL"]}]
+  translations=[{"locale":"ar","name":"قميص قطني","description":"وصف المنتج"}]
+  tags=[1,2]
+
+[GET]  /api/vendor/products — VENDOR PROTECTED
+[GET]  /api/vendor/view-product/{id} — VENDOR PROTECTED
+[POST] /api/vendor/product-update/{id} — VENDOR PROTECTED (same fields as add, all optional)
+[POST] /api/vendor/product-variation-upd/{id} — VENDOR PROTECTED ({id} = variation ID)
+  Fields: color(max:50), size(max:25), regular_price, sale_price, stock_quantity(0-999999), variationImages[](files)
+  NOTE: Do NOT send product_id in body.
+[DELETE] /api/vendor/product-delete/{id} — VENDOR PROTECTED
+[POST]   /api/vendor/update-order-state — VENDOR PROTECTED
+  Body: { "order_id":10, "state":"shipped" }
+
+═══════════════════════════════════════════════
+LARAVEL API — VENDOR STATISTICS (GET, no body)
+═══════════════════════════════════════════════
+All require: Authorization: Bearer <vendor_token>
+
+GET /api/vendor/order-statistics
+GET /api/vendor/get-earning-statitics
+GET /api/vendor/orders-seller-info
+GET /api/vendor/top-selling-product
+GET /api/vendor/popular-two-product
+GET /api/vendor/stock-out-list
+GET /api/vendor/refunds
+GET /api/vendor/all-category-cost
+GET /api/vendor/get-shipping-method
+GET /api/vendor/seller/notification
+GET /api/vendor/top-delivery-man
+PUT /api/vendor/language-change — Body: { "language":"ar" }
+
+═══════════════════════════════════════════════
+DATABASE REFERENCE (real data)
+═══════════════════════════════════════════════
+Stack: Laravel 10, PHP 8.2, PostgreSQL
+Product IDs in DB: 135, 190, 191 (and others)
+Category IDs: 18=Men, 19=Shirts, 20=Shoes-Men, 21=T-Shirts, 22=Women
+Brand IDs: 1=Apple, 2=Samsung, 3=Microsoft, 4=Sony, 5=Intel
+Currency: EGP locked for orders (billing.country must be "EG")
+Valid Egyptian phone regex: /^(20|0)?1[0125][0-9]{8}$/
+Product units: piece|kg|g|liter|ml|meter|cm|box|pack|set
+Coupon discount types: percent|fixed_cart|fixed_product
+Coupon statuses: publish|draft|private
+Supported languages: en, ar, de
+`;
+  openModal('AI Development Prompt — Copy All APIs', prompt, null, '');
+}
+
+// ════════════════════════════════════════
+// POSTMAN COLLECTION GENERATOR
+// ════════════════════════════════════════
+function downloadPostman() {
+  const BASE = 'https://a8c774fa-0c2e-4a23-8ee1-58cd9836dadf-00-1bmcvifo8bqnv.kirk.replit.dev';
+
+  const mkReq = (method, url, body, isForm) => ({
+    method,
+    header: [
+      { key:'Content-Type', value: isForm ? 'multipart/form-data' : 'application/json', type:'text' },
+      { key:'Authorization', value:'Bearer {{token}}', type:'text' }
+    ],
+    body: body ? {
+      mode: isForm ? 'formdata' : 'raw',
+      raw:  isForm ? undefined : JSON.stringify(body, null, 2),
+      formdata: isForm ? Object.entries(body).map(([k,v]) => ({key:k, value:String(v), type:'text'})) : undefined
+    } : undefined,
+    url: { raw: BASE + url, host: [BASE], path: url.split('/').filter(Boolean) }
+  });
+
+  const collection = {
+    info: {
+      name: 'Ramo Store API',
+      description: 'Complete Ramo Store API — Native PHP + Laravel. Import and start testing.',
+      schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json'
+    },
+    variable: [{ key:'token', value:'', description:'Paste your Bearer token here' }],
+    item: [
+      {
+        name: '🔧 Native PHP',
+        item: [
+          { name:'Register Device', request: mkReq('POST','/ntv-php/ntv-register-device.php',{ d_id:'device-uuid-abc123', aboutd:{ platform:'android', model:'Pixel 7' } }) },
+          { name:'App Version Check', request: mkReq('POST','/ntv-php/ntv-server-confirmation.php',{ pkgver:'1.2.0' }) },
+          { name:'Get Products (list)', request: { method:'GET', header:[], url:{ raw:BASE+'/ntv-php/ntv-get-products.php?page=1&limit=10&lang=en', host:[BASE], path:['ntv-php','ntv-get-products.php'], query:[{key:'page',value:'1'},{key:'limit',value:'10'},{key:'lang',value:'en'}] } } },
+          { name:'Get Single Product', request: { method:'GET', header:[], url:{ raw:BASE+'/ntv-php/ntv-get-products.php?id=190', host:[BASE], path:['ntv-php','ntv-get-products.php'], query:[{key:'id',value:'190'}] } } },
+          { name:'Get Categories', request: { method:'GET', header:[], url:{ raw:BASE+'/ntv-php/ntv-get-categories.php?hide_empty=1&per_page=50', host:[BASE], path:['ntv-php','ntv-get-categories.php'], query:[{key:'hide_empty',value:'1'},{key:'per_page',value:'50'}] } } },
+          { name:'Get Brands', request: { method:'GET', header:[], url:{ raw:BASE+'/ntv-php/ntv-brands.php?page=1&limit=20', host:[BASE], path:['ntv-php','ntv-brands.php'], query:[{key:'page',value:'1'},{key:'limit',value:'20'}] } } },
+          { name:'Get Tags (needs device token)', request: { method:'GET', header:[{key:'Authorization',value:'Bearer {{token}}',type:'text'}], url:{ raw:BASE+'/ntv-php/ntv-tags.php?limit=50', host:[BASE], path:['ntv-php','ntv-tags.php'], query:[{key:'limit',value:'50'}] } } },
+          { name:'Get Countries', request: { method:'GET', header:[], url:{ raw:BASE+'/ntv-php/ntv-countries.php?limit=100', host:[BASE], path:['ntv-php','ntv-countries.php'], query:[{key:'limit',value:'100'}] } } },
+          { name:'Currency Rates', request: { method:'GET', header:[], url:{ raw:BASE+'/ntv-php/ntv-currency-rates.php', host:[BASE], path:['ntv-php','ntv-currency-rates.php'] } } },
+          { name:'App Startup Config', request: { method:'GET', header:[], url:{ raw:BASE+'/ntv-php/ntv-app-startup-config.php', host:[BASE], path:['ntv-php','ntv-app-startup-config.php'] } } },
+          { name:'Timeline Config (EN)', request: { method:'GET', header:[], url:{ raw:BASE+'/ntv-php/ntv-app-time-line-config.php?lang_code=en', host:[BASE], path:['ntv-php','ntv-app-time-line-config.php'], query:[{key:'lang_code',value:'en'}] } } },
+          { name:'Product Current Price', request: { method:'GET', header:[], url:{ raw:BASE+'/ntv-php/ntv-product-current-price.php?id=190', host:[BASE], path:['ntv-php','ntv-product-current-price.php'], query:[{key:'id',value:'190'}] } } },
+        ]
+      },
+      {
+        name: '👤 Customer Auth',
+        item: [
+          { name:'Register', request: mkReq('POST','/api/user/register',{ first_name:'John',last_name:'Doe',name:'John Doe',email:'john@example.com',password:'MyPassword123',password_confirmation:'MyPassword123',phone:'+201001234567',role:'customer' }) },
+          { name:'Login', request: mkReq('POST','/api/user/login',{ email:'john@example.com',password:'MyPassword123' }) },
+          { name:'Send OTP', request: mkReq('POST','/api/user/send-otp-number',{ phone:'+201001234567' }) },
+          { name:'Register with Phone', request: mkReq('POST','/api/user/register-with-phone',{ phone:'+201001234567',otp:'482910',name:'John Doe' }) },
+          { name:'Forgot Password', request: mkReq('POST','/api/user/forgot-password',{ email:'john@example.com' }) },
+          { name:'Me (profile)', request: { method:'GET', header:[{key:'Authorization',value:'Bearer {{token}}',type:'text'}], url:{ raw:BASE+'/api/user/me', host:[BASE], path:['api','user','me'] } } },
+          { name:'Logout', request: { method:'GET', header:[{key:'Authorization',value:'Bearer {{token}}',type:'text'}], url:{ raw:BASE+'/api/user/logout', host:[BASE], path:['api','user','logout'] } } },
+          { name:'Delete Account', request: { method:'DELETE', header:[{key:'Authorization',value:'Bearer {{token}}',type:'text'}], url:{ raw:BASE+'/api/user/delete-account', host:[BASE], path:['api','user','delete-account'] } } },
+        ]
+      },
+      {
+        name: '📦 Orders',
+        item: [
+          { name:'Create Order', request: mkReq('POST','/api/user/create-order',{ currency:'EGP',payment_method:'cod',payment_method_title:'Cash on Delivery',billing:{first_name:'John',last_name:'Doe',email:'john@example.com',phone:'01001234567',address_1:'123 Tahrir Square',city:'Cairo',state:'Cairo',country:'EG'},shipping:{first_name:'John',last_name:'Doe',phone:'01001234567',address_1:'123 Tahrir Square',city:'Cairo',state:'Cairo',country:'EG'},line_items:[{product_id:190,quantity:2,main_variation_order:true}] }) },
+          { name:'My Orders', request: { method:'GET', header:[{key:'Authorization',value:'Bearer {{token}}',type:'text'}], url:{ raw:BASE+'/api/user/get-all-user-orders', host:[BASE], path:['api','user','get-all-user-orders'] } } },
+          { name:'Shipping Methods', request: { method:'GET', header:[{key:'Authorization',value:'Bearer {{token}}',type:'text'}], url:{ raw:BASE+'/api/user/shipping-methods', host:[BASE], path:['api','user','shipping-methods'] } } },
+          { name:'Payment Methods', request: { method:'GET', header:[{key:'Authorization',value:'Bearer {{token}}',type:'text'}], url:{ raw:BASE+'/api/user/payment-methods', host:[BASE], path:['api','user','payment-methods'] } } },
+          { name:'Create Note', request: mkReq('POST','/api/user/create-user-note',{ order_id:10,note:'Please ring the doorbell twice' }) },
+          { name:'Get Notes', request: { method:'GET', header:[{key:'Authorization',value:'Bearer {{token}}',type:'text'}], url:{ raw:BASE+'/api/user/get-order-notes', host:[BASE], path:['api','user','get-order-notes'] } } },
+        ]
+      },
+      {
+        name: '🎟️ Coupons',
+        item: [
+          { name:'List Coupons', request: { method:'GET', header:[{key:'Authorization',value:'Bearer {{token}}',type:'text'}], url:{ raw:BASE+'/api/ramo/coupons/show', host:[BASE], path:['api','ramo','coupons','show'] } } },
+          { name:'Create Coupon', request: mkReq('POST','/api/ramo/coupons/store',{ code:'SUMMER25',amount:25,status:'publish',discount_type:'percent',date_expires:'2026-09-30',usage_limit:500,minimum_amount:200,individual_use:true,exclude_sale_items:true }) },
+          { name:'Validate Coupon', request: mkReq('POST','/api/ramo/coupons/validate',{ code:'SAVE10',cart_total:350.00,user_id:42 }) },
+          { name:'Apply Coupon', request: mkReq('POST','/api/ramo/coupons/apply',{ code:'SAVE10',cart_total:350.00 }) },
+          { name:'Get Coupon by ID', request: { method:'GET', header:[{key:'Authorization',value:'Bearer {{token}}',type:'text'}], url:{ raw:BASE+'/api/ramo/coupons/get/1', host:[BASE], path:['api','ramo','coupons','get','1'] } } },
+          { name:'Update Coupon', request: mkReq('PUT','/api/ramo/coupons/update/1',{ amount:15,date_expires:'2027-01-01',status:'draft' }) },
+          { name:'Delete Coupon', request: { method:'DELETE', header:[{key:'Authorization',value:'Bearer {{token}}',type:'text'}], url:{ raw:BASE+'/api/ramo/coupons/remove/1', host:[BASE], path:['api','ramo','coupons','remove','1'] } } },
+        ]
+      },
+      {
+        name: '🏪 Vendor Auth',
+        item: [
+          { name:'Vendor Login', request: mkReq('POST','/api/vendor/login',{ email:'vendor@example.com',password:'MyVendor123' }) },
+          { name:'Get Vendor Profile', request: { method:'GET', header:[{key:'Authorization',value:'Bearer {{token}}',type:'text'}], url:{ raw:BASE+'/api/vendor/get-profile', host:[BASE], path:['api','vendor','get-profile'] } } },
+        ]
+      },
+      {
+        name: '📝 Vendor Products',
+        item: [
+          { name:'My Products', request: { method:'GET', header:[{key:'Authorization',value:'Bearer {{token}}',type:'text'}], url:{ raw:BASE+'/api/vendor/products', host:[BASE], path:['api','vendor','products'] } } },
+          { name:'View Product', request: { method:'GET', header:[{key:'Authorization',value:'Bearer {{token}}',type:'text'}], url:{ raw:BASE+'/api/vendor/view-product/190', host:[BASE], path:['api','vendor','view-product','190'] } } },
+          { name:'Add Product (form-data)', request: { method:'POST', header:[{key:'Authorization',value:'Bearer {{token}}',type:'text'}], body:{ mode:'formdata', formdata:[ {key:'name',value:'Premium Cotton Shirt',type:'text'},{key:'description',value:'High quality 100% cotton shirt.',type:'text'},{key:'main_variation',value:'White - L',type:'text'},{key:'brand_id',value:'1',type:'text'},{key:'categories',value:'[18,19]',type:'text'},{key:'stock_quantity',value:'100',type:'text'},{key:'regular_price',value:'250.00',type:'text'},{key:'discount_percentage',value:'10',type:'text'},{key:'unit',value:'piece',type:'text'},{key:'unit_amount',value:'1',type:'text'},{key:'product_type',value:'physical',type:'text'},{key:'whatsapp_number_available',value:'false',type:'text'},{key:'thumbnailImage',value:'',type:'file',src:''},{key:'otherImages[]',value:'',type:'file',src:''},{key:'attributes',value:'[{"name":"color","values":["White","Black"]},{"name":"size","values":["S","M","L","XL"]}]',type:'text'},{key:'translations',value:'[{"locale":"ar","name":"قميص قطني","description":"وصف المنتج"}]',type:'text'},{key:'tags',value:'[1,2]',type:'text'} ] }, url:{ raw:BASE+'/api/vendor/add-product', host:[BASE], path:['api','vendor','add-product'] } } },
+          { name:'Update Product', request: { method:'POST', header:[{key:'Authorization',value:'Bearer {{token}}',type:'text'},{key:'Content-Type',value:'multipart/form-data',type:'text'}], body:{ mode:'formdata', formdata:[{key:'regular_price',value:'300.00',type:'text'},{key:'discount_percentage',value:'15',type:'text'},{key:'stock_quantity',value:'80',type:'text'}] }, url:{ raw:BASE+'/api/vendor/product-update/190', host:[BASE], path:['api','vendor','product-update','190'] } } },
+          { name:'Update Variation', request: { method:'POST', header:[{key:'Authorization',value:'Bearer {{token}}',type:'text'},{key:'Content-Type',value:'multipart/form-data',type:'text'}], body:{ mode:'formdata', formdata:[{key:'color',value:'Red',type:'text'},{key:'size',value:'XL',type:'text'},{key:'regular_price',value:'280.00',type:'text'},{key:'sale_price',value:'220.00',type:'text'},{key:'stock_quantity',value:'15',type:'text'}] }, url:{ raw:BASE+'/api/vendor/product-variation-upd/1065', host:[BASE], path:['api','vendor','product-variation-upd','1065'] } } },
+          { name:'Delete Product', request: { method:'DELETE', header:[{key:'Authorization',value:'Bearer {{token}}',type:'text'}], url:{ raw:BASE+'/api/vendor/product-delete/190', host:[BASE], path:['api','vendor','product-delete','190'] } } },
+          { name:'Update Order State', request: mkReq('POST','/api/vendor/update-order-state',{ order_id:10,state:'shipped' }) },
+        ]
+      },
+      {
+        name: '📊 Vendor Stats',
+        item: [
+          'order-statistics','get-earning-statitics','orders-seller-info','top-selling-product',
+          'popular-two-product','stock-out-list','refunds','all-category-cost',
+          'get-shipping-method','seller/notification','top-delivery-man'
+        ].map(path => ({
+          name: path.replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase()),
+          request: { method:'GET', header:[{key:'Authorization',value:'Bearer {{token}}',type:'text'}], url:{ raw:`${BASE}/api/vendor/${path}`, host:[BASE], path:['api','vendor',...path.split('/')] } }
+        })).concat([{
+          name: 'Language Change',
+          request: mkReq('PUT','/api/vendor/language-change',{ language:'ar' })
+        }])
+      }
+    ]
+  };
+
+  const json = JSON.stringify(collection, null, 2);
+  openModal('Postman Collection JSON', json, json, 'Ramo-Store-API.postman_collection.json');
+  document.getElementById('modal-dl-btn').style.display = '';
+}
+
+// ════════════════════════════════════════
+// SIDEBAR SCROLL HIGHLIGHT
+// ════════════════════════════════════════
+const navLinks = document.querySelectorAll('.nav-item[href^="#"]');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navLinks.forEach(a => { if (!a.classList.contains('nav-done') || true) a.classList.remove('active'); });
+      const link = document.querySelector(`.nav-item[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
+  });
+}, { threshold: 0.3 });
+
+document.querySelectorAll('[id]').forEach(el => observer.observe(el));
+
+// ════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════
+injectDoneButtons();
+</script>
+</body>
+</html>

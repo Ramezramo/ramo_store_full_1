@@ -1,0 +1,233 @@
+{
+    "total_size": 1,
+    "limit": "10",
+    "offset": "1",
+    "group-wise-rating": [
+      {
+        "rating": 5,
+        "total": 1,
+        "attachment_full_url": []
+      }
+    ],
+    "average_rating": "5.00",
+    "reviews": [
+      {
+        "id": 16,
+        "product_id": 1,
+        "customer_id": 2,
+        "delivery_man_id": null,
+        "order_id": null,
+        "comment": "hwxjdk. kg",
+        "attachment": [
+          "2022-04-23-6263cbf7ede63.png",
+          "2022-04-23-6263cbf7eede3.png",
+          "2022-04-23-6263cbf7eee8e.png"
+        ],
+        "rating": 5,
+        "status": 0,
+        "is_saved": false,
+        "created_at": "2022-04-22T22:50:47.000000Z",
+        "updated_at": "2023-06-10T15:21:00.000000Z",
+        "attachment_full_url": [
+          {
+            "key": "2022-04-23-6263cbf7ede63.png",
+            "path": "https://6valley-aster.6amtech.com/storage/app/public/review/2022-04-23-6263cbf7ede63.png",
+            "status": 200
+          },
+          {
+            "key": "2022-04-23-6263cbf7eede3.png",
+            "path": "https://6valley-aster.6amtech.com/storage/app/public/review/2022-04-23-6263cbf7eede3.png",
+            "status": 200
+          },
+          {
+            "key": "2022-04-23-6263cbf7eee8e.png",
+            "path": "https://6valley-aster.6amtech.com/storage/app/public/review/2022-04-23-6263cbf7eee8e.png",
+            "status": 200
+          }
+        ],
+        "customer": {
+          "id": 2,
+          "name": null,
+          "f_name": "Robert",
+          "l_name": "Downey",
+          "phone": "+15551112222",
+          "image": "2023-10-22-653506eb48f9d.png",
+          "email": "robert@customer.com",
+          "email_verified_at": null,
+          "created_at": "2022-03-16T03:55:07.000000Z",
+          "updated_at": "2024-10-03T12:07:00.000000Z",
+          "street_address": null,
+          "country": null,
+          "city": null,
+          "zip": null,
+          "house_no": null,
+          "apartment_no": null,
+          "cm_firebase_token": "dkvr5bSDTJe6Pkw1mvTpwW:APA91bG67eUylkouYBJusAoobRM5VwqU3NMo8HCnssA86wGmFp6M1ydiORUv7UsMK-wLp8o-P1oO9Ysav8V66uI5Plbbe__tqKiw2Gja3wgBJrPNBlTUIxYkxaHtwgmH5ZGh0gjqQ5Rp",
+          "is_active": true,
+          "payment_card_last_four": null,
+          "payment_card_brand": null,
+          "payment_card_fawry_token": null,
+          "login_medium": null,
+          "social_id": null,
+          "is_phone_verified": false,
+          "temporary_token": "TLrYbFYAZkLUKx1TnbRQvs8pcfOw20ZmHA2ZW4iB",
+          "is_email_verified": false,
+          "wallet_balance": 11315,
+          "loyalty_point": 639,
+          "login_hit_count": 0,
+          "is_temp_blocked": false,
+          "temp_block_time": null,
+          "referral_code": "PL1I9ROGPMAN6L8A65LF",
+          "referred_by": null,
+          "app_language": "en",
+          "image_full_url": {
+            "key": "2023-10-22-653506eb48f9d.png",
+            "path": "https://6valley-aster.6amtech.com/storage/app/public/profile/2023-10-22-653506eb48f9d.png",
+            "status": 200
+          },
+          "storage": []
+        },
+        "product": {
+          "id": 1,
+          "added_by": "admin",
+          "user_id": 1,
+          "name": "Mighty Rock VR",
+          "slug": "test-1-DcD1hE",
+          "product_type": "physical",
+          "category_ids": "[{\"id\":\"40\",\"position\":1}]",
+          "category_id": 40,
+          "sub_category_id": null,
+          "sub_sub_category_id": null,
+          "brand_id": 1,
+          "unit": "pc",
+          "min_qty": 1,
+          "refundable": 1,
+          "digital_product_type": null,
+          "digital_file_ready": null,
+          "digital_file_ready_storage_type": "public",
+          "images": "[{\"image_name\":\"2024-10-16-670fa7b374505.webp\",\"storage\":\"public\"},{\"image_name\":\"2024-10-16-670fa7b378e62.webp\",\"storage\":\"public\"},{\"image_name\":\"2024-10-16-670fa7b37d5fd.webp\",\"storage\":\"public\"}]",
+          "color_image": "[]",
+          "thumbnail": "2024-10-16-670fa7b386b31.webp",
+          "thumbnail_storage_type": "public",
+          "preview_file": null,
+          "preview_file_storage_type": "public",
+          "featured": 1,
+          "flash_deal": null,
+          "video_provider": "youtube",
+          "video_url": null,
+          "colors": "[]",
+          "variant_product": 0,
+          "attributes": "null",
+          "choice_options": "[]",
+          "variation": "[]",
+          "digital_product_file_types": [],
+          "digital_product_extensions": [],
+          "published": 0,
+          "unit_price": 1200,
+          "purchase_price": 0,
+          "tax": 5,
+          "tax_type": "percent",
+          "tax_model": "exclude",
+          "discount": 0,
+          "discount_type": "percent",
+          "current_stock": 240,
+          "minimum_order_qty": 1,
+          "details": "<p>Step into a world of limitless possibilities with the Mighty Rock VR headset. Designed for gamers and tech enthusiasts, this advanced virtual reality headset offers an immersive experience that transforms the way you play, explore, and interact with digital content.</p><p>Specifications:</p><ul><li>Display: Dual high-definition displays (1920 x 1080 resolution)</li><li>Field of View: 110 degrees for an immersive experience</li><li>Audio: Built-in 3D spatial audio system</li><li>Connectivity: USB-C and HDMI support</li><li>Weight: 500 grams</li><li>Compatibility: Works with PC, gaming consoles, and select mobile devices</li></ul><p>Key Features:</p><ul><li>Immersive VR Experience: Enjoy stunning graphics and lifelike environments that transport you into another world</li><li>Comfortable Fit: Adjustable head straps and cushioned eyepiece ensure comfort during extended use</li><li>Easy Setup: Quick and straightforward setup process to get you started in no time</li><li>Motion Tracking: Six degrees of freedom (6DoF) for precise tracking of head and hand movements, allowing for a more interactive experience</li><li>Wide Compatibility: Compatible with a variety of VR games and applications across multiple platforms</li><li>User-Friendly Interface: Intuitive controls and easy navigation make it suitable for both beginners and seasoned VR enthusiasts</li></ul><p>Elevate your gaming and entertainment experience with the Mighty Rock VR – where reality meets imagination!</p><ul>\r\n</ul>",
+          "free_shipping": 0,
+          "attachment": null,
+          "created_at": "2022-03-16T04:38:52.000000Z",
+          "updated_at": "2024-11-06T09:47:02.000000Z",
+          "status": 1,
+          "featured_status": 1,
+          "meta_title": "Mighty Rock VR",
+          "meta_description": "Step into a world of limitless possibilities with the Mighty Rock VR headset. Designed for gamers and tech enthusiasts, this advanced virtual reality headset offers an immersive experience th",
+          "meta_image": "2024-10-16-670fa7b3822c0.png",
+          "request_status": 1,
+          "denied_note": null,
+          "shipping_cost": 10,
+          "multiply_qty": 1,
+          "temp_shipping_cost": null,
+          "is_shipping_cost_updated": null,
+          "code": "125450",
+          "is_shop_temporary_close": 0,
+          "thumbnail_full_url": {
+            "key": "2024-10-16-670fa7b386b31.webp",
+            "path": "https://6valley-aster.6amtech.com/storage/app/public/product/thumbnail/2024-10-16-670fa7b386b31.webp",
+            "status": 200
+          },
+          "preview_file_full_url": {
+            "key": null,
+            "path": null,
+            "status": 404
+          },
+          "color_images_full_url": [],
+          "meta_image_full_url": {
+            "key": "2024-10-16-670fa7b3822c0.png",
+            "path": "https://6valley-aster.6amtech.com/storage/app/public/product/meta/2024-10-16-670fa7b3822c0.png",
+            "status": 200
+          },
+          "images_full_url": [
+            {
+              "key": "2024-10-16-670fa7b374505.webp",
+              "path": "https://6valley-aster.6amtech.com/storage/app/public/product/2024-10-16-670fa7b374505.webp",
+              "status": 200
+            },
+            {
+              "key": "2024-10-16-670fa7b378e62.webp",
+              "path": "https://6valley-aster.6amtech.com/storage/app/public/product/2024-10-16-670fa7b378e62.webp",
+              "status": 200
+            },
+            {
+              "key": "2024-10-16-670fa7b37d5fd.webp",
+              "path": "https://6valley-aster.6amtech.com/storage/app/public/product/2024-10-16-670fa7b37d5fd.webp",
+              "status": 200
+            }
+          ],
+          "digital_file_ready_full_url": {
+            "key": null,
+            "path": null,
+            "status": 404
+          },
+          "translations": [],
+          "reviews": [
+            {
+              "id": 16,
+              "product_id": 1,
+              "customer_id": 2,
+              "delivery_man_id": null,
+              "order_id": null,
+              "comment": "hwxjdk. kg",
+              "attachment": [
+                "2022-04-23-6263cbf7ede63.png",
+                "2022-04-23-6263cbf7eede3.png",
+                "2022-04-23-6263cbf7eee8e.png"
+              ],
+              "rating": 5,
+              "status": 0,
+              "is_saved": false,
+              "created_at": "2022-04-22T22:50:47.000000Z",
+              "updated_at": "2023-06-10T15:21:00.000000Z",
+              "attachment_full_url": [
+                {
+                  "key": "2022-04-23-6263cbf7ede63.png",
+                  "path": "https://6valley-aster.6amtech.com/storage/app/public/review/2022-04-23-6263cbf7ede63.png",
+                  "status": 200
+                },
+                {
+                  "key": "2022-04-23-6263cbf7eede3.png",
+                  "path": "https://6valley-aster.6amtech.com/storage/app/public/review/2022-04-23-6263cbf7eede3.png",
+                  "status": 200
+                },
+                {
+                  "key": "2022-04-23-6263cbf7eee8e.png",
+                  "path": "https://6valley-aster.6amtech.com/storage/app/public/review/2022-04-23-6263cbf7eee8e.png",
+                  "status": 200
+                }
+              ]
+            }
+          ]
+        },
+        "reply": null
+      }
+    ]
+  }

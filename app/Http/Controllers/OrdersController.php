@@ -1,0 +1,1001 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Constants\AppConstants;
+use App\Helpers\ResponseHandlerRam;
+use App\Models\Order;
+use App\Models\Product;
+use App\Models\ProductVariation;
+use App\Models\UserNote;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+
+class OrdersController extends Controller
+{
+    protected string $image_link;
+
+    protected $shopController;
+
+    public function __construct(ShopRegistrationController $shopController)
+    {
+        $this->image_link = AppConstants::DOMAIN.AppConstants::IMAGE_PATH;
+        $this->shopController = $shopController;
+    }
+    // public function __construct()
+    // {
+
+    // }
+    private function validatrionErrorResponse($errors, $code = 422)
+    {
+        return ResponseHandlerRam::validationError(
+            errors: $errors,
+            message: 'Validation failed',
+            statusCode: $code
+        );
+    }
+
+    private function successResponse($data, $message = '', $code = 200)
+    {
+        return ResponseHandlerRam::success(
+            data: $data,
+            message: $message,
+            statusCode: $code
+        );
+    }
+
+    // Helper method for failure response
+    private function failureResponse($message, $code = 400, $forceViewMessageDetails = false)
+    {
+        return ResponseHandlerRam::error(
+            forceViewMessageDetails: $forceViewMessageDetails,
+            message: $message,
+            statusCode: $code
+        );
+    }
+
+    public function getAllUserOrders(Request $request)
+    {
+        try {
+            $userId = Auth::id();
+
+            if (! $userId) {
+                return $this->failureResponse('User is not authenticated', 401);
+            }
+
+            $perPage = $request->query('per_page', AppConstants::PAGINATION_LIMIT);
+            $viewType = $request->query('view_type', 'short'); // 'short' or 'long'
+            $orderId = $request->query('order_id');   // For single order detail
+
+            // Base query
+            $query = Order::where('customer_id', $userId)->orderBy('created_at', 'desc');
+
+            // Single order detail view
+            if ($orderId) {
+                $order = $query->where('id', $orderId)->first();
+
+                if (! $order) {
+                    return $this->failureResponse('Order not found', 404);
+                }
+
+                $formattedOrder = $this->formatOrderForView($order, 'long');
+
+                return $this->successResponse($formattedOrder, 'Order details retrieved successfully');
+            }
+
+            // Paginated list view
+            $paginator = $query->paginate($perPage);
+
+            // Preserve query params in pagination links (per_page, view_type)
+            $paginator->appends($request->only(['per_page', 'view_type']));
+
+            // Transform each Order model using your format method (keeps it as model → no array key errors)
+            $paginator->getCollection()->transform(function ($order) use ($viewType) {
+                return $this->formatOrderForView($order, $viewType);
+            });
+
+            // Convert to array only at the final step
+            $ordersArray = $paginator->toArray();
+            unset(
+                $ordersArray['links'],
+                // $data['first_page_url'],
+                // $data['last_page_url'],
+                $ordersArray['next_page_url'],
+                // $data['prev_page_url'],
+                // $data['path']
+            );
+
+            return $this->successResponse($ordersArray, 'Orders retrieved successfully');
+
+        } catch (\Exception $e) {
+            Log::error('Error in getAllUserOrders: '.$e->getMessage(), [
+                'user_id' => Auth::id(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return $this->failureResponse('An error occurred while fetching orders.', 500);
+        }
+    }
+
+    /**
+     * Format order data based on view type
+     */
+    private function formatOrderForView($order, $viewType = 'short')
+    {
+        $formattedOrder = [
+            'order_id' => $order['id'],
+            'order_number' => $order['number'] ?? '#'.str_pad($order['id'], 6, '0', STR_PAD_LEFT),
+            'created_at' => $order['created_at'] ?? $order['date_created'],
+            'status' => $order['status'],
+            'final_total' => (float) ($order['final_total'] ?? 0),
+            'currency' => $order['currency'] ?? 'USD',
+            'products_ordered_total' => count($order['line_items'] ?? []),
+            'products_items_count' => collect($order['line_items'] ?? [])->sum('quantity'),
+            'payment_status' => $this->getPaymentStatus($order),
+        ];
+
+        // Short view - minimal data for list
+        if ($viewType === 'short') {
+            return $formattedOrder;
+        }
+
+        // Long view - full details
+        if ($viewType === 'long') {
+            $formattedOrder = $order->toArray(); // Start with full order data
+        }
+
+        return $formattedOrder;
+    }
+
+    /**
+     * Format line items for display
+     */
+    private function formatLineItems($lineItems)
+    {
+        $formattedItems = [];
+        foreach ($lineItems as $item) {
+            $formattedItems[] = [
+                'product_id' => $item['product_id'] ?? null,
+                'name' => $item['name'] ?? '',
+                'quantity' => (int) ($item['quantity'] ?? 1),
+                'price' => (float) ($item['price'] ?? 0),
+                'total' => (float) ($item['total'] ?? 0),
+                'sku' => $item['sku'] ?? '',
+                'image' => $this->getProductImage($item),
+            ];
+        }
+
+        return $formattedItems;
+    }
+
+    /**
+     * Get payment status
+     */
+    private function getPaymentStatus($order)
+    {
+        $status = $order['payment_method'] ?? '';
+        $datePaid = $order['date_paid'] ?? null;
+
+        if ($datePaid && $order['total'] > 0) {
+            return 'paid';
+        }
+
+        return $status ? 'pending' : 'not_paid';
+    }
+
+    /**
+     * Format address data
+     */
+    private function formatAddress($address)
+    {
+        if (empty($address) || ! is_array($address)) {
+            return null;
+        }
+
+        return [
+            'first_name' => $address['first_name'] ?? '',
+            'last_name' => $address['last_name'] ?? '',
+            'address_1' => $address['address_1'] ?? '',
+            'address_2' => $address['address_2'] ?? '',
+            'city' => $address['city'] ?? '',
+            'state' => $address['state'] ?? '',
+            'postcode' => $address['postcode'] ?? '',
+            'country' => $address['country'] ?? '',
+            'email' => $address['email'] ?? '',
+            'phone' => $address['phone'] ?? '',
+        ];
+    }
+
+    /**
+     * Format shipping lines
+     */
+    private function formatShippingLines($shippingLines)
+    {
+        $formatted = [];
+        foreach ($shippingLines as $line) {
+            $formatted[] = [
+                'method_title' => $line['method_title'] ?? '',
+                'total' => (float) ($line['total'] ?? 0),
+                'tracking_number' => $line['meta_data']['tracking_number'] ?? null,
+            ];
+        }
+
+        return $formatted;
+    }
+
+    /**
+     * Get basic order timeline
+     */
+    private function getOrderTimeline($order)
+    {
+        $timeline = [];
+
+        // Add key events
+        $timeline[] = [
+            'event' => 'order_placed',
+            'timestamp' => $order['date_created'] ?? $order['created_at'],
+            'status' => 'Order Placed',
+        ];
+
+        if ($order['date_paid']) {
+            $timeline[] = [
+                'event' => 'payment_completed',
+                'timestamp' => $order['date_paid'],
+                'status' => 'Payment Completed',
+            ];
+        }
+
+        // can extend this with more events from meta_data or status changes
+        return $timeline;
+    }
+
+    /**
+     * Get product image URL
+     */
+    private function getProductImage($item)
+    {
+        // Initialize debugger
+        $debuger = 'firststep';
+
+        // Priority 1: Direct image from item
+        if (isset($item['image']) && is_array($item['image']) && ! empty($item['image'])) {
+            $debuger = 'SUCCESS: Direct image found';
+
+            return $item['image'][0]['src'] ?? null;
+        }
+
+        // Priority 2: Check if product_id exists
+        if (isset($item['product_id'])) {
+            $debuger = 'Has product_id: '.$item['product_id'];
+
+            $productController = app(ProductController::class);
+            $result = $productController->getProductImages($item['product_id'], 'thumbnail');
+            $debuger = 'Controller called';
+
+            // Check if successful and has images
+            if (isset($result['success']) && $result['success'] && ! empty($result['images'])) {
+                $debuger = 'SUCCESS: Thumbnail found';
+
+                return $this->image_link.'/'.$result['images'][0] ?? null; // Get first image path
+            } else {
+                $debuger = 'No thumbnail - Result: '.json_encode($result);
+            }
+        } else {
+            $debuger = 'ERROR: No product_id found';
+        }
+
+        return $debuger;
+    }
+
+    public function getAllVendorOrders(Request $request)
+    {
+        try {
+            $userId = Auth::id();
+            // $userId =44;
+
+            if (! $userId) {
+                return $this->failureResponse('User is not authenticated', 401);
+            }
+
+            $perPage = $request->query('per_page', 10);
+
+            // parent_vendor_ids is a json array contains the ids order vendors like this [44,45]
+            $orders = Order::whereJsonContains('parent_vendors_ids', $userId)->orderBy('created_at', 'desc')->paginate($perPage);
+            $keysToDecode = [
+                'tax_lines',
+                'shipping_lines',
+                'bacs_info',
+                'fee_lines',
+                'coupon_lines',
+                'refunds',
+                'billing',
+                'shipping',
+                'meta_data',
+                'line_items',
+                '_links',
+            ];
+            $lineitemskeysToDecode = [
+                'upsell_ids',
+                'cross_sell_ids',
+                'dimensions',
+                'downloads',
+                'categories',
+                'images',
+                'attributes',
+                'default_attributes',
+                'variations',
+                'tags',
+                'grouped_products',
+                '_links',
+                'attributesData',
+                'related_ids',
+                'meta_data',
+                'image',
+
+            ];
+
+            $ordersArray = $orders->toArray();
+
+            foreach ($ordersArray['data'] as &$order) {
+
+                foreach ($keysToDecode as $key) {
+                    if (isset($order[$key]) && is_string($order[$key])) {
+                        $order[$key] = json_decode($order[$key], true);
+                    }
+                }
+
+                if (isset($order['line_items']) && is_array($order['line_items'])) {
+                    foreach ($order['line_items'] as &$item) {
+                        foreach ($lineitemskeysToDecode as $key) {
+                            if (isset($item[$key]) && is_string($item[$key])) {
+                                $item[$key] = json_decode($item[$key], true);
+                            }
+
+                            if (isset($item['product_data'][$key]) && is_string($item['product_data'][$key])) {
+                                $item['product_data'][$key] = json_decode($item['product_data'][$key], true);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return $this->successResponse($ordersArray['data']);
+        } catch (\Exception $e) {
+            return $this->failureResponse('An error occurred: '.$e->getMessage(), 500);
+        }
+    }
+
+    public function updateOrderState(Request $request)
+    {
+        try {
+            $user = Auth::user();
+
+            if (! $user) {
+                return $this->failureResponse('Unauthorized', 401);
+            }
+
+            $allowedStatuses = [
+                'auto-draft',        // طلب تم إنشاؤه تلقائيًا لكن العميل لسة مخلّصش الدفع ولا فتح صفحة الدفع حتى
+                'checkout-draft',    // العميل دخل صفحة الدفع (Checkout) وبدأ يكتب بياناته لكن لسة مكملش الطلب
+                'order_placed',      // الطلب اتبعت رسمي ووصل للمتجر (العميل ضغط "إتمام الطلب" بنجاح) ← بداية الطلب الحقيقي
+                'pending',           // الطلب موجود لكن الدفع لسة ما اتمدفعش (مثل الدفع عند الاستلام أو تحويل بنكي لسة ما اتأكدش)
+                'processing',        // الدفع اتأكد وتمام، والطلب دلوقتي في مرحلة التجهيز (بنعبّي المنتجات وبنحضر الفاتورة)
+                'packed',            // المنتجات اتعبّت في الكرتونة وجاهزة للشحن، بس لسة ما اتسلمتش لشركة الشحن
+                'shipped',           // الشحنة اتسلمّت لشركة الشحن ورقم التتبع (Tracking) موجود
+                'out_for_delivery',  // الشحنة وصلت المنطقة بتاعة العميل والمندوب خارج يوصّلها النهاردة
+                'on-hold',           // الطلب متوقف مؤقتًا (مثلًا العميل طلب تعديل أو في مشكلة في المخزون أو في انتظار رد من العميل)
+                'completed',         // الطلب خلصان تمامًا والعميل استلم الشحنة (أو في حالة الدفع عند الاستلام: اتم الدفع والتسليم)
+                'cancelled',         // الطلب اتلغى (من العميل أو من الإدارة لأي سبب)
+                'refund-req',        // العميل طلب إرجاع فلوس (رفع طلب رجوع)
+                'refunded',          // الفلوس فعليًا رجعت للعميل (تمت عملية الـ Refund)
+                'failed',            // الدفع فشل خالص (مثلًا البطاقة اتضربت وما نفعتش أو العملية اتلغت من البنك)
+            ];
+
+            $validated = $request->validate([
+                'order_id' => 'required|integer|exists:orders,id',
+                'status' => 'required|string|in:'.implode(',', $allowedStatuses),
+                'tracking_number' => 'nullable|string|max:100|required_if:status,shipped',
+                'carrier' => 'nullable|string|required_if:status,shipped|in:egypt_post,bosta,pharmaexpress,casinex,aramex,dhl,fedex,dpd,ups,own_fleet,other|max:50',
+                'note' => 'nullable|string|max:1000',
+            ]);
+
+            $order = Order::findOrFail($validated['order_id']);
+
+            $newStatus = $validated['status'];
+            $oldStatus = $order->status;
+
+            // Prevent no-op
+            if ($oldStatus === $newStatus) {
+                return $this->failureResponse("Order is already {$this->getStatusLabel($newStatus)}", 400);
+            }
+
+            // === Secure Vendor Authorization ===
+            $vendorIds = [];
+            $parentVendorsIds = $order->parent_vendors_ids;
+
+            if (is_string($parentVendorsIds)) {
+                $decoded = json_decode($parentVendorsIds, true);
+                $vendorIds = is_array($decoded) ? array_map('intval', $decoded) : [];
+            } elseif (is_array($parentVendorsIds)) {
+                $vendorIds = array_map('intval', $parentVendorsIds);
+            }
+
+            if (! in_array((int) $user->id, $vendorIds, true)) {
+                // Uncomment next line if want admins to bypass vendor check
+                // if (!in_array($user->role, ['admin', 'shop_manager'])) {
+                return $this->failureResponse('Forbidden: You cannot update this order', 403);
+                // }
+            }
+
+            // === Prepare Timeline Entry ===
+            $timelineEntry = [
+                'timestamp' => now(),
+                'changed_by' => $user->id,
+                'changed_by_name' => $user->name ?? $user->email ?? 'System',
+                'from' => $oldStatus,
+                'to' => $newStatus,
+                'from_label' => $this->getStatusLabel($oldStatus),
+                'to_label' => $this->getStatusLabel($newStatus),
+            ];
+
+            // Customize event type and extra data
+            match ($newStatus) {
+                'packed' => $timelineEntry += [
+                    'event' => 'order_packed',
+                    'message' => 'Order has been packed and is ready for shipping',
+                ],
+                'shipped' => $timelineEntry += [
+                    'event' => 'order_shipped',
+                    'message' => 'Order has been shipped',
+                    'tracking_number' => $validated['tracking_number'] ?? null,
+                    'carrier' => $validated['carrier'] ?? null,
+                    'tracking_url' => $this->generateTrackingUrl($validated['carrier'] ?? '', $validated['tracking_number'] ?? ''),
+                ],
+                'completed' => $timelineEntry += [
+                    'event' => 'order_delivered',
+                    'message' => 'Order marked as delivered and completed',
+                ],
+                default => $timelineEntry += [
+                    'event' => 'status_changed',
+                    'message' => "Status changed to {$this->getStatusLabel($newStatus)}",
+                ],
+            };
+
+            // Add optional manual note
+            if (! empty($validated['note'])) {
+                $timelineEntry['vendor_note'] = $validated['note'];
+            }
+
+            // === Update Order ===
+            $order->update([
+                'status' => $newStatus,
+                'tracking_number' => $newStatus === 'shipped' ? ($validated['tracking_number'] ?? null) : $order->tracking_number,
+                'carrier' => $newStatus === 'shipped' ? ($validated['carrier'] ?? null) : $order->carrier,
+            ]);
+
+            // === Append to Timeline ===
+            $timeline = $order->fresh()->timeline ?? [];
+            if (! is_array($timeline)) {
+                $timeline = [];
+            }
+            $timeline[] = $timelineEntry;
+            $order->update(['timeline' => $timeline]);
+
+            // === Internal Note (for admin panel) ===
+            // === Internal Note (for admin panel) ===
+            try {
+                UserNote::create([
+                    'order_id' => $order->id,
+                    'user_id' => $user->id ?? null,           // لو الـ user مش موجود هيحط null
+                    'note' => "Status → {$this->getStatusLabel($newStatus)}"
+                        .($newStatus === 'shipped'
+                            ? " | Tracking: {$validated['tracking_number']} ({$validated['carrier']})"
+                            : '')
+                        .(! empty($validated['note']) ? ' | Note: '.strip_tags($validated['note']) : ''),
+                    'customer_note' => false,
+                ]);
+            } catch (\Exception $e) {
+                // لو حصل أي مشكلة في الـ note (زي اللي حصل دلوقتي) متوقفش باقي العملية
+                Log::warning('Failed to create UserNote for order '.$order->id, [
+                    'user_id' => $user->id ?? null,
+                    'error' => $e->getMessage(),
+                ]);
+                // متعملش return failure هنا → خلي الـ response يطلع success عادي
+            }
+
+            return $this->successResponse($order->refresh(), 'Order status updated successfully');
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->validatrionErrorResponse($e->errors(), 422, true);
+        } catch (\Exception $e) {
+            Log::error('Order status update failed', [
+                'user_id' => $user->id ?? null,
+                'order_id' => $request->order_id ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return $this->failureResponse($e, 500);
+        }
+    }
+
+    private function getStatusLabel(string $status): string
+    {
+        return match ($status) {
+            'order_placed' => 'Order Placed',
+            'pending' => 'Awaiting Payment',
+            'processing' => 'Processing',
+            'packed' => 'Packed',
+            'shipped' => 'Shipped',
+            'out_for_delivery' => 'Out for Delivery',
+            'on-hold' => 'On Hold',
+            'completed' => 'Completed',
+            'cancelled' => 'Cancelled',
+            'refund-req' => 'Refund Requested',
+            'refunded' => 'Refunded',
+            'failed' => 'Payment Failed',
+            'checkout-draft' => 'Draft',
+            'auto-draft' => 'Auto-Saved Draft',
+            default => ucwords(str_replace(['-', '_'], ' ', $status)),
+        };
+    }
+
+    private function generateTrackingUrl(string $carrier, string $trackingNumber): ?string
+    {
+        if (empty($trackingNumber)) {
+            return null;
+        }
+
+        $carrier = strtolower(trim($carrier));
+
+        return match ($carrier) {
+            // Global (already there, but Egypt-specific tweaks)
+            'fedex' => "https://www.fedex.com/en-eg/tracking.html?tracknumber={$trackingNumber}",
+            'ups' => "https://www.ups.com/track?tracknum={$trackingNumber}",
+            'dhl', 'dhl_express' => "https://www.dhl.com/eg-en/home/tracking.html?trackingNumber={$trackingNumber}",
+            'aramex' => "https://www.aramex.com/eg/en/track/shipments?trackingNumber={$trackingNumber}",
+
+            // Egypt Local Additions
+            'egypt_post' => "https://www.egyptpost.org/ar/?trackingNumber={$trackingNumber}",
+            'bosta' => "https://bosta.co/en/track?trackNumber={$trackingNumber}",
+            'pharmaexpress' => "https://pharmaexpress.com/track?awb={$trackingNumber}",
+            'casinex' => "https://www.casinex.com/track-shipment?number={$trackingNumber}",
+            'dpd' => "https://www.dpd.com/eg/en/tracking/?query={$trackingNumber}",
+
+            // Other globals (from before)
+            'dhl_ecommerce' => "https://webtrack.dhlecs.com/?trackingnumber={$trackingNumber}",
+            'bluedart' => "https://www.bluedart.com/web/guest/track?trackdto.awbno={$trackingNumber}",
+            'delhivery' => "https://www.delhivery.com/tracking#{$trackingNumber}",
+            'ecom_express' => "https://ecomexpress.in/tracking/?shipment={$trackingNumber}",
+            'dtdc' => "https://www.dtdc.in/tracking/shipment-tracking.asp?awbno={$trackingNumber}",
+            'india_post' => "https://www.indiapost.gov.in/_layouts/15/DOP.Portal/TrackConsignment.aspx?TconsignmentNumber={$trackingNumber}",
+            'tnt' => "https://www.tnt.com/express/en_gb/site/shipping-tools/track-and-trace.html?searchType=con&cons={$trackingNumber}",
+            'royal_mail' => "https://www.royalmail.com/track-your-item#/tracking-results/{$trackingNumber}",
+            'australia_post' => "https://auspost.com.au/mypost/track/#/details/{$trackingNumber}",
+            'canada_post' => "https://www.canadapost-postescanada.ca/track-reperage/en#/resultList?searchFor={$trackingNumber}",
+            'ninja_van' => "https://www.ninjavan.co/en-my/tracking/?tracking_number={$trackingNumber}",
+            'jnt', 'j&t' => "https://www.jtexpress.com/track/{$trackingNumber}",
+
+            // Fallback: No auto-link for locals without public URLs
+            'own_fleet', 'lalamove', 'grab_express', 'other' => null,
+
+            default => null,
+        };
+    }
+
+    public function createOrder(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                // ──────── ORDER BASICS ────────
+                'coupon' => 'nullable|string|max:30|exists:coupons,code',
+                'currency' => 'required|string|size:3|in:EGP,USD,EUR',
+                'payment_method' => 'required|string|in:cod,bank_transfer,vodafone_cash,fawry,wallet,credit_card',
+                'payment_method_title' => 'required|string|max:100',
+
+                // ──────── BILLING & SHIPPING (unchanged, perfect as-is) ────────
+                'billing' => 'required|array',
+                'billing.first_name' => 'required|string|max:100',
+                'billing.last_name' => 'required|string|max:100',
+                'billing.email' => 'required|email|max:255',
+                'billing.address_1' => 'required|string|max:255',
+                'billing.address_2' => 'nullable|string|max:255',
+                'billing.company' => 'nullable|string|max:100',
+                'billing.city' => 'required|string|max:100',
+                'billing.state' => 'required|string|max:100',
+                'billing.postcode' => 'nullable|string|max:20',
+                'billing.country' => 'required|string|size:2|in:EG',
+                'billing.phone' => ['required', 'string', function ($attr, $value, $fail) {
+                    $clean = preg_replace('/\D/', '', $value);
+                    if (strlen($clean) >= 10 && ! preg_match('/^(20|0)?1[0125][0-9]{8}$/', $clean)) {
+                        $fail('Please enter a valid Egyptian mobile number.');
+                    }
+                }],
+
+                'shipping' => 'required|array',
+                'shipping.first_name' => 'required|string|max:100',
+                'shipping.last_name' => 'required|string|max:100',
+                'shipping.email' => 'nullable|email|max:255',
+                'shipping.address_1' => 'required|string|max:255',
+                'shipping.address_2' => 'nullable|string|max:255',
+                'shipping.company' => 'nullable|string|max:100',
+                'shipping.city' => 'required|string|max:100',
+                'shipping.state' => 'required|string|max:100',
+                'shipping.postcode' => 'nullable|string|max:20',
+                'shipping.country' => 'required|string|size:2|in:EG',
+                'shipping.phone' => ['required', 'string', function ($attr, $value, $fail) {
+                    $clean = preg_replace('/\D/', '', $value);
+                    if (strlen($clean) >= 10 && ! preg_match('/^(20|0)?1[0125][0-9]{8}$/', $clean)) {
+                        $fail('Shipping phone must be a valid Egyptian mobile number.');
+                    }
+                }],
+
+                // ──────── LINE ITEMS – THIS IS THE KEY PART ────────
+                'line_items' => 'required|array|min:1|max:100',
+                'line_items.*.product_id' => 'required|integer|exists:products_data,id',
+                'line_items.*.quantity' => 'required|integer|min:1|max:999',
+                'line_items.*.main_variation_order' => 'required|boolean',                    // ← must be 0 or 1
+                'line_items.*.variation_id' => 'nullable|integer|exists:product_variations,id',
+
+                // Smart custom rule: variation_id is required ONLY when main_variation_order = 0/false
+                'line_items.*.variation_id' => [
+                    'nullable',
+                    'integer',
+                    'exists:product_variations,id',
+                    function ($attribute, $value, $fail) {
+                        // Get current item index: line_items.0.variation_id → index = 0
+                        $index = explode('.', $attribute)[1];
+
+                        $mainVariationOrder = request()->input("line_items.{$index}.main_variation_order");
+
+                        // If user wants main variation → variation_id must be empty or 0
+                        if ($mainVariationOrder == 1) {
+                            if (! is_null($value) && $value != 0) {
+                                $fail('variation_id should not be sent or must be 0 when main_variation_order is true.');
+                            }
+
+                            return;
+                        }
+
+                        // If NOT main variation → variation_id is REQUIRED and must be valid
+                        if (is_null($value) || $value == 0) {
+                            $fail('variation_id is required when main_variation_order is false.');
+                        }
+                    },
+                ],
+
+                // ──────── SHIPPING LINES ────────
+                'shipping_lines' => 'required|array|min:1|max:5',
+                'shipping_lines.*.method_id' => 'required|string',
+                'shipping_lines.*.method_title' => 'required|string',
+                'shipping_lines.*.total' => 'required|numeric|min:0',
+            ]);
+            if ($validator->fails()) {
+                return $this->failureResponse('Validation failed: '.json_encode($validator->errors(), JSON_UNESCAPED_UNICODE), 422);
+            }
+
+            $validatedData = $validator->validated();
+            $userId = Auth::id();
+
+            // ──────── STEP 1: Collect IDs ────────
+            $productIds = array_column($validatedData['line_items'], 'product_id');
+
+            // Get all variation IDs that are explicitly sent and not zero
+            $explicitVariationIds = collect($validatedData['line_items'])
+                ->pluck('variation_id')
+                ->filter(fn ($id) => ! empty($id) && $id != 0)
+                ->unique()
+                ->values()
+                ->toArray();
+
+            // ──────── STEP 2: Load Products ────────
+            $products = Product::whereIn('id', $productIds)
+                ->select('id', 'name', 'vendor_id', 'sku')
+                ->get()
+                ->keyBy('id');
+
+            // ──────── STEP 3: Load ALL Needed Variations (including main ones) ────────
+            $variations = ProductVariation::whereIn('product_id', $productIds) // All variations of these products
+                ->when(! empty($explicitVariationIds), function ($query) use ($explicitVariationIds) {
+                    return $query->orWhereIn('id', $explicitVariationIds); // Plus any specific ones sent
+                })
+                ->select('id', 'product_id', 'main_variation', 'price', 'regular_price', 'sale_price', 'stock_quantity', 'attributes', 'images')
+                ->get()
+                ->keyBy('id'); // Critical: fast lookup by ID
+
+            // ──────── STEP 4: Process Line Items ────────
+            $calculatedTotal = 0;
+            $enrichedLineItems = [];
+
+            foreach ($validatedData['line_items'] as $item) {
+                $productId = $item['product_id'];
+                $quantity = intval($item['quantity'] ?? 1);
+
+                $product = $products->get($productId);
+                if (! $product) {
+                    return $this->failureResponse("Product ID {$productId} not found.", 422);
+                }
+
+                $variation = null;
+                $price = 0.0;
+
+                // CASE 1: User wants the MAIN variation
+                if (! empty($item['main_variation_order'])) {
+                    $variation = $variations
+                        ->where('product_id', $productId)
+                        ->where('main_variation', 1)
+                        ->first();
+
+                    if (! $variation) {
+                        return $this->failureResponse("This product (ID: {$productId}) has no main variation defined.", 422);
+                    }
+                }
+                // CASE 2: Specific variation selected
+                elseif (! empty($item['variation_id']) && $item['variation_id'] != 0) {
+                    $variation = $variations->get($item['variation_id']);
+
+                    if (! $variation || $variation->product_id != $productId) {
+                        return $this->failureResponse("Invalid variation ID {$item['variation_id']} for product {$productId}.", 422);
+                    }
+                }
+                // CASE 3: Missing variation info
+                else {
+                    return $this->failureResponse("You must provide either 'main_variation_order' or a valid 'variation_id' for product: {$product->name}", 422);
+                }
+
+                // Determine price: sale → regular → fallback
+                if ($variation->sale_price && $variation->sale_price > 0) {
+                    $price = floatval($variation->sale_price);
+                } elseif ($variation->regular_price && $variation->regular_price > 0) {
+                    $price = floatval($variation->regular_price);
+                } else {
+                    $price = floatval($variation->price);
+                }
+
+                // Stock check
+                if ($variation->manage_stock == 1 && (! is_null($variation->stock_quantity) && $variation->stock_quantity < $quantity)) {
+                    return $this->failureResponse("Insufficient stock. Only {$variation->stock_quantity} left for this variation of {$product->name}.", 422);
+                }
+
+                // Deduct stock
+                if ($variation->manage_stock == 1) {
+                    $variation->decrement('stock_quantity', $quantity);
+                }
+
+                $subtotal = $price * $quantity;
+                $calculatedTotal += $subtotal;
+
+                $enrichedLineItems[] = [
+                    'item' => $item,
+                    'product' => $product,
+                    'variation' => $variation,
+                    'price_used' => $price,
+                    'subtotal' => $subtotal,
+                    'quantity' => $quantity,
+                ];
+            }
+
+            $originalTotalFormatted = number_format($calculatedTotal, 2, '.', '');
+
+            // ──────── Coupon Logic (Unchanged) ────────
+            $couponController = app(CouponController::class);
+            $discountTotal = '0.00';
+            $finalTotal = $calculatedTotal;
+            $finalTotalFormatted = number_format($finalTotal, 2, '.', '');
+            $couponLines = [];
+            $couponData = null;
+            $appliedCoupon = null;
+
+            if (! empty($validatedData['coupon'])) {
+                $couponCode = strtoupper(trim($validatedData['coupon']));
+
+                // ──────── Use the NEW robust local method ────────
+                $couponResult = $couponController->applyCouponLocally(
+                    code: $couponCode,
+                    cartTotal: $calculatedTotal,
+                    userId: $userId
+                );
+
+                if (! $couponResult['success']) {
+                    return $this->failureResponse($couponResult['message'], $couponResult['code']);
+                }
+
+                // Extract successfully applied data
+                $resultData = $couponResult['data'];
+
+                $appliedCoupon = $resultData['coupon']; // already converted via couponToArray()
+                $discountAmount = $resultData['discount_amount'];
+                $newTotal = $resultData['new_total'];
+
+                $discountTotal = number_format($discountAmount, 2, '.', '');
+                $finalTotal = $newTotal;
+                $finalTotalFormatted = number_format($finalTotal, 2, '.', '');
+
+                $couponLines = [[
+                    'code' => $couponCode,
+                    'cart_total_before_discount' => $calculatedTotal,
+                    'cart_final_total' => $finalTotal,
+                    'discount' => $discountTotal,
+                ]];
+
+                // Save full coupon data (already clean from couponToArray())
+                $couponData = $appliedCoupon;
+                $couponData['amount'] = (string) ($couponData['amount'] ?? 0);
+            }
+            $finalTotalFormatted = number_format($finalTotal, 2, '.', '');
+            $timeLine = [['event' => 'order_placed',
+                'timestamp' => now(),
+                'status' => 'Order Placed']];
+            // will make a changes in the change order status to add more events
+            // ──────── Vendor Info ────────
+            $vendorIds = $products->pluck('vendor_id')->unique()->filter()->values()->all();
+            $vendorsById = [];
+            foreach ($vendorIds as $vendorId) {
+                $vendorsById[$vendorId] = $this->shopController->getUserLocally($vendorId);
+            }
+
+            $orderDbData = [
+                'set_paid' => false,
+                'parent_id' => 0,
+                'timeline' => $timeLine,
+                'status' => 'order_placed',
+                'currency' => $validatedData['currency'],
+                'version' => '0.0.0',
+                'prices_include_tax' => false,
+                'date_created' => now(),
+                'date_modified' => now(),
+                'original_total' => $originalTotalFormatted,
+                'discount_total' => $discountTotal,
+                'discount_tax' => '0.00',
+                'shipping_total' => '0.00',
+                'shipping_tax' => '0.00',
+                'cart_tax' => '0.00',
+                'total_tax' => '0.00',
+                'final_total' => $finalTotalFormatted,
+                'customer_id' => $userId,
+                'order_key' => 'RAMORDER'.Str::upper(Str::random(8)).now()->format('ymd'),
+                'billing' => $validatedData['billing'],
+                'shipping' => $validatedData['shipping'],
+                'payment_method' => $validatedData['payment_method'],
+                'payment_method_title' => $validatedData['payment_method_title'],
+                'transaction_id' => '',
+                'customer_ip_address' => $request->ip(),
+                'customer_userAgent' => $request->userAgent(),
+                'created_via' => 'flutter-api',
+                'customer_note' => $validatedData['customer_note'] ?? '',
+                'cart_hash' => '',
+                'number' => 0,
+                'coupon_code' => $validatedData['coupon'] ?? null,
+                'coupon_applied' => ! empty($couponLines),
+                'meta_data' => ! empty($couponData) ? [['key' => '_coupon_data', 'value' => $couponData]] : [],
+                'line_items' => collect($this->buildLineItems($enrichedLineItems))->map(function ($line) use ($variations) {
+                    $variation = ($line['variation_id'] ?? 0) ? ($variations->get($line['variation_id']) ?? null) : null;
+
+                    return [
+                        'product_id' => $line['product_id'],
+                        'variation_id' => $line['variation_id'] ?? 0,
+                        'name' => $line['name'],
+                        'quantity' => $line['quantity'],
+                        'sku' => $line['sku'],
+                        'image' => $line['image']['src'] ?? null,
+
+                        // Price breakdown
+                        'price' => [
+                            'final' => $line['price'],                    // price actually charged per item
+                            'subtotal' => $line['subtotal'],
+                            'total' => $line['total'],
+                        ],
+
+                        // Detailed variation info
+                        'variation' => $variation ? [
+                            'id' => $variation->id,
+                            'attributes' => $variation->attributes ?? [],        // e.g. ["size" => "XL", "color" => "Black"]
+                            'regular_price' => $variation->regular_price ? number_format($variation->regular_price, 2, '.', '') : null,
+                            'sale_price' => $variation->sale_price ? number_format($variation->sale_price, 2, '.', '') : null,
+                            'base_price' => $variation->price ? number_format($variation->price, 2, '.', '') : null,
+                            'price_used' => $line['price'], // shows which one was actually applied
+                            'stock_quantity' => $variation->stock_quantity,
+                            'images' => $variation->images ?? [],
+                        ] : null,
+
+                        // Raw meta data (attributes as separate entries)
+                        'meta_data' => $line['meta_data'] ?? [],
+                    ];
+                })->values()->all(),
+                'tax_lines' => [],
+                'shipping_lines' => $validatedData['shipping_lines'],
+                'fee_lines' => [],
+                'coupon_lines' => $couponLines,
+                'refunds' => [],
+                'payment_url' => '',
+                'is_editable' => true,
+                'needs_payment' => true,
+                'needs_processing' => true,
+                'date_created_gmt' => now(),
+                'date_modified_gmt' => now(),
+                'date_completed_gmt' => '1970-01-01 00:00:00',
+                'date_paid_gmt' => '1970-01-01 00:00:00',
+                'bacs_info' => [[
+                    'account_name' => 'TEST RAMO', 'account_number' => '1212121212121212',
+                    'bank_name' => 'FARMERS STATE BANK & TRUST', 'sort_code' => '12121212',
+                    'iban' => 'TSTSTSTSTSTSSTTSTSTSTSSTST', 'bic' => 'TSTSTSTST',
+                ]],
+                'currency_symbol' => $validatedData['currency'] === 'EGP' ? 'EGP' : '$',
+                '_links' => [
+                    'self' => [['href' => 'https://ramo.io/wp-json/api/flutter_order/orders/']],
+                    'collection' => [['href' => 'https://ramo.io/wp-json/api/flutter_order/orders']],
+                    'customer' => [['href' => "https://ramo.io/wp-json/api/flutter_order/customers/{$userId}"]],
+                ],
+                'parent_vendors_data' => $vendorsById,
+                'parent_vendors_ids' => array_keys($vendorsById),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+            // ──────── Create Order ────────
+            $order = Order::create($orderDbData);
+
+            $order->update(['number' => $order->id + 2000]);
+
+            return $this->successResponse($order, 'Order created successfully.');
+
+        } catch (\Exception $e) {
+            Log::error('Order creation failed: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+
+            return $this->failureResponse($e, 500);
+        }
+    }
+
+    // ──────── Updated buildLineItems with Variation Support ────────
+    private function buildLineItems($enrichedItems)
+    {
+        return collect($enrichedItems)->map(function ($ei) {
+            $item = $ei['item'];
+            $product = $ei['product'];
+            $variation = $ei['variation'];
+
+            $name = $product->name;
+            $metaData = $item['meta_data'] ?? [];
+
+            if ($variation) {
+                // Add variation attributes to name and meta_data
+                if (! empty($variation->attributes)) {
+                    $attrString = collect($variation->attributes)->map(function ($value, $key) {
+                        return ucfirst(str_replace('_', ' ', $key)).': '.$value;
+                    })->join(' | ');
+
+                    $name .= " - $attrString";
+
+                    foreach ($variation->attributes as $key => $value) {
+                        $metaData[] = [
+                            'key' => $key,
+                            'value' => $value,
+                            'display_key' => ucfirst(str_replace('_', ' ', $key)),
+                            'display_value' => $value,
+                        ];
+                    }
+                }
+            }
+
+            $subtotal = number_format($ei['subtotal'], 2, '.', '');
+
+            return [
+                'product_id' => $product->id,
+                'variation_id' => $variation ? $variation->id : 0,
+                'name' => $name,
+                'quantity' => $item['quantity'],
+                'price' => number_format($ei['price_used'], 2, '.', ''),
+                'subtotal' => $subtotal,
+                'total' => $subtotal,
+                'subtotal_tax' => '0.00',
+                'total_tax' => '0.00',
+                'tax_class' => '',
+                'sku' => $product->sku ?? '',
+                'meta_data' => $metaData,
+                'image' => $variation && ! empty($variation->images[0]) ? ['src' => $variation->images[0]] : null,
+            ];
+        })->values()->toArray();
+    }
+}

@@ -1,0 +1,4 @@
+{"timestamp":"2025-12-14 17:45:14","message":"Invalid request method","context":{"method":"GET"},"ip":"::1","user_agent":"python-requests\/2.32.5"}
+{"timestamp":"2025-12-14 17:46:11","message":"Version out of supported range","context":{"pkgver":"4.4.5","supported_range":"1.0.0 - < 4.0.0"},"ip":"::1","user_agent":"python-requests\/2.32.5"}
+{"timestamp":"2025-12-14 17:46:11","message":"Package version validation failed","context":{"pkgver":"4.4.5"},"ip":"::1","user_agent":"python-requests\/2.32.5"}
+{"timestamp":"2025-12-14 17:59:18","message":"Version rejected","context":{"pkgver":"4.4.5"},"ip":"::1","ua":"python-requests\/2.32.5"}

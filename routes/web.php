@@ -1,0 +1,175 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\WebController;
+use App\Http\Controllers\Web\CartController;
+use App\Http\Controllers\Web\CheckoutController;
+use App\Http\Controllers\Web\AuthWebController;
+use App\Http\Controllers\Web\WishlistController;
+use App\Http\Controllers\Web\AccountController;
+use App\Http\Controllers\Web\SearchController;
+use App\Http\Controllers\Admin\ConfigAdminController;
+use App\Http\Controllers\Admin\AdminTimelineController;
+use App\Http\Controllers\Admin\AuthSettingsController;
+use App\Http\Controllers\Api\ReviewController;
+use App\Http\Controllers\Web\VendorOrderController;
+use App\Http\Controllers\Web\OrderMessageController;
+use App\Http\Controllers\Web\RefundRequestController;
+use App\Http\Controllers\Web\VendorRefundController;
+use App\Http\Controllers\Web\OtpAuthController;
+use App\Http\Controllers\Web\GoogleAuthController;
+
+Route::get('/', [WebController::class, 'home'])->name('home');
+Route::get('/shop', [WebController::class, 'shop'])->name('shop');
+Route::get('/product/{id}', [WebController::class, 'product'])->name('product');
+Route::get('/vendor/{id}', [WebController::class, 'vendor'])->name('vendor.store');
+
+Route::get('/cart', [CartController::class, 'index'])->name('cart');
+Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
+Route::post('/cart/update/{rowId}', [CartController::class, 'update'])->name('cart.update');
+Route::delete('/cart/remove/{rowId}', [CartController::class, 'remove'])->name('cart.remove');
+Route::delete('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');
+Route::post('/cart/coupon', [CartController::class, 'applyCoupon'])->name('cart.coupon');
+Route::delete('/cart/coupon', [CartController::class, 'removeCoupon'])->name('cart.coupon.remove');
+Route::get('/cart/count', [CartController::class, 'count'])->name('cart.count');
+
+Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
+Route::post('/checkout/place', [CheckoutController::class, 'place'])->name('checkout.place');
+Route::get('/order-success/{id}', [CheckoutController::class, 'success'])->name('order.success');
+
+Route::get('/login', [AuthWebController::class, 'showLogin'])->name('login');
+Route::post('/login', [AuthWebController::class, 'login']);
+Route::get('/register', [AuthWebController::class, 'showRegister'])->name('register');
+Route::post('/register', [AuthWebController::class, 'register']);
+Route::post('/logout', [AuthWebController::class, 'logout'])->name('logout');
+Route::post('/auth/send-otp', [OtpAuthController::class, 'sendOtp'])->name('auth.send-otp');
+Route::post('/auth/verify-otp', [OtpAuthController::class, 'verifyOtp'])->name('auth.verify-otp');
+Route::get('/auth/otp-verify', fn() => view('web.auth.otp-verify'))->name('auth.otp-verify');
+Route::get('/auth/complete-profile', [OtpAuthController::class, 'showCompleteProfile'])->name('auth.complete-profile');
+Route::post('/auth/complete-profile', [OtpAuthController::class, 'completeProfile'])->name('auth.complete-profile.post');
+Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback');
+
+use App\Http\Controllers\Web\PasswordResetController;
+Route::get('/forgot-password', [PasswordResetController::class, 'showForgotForm'])->name('password.forgot');
+Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->name('password.forgot.send');
+Route::get('/reset-password', [PasswordResetController::class, 'showResetForm'])->name('password.reset.form');
+Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])->name('password.reset');
+
+use App\Http\Controllers\Web\GuestOrderController;
+Route::get('/my-order', [GuestOrderController::class, 'index'])->name('guest.order');
+Route::post('/my-order', [GuestOrderController::class, 'lookup'])->name('guest.order.lookup');
+
+use App\Http\Controllers\Web\EmailVerificationController;
+Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->name('email.verify.notice');
+Route::post('/email/resend', [EmailVerificationController::class, 'resend'])->name('email.verify.resend');
+Route::get('/email/verify/confirm', [EmailVerificationController::class, 'verify'])->name('email.verify');
+
+Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
+Route::post('/wishlist/toggle', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
+Route::delete('/wishlist/{id}', [WishlistController::class, 'remove'])->name('wishlist.remove');
+
+Route::middleware('auth')->prefix('account')->group(function () {
+    Route::get('/profile', [AccountController::class, 'profile'])->name('account.profile');
+    Route::post('/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
+    Route::get('/orders', [AccountController::class, 'orders'])->name('account.orders');
+    Route::get('/orders/{id}', [AccountController::class, 'orderDetail'])->name('account.order');
+    Route::post('/orders/{id}/messages', [OrderMessageController::class, 'store'])->name('account.order.messages.store');
+    Route::get('/reviews', [AccountController::class, 'reviews'])->name('account.reviews');
+    Route::get('/refunds', [RefundRequestController::class, 'index'])->name('account.refunds');
+    Route::get('/refunds/create', [RefundRequestController::class, 'create'])->name('account.refunds.create');
+    Route::post('/refunds', [RefundRequestController::class, 'store'])->name('account.refunds.store');
+    Route::get('/refunds/{id}', [RefundRequestController::class, 'show'])->name('account.refunds.show');
+    Route::patch('/refunds/{id}/cancel', [RefundRequestController::class, 'cancel'])->name('account.refunds.cancel');
+});
+
+Route::middleware('auth')->post('/reviews', [ReviewController::class, 'webStore'])->name('review.store');
+Route::middleware('auth')->delete('/reviews/{id}', [ReviewController::class, 'destroy'])->name('review.destroy');
+Route::post('/reviews/{id}/helpful', [ReviewController::class, 'helpful'])->name('review.helpful');
+Route::get('/search', [SearchController::class, 'index'])->name('search');
+
+use App\Http\Controllers\Web\OrderTrackingController;
+Route::get('/track', [OrderTrackingController::class, 'index'])->name('order.track');
+Route::post('/track', [OrderTrackingController::class, 'track'])->name('order.track.submit');
+
+use App\Http\Controllers\Web\VendorWebController;
+use App\Http\Controllers\Web\VendorProductController;
+Route::get('/become-a-vendor', [VendorWebController::class, 'showRegister'])->name('vendor.register');
+Route::post('/become-a-vendor', [VendorWebController::class, 'register'])->name('vendor.register.submit');
+Route::get('/vendor-login', [VendorWebController::class, 'showLogin'])->name('vendor.login');
+Route::post('/vendor-login', [VendorWebController::class, 'login'])->name('vendor.login.submit');
+Route::post('/vendor-logout', [VendorWebController::class, 'logout'])->name('vendor.logout');
+Route::middleware('vendor.web.auth')->group(function () {
+    Route::get('/seller/dashboard', [VendorWebController::class, 'dashboard'])->name('vendor.dashboard');
+    Route::get('/seller/store-profile', [VendorWebController::class, 'showStoreProfile'])->name('vendor.store.profile');
+    Route::post('/seller/store-profile', [VendorWebController::class, 'updateStoreProfile'])->name('vendor.store.profile.update');
+    Route::get('/seller/orders', [VendorOrderController::class, 'index'])->name('vendor.orders');
+    Route::get('/seller/orders/{id}', [VendorOrderController::class, 'show'])->name('vendor.orders.show');
+    Route::post('/seller/orders/{id}/status', [VendorOrderController::class, 'updateStatus'])->name('vendor.orders.status');
+    Route::post('/seller/orders/{id}/reply', [VendorOrderController::class, 'reply'])->name('vendor.orders.reply');
+    Route::get('/seller/refunds', [VendorRefundController::class, 'index'])->name('vendor.refunds');
+    Route::get('/seller/refunds/{id}', [VendorRefundController::class, 'show'])->name('vendor.refunds.show');
+    Route::get('/seller/products', [VendorProductController::class, 'index'])->name('vendor.products');
+    Route::get('/seller/products/create', [VendorProductController::class, 'create'])->name('vendor.products.create');
+    Route::get('/seller/products/search-json', [VendorProductController::class, 'searchJson'])->name('vendor.products.search');
+    Route::post('/seller/products/bulk-price', [VendorProductController::class, 'bulkPrice'])->name('vendor.products.bulk-price');
+    Route::post('/seller/products', [VendorProductController::class, 'store'])->name('vendor.products.store');
+    Route::get('/seller/products/{id}', [VendorProductController::class, 'show'])->name('vendor.products.show');
+    Route::get('/seller/products/{id}/edit', [VendorProductController::class, 'edit'])->name('vendor.products.edit');
+    Route::post('/seller/products/{id}', [VendorProductController::class, 'update'])->name('vendor.products.update');
+    Route::post('/seller/products/{id}/section', [VendorProductController::class, 'updateSection'])->name('vendor.products.update-section');
+    Route::delete('/seller/products/{id}', [VendorProductController::class, 'destroy'])->name('vendor.products.destroy');
+});
+
+Route::get('/admin/login', [AuthWebController::class, 'showAdminLogin'])->name('admin.login');
+Route::post('/admin/login', [AuthWebController::class, 'adminLogin'])->name('admin.login.post');
+use App\Http\Controllers\Admin\AdminDashboardController;
+Route::prefix('admin')->middleware(['auth', 'admin.auth'])->group(function () {
+    Route::get('/', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
+    Route::get('/users', [AdminDashboardController::class, 'users'])->name('admin.users');
+    Route::patch('/users/{id}/block', [AdminDashboardController::class, 'blockUser'])->name('admin.users.block');
+    Route::patch('/users/{id}/unblock', [AdminDashboardController::class, 'unblockUser'])->name('admin.users.unblock');
+    Route::patch('/users/{id}/role', [AdminDashboardController::class, 'updateUserRole'])->name('admin.users.role');
+    Route::delete('/users/{id}', [AdminDashboardController::class, 'deleteUser'])->name('admin.users.delete');
+    Route::get('/orders', [AdminDashboardController::class, 'orders'])->name('admin.orders');
+    Route::get('/orders/{id}', [AdminDashboardController::class, 'orderDetail'])->name('admin.orders.detail');
+    Route::patch('/orders/{id}/status', [AdminDashboardController::class, 'updateOrderStatus'])->name('admin.orders.status');
+    Route::get('/vendors', [AdminDashboardController::class, 'vendors'])->name('admin.vendors');
+    Route::get('/vendors/{id}', [AdminDashboardController::class, 'vendorShow'])->name('admin.vendors.show');
+    Route::patch('/vendors/{id}/approve', [AdminDashboardController::class, 'approveVendor'])->name('admin.vendors.approve');
+    Route::patch('/vendors/{id}/block', [AdminDashboardController::class, 'blockVendor'])->name('admin.vendors.block');
+    Route::patch('/vendors/{id}/reject', [AdminDashboardController::class, 'rejectVendor'])->name('admin.vendors.reject');
+    Route::delete('/vendors/{id}', [AdminDashboardController::class, 'deleteVendor'])->name('admin.vendors.delete');
+    Route::get('/products', [AdminDashboardController::class, 'products'])->name('admin.products');
+    Route::post('/products/bulk', [AdminDashboardController::class, 'bulkProducts'])->name('admin.products.bulk');
+    Route::get('/products/{id}', [AdminDashboardController::class, 'showProduct'])->name('admin.products.show');
+    Route::post('/products/{id}/section', [AdminDashboardController::class, 'adminUpdateProductSection'])->name('admin.products.section');
+    Route::patch('/products/{id}/approve', [AdminDashboardController::class, 'approveProduct'])->name('admin.products.approve');
+    Route::patch('/products/{id}/reject', [AdminDashboardController::class, 'rejectProduct'])->name('admin.products.reject');
+    Route::patch('/products/{id}/toggle', [AdminDashboardController::class, 'toggleProductStatus'])->name('admin.products.toggle');
+    Route::delete('/products/{id}', [AdminDashboardController::class, 'deleteProduct'])->name('admin.products.delete');
+    Route::get('/devices', [AdminDashboardController::class, 'devices'])->name('admin.devices');
+    Route::patch('/devices/{id}/block', [AdminDashboardController::class, 'blockDevice'])->name('admin.devices.block');
+    Route::patch('/devices/{id}/unblock', [AdminDashboardController::class, 'unblockDevice'])->name('admin.devices.unblock');
+    Route::delete('/devices/{id}', [AdminDashboardController::class, 'deleteDevice'])->name('admin.devices.delete');
+    Route::post('/devices/block-by-id', [AdminDashboardController::class, 'blockDeviceByDeviceId'])->name('admin.devices.block-by-id');
+    Route::get('/timeline', [AdminTimelineController::class, 'index'])->name('admin.timeline');
+    Route::post('/timeline/save', [AdminTimelineController::class, 'save'])->name('admin.timeline.save');
+    Route::get('/analytics', [AdminDashboardController::class, 'analytics'])->name('admin.analytics');
+    Route::get('/coupons', [AdminDashboardController::class, 'coupons'])->name('admin.coupons');
+    Route::post('/coupons', [AdminDashboardController::class, 'createCoupon'])->name('admin.coupons.create');
+    Route::patch('/coupons/{id}/toggle', [AdminDashboardController::class, 'toggleCoupon'])->name('admin.coupons.toggle');
+    Route::delete('/coupons/{id}', [AdminDashboardController::class, 'deleteCoupon'])->name('admin.coupons.delete');
+    Route::get('/refunds', [AdminDashboardController::class, 'refunds'])->name('admin.refunds');
+    Route::get('/refunds/{id}', [AdminDashboardController::class, 'showRefund'])->name('admin.refunds.show');
+    Route::patch('/refunds/{id}', [AdminDashboardController::class, 'updateRefund'])->name('admin.refunds.update');
+    Route::get('/reviews', [AdminDashboardController::class, 'reviews'])->name('admin.reviews');
+    Route::patch('/reviews/{id}/toggle', [AdminDashboardController::class, 'toggleReview'])->name('admin.reviews.toggle');
+    Route::delete('/reviews/{id}', [AdminDashboardController::class, 'deleteReview'])->name('admin.reviews.delete');
+    Route::get('/configs', [ConfigAdminController::class, 'index'])->name('admin.configs');
+    Route::put('/configs/{id}', [ConfigAdminController::class, 'update'])->name('admin.configs.update');
+    Route::post('/configs', [ConfigAdminController::class, 'create'])->name('admin.configs.create');
+    Route::delete('/configs/{id}', [ConfigAdminController::class, 'destroy'])->name('admin.configs.destroy');
+    Route::get('/auth-settings', [AuthSettingsController::class, 'index'])->name('admin.auth-settings');
+    Route::put('/auth-settings', [AuthSettingsController::class, 'update'])->name('admin.auth-settings.update');
+});
