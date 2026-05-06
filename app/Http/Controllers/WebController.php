@@ -446,6 +446,7 @@ class WebController extends Controller
                 'p.description', 'p.stock_quantity', 'p.unit',
                 'p.vendor_id',
                 DB::raw('MIN(pv.price) as price'),
+                DB::raw('MIN(pv.regular_price) as regular_price'),
                 DB::raw('MIN(pv.sale_price) as sale_price'),
                 DB::raw('MAX(p.discount_percentage) as discount_percentage')
             )
@@ -484,17 +485,26 @@ class WebController extends Controller
             (array) ($imgArr['natural_images'] ?? [])
         )));
 
-        $p->price      = (float) ($p->price ?? 0);
-        $p->sale_price = (float) ($p->sale_price ?? 0);
-        $discPct       = (float) ($p->discount_percentage ?? 0);
+        $p->price         = (float) ($p->price ?? 0);
+        $p->regular_price = (float) ($p->regular_price ?? 0);
+        $p->sale_price    = (float) ($p->sale_price ?? 0);
+        $discPct          = (float) ($p->discount_percentage ?? 0);
 
-        // If discount_percentage is set but no real sale price was stored, compute it
-        if ($discPct > 0 && ($p->sale_price <= 0 || $p->sale_price >= $p->price) && $p->price > 0) {
-            $p->sale_price = round($p->price * (1 - $discPct / 100), 2);
+        // Use regular_price as the authoritative original (undiscounted) price when available
+        $basePrice = $p->regular_price > 0 ? $p->regular_price : $p->price;
+
+        // If discount_percentage is set but no valid sale price exists, compute from regular_price
+        if ($discPct > 0 && ($p->sale_price <= 0 || $p->sale_price >= $basePrice) && $basePrice > 0) {
+            $p->sale_price = round($basePrice * (1 - $discPct / 100), 2);
         }
 
-        $p->on_sale    = $p->sale_price > 0 && $p->sale_price < $p->price;
-        $p->display_price = $p->on_sale ? $p->sale_price : $p->price;
+        $p->on_sale       = $p->sale_price > 0 && $p->sale_price < $basePrice;
+        $p->display_price = $p->on_sale ? $p->sale_price : $basePrice;
+
+        // Set price to the original (regular) price so the strikethrough shows the correct value
+        if ($p->on_sale) {
+            $p->price = $basePrice;
+        }
 
         $p->unit_label = null;
         if (!empty($p->unit)) {

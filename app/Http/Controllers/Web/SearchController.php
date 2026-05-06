@@ -29,6 +29,7 @@ class SearchController extends Controller
                 'p.id', 'p.name', 'p.slug', 'p.images',
                 'p.description', 'p.stock_quantity', 'p.unit',
                 DB::raw('MIN(pv.price::numeric) as price'),
+                DB::raw('MIN(pv.regular_price::numeric) as regular_price'),
                 DB::raw('MIN(pv.sale_price::numeric) as sale_price'),
                 DB::raw('MAX(p.discount_percentage) as discount_percentage')
             )
@@ -108,10 +109,20 @@ class SearchController extends Controller
         $p->thumbnail_url = \App\Constants\AppConstants::productThumbnailUrl($p->images);
         $p->gallery_urls  = \App\Constants\AppConstants::productGalleryUrls($p->images);
 
-        $p->price      = (float) ($p->price ?? 0);
-        $p->sale_price = (float) ($p->sale_price ?? 0);
-        $p->on_sale    = $p->sale_price > 0 && $p->sale_price < $p->price;
-        $p->display_price = $p->on_sale ? $p->sale_price : $p->price;
+        $p->price         = (float) ($p->price ?? 0);
+        $p->regular_price = (float) ($p->regular_price ?? 0);
+        $p->sale_price    = (float) ($p->sale_price ?? 0);
+
+        // Use regular_price as the authoritative original (undiscounted) price when available
+        $basePrice = $p->regular_price > 0 ? $p->regular_price : $p->price;
+
+        $p->on_sale       = $p->sale_price > 0 && $p->sale_price < $basePrice;
+        $p->display_price = $p->on_sale ? $p->sale_price : $basePrice;
+
+        // Set price to the original so the strikethrough shows the correct value
+        if ($p->on_sale) {
+            $p->price = $basePrice;
+        }
 
         $unitRaw = $p->unit ?? null;
         if ($unitRaw && is_string($unitRaw)) {
