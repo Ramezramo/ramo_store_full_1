@@ -96,6 +96,13 @@ body{display:flex;height:100vh;overflow:hidden;background:var(--bg);font-family:
 
 /* ── LANG SWITCH ── */
 #langSwitch{background:rgba(255,255,255,.06);border:1px solid var(--border);color:#fff;padding:4px 8px;border-radius:6px;font-size:11px;font-family:inherit;outline:none;cursor:pointer}
+
+/* ── VIEW BUTTON ── */
+.btn-view{background:rgba(99,102,241,.12);border-color:rgba(99,102,241,.35);color:#818cf8}
+.btn-view:hover{background:rgba(99,102,241,.22);color:#a5b4fc}
+/* ── SOLO MODE BAR ── */
+#lp-solo-bar{display:none;align-items:center;gap:8px;padding:6px 12px;background:rgba(99,102,241,.18);border-bottom:1px solid rgba(99,102,241,.3);flex-shrink:0;font-size:11px;color:#a5b4fc}
+#lp-solo-bar.active{display:flex}
 </style>
 </head>
 <body>
@@ -138,7 +145,12 @@ body{display:flex;height:100vh;overflow:hidden;background:var(--bg);font-family:
     <span class="lp-dot"></span>
     <span id="lp-url" class="lp-url">{{ url('/') }}?tl_preview=1</span>
     <button class="btn btn-sm btn-ghost" onclick="reloadIframe()" title="Reload preview">↺ Reload</button>
-    <a href="{{ url('/') }}?tl_preview=1" target="_blank" class="btn btn-sm btn-ghost" title="Open in new tab">⬡ Open</a>
+    <a id="lp-open-btn" href="{{ url('/') }}?tl_preview=1" target="_blank" class="btn btn-sm btn-ghost" title="Open in new tab">⬡ Open</a>
+  </div>
+  <div id="lp-solo-bar">
+    <span style="font-size:13px">👁</span>
+    <span id="lp-solo-label" style="flex:1;font-weight:600">Viewing widget</span>
+    <button class="btn btn-sm" onclick="viewFull()" style="background:rgba(99,102,241,.25);border-color:rgba(99,102,241,.5);color:#c7d2fe;font-size:11px">← Full Page View</button>
   </div>
   <iframe id="lpIframe" src="{{ url('/') }}?tl_preview=1" sandbox="allow-same-origin allow-scripts allow-forms allow-popups"></iframe>
 </div>
@@ -264,7 +276,8 @@ function buildCard(sec, idx) {
         <div class="tl-section-desc" style="color:${hidden?'var(--muted)':meta.color}">${hidden?'Hidden':meta.label}</div>
       </div>
       <div class="tl-card-actions" onclick="event.stopPropagation()">
-        <button class="btn btn-sm" style="background:${hidden?'rgba(34,197,94,.15)':'rgba(255,255,255,.06)'};border:1px solid ${hidden?'rgba(34,197,94,.3)':'rgba(255,255,255,.1)'};color:${hidden?'#22c55e':'var(--muted)'}" onclick="toggleHidden(${idx})" title="${hidden?'Show':'Hide'}">${hidden?'👁 Show':'👁 Hide'}</button>
+        <button class="btn btn-view btn-sm" onclick="viewWidget(${idx})" title="Preview only this widget">👁 View</button>
+        <button class="btn btn-sm" style="background:${hidden?'rgba(34,197,94,.15)':'rgba(255,255,255,.06)'};border:1px solid ${hidden?'rgba(34,197,94,.3)':'rgba(255,255,255,.1)'};color:${hidden?'#22c55e':'var(--muted)'}" onclick="toggleHidden(${idx})" title="${hidden?'Show':'Hide'}">${hidden?'Show':'Hide'}</button>
         <button class="btn btn-danger btn-sm" onclick="removeSection(${idx})">✕</button>
       </div>
       <span style="color:var(--muted);font-size:12px;margin-left:4px">▼</span>
@@ -778,10 +791,56 @@ async function lpSave(){
 }
 
 // ── IFRAME CONTROL ────────────────────────────────────────────────
+let _soloIdx = null;
+const BASE_PREVIEW_URL = '{{ url('/') }}?tl_preview=1';
+
 function reloadIframe(){
   const fr = document.getElementById('lpIframe');
-  fr.src = fr.src;
+  fr.src = _soloIdx !== null
+    ? BASE_PREVIEW_URL + '&tl_solo=' + _soloIdx
+    : BASE_PREVIEW_URL;
 }
+
+function viewWidget(idx){
+  _soloIdx = idx;
+  const meta = TYPE_META[sections[idx].layout] || { icon:'❓', label: sections[idx].layout };
+  const name = sections[idx].name || sections[idx].headerText || sections[idx].title || meta.label;
+  const url = BASE_PREVIEW_URL + '&tl_solo=' + idx;
+
+  // update iframe
+  document.getElementById('lpIframe').src = url;
+
+  // update open button
+  document.getElementById('lp-open-btn').href = url;
+
+  // show solo bar
+  document.getElementById('lp-solo-label').textContent =
+    meta.icon + '  Viewing: ' + name + ' (' + meta.label + ')';
+  document.getElementById('lp-solo-bar').classList.add('active');
+
+  // highlight the active card
+  document.querySelectorAll('.tl-card').forEach((c, i) => {
+    c.style.outline = i === idx ? '2px solid #818cf8' : 'none';
+  });
+
+  // open editor for that card
+  document.querySelectorAll('.tl-body').forEach(b => b.classList.remove('open'));
+  const body = document.getElementById('body-' + idx);
+  if(body){
+    body.classList.add('open');
+    body.closest('.tl-card').scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+}
+
+function viewFull(){
+  _soloIdx = null;
+  const url = BASE_PREVIEW_URL;
+  document.getElementById('lpIframe').src = url;
+  document.getElementById('lp-open-btn').href = url;
+  document.getElementById('lp-solo-bar').classList.remove('active');
+  document.querySelectorAll('.tl-card').forEach(c => { c.style.outline = 'none'; });
+}
+
 function switchLang(lang){
   window.location.href = '/admin/live-preview?lang='+lang;
 }

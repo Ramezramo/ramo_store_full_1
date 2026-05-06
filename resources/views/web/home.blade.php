@@ -35,7 +35,10 @@
 <div class="page">
 
   {{-- ── DYNAMIC TIMELINE SECTIONS ── --}}
-  @php $inPreview = request()->has('tl_preview'); @endphp
+  @php
+    $inPreview = request()->has('tl_preview');
+    $tlSolo    = request()->has('tl_solo') ? (int) request('tl_solo') : null;
+  @endphp
   @forelse($sections as $si => $sec)
     @php
       $layout    = $sec['layout'] ?? '';
@@ -43,6 +46,7 @@
       $tlName    = $sec['name'] ?? $sec['headerText'] ?? $sec['title'] ?? ucfirst($layout);
     @endphp
     @if($sec['hidden'] ?? false) @continue @endif
+    @if($tlSolo !== null && $si !== $tlSolo) @continue @endif
     @if($inPreview && !$tlNoWrap)<div class="tl-pw" data-si="{{ $si }}" data-layout="{{ $layout }}" data-name="{{ htmlspecialchars($tlName, ENT_QUOTES) }}">@endif
 
     {{-- LOGO — skip (web has its own header) --}}

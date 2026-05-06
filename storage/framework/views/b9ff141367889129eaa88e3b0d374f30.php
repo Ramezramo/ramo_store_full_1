@@ -35,7 +35,10 @@
 <div class="page">
 
   
-  <?php $inPreview = request()->has('tl_preview'); ?>
+  <?php
+    $inPreview = request()->has('tl_preview');
+    $tlSolo    = request()->has('tl_solo') ? (int) request('tl_solo') : null;
+  ?>
   <?php $__empty_1 = true; $__currentLoopData = $sections; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $si => $sec): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
     <?php
       $layout    = $sec['layout'] ?? '';
@@ -43,6 +46,7 @@
       $tlName    = $sec['name'] ?? $sec['headerText'] ?? $sec['title'] ?? ucfirst($layout);
     ?>
     <?php if($sec['hidden'] ?? false): ?> <?php continue; ?> <?php endif; ?>
+    <?php if($tlSolo !== null && $si !== $tlSolo): ?> <?php continue; ?> <?php endif; ?>
     <?php if($inPreview && !$tlNoWrap): ?><div class="tl-pw" data-si="<?php echo e($si); ?>" data-layout="<?php echo e($layout); ?>" data-name="<?php echo e(htmlspecialchars($tlName, ENT_QUOTES)); ?>"><?php endif; ?>
 
     
