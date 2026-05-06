@@ -140,7 +140,7 @@
   </div>
 </div>
 
-<?php if (! $__env->hasRenderedOnce('6efa6ffa-169e-4311-a700-f0dc3c9406d1')): $__env->markAsRenderedOnce('6efa6ffa-169e-4311-a700-f0dc3c9406d1'); ?>
+<?php if (! $__env->hasRenderedOnce('5aee1a8f-0acb-49f8-969e-da89b6199032')): $__env->markAsRenderedOnce('5aee1a8f-0acb-49f8-969e-da89b6199032'); ?>
 <style>
 .pc-coupon-bar{display:flex;text-decoration:none;border-radius:0 0 10px 10px;overflow:hidden;margin:10px -14px -14px;font-size:11px;font-weight:700;line-height:1}
 .pc-coupon-left{flex:1;background:#7c3aed;color:#fff;padding:8px 10px;display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
