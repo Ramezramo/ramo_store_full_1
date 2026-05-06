@@ -578,6 +578,10 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 .tl-slides{display:flex;transition:transform .5s cubic-bezier(.4,0,.2,1)}
 .tl-slide{min-width:100%;position:relative}
 .tl-slide img{width:100%;display:block;object-fit:cover}
+@media(max-width:640px){
+  .tl-banner-slider{max-height:none !important}
+  .tl-slide img{height:56vw !important;max-height:none !important}
+}
 .tl-slide-link{display:block;position:relative}
 .tl-dots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px}
 .tl-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.5);cursor:pointer;transition:.2s}

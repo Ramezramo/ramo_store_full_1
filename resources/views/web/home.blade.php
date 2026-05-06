@@ -117,7 +117,7 @@
     @elseif($layout === 'bannerImage')
       @php
         $items        = $sec['items'] ?? [];
-        $isSlider     = ($sec['design'] ?? 'default') !== 'static' && count($items) > 1;
+        $isSlider     = ($sec['design'] ?? 'default') !== 'static';
         $radius       = $sec['radius'] ?? 2;
         $sliderId     = 'slider-'.$si;
         $bannerHeight = (int)($sec['bannerHeight'] ?? 420);
