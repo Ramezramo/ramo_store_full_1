@@ -37,6 +37,7 @@
   
   <?php $__empty_1 = true; $__currentLoopData = $sections; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $si => $sec): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
     <?php $layout = $sec['layout'] ?? ''; ?>
+    <?php if($sec['hidden'] ?? false): ?> <?php continue; ?> <?php endif; ?>
 
     
     <?php if($layout === 'logo'): ?>
@@ -54,6 +55,7 @@
         $fDuration = (int)($sec['duration'] ?? 4) * 3600;
         $fMinOrder = $sec['minOrder'] ?? 0;
         $fSeconds  = $sec['showCountdownSeconds'] ?? true;
+        $fEndTime  = isset($sec['endTime']) && (int)$sec['endTime'] > 0 ? (int)$sec['endTime'] : 0;
       ?>
       <div class="tl-flash-bar" id="flash-<?php echo e($si); ?>">
         <div class="tl-flash-inner">
@@ -77,14 +79,16 @@
       </div>
       <script>
       (function(){
-        var end = Date.now() + <?php echo e($fDuration); ?> * 1000;
+        var endTime = <?php echo e($fEndTime); ?>;
+        var end = endTime > 0 ? endTime : (Date.now() + <?php echo e($fDuration); ?> * 1000);
         var showSec = <?php echo e($fSeconds ? 'true' : 'false'); ?>;
+        var autoDismiss = <?php echo e(!empty($sec['autoDismissWhenExpired']) ? 'true' : 'false'); ?>;
         function tick() {
           var rem = Math.max(0, Math.floor((end - Date.now()) / 1000));
-          if (rem === 0) { var el = document.getElementById('flash-<?php echo e($si); ?>'); if (el && <?php echo e($sec['autoDismissWhenExpired'] ?? 'false'); ?>) el.style.display='none'; return; }
           document.getElementById('fh-<?php echo e($si); ?>').textContent = String(Math.floor(rem/3600)).padStart(2,'0');
           document.getElementById('fm-<?php echo e($si); ?>').textContent = String(Math.floor((rem%3600)/60)).padStart(2,'0');
           if (showSec) document.getElementById('fs-<?php echo e($si); ?>').textContent = String(rem%60).padStart(2,'0');
+          if (rem === 0) { if (autoDismiss) { var el = document.getElementById('flash-<?php echo e($si); ?>'); if (el) el.style.display='none'; } return; }
           setTimeout(tick, 1000);
         }
         tick();

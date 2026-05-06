@@ -37,6 +37,7 @@
   {{-- ── DYNAMIC TIMELINE SECTIONS ── --}}
   @forelse($sections as $si => $sec)
     @php $layout = $sec['layout'] ?? ''; @endphp
+    @if($sec['hidden'] ?? false) @continue @endif
 
     {{-- LOGO — skip (web has its own header) --}}
     @if($layout === 'logo')
@@ -54,6 +55,7 @@
         $fDuration = (int)($sec['duration'] ?? 4) * 3600;
         $fMinOrder = $sec['minOrder'] ?? 0;
         $fSeconds  = $sec['showCountdownSeconds'] ?? true;
+        $fEndTime  = isset($sec['endTime']) && (int)$sec['endTime'] > 0 ? (int)$sec['endTime'] : 0;
       @endphp
       <div class="tl-flash-bar" id="flash-{{ $si }}">
         <div class="tl-flash-inner">
@@ -77,14 +79,16 @@
       </div>
       <script>
       (function(){
-        var end = Date.now() + {{ $fDuration }} * 1000;
+        var endTime = {{ $fEndTime }};
+        var end = endTime > 0 ? endTime : (Date.now() + {{ $fDuration }} * 1000);
         var showSec = {{ $fSeconds ? 'true' : 'false' }};
+        var autoDismiss = {{ !empty($sec['autoDismissWhenExpired']) ? 'true' : 'false' }};
         function tick() {
           var rem = Math.max(0, Math.floor((end - Date.now()) / 1000));
-          if (rem === 0) { var el = document.getElementById('flash-{{ $si }}'); if (el && {{ $sec['autoDismissWhenExpired'] ?? 'false' }}) el.style.display='none'; return; }
           document.getElementById('fh-{{ $si }}').textContent = String(Math.floor(rem/3600)).padStart(2,'0');
           document.getElementById('fm-{{ $si }}').textContent = String(Math.floor((rem%3600)/60)).padStart(2,'0');
           if (showSec) document.getElementById('fs-{{ $si }}').textContent = String(rem%60).padStart(2,'0');
+          if (rem === 0) { if (autoDismiss) { var el = document.getElementById('flash-{{ $si }}'); if (el) el.style.display='none'; } return; }
           setTimeout(tick, 1000);
         }
         tick();
