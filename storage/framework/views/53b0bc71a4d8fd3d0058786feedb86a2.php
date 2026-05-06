@@ -63,7 +63,15 @@
     <?php else: ?>
       <div class="placeholder" id="pc-img-<?php echo e($pid); ?>">🛍️</div>
     <?php endif; ?>
-    <?php if($p->on_sale): ?><span class="badge-sale"><?php if($p->discount_percentage > 0): ?>-<?php echo e(round($p->discount_percentage)); ?>%<?php else: ?> SALE <?php endif; ?></span><?php endif; ?>
+    <?php if($p->on_sale): ?>
+      <?php if(!empty($p->flash_sale)): ?>
+        <span class="badge-sale badge-flash">⚡ <?php echo e(round($p->flash_discount_pct)); ?>% OFF</span>
+      <?php elseif($p->discount_percentage > 0): ?>
+        <span class="badge-sale">-<?php echo e(round($p->discount_percentage)); ?>%</span>
+      <?php else: ?>
+        <span class="badge-sale">SALE</span>
+      <?php endif; ?>
+    <?php endif; ?>
     <button class="wish-btn" onclick="event.preventDefault();toggleWishlist(this,<?php echo e($pid); ?>)" title="Wishlist">♡</button>
   </a>
 
@@ -140,7 +148,7 @@
   </div>
 </div>
 
-<?php if (! $__env->hasRenderedOnce('5aee1a8f-0acb-49f8-969e-da89b6199032')): $__env->markAsRenderedOnce('5aee1a8f-0acb-49f8-969e-da89b6199032'); ?>
+<?php if (! $__env->hasRenderedOnce('17b43844-5c60-4321-a721-1bd1b46e73d9')): $__env->markAsRenderedOnce('17b43844-5c60-4321-a721-1bd1b46e73d9'); ?>
 <style>
 .pc-coupon-bar{display:flex;text-decoration:none;border-radius:0 0 10px 10px;overflow:hidden;margin:10px -14px -14px;font-size:11px;font-weight:700;line-height:1}
 .pc-coupon-left{flex:1;background:#7c3aed;color:#fff;padding:8px 10px;display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

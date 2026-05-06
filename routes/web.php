@@ -160,6 +160,7 @@ Route::prefix('admin')->middleware(['auth', 'admin.auth'])->group(function () {
     Route::post('/devices/block-by-id', [AdminDashboardController::class, 'blockDeviceByDeviceId'])->name('admin.devices.block-by-id');
     Route::get('/timeline', [AdminTimelineController::class, 'index'])->name('admin.timeline');
     Route::post('/timeline/save', [AdminTimelineController::class, 'save'])->name('admin.timeline.save');
+    Route::get('/products/search', [AdminTimelineController::class, 'searchProducts'])->name('admin.products.search');
     Route::get('/analytics', [AdminDashboardController::class, 'analytics'])->name('admin.analytics');
     Route::get('/coupons', [AdminDashboardController::class, 'coupons'])->name('admin.coupons');
     Route::post('/coupons', [AdminDashboardController::class, 'createCoupon'])->name('admin.coupons.create');

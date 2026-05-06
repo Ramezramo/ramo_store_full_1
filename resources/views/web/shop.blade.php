@@ -343,7 +343,15 @@
               @else
                 <div class="placeholder">👕</div>
               @endif
-              @if($p->on_sale)<span class="badge-sale">@if($p->discount_percentage > 0)-{{ round($p->discount_percentage) }}%@else SALE @endif</span>@endif
+              @if($p->on_sale)
+                @if(!empty($p->flash_sale))
+                  <span class="badge-sale badge-flash">⚡ {{ round($p->flash_discount_pct) }}% OFF</span>
+                @elseif($p->discount_percentage > 0)
+                  <span class="badge-sale">-{{ round($p->discount_percentage) }}%</span>
+                @else
+                  <span class="badge-sale">SALE</span>
+                @endif
+              @endif
               <button class="wish-btn" onclick="event.preventDefault();toggleWishlist(this,{{ $p->id }})" title="Add to Wishlist">♡</button>
             </a>
             <div class="product-card-body">

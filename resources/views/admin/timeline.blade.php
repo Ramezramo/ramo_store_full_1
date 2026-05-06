@@ -465,7 +465,23 @@ function buildEditor(sec, idx) {
     <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:8px">
       <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer"><input type="checkbox" ${sec.showCountdownSeconds!==false?'checked':''} onchange="updateField(${idx},'showCountdownSeconds',this.checked)" style="width:16px;height:16px"> Show Seconds in Countdown</label>
       <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer"><input type="checkbox" ${sec.autoDismissWhenExpired?'checked':''} onchange="updateField(${idx},'autoDismissWhenExpired',this.checked)" style="width:16px;height:16px"> Auto-Dismiss When Expired</label>
+    </div>
+    <div style="margin-top:16px;border-top:1px solid rgba(255,255,255,.1);padding-top:14px">
+      <label style="font-size:13px;font-weight:600;color:var(--text);display:block;margin-bottom:10px">⚡ Product Targeting</label>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px">
+        <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer">
+          <input type="radio" name="flash-apply-${idx}" value="all" ${(sec.applyTo||'all')==='all'?'checked':''} onchange="updateField(${idx},'applyTo','all');renderFlashTargeting(${idx})"> All Products
+        </label>
+        <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer">
+          <input type="radio" name="flash-apply-${idx}" value="categories" ${sec.applyTo==='categories'?'checked':''} onchange="updateField(${idx},'applyTo','categories');renderFlashTargeting(${idx})"> Specific Categories
+        </label>
+        <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer">
+          <input type="radio" name="flash-apply-${idx}" value="products" ${sec.applyTo==='products'?'checked':''} onchange="updateField(${idx},'applyTo','products');renderFlashTargeting(${idx})"> Specific Products
+        </label>
+      </div>
+      <div id="flash-targeting-${idx}"></div>
     </div>`;
+    setTimeout(() => renderFlashTargeting(${idx}), 0);
   }
 
   else if (type === 'bundle') {
@@ -895,7 +911,7 @@ const DEFAULTS = {
   complete:          { layout:'complete', suggestionsPerItem:3, strategy:'Same category', showInCartSidebar:false, showOnProductPage:false, showDiscountIfBoughtTogether:false },
   recommended:       { layout:'recommended', headerText:'Recommended For You', count:8, fallback:'trending', showOnlyLoggedIn:false, personalizedLabel:false, refreshDaily:false },
   announcement:      { layout:'announcement', message:'Welcome to Ramo Store! Free shipping on orders over 500 EGP.', speed:'normal', barColor:'dark', dismissableByUser:true, showOnAllPages:true, showOnlyToGuests:false },
-  flash:             { layout:'flash', title:'Flash Sale', discount:20, duration:4, minOrder:0, showOnHomepage:true, showCountdownSeconds:true, autoDismissWhenExpired:false },
+  flash:             { layout:'flash', title:'Flash Sale', discount:20, duration:4, minOrder:0, showOnHomepage:true, showCountdownSeconds:true, autoDismissWhenExpired:false, applyTo:'all', targetCategories:[], targetProductIds:[] },
   spacer:            { layout:'spacer', height:24 },
   divider:           { layout:'divider' },
 };
@@ -1051,7 +1067,7 @@ async function saveTimeline() {
         'Content-Type': 'application/json',
         'X-CSRF-TOKEN': CSRF,
       },
-      body: JSON.stringify({ lang: LANG, payload: JSON.stringify(sections) })
+      body: JSON.stringify({ lang: LANG, payload: JSON.stringify(sections.map(s => { const c = Object.assign({}, s); delete c._productNames; return c; })) })
     });
     const data = await res.json();
     if (data.success) {
@@ -1075,6 +1091,112 @@ function escHtml(s) {
 }
 function escAttr(s) {
   return String(s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ── Flash Sale targeting panel ──────────────────────────────────────
+function renderFlashTargeting(idx) {
+  const sec = sections[idx];
+  const el  = document.getElementById('flash-targeting-' + idx);
+  if (!el) return;
+  const applyTo = sec.applyTo || 'all';
+
+  if (applyTo === 'all') {
+    el.innerHTML = '<p style="font-size:12px;color:var(--muted);margin:0">The discount will apply to every product in the store.</p>';
+    return;
+  }
+
+  if (applyTo === 'categories') {
+    const selected = Array.isArray(sec.targetCategories) ? sec.targetCategories.map(Number) : [];
+    let html = '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">';
+    CATEGORIES.forEach(cat => {
+      const checked = selected.includes(Number(cat.id)) ? 'checked' : '';
+      html += `<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:5px 10px">
+        <input type="checkbox" value="${cat.id}" ${checked} onchange="flashToggleCategory(${idx},${cat.id},this.checked)" style="width:14px;height:14px"> ${escHtml(cat.name)}
+      </label>`;
+    });
+    html += '</div>';
+    if (selected.length === 0) html += '<p style="font-size:12px;color:#f59e0b;margin:0">⚠ No categories selected — discount won\'t apply to any product.</p>';
+    else html += `<p style="font-size:12px;color:var(--muted);margin:0">${selected.length} categor${selected.length===1?'y':'ies'} selected.</p>`;
+    el.innerHTML = html;
+    return;
+  }
+
+  if (applyTo === 'products') {
+    const selected = Array.isArray(sec.targetProductIds) ? sec.targetProductIds.map(Number) : [];
+    let chips = selected.map(id => {
+      const name = (sec._productNames || {})[id] || ('Product #' + id);
+      return `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(232,93,38,.15);border:1px solid rgba(232,93,38,.3);color:#e85d26;border-radius:20px;padding:3px 10px;font-size:12px">
+        ${escHtml(name)} <button onclick="flashRemoveProduct(${idx},${id})" style="background:none;border:none;color:#e85d26;cursor:pointer;font-size:14px;line-height:1;padding:0">×</button>
+      </span>`;
+    }).join('');
+    el.innerHTML = `
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">${chips || '<span style="font-size:12px;color:var(--muted)">No products selected yet.</span>'}</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" id="flash-psearch-${idx}" placeholder="Search products by name…" style="flex:1;font-size:13px" oninput="flashSearchProducts(${idx},this.value)">
+      </div>
+      <div id="flash-presults-${idx}" style="margin-top:6px;max-height:200px;overflow-y:auto;border:1px solid rgba(255,255,255,.1);border-radius:8px;display:none"></div>
+      ${selected.length===0?'<p style="font-size:12px;color:#f59e0b;margin-top:8px">⚠ No products selected — discount won\'t apply to any product.</p>':''}
+    `;
+  }
+}
+
+function flashToggleCategory(idx, catId, checked) {
+  if (!sections[idx].targetCategories) sections[idx].targetCategories = [];
+  catId = Number(catId);
+  if (checked) {
+    if (!sections[idx].targetCategories.includes(catId)) sections[idx].targetCategories.push(catId);
+  } else {
+    sections[idx].targetCategories = sections[idx].targetCategories.filter(c => c !== catId);
+  }
+  renderFlashTargeting(idx);
+}
+
+function flashRemoveProduct(idx, prodId) {
+  prodId = Number(prodId);
+  if (!sections[idx].targetProductIds) sections[idx].targetProductIds = [];
+  sections[idx].targetProductIds = sections[idx].targetProductIds.filter(p => p !== prodId);
+  if (sections[idx]._productNames) delete sections[idx]._productNames[prodId];
+  renderFlashTargeting(idx);
+}
+
+let _flashSearchTimer = null;
+function flashSearchProducts(idx, q) {
+  clearTimeout(_flashSearchTimer);
+  const resultsEl = document.getElementById('flash-presults-' + idx);
+  if (!resultsEl) return;
+  if (q.trim().length < 1) { resultsEl.style.display = 'none'; return; }
+  _flashSearchTimer = setTimeout(async () => {
+    resultsEl.style.display = 'block';
+    resultsEl.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--muted)">Searching…</div>';
+    try {
+      const resp = await fetch(`/admin/products/search?q=${encodeURIComponent(q.trim())}`);
+      const data = await resp.json();
+      if (!data.length) { resultsEl.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--muted)">No products found.</div>'; return; }
+      const selected = Array.isArray(sections[idx].targetProductIds) ? sections[idx].targetProductIds.map(Number) : [];
+      resultsEl.innerHTML = data.map(p => {
+        const isSel = selected.includes(Number(p.id));
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.07);font-size:13px">
+          <span>${escHtml(p.name)}</span>
+          <button onclick="flashAddProduct(${idx},${p.id},'${escAttr(p.name)}')" style="background:${isSel?'rgba(34,197,94,.15)':'rgba(232,93,38,.15)'};border:1px solid ${isSel?'rgba(34,197,94,.3)':'rgba(232,93,38,.3)'};color:${isSel?'#22c55e':'#e85d26'};border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer">${isSel?'✓ Added':'+ Add'}</button>
+        </div>`;
+      }).join('');
+    } catch(e) {
+      resultsEl.innerHTML = '<div style="padding:10px;font-size:12px;color:#ef4444">Search failed.</div>';
+    }
+  }, 300);
+}
+
+function flashAddProduct(idx, prodId, prodName) {
+  prodId = Number(prodId);
+  if (!sections[idx].targetProductIds) sections[idx].targetProductIds = [];
+  if (!sections[idx]._productNames) sections[idx]._productNames = {};
+  if (!sections[idx].targetProductIds.includes(prodId)) {
+    sections[idx].targetProductIds.push(prodId);
+    sections[idx]._productNames[prodId] = prodName;
+  }
+  renderFlashTargeting(idx);
+  const inp = document.getElementById('flash-psearch-' + idx);
+  if (inp) flashSearchProducts(idx, inp.value);
 }
 
 // ── INIT ───────────────────────────────────────────────────────────

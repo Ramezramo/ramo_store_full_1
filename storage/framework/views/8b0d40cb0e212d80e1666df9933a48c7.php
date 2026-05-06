@@ -227,17 +227,19 @@ function buildCard(sec, idx) {
   const type = sec.layout || 'unknown';
   const meta = TYPE_META[type] || { icon:'❓', label: type, color:'#6b7280' };
   const name = sec.name || sec.headerText || meta.label;
+  const hidden = sec.hidden === true;
 
   return `
-  <div class="tl-card" data-idx="${idx}">
+  <div class="tl-card" data-idx="${idx}" style="${hidden ? 'opacity:.45;border-style:dashed' : ''}">
     <div class="tl-card-header" onclick="toggleBody(${idx})">
       <span class="tl-drag-handle">⠿</span>
-      <span style="font-size:18px">${meta.icon}</span>
+      <span style="font-size:18px">${hidden ? '🚫' : meta.icon}</span>
       <div style="flex:1;min-width:0">
-        <div class="tl-section-name">${escHtml(name)}</div>
-        <div class="tl-section-desc" style="color:${meta.color}">${meta.label}</div>
+        <div class="tl-section-name" style="${hidden ? 'text-decoration:line-through;color:var(--muted)' : ''}">${escHtml(name)}</div>
+        <div class="tl-section-desc" style="color:${hidden ? 'var(--muted)' : meta.color}">${hidden ? 'Hidden — not shown on homepage' : meta.label}</div>
       </div>
       <div class="tl-card-actions" onclick="event.stopPropagation()">
+        <button class="btn btn-sm" style="background:${hidden ? 'rgba(34,197,94,.15)' : 'rgba(255,255,255,.07)'};border:1px solid ${hidden ? 'rgba(34,197,94,.3)' : 'rgba(255,255,255,.12)'};color:${hidden ? '#22c55e' : 'var(--muted)'}" onclick="toggleHidden(${idx})" title="${hidden ? 'Show widget' : 'Hide widget'}">${hidden ? '👁 Show' : '👁 Hide'}</button>
         <button class="btn btn-danger btn-sm" onclick="removeSection(${idx})">Remove</button>
       </div>
       <span style="color:var(--muted);font-size:12px;margin-left:4px">▼</span>
@@ -438,16 +440,29 @@ function buildEditor(sec, idx) {
   }
 
   else if (type === 'flash') {
+    const endTimeVal = sec.endTime ? new Date(sec.endTime).toISOString().slice(0,16) : '';
+    const endTimeStatus = sec.endTime
+      ? (sec.endTime > Date.now()
+          ? `<span style="color:#22c55e">⏱ Active — ends ${new Date(sec.endTime).toLocaleString()}</span>`
+          : `<span style="color:#ef4444">⏰ Expired — set a new end time</span>`)
+      : `<span style="color:var(--muted)">No end time set — timer resets on every page load</span>`;
     html = `
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#ef4444;margin-bottom:10px">⚡ Full-width — appears at the top of the page</div>
     <div class="form-grid">
       <div class="form-group"><label>Title</label><input type="text" value="${escAttr(sec.title||'Flash Sale')}" style="width:100%" onchange="updateField(${idx},'title',this.value)" placeholder="Flash Sale"></div>
       <div class="form-group"><label>Discount (%)</label><input type="number" value="${sec.discount||20}" min="1" max="99" style="width:100%" onchange="updateField(${idx},'discount',parseInt(this.value))"></div>
-      <div class="form-group"><label>Duration (hours)</label><input type="number" value="${sec.duration||4}" min="1" max="720" style="width:100%" onchange="updateField(${idx},'duration',parseInt(this.value))"></div>
+      <div class="form-group"><label>Duration (hours)</label><input type="number" value="${sec.duration||4}" min="1" max="720" style="width:100%" onchange="updateField(${idx},'duration',parseInt(this.value))" id="flash-dur-${idx}"></div>
       <div class="form-group"><label>Min Order (EGP)</label><input type="number" value="${sec.minOrder||0}" min="0" style="width:100%" onchange="updateField(${idx},'minOrder',parseInt(this.value))"></div>
     </div>
+    <div class="form-group" style="margin-top:8px">
+      <label>End Date & Time <span style="font-size:11px;font-weight:400;color:var(--muted)">(sets a fixed countdown target — required for the timer to work consistently)</span></label>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px">
+        <input type="datetime-local" value="${endTimeVal}" style="flex:1;min-width:180px" onchange="updateField(${idx},'endTime', this.value ? new Date(this.value).getTime() : 0)" id="flash-endtime-${idx}">
+        <button class="btn btn-sm" style="background:rgba(232,93,38,.15);border:1px solid rgba(232,93,38,.3);color:#e85d26;white-space:nowrap" onclick="setFlashEndFromNow(${idx})">⚡ Start from now</button>
+        <button class="btn btn-sm" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:var(--muted)" onclick="updateField(${idx},'endTime',0);document.getElementById('flash-endtime-${idx}').value=''" title="Clear end time">Clear</button>
+      </div>
+      <div style="font-size:12px;margin-top:6px">${endTimeStatus}</div>
+    </div>
     <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:8px">
-      <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer"><input type="checkbox" ${sec.showOnHomepage!==false?'checked':''} onchange="updateField(${idx},'showOnHomepage',this.checked)" style="width:16px;height:16px"> Show on Homepage</label>
       <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer"><input type="checkbox" ${sec.showCountdownSeconds!==false?'checked':''} onchange="updateField(${idx},'showCountdownSeconds',this.checked)" style="width:16px;height:16px"> Show Seconds in Countdown</label>
       <label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer"><input type="checkbox" ${sec.autoDismissWhenExpired?'checked':''} onchange="updateField(${idx},'autoDismissWhenExpired',this.checked)" style="width:16px;height:16px"> Auto-Dismiss When Expired</label>
     </div>`;
@@ -751,6 +766,26 @@ function removeSection(idx) {
 
 function updateField(idx, key, value) {
   sections[idx][key] = value;
+}
+
+function toggleHidden(idx) {
+  sections[idx].hidden = !sections[idx].hidden;
+  renderAll();
+  setTimeout(() => { const b = document.getElementById('body-'+idx); if(b) b.classList.add('open'); }, 50);
+}
+
+function setFlashEndFromNow(idx) {
+  const durEl = document.getElementById('flash-dur-' + idx);
+  const hours = durEl ? (parseInt(durEl.value) || 4) : (sections[idx].duration || 4);
+  const endMs = Date.now() + hours * 3600 * 1000;
+  sections[idx].endTime = endMs;
+  const dtEl = document.getElementById('flash-endtime-' + idx);
+  if (dtEl) {
+    const local = new Date(endMs - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    dtEl.value = local;
+  }
+  renderAll();
+  setTimeout(() => { const b = document.getElementById('body-'+idx); if(b) b.classList.add('open'); }, 50);
 }
 
 function updateRaw(idx, raw) {

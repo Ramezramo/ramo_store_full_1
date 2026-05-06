@@ -91,6 +91,8 @@ button{cursor:pointer;font-family:inherit}
 .product-card-img img{width:100%;height:100%;object-fit:cover;transition:transform .35s}
 .product-card:hover .product-card-img img{transform:scale(1.05)}
 .product-card-img .badge-sale{position:absolute;top:10px;left:10px;background:var(--c-orange);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:50px;z-index:1}
+.product-card-img .badge-flash{background:linear-gradient(135deg,#e85d26,#f59e0b);animation:flash-pulse 1.8s ease-in-out infinite}
+@keyframes flash-pulse{0%,100%{box-shadow:0 0 0 0 rgba(232,93,38,.5)}50%{box-shadow:0 0 0 5px rgba(232,93,38,0)}}
 .wish-btn{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.9);border:none;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;z-index:1}
 .wish-btn:hover{background:#fff;transform:scale(1.1)}
 .wish-btn.wished{color:var(--c-orange)}

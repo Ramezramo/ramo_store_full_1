@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Constants\AppConstants;
+use App\Services\FlashSaleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +25,8 @@ class WebController extends Controller
                 ->first();
         }
 
-        $sections = $configRow ? (json_decode($configRow->value, true) ?? []) : [];
+        $sections  = $configRow ? (json_decode($configRow->value, true) ?? []) : [];
+        $flashSale = FlashSaleService::getActive($lang);
 
         // ── Pre-load product data for each section ────────────────
         $sectionProducts        = [];
@@ -52,7 +54,7 @@ class WebController extends Controller
                     });
                 }
                 $sectionProducts[$i] = $query->limit($max)->get()
-                    ->map(fn($p) => $this->parseProduct($p));
+                    ->map(fn($p) => $this->parseProduct($p, $flashSale));
             }
 
             if ($layout === 'testimonials') {
@@ -125,10 +127,11 @@ class WebController extends Controller
                         DB::raw('MIN(pv.sale_price) as sale_price'),
                         DB::raw('MAX(p.discount_percentage) as discount_percentage')
                     )
+                    ->addSelect(DB::raw("(SELECT string_agg(pc_sub.category_id::text, ',') FROM product_category pc_sub WHERE pc_sub.product_id = p.id) as product_cat_ids"))
                     ->groupBy('p.id','p.name','p.slug','p.images','p.total_sales',
                               'p.description','p.stock_quantity','p.unit','p.vendor_id')
                     ->orderBy($orderCol === 'avg_rating' ? DB::raw('MIN(pv.price)') : DB::raw('p.total_sales'), 'desc')
-                    ->limit($max)->get()->map(fn($p) => $this->parseProduct($p));
+                    ->limit($max)->get()->map(fn($p) => $this->parseProduct($p, $flashSale));
                 $sectionTrending[$i] = $q;
             }
 
@@ -146,10 +149,11 @@ class WebController extends Controller
                         DB::raw('MIN(pv.sale_price) as sale_price'),
                         DB::raw('MAX(p.discount_percentage) as discount_percentage')
                     )
+                    ->addSelect(DB::raw("(SELECT string_agg(pc_sub.category_id::text, ',') FROM product_category pc_sub WHERE pc_sub.product_id = p.id) as product_cat_ids"))
                     ->groupBy('p.id','p.name','p.slug','p.images','p.date_created',
                               'p.description','p.stock_quantity','p.unit','p.vendor_id')
                     ->orderBy('p.date_created', 'desc')
-                    ->limit($max)->get()->map(fn($p) => $this->parseProduct($p));
+                    ->limit($max)->get()->map(fn($p) => $this->parseProduct($p, $flashSale));
             }
 
             if ($layout === 'activity') {
@@ -245,6 +249,7 @@ class WebController extends Controller
 
     public function shop(Request $request)
     {
+        $flashSale = FlashSaleService::getActive();
         $query = $this->baseProductQuery();
 
         // Build category hierarchy for sidebar
@@ -297,7 +302,7 @@ class WebController extends Controller
         else $query->orderBy('p.id', 'desc');
 
         $rawProducts = $query->paginate(16)->withQueryString();
-        $products    = $rawProducts->through(fn($p) => $this->parseProduct($p));
+        $products    = $rawProducts->through(fn($p) => $this->parseProduct($p, $flashSale));
 
         // Find active parent: if a child is selected, its parent is considered "open"
         $activeParentId = null;
@@ -318,13 +323,14 @@ class WebController extends Controller
 
     public function product($id)
     {
+        $flashSale = FlashSaleService::getActive();
         $raw = $this->baseProductQuery()
             ->where('p.id', $id)
             ->first();
 
         if (! $raw) abort(404);
 
-        $product    = $this->parseProduct($raw);
+        $product    = $this->parseProduct($raw, $flashSale);
         $variations = DB::table('product_variations')
             ->where('product_id', $id)
             ->orderBy('main_variation', 'desc')
@@ -357,7 +363,7 @@ class WebController extends Controller
                     ->where('p.id', '!=', $id)
                     ->limit(8)
                     ->get()
-                    ->map(fn($p) => $this->parseProduct($p));
+                    ->map(fn($p) => $this->parseProduct($p, $flashSale));
             }
         }
 
@@ -366,7 +372,7 @@ class WebController extends Controller
             ->orderByRaw('RANDOM()')
             ->limit(4)
             ->get()
-            ->map(fn($p) => $this->parseProduct($p));
+            ->map(fn($p) => $this->parseProduct($p, $flashSale));
 
         $reviews = DB::table('product_reviews as r')
             ->leftJoin('users as u', 'u.id', '=', 'r.user_id')
@@ -415,6 +421,7 @@ class WebController extends Controller
 
     public function vendor($id)
     {
+        $flashSale = FlashSaleService::getActive();
         $vendor = DB::table('vendor_users')
             ->where('id', $id)
             ->where('status', 'approved')
@@ -433,7 +440,7 @@ class WebController extends Controller
         else                                        $query->orderBy('p.id', 'desc');
 
         $rawProducts = $query->paginate(12)->withQueryString();
-        $products    = $rawProducts->through(fn($p) => $this->parseProduct($p));
+        $products    = $rawProducts->through(fn($p) => $this->parseProduct($p, $flashSale));
 
         return view('web.vendor', compact('vendor', 'products'));
     }
@@ -448,7 +455,8 @@ class WebController extends Controller
                 DB::raw('MIN(pv.price) as price'),
                 DB::raw('MIN(pv.regular_price) as regular_price'),
                 DB::raw('MIN(pv.sale_price) as sale_price'),
-                DB::raw('MAX(p.discount_percentage) as discount_percentage')
+                DB::raw('MAX(p.discount_percentage) as discount_percentage'),
+                DB::raw("(SELECT string_agg(pc_sub.category_id::text, ',') FROM product_category pc_sub WHERE pc_sub.product_id = p.id) as product_cat_ids")
             )
             ->join('product_variations as pv', 'pv.product_id', '=', 'p.id')
             ->where('p.status', 'publish')
@@ -459,7 +467,7 @@ class WebController extends Controller
             );
     }
 
-    private function parseProduct($p)
+    private function parseProduct($p, $flashSale = null)
     {
         $imgs = [];
         if ($p->images) {
@@ -504,6 +512,36 @@ class WebController extends Controller
         // Set price to the original (regular) price so the strikethrough shows the correct value
         if ($p->on_sale) {
             $p->price = $basePrice;
+        }
+
+        // Flash sale discount — applied after existing product pricing
+        $p->flash_sale         = false;
+        $p->flash_discount_pct = 0;
+        if ($flashSale) {
+            $qualifies = false;
+            if ($flashSale->applyTo === 'all') {
+                $qualifies = true;
+            } elseif ($flashSale->applyTo === 'products') {
+                $qualifies = in_array((int) $p->id, $flashSale->targetProductIds);
+            } elseif ($flashSale->applyTo === 'categories') {
+                $catIds    = array_map('intval', array_filter(explode(',', $p->product_cat_ids ?? '')));
+                $qualifies = !empty(array_intersect($catIds, $flashSale->targetCategories));
+            }
+
+            if ($qualifies && $flashSale->discount > 0) {
+                $origBase   = $p->on_sale ? $p->sale_price : ($p->regular_price > 0 ? $p->regular_price : $p->price);
+                $flashPrice = round($origBase * (1 - $flashSale->discount / 100), 2);
+                if ($flashPrice > 0 && $flashPrice < $origBase) {
+                    if (!$p->on_sale) {
+                        $p->price = $origBase;
+                    }
+                    $p->sale_price         = $flashPrice;
+                    $p->on_sale            = true;
+                    $p->display_price      = $flashPrice;
+                    $p->flash_sale         = true;
+                    $p->flash_discount_pct = $flashSale->discount;
+                }
+            }
         }
 
         $p->unit_label = null;

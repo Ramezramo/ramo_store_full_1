@@ -32,6 +32,20 @@ class AdminTimelineController extends Controller
         return view('admin.timeline', compact('sections', 'lang', 'categories', 'langs'));
     }
 
+    public function searchProducts(Request $request)
+    {
+        $q = trim($request->input('q', ''));
+        $query = DB::table('products_data as p')
+            ->where('p.status', 'publish')
+            ->where('p.acceptance_status', 'approved')
+            ->select('p.id', 'p.name');
+        if ($q !== '') {
+            $query->where('p.name', 'ilike', "%{$q}%");
+        }
+        $results = $query->orderBy('p.name')->limit(20)->get();
+        return response()->json($results);
+    }
+
     public function save(Request $request)
     {
         $request->validate([

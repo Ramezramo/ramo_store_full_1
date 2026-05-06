@@ -343,7 +343,15 @@
               <?php else: ?>
                 <div class="placeholder">👕</div>
               <?php endif; ?>
-              <?php if($p->on_sale): ?><span class="badge-sale"><?php if($p->discount_percentage > 0): ?>-<?php echo e(round($p->discount_percentage)); ?>%<?php else: ?> SALE <?php endif; ?></span><?php endif; ?>
+              <?php if($p->on_sale): ?>
+                <?php if(!empty($p->flash_sale)): ?>
+                  <span class="badge-sale badge-flash">⚡ <?php echo e(round($p->flash_discount_pct)); ?>% OFF</span>
+                <?php elseif($p->discount_percentage > 0): ?>
+                  <span class="badge-sale">-<?php echo e(round($p->discount_percentage)); ?>%</span>
+                <?php else: ?>
+                  <span class="badge-sale">SALE</span>
+                <?php endif; ?>
+              <?php endif; ?>
               <button class="wish-btn" onclick="event.preventDefault();toggleWishlist(this,<?php echo e($p->id); ?>)" title="Add to Wishlist">♡</button>
             </a>
             <div class="product-card-body">
