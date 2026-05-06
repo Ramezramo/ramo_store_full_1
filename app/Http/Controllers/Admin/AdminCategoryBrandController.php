@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class AdminCategoryBrandController extends Controller
@@ -15,7 +16,6 @@ class AdminCategoryBrandController extends Controller
         $status = $request->input('status', 'pending');
         $type   = $request->input('type', '');
 
-        // ── Vendor requests ──────────────────────────────────
         $reqQuery = DB::table('category_brand_requests')->orderByDesc('id');
         if ($status) $reqQuery->where('status', $status);
         if ($type)   $reqQuery->where('type', $type);
@@ -27,19 +27,16 @@ class AdminCategoryBrandController extends Controller
             'rejected' => DB::table('category_brand_requests')->where('status', 'rejected')->count(),
         ];
 
-        // ── Categories ────────────────────────────────────────
         $allCategories = DB::table('categories2')->orderBy('menu_order')->orderBy('name')->get();
         $parentCats    = $allCategories->filter(fn($c) => $c->parent == 0 || $c->parent === null)->values();
         $childCats     = $allCategories->filter(fn($c) => $c->parent > 0)->groupBy('parent');
 
-        // product counts per category
         $catCounts = DB::table('product_category as pc')
             ->join('products_data as p', 'p.id', '=', 'pc.product_id')
             ->select('pc.category_id', DB::raw('count(*) as cnt'))
             ->groupBy('pc.category_id')
             ->pluck('cnt', 'category_id');
 
-        // ── Brands ────────────────────────────────────────────
         $brands = DB::table('brands')->orderBy('name')->get();
 
         $brandCounts = DB::table('products_data')
@@ -117,12 +114,20 @@ class AdminCategoryBrandController extends Controller
     // ── Category: Create ──────────────────────────────────────
     public function storeCategory(Request $request)
     {
-        $request->validate(['name' => 'required|string|max:120']);
+        $request->validate([
+            'name'  => 'required|string|max:120',
+            'image' => 'nullable|image|max:2048',
+        ]);
+
         $name     = trim($request->name);
         $parentId = $request->input('parent_id') ?: null;
         $exists   = DB::table('categories2')->whereRaw('LOWER(name) = ?', [strtolower($name)])->exists();
-
         if ($exists) return back()->with('error', "Category \"$name\" already exists.")->with('tab', 'categories');
+
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('categories', 'public');
+        }
 
         DB::table('categories2')->insert([
             'name'        => $name,
@@ -133,6 +138,7 @@ class AdminCategoryBrandController extends Controller
             'count'       => 0,
             'has_children'=> 0,
             'description' => $request->input('description', ''),
+            'image'       => $imagePath,
         ]);
 
         if ($parentId) {
@@ -145,12 +151,24 @@ class AdminCategoryBrandController extends Controller
     // ── Category: Update ──────────────────────────────────────
     public function updateCategory(Request $request, int $id)
     {
-        $request->validate(['name' => 'required|string|max:120']);
+        $request->validate([
+            'name'  => 'required|string|max:120',
+            'image' => 'nullable|image|max:2048',
+        ]);
+
         $name     = trim($request->name);
         $parentId = $request->input('parent_id') ?: null;
-
-        $old = DB::table('categories2')->where('id', $id)->first();
+        $old      = DB::table('categories2')->where('id', $id)->first();
         if (!$old) return back()->with('error', 'Category not found.')->with('tab', 'categories');
+
+        $imagePath = $old->image;
+        if ($request->hasFile('image')) {
+            if ($imagePath) Storage::disk('public')->delete($imagePath);
+            $imagePath = $request->file('image')->store('categories', 'public');
+        } elseif ($request->input('remove_image')) {
+            if ($imagePath) Storage::disk('public')->delete($imagePath);
+            $imagePath = null;
+        }
 
         DB::table('categories2')->where('id', $id)->update([
             'name'        => $name,
@@ -158,9 +176,9 @@ class AdminCategoryBrandController extends Controller
             'parent'      => $parentId ?? 0,
             'menu_order'  => (int) $request->input('menu_order', $old->menu_order ?? 0),
             'description' => $request->input('description', $old->description ?? ''),
+            'image'       => $imagePath,
         ]);
 
-        // Update has_children on old and new parent
         if ($old->parent && $old->parent != ($parentId ?? 0)) {
             $hasOtherChildren = DB::table('categories2')->where('parent', $old->parent)->where('id', '!=', $id)->exists();
             if (!$hasOtherChildren) {
@@ -171,7 +189,7 @@ class AdminCategoryBrandController extends Controller
             DB::table('categories2')->where('id', $parentId)->update(['has_children' => 1]);
         }
 
-        return back()->with('success', "Category updated.")->with('tab', 'categories');
+        return back()->with('success', 'Category updated.')->with('tab', 'categories');
     }
 
     // ── Category: Delete ──────────────────────────────────────
@@ -180,54 +198,68 @@ class AdminCategoryBrandController extends Controller
         $cat = DB::table('categories2')->where('id', $id)->first();
         if (!$cat) return back()->with('error', 'Category not found.')->with('tab', 'categories');
 
-        $childCount   = DB::table('categories2')->where('parent', $id)->count();
-        $productCount = DB::table('product_category')->where('category_id', $id)->count();
-
+        $childCount = DB::table('categories2')->where('parent', $id)->count();
         if ($childCount > 0 && !$request->input('force')) {
-            return back()->with('error', "Cannot delete \"$cat->name\" — it has $childCount sub-categories. Delete them first or use force delete.")->with('tab', 'categories');
+            return back()->with('error', "Cannot delete \"{$cat->name}\" — it has {$childCount} sub-categories. Use force delete.")->with('tab', 'categories');
         }
 
-        // Move children to top-level if forced
-        if ($childCount > 0) {
-            DB::table('categories2')->where('parent', $id)->update(['parent' => 0]);
-        }
-        // Remove product links
+        if ($childCount > 0) DB::table('categories2')->where('parent', $id)->update(['parent' => 0]);
         DB::table('product_category')->where('category_id', $id)->delete();
+        if ($cat->image) Storage::disk('public')->delete($cat->image);
         DB::table('categories2')->where('id', $id)->delete();
 
-        // Update parent has_children flag
         if ($cat->parent > 0) {
-            $siblingsLeft = DB::table('categories2')->where('parent', $cat->parent)->exists();
-            if (!$siblingsLeft) {
+            if (!DB::table('categories2')->where('parent', $cat->parent)->exists()) {
                 DB::table('categories2')->where('id', $cat->parent)->update(['has_children' => 0]);
             }
         }
 
-        return back()->with('success', "Category \"$cat->name\" deleted.")->with('tab', 'categories');
+        return back()->with('success', "Category \"{$cat->name}\" deleted.")->with('tab', 'categories');
     }
 
     // ── Brand: Create ─────────────────────────────────────────
     public function storeBrand(Request $request)
     {
-        $request->validate(['name' => 'required|string|max:120']);
+        $request->validate([
+            'name'  => 'required|string|max:120',
+            'image' => 'nullable|image|max:2048',
+        ]);
+
         $name   = trim($request->name);
         $exists = DB::table('brands')->whereRaw('LOWER(name) = ?', [strtolower($name)])->exists();
         if ($exists) return back()->with('error', "Brand \"$name\" already exists.")->with('tab', 'brands');
 
-        DB::table('brands')->insert(['name' => $name]);
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('brands', 'public');
+        }
+
+        DB::table('brands')->insert(['name' => $name, 'image' => $imagePath]);
         return back()->with('success', "Brand \"$name\" created.")->with('tab', 'brands');
     }
 
     // ── Brand: Update ─────────────────────────────────────────
     public function updateBrand(Request $request, int $id)
     {
-        $request->validate(['name' => 'required|string|max:120']);
-        $name = trim($request->name);
+        $request->validate([
+            'name'  => 'required|string|max:120',
+            'image' => 'nullable|image|max:2048',
+        ]);
+
         $brand = DB::table('brands')->where('id', $id)->first();
         if (!$brand) return back()->with('error', 'Brand not found.')->with('tab', 'brands');
 
-        DB::table('brands')->where('id', $id)->update(['name' => $name]);
-        return back()->with('success', "Brand updated.")->with('tab', 'brands');
+        $imagePath = $brand->image ?? null;
+        if ($request->hasFile('image')) {
+            if ($imagePath) Storage::disk('public')->delete($imagePath);
+            $imagePath = $request->file('image')->store('brands', 'public');
+        } elseif ($request->input('remove_image')) {
+            if ($imagePath) Storage::disk('public')->delete($imagePath);
+            $imagePath = null;
+        }
+
+        DB::table('brands')->where('id', $id)->update(['name' => trim($request->name), 'image' => $imagePath]);
+        return back()->with('success', 'Brand updated.')->with('tab', 'brands');
     }
 
     // ── Brand: Delete ─────────────────────────────────────────
@@ -235,8 +267,8 @@ class AdminCategoryBrandController extends Controller
     {
         $brand = DB::table('brands')->where('id', $id)->first();
         if (!$brand) return back()->with('error', 'Brand not found.')->with('tab', 'brands');
-
+        if ($brand->image ?? null) Storage::disk('public')->delete($brand->image);
         DB::table('brands')->where('id', $id)->delete();
-        return back()->with('success', "Brand \"$brand->name\" deleted.")->with('tab', 'brands');
+        return back()->with('success', "Brand \"{$brand->name}\" deleted.")->with('tab', 'brands');
     }
 }
