@@ -180,6 +180,7 @@ body{display:flex;height:100vh;overflow:hidden;background:var(--bg);font-family:
         <div class="wp-group-label">Content</div>
         <div class="wp-btn" onmouseenter="lpShowPreview('bannerImage')" onclick="lpAddSection('bannerImage')"><span class="wp-ico">🖼️</span><span class="wp-name">Banner / Slider</span></div>
         <div class="wp-btn" onmouseenter="lpShowPreview('category')" onclick="lpAddSection('category')"><span class="wp-ico">📂</span><span class="wp-name">Categories Strip</span></div>
+        <div class="wp-btn" onmouseenter="lpShowPreview('categoryCards')" onclick="lpAddSection('categoryCards')"><span class="wp-ico">🗂️</span><span class="wp-name">Category Cards</span></div>
         <div class="wp-btn" onmouseenter="lpShowPreview('twoColumn')" onclick="lpAddSection('twoColumn')"><span class="wp-ico">🛍️</span><span class="wp-name">Products Grid</span></div>
         <div class="wp-btn" onmouseenter="lpShowPreview('saleImages')" onclick="lpAddSection('saleImages')"><span class="wp-ico">🏷️</span><span class="wp-name">Products Scroll</span></div>
         <div class="wp-btn" onmouseenter="lpShowPreview('seupermarketstars')" onclick="lpAddSection('seupermarketstars')"><span class="wp-ico">⭐</span><span class="wp-name">Featured Items</span></div>
@@ -237,6 +238,7 @@ let _lpCurrentPreview = null;
 const TYPE_META = {
   logo:             { icon:'🏪', label:'Logo / Header Bar', color:'#3b82f6' },
   category:         { icon:'📂', label:'Categories Strip',   color:'#8b5cf6' },
+  categoryCards:    { icon:'🗂️', label:'Category Cards',     color:'#8b5cf6' },
   bannerImage:      { icon:'🖼️', label:'Banner / Slider',    color:'#e85d26' },
   twoColumn:        { icon:'🛍️', label:'Products Grid',      color:'#22c55e' },
   saleImages:       { icon:'🏷️', label:'Products Scroll',    color:'#f59e0b' },
@@ -317,6 +319,17 @@ function buildEditor(sec, idx) {
     html += `<div class="items-list" id="catItems-${idx}">` + (sec.items||[]).map((item,ii)=>buildCatItem(idx,ii,item)).join('') + `</div>`;
     html += `<button class="add-item-btn" onclick="addCatItem(${idx})">+ Add Category Item</button>`;
   }
+  else if (type === 'categoryCards') {
+    html = `<div class="form-grid">
+      <div class="form-group"><label>Section Title</label><input type="text" value="${escAttr(sec.headerText||'Shop by Category')}" onchange="updateField(${idx},'headerText',this.value)"></div>
+      <div class="form-group"><label>Columns</label><select onchange="updateField(${idx},'columns',parseInt(this.value))"><option value="2" ${(sec.columns||3)==2?'selected':''}>2 columns</option><option value="3" ${(sec.columns||3)==3?'selected':''}>3 columns</option><option value="4" ${(sec.columns||3)==4?'selected':''}>4 columns</option></select></div>
+      <div class="form-group"><label>Card Height (px)</label><input type="number" value="${sec.cardHeight||220}" min="100" max="500" step="10" onchange="updateField(${idx},'cardHeight',parseInt(this.value)||220)"></div>
+      <div class="form-group"><label>Corner Radius (px)</label><input type="number" value="${sec.cardBorderRadius!=null?sec.cardBorderRadius:14}" min="0" max="40" step="1" onchange="updateField(${idx},'cardBorderRadius',parseInt(this.value))"></div>
+      <div class="form-group"><label>Max Categories</label><input type="number" value="${sec.maxItemsToShow||12}" min="2" max="24" step="1" onchange="updateField(${idx},'maxItemsToShow',parseInt(this.value)||12)"></div>
+      <div class="form-group"><label>Show Item Count</label><select onchange="updateField(${idx},'showCount',this.value==='true')"><option value="true" ${sec.showCount!==false?'selected':''}>Yes</option><option value="false" ${sec.showCount===false?'selected':''}>No</option></select></div>
+      <div class="form-group"><label>Top-level Only</label><select onchange="updateField(${idx},'parentOnly',this.value==='true')"><option value="true" ${sec.parentOnly!==false?'selected':''}>Yes</option><option value="false" ${sec.parentOnly===false?'selected':''}>No</option></select></div>
+    </div>`;
+  }
   else if (type === 'bannerImage') {
     html = `<div class="form-grid">
       <div class="form-group"><label>Style</label><select onchange="updateField(${idx},'design',this.value)"><option value="default" ${(sec.design||'default')==='default'?'selected':''}>Slider</option><option value="static" ${sec.design==='static'?'selected':''}>Static</option></select></div>
@@ -329,14 +342,14 @@ function buildEditor(sec, idx) {
     <button class="add-item-btn" onclick="addBannerItem(${idx})">+ Add Banner Image</button>`;
   }
   else if (type === 'twoColumn' || type === 'saleImages' || type === 'seupermarketstars') {
-    const defWidth = type === 'saleImages' ? 140 : (type === 'seupermarketstars' ? 200 : 230);
-    const defRatio = type === 'saleImages' ? 1.4 : 1.0;
+    const defWidth  = type === 'saleImages' ? 140 : (type === 'seupermarketstars' ? 200 : 230);
+    const defHeight = type === 'saleImages' ? 196 : (type === 'seupermarketstars' ? 200 : 230);
     html = `<div class="form-grid">
       <div class="form-group"><label>Section Title</label><input type="text" value="${escAttr(sec.headerText||sec.name||'')}" onchange="updateField(${idx},'headerText',this.value)" placeholder="e.g. On Sale Today"></div>
       <div class="form-group"><label>Category</label><select onchange="updateField(${idx},'category',parseInt(this.value))"><option value="">All Products</option>${catOptions(sec.category)}</select></div>
       <div class="form-group"><label>Max Items</label><input type="number" value="${sec.maxItemsToShow||8}" min="1" max="20" onchange="updateField(${idx},'maxItemsToShow',parseInt(this.value))"></div>
-      <div class="form-group"><label>Card Width (px)</label><input type="number" value="${sec.productWidth||defWidth}" min="80" max="500" step="10" onchange="updateField(${idx},'productWidth',parseInt(this.value)||defWidth)"></div>
-      <div class="form-group"><label>Image Ratio (H÷W)</label><input type="number" value="${sec.imageRatio||defRatio}" min="0.4" max="3" step="0.05" onchange="updateField(${idx},'imageRatio',parseFloat(this.value)||defRatio)" placeholder="e.g. 1.2"></div>
+      <div class="form-group"><label>Image Width (px)</label><input type="number" value="${sec.productWidth||defWidth}" min="80" max="500" step="10" onchange="updateField(${idx},'productWidth',parseInt(this.value)||defWidth)"></div>
+      <div class="form-group"><label>Image Height (px)</label><input type="number" value="${sec.imageHeight||defHeight}" min="60" max="800" step="10" onchange="updateField(${idx},'imageHeight',parseInt(this.value)||defHeight)"></div>
       <div class="form-group"><label>Corner Radius (px)</label><input type="number" value="${sec.cardBorderRadius!=null?sec.cardBorderRadius:10}" min="0" max="40" step="1" onchange="updateField(${idx},'cardBorderRadius',parseInt(this.value))"></div>
     </div>`;
   }
@@ -646,6 +659,7 @@ function updateBannerItem(idx,ii,key,value){ if(!sections[idx].items) sections[i
 const DEFAULTS = {
   bannerImage:       { layout:'bannerImage', design:'default', isSlider:true, autoPlay:true, radius:2, items:[] },
   category:          { layout:'category', type:'icon', wrap:false, size:1, radius:50, items:[] },
+  categoryCards:     { layout:'categoryCards', headerText:'Shop by Category', columns:3, cardHeight:220, cardBorderRadius:14, maxItemsToShow:12, showCount:true, parentOnly:true },
   twoColumn:         { layout:'twoColumn', headerText:'New Section', maxItemsToShow:8, category:'' },
   saleImages:        { layout:'saleImages', headerText:'Featured Products', maxItemsToShow:8, category:'' },
   seupermarketstars: { layout:'seupermarketstars', name:'Featured', category:'' },
@@ -678,6 +692,7 @@ const DEFAULTS = {
 const WIDGET_INFO = {
   bannerImage:     { title:'Banner / Slider', desc:'Full-width hero image or auto-playing slideshow. Each slide can link to a category.', tags:['Full-width','Auto-play','Multiple slides'] },
   category:        { title:'Categories Strip', desc:'Horizontal row of category icons. Great for quick navigation.', tags:['Icon strip','Scrollable'] },
+  categoryCards:   { title:'Category Cards', desc:'Beautiful full-image grid cards for each category. Auto-loads categories with product counts and hover effects.', tags:['Auto-loaded','Grid layout','Hover zoom','Gradient overlay'] },
   twoColumn:       { title:'Products Grid', desc:'2–4 column product grid for a category or all products.', tags:['Product cards','Category filter'] },
   saleImages:      { title:'Products Scroll', desc:'Horizontal scrollable strip of product cards.', tags:['Horizontal scroll','Category filter'] },
   seupermarketstars:{ title:'Featured Items', desc:'Wide product grid showcasing featured products.', tags:['Product cards','4 columns'] },
@@ -710,6 +725,7 @@ const WIDGET_INFO = {
 const WIDGET_MOCKUPS = {
   bannerImage:`<div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:8px;height:90px;display:flex;align-items:center;justify-content:center"><div style="text-align:center"><div style="font-size:11px;opacity:.5;margin-bottom:4px;color:#fff;letter-spacing:1px">HERO BANNER</div><div style="font-size:16px;font-weight:800;color:#fff">🖼️ Image Slider</div></div></div>`,
   category:`<div style="display:flex;gap:10px;flex-wrap:wrap">${['👗 Clothes','👟 Shoes','👜 Bags','📱 Phones','💄 Beauty'].map(c=>`<div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div style="width:42px;height:42px;border-radius:50%;background:#f0ede8;border:2px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:18px">${c.split(' ')[0]}</div><span style="font-size:10px;color:#333;font-weight:600">${c.split(' ')[1]}</span></div>`).join('')}</div>`,
+  categoryCards:`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">${[['#e85d26','Bags'],['#1a1a2e','Shoes'],['#22c55e','Clothes'],['#8b5cf6','Phones'],['#f59e0b','Beauty'],['#ec4899','Outerwear']].map(([bg,label])=>`<div style="height:68px;background:${bg};border-radius:9px;overflow:hidden;position:relative"><div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.75),transparent)"></div><div style="position:absolute;bottom:7px;left:9px;color:#fff;font-size:11px;font-weight:800">${label}</div></div>`).join('')}</div>`,
   twoColumn:`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">${Array(4).fill(0).map((_,i)=>`<div style="border-radius:6px;overflow:hidden;border:1px solid #eee"><div style="height:60px;background:${['#fdf0e8','#e8f0fd','#e8fdf0','#fde8fd'][i]};display:flex;align-items:center;justify-content:center;font-size:20px">🛍️</div><div style="padding:5px"><div style="height:6px;background:#eee;border-radius:3px;margin-bottom:3px"></div><div style="height:8px;background:#e85d26;border-radius:3px;width:60%"></div></div></div>`).join('')}</div>`,
   saleImages:`<div style="display:flex;gap:7px;overflow:hidden">${Array(4).fill(0).map((_,i)=>`<div style="flex-shrink:0;width:90px;border-radius:7px;overflow:hidden;border:1px solid #eee"><div style="height:70px;background:${['#fdf0e8','#e8f0fd','#e8fdf0','#fde8f0'][i]};display:flex;align-items:center;justify-content:center;font-size:22px">🛍️</div><div style="padding:4px"><div style="height:5px;background:#eee;border-radius:3px;margin-bottom:3px"></div><div style="height:7px;background:#e85d26;border-radius:3px;width:55%"></div></div></div>`).join('')}</div>`,
   seupermarketstars:`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">${Array(4).fill(0).map((_,i)=>`<div style="border-radius:6px;overflow:hidden;border:1px solid #eee"><div style="height:70px;background:${['#fff8f0','#f0f8ff','#f0fff4','#fff0f8'][i]};display:flex;align-items:center;justify-content:center;font-size:24px">⭐</div><div style="padding:5px"><div style="height:6px;background:#eee;border-radius:3px;margin-bottom:3px"></div><div style="height:8px;background:#e85d26;border-radius:3px;width:65%"></div></div></div>`).join('')}</div>`,

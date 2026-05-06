@@ -190,6 +190,49 @@
       </div>
       @endif
 
+    {{-- CATEGORY CARDS GRID --}}
+    @elseif($layout === 'categoryCards')
+      @php
+        $cats       = $sectionCategoryCards[$si] ?? collect();
+        $title      = $sec['headerText'] ?? 'Shop by Category';
+        $columns    = max(2, min(4, (int)($sec['columns'] ?? 3)));
+        $cardHeight = (int)($sec['cardHeight'] ?? 220);
+        $radius     = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 14;
+        $showCount  = $sec['showCount'] ?? true;
+        $bgPalette  = ['#e85d26','#1a1a2e','#22c55e','#8b5cf6','#f59e0b','#ec4899','#06b6d4','#ef4444'];
+      @endphp
+      @if($cats->count())
+      <div class="sec-head">
+        <h2 class="sec-title">{{ $title }}</h2>
+        <a href="{{ route('shop') }}" class="sec-link">See all →</a>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat({{ $columns }},1fr);gap:16px;margin-bottom:44px">
+        @foreach($cats as $ci => $cat)
+          @php
+            $href      = route('shop', ['category' => $cat->id]);
+            $bg        = $cat->thumbnail_url ?? null;
+            $fallColor = $bgPalette[$ci % count($bgPalette)];
+          @endphp
+          <a href="{{ $href }}"
+             class="cc-card"
+             style="border-radius:{{ $radius }}px;height:{{ $cardHeight }}px;background:{{ $bg ? '#111' : $fallColor }}">
+            @if($bg)
+              <img src="{{ $bg }}" alt="{{ $cat->name }}" loading="lazy" class="cc-img">
+            @else
+              <div class="cc-placeholder" style="background:linear-gradient(135deg,{{ $fallColor }},{{ $fallColor }}99)">🛍️</div>
+            @endif
+            <div class="cc-overlay"></div>
+            <div class="cc-label">
+              <div class="cc-name">{{ $cat->name }}</div>
+              @if($showCount && $cat->product_count > 0)
+                <div class="cc-count">{{ number_format($cat->product_count) }} items</div>
+              @endif
+            </div>
+          </a>
+        @endforeach
+      </div>
+      @endif
+
     {{-- TWO-COLUMN PRODUCTS GRID --}}
     @elseif($layout === 'twoColumn')
       @php

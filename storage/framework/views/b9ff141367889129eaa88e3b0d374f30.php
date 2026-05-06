@@ -191,6 +191,49 @@
       <?php endif; ?>
 
     
+    <?php elseif($layout === 'categoryCards'): ?>
+      <?php
+        $cats       = $sectionCategoryCards[$si] ?? collect();
+        $title      = $sec['headerText'] ?? 'Shop by Category';
+        $columns    = max(2, min(4, (int)($sec['columns'] ?? 3)));
+        $cardHeight = (int)($sec['cardHeight'] ?? 220);
+        $radius     = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 14;
+        $showCount  = $sec['showCount'] ?? true;
+        $bgPalette  = ['#e85d26','#1a1a2e','#22c55e','#8b5cf6','#f59e0b','#ec4899','#06b6d4','#ef4444'];
+      ?>
+      <?php if($cats->count()): ?>
+      <div class="sec-head">
+        <h2 class="sec-title"><?php echo e($title); ?></h2>
+        <a href="<?php echo e(route('shop')); ?>" class="sec-link">See all →</a>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(<?php echo e($columns); ?>,1fr);gap:16px;margin-bottom:44px">
+        <?php $__currentLoopData = $cats; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $ci => $cat): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+          <?php
+            $href      = route('shop', ['category' => $cat->id]);
+            $bg        = $cat->thumbnail_url ?? null;
+            $fallColor = $bgPalette[$ci % count($bgPalette)];
+          ?>
+          <a href="<?php echo e($href); ?>"
+             class="cc-card"
+             style="border-radius:<?php echo e($radius); ?>px;height:<?php echo e($cardHeight); ?>px;background:<?php echo e($bg ? '#111' : $fallColor); ?>">
+            <?php if($bg): ?>
+              <img src="<?php echo e($bg); ?>" alt="<?php echo e($cat->name); ?>" loading="lazy" class="cc-img">
+            <?php else: ?>
+              <div class="cc-placeholder" style="background:linear-gradient(135deg,<?php echo e($fallColor); ?>,<?php echo e($fallColor); ?>99)">🛍️</div>
+            <?php endif; ?>
+            <div class="cc-overlay"></div>
+            <div class="cc-label">
+              <div class="cc-name"><?php echo e($cat->name); ?></div>
+              <?php if($showCount && $cat->product_count > 0): ?>
+                <div class="cc-count"><?php echo e(number_format($cat->product_count)); ?> items</div>
+              <?php endif; ?>
+            </div>
+          </a>
+        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+      </div>
+      <?php endif; ?>
+
+    
     <?php elseif($layout === 'twoColumn'): ?>
       <?php
         $products    = $sectionProducts[$si] ?? collect();

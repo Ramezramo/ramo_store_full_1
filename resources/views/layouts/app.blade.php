@@ -601,6 +601,17 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 .tl-cat-img-wrap img{width:68px !important;height:68px !important;max-width:68px !important;object-fit:cover;display:block;border-radius:50%}
 .tl-cat-chip{width:68px;height:68px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px}
 .tl-cat-label{font-size:11px;font-weight:600;color:var(--c-mid);text-align:center;max-width:72px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Category Cards */
+.cc-card{display:block;text-decoration:none;position:relative;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.13);transition:transform .22s ease,box-shadow .22s ease}
+.cc-card:hover{transform:scale(1.025);box-shadow:0 10px 36px rgba(0,0,0,.22)}
+.cc-card:hover .cc-img{transform:scale(1.07)}
+.cc-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease}
+.cc-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:48px}
+.cc-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.72) 0%,rgba(0,0,0,.22) 55%,transparent 100%)}
+.cc-label{position:absolute;bottom:0;left:0;right:0;padding:16px 18px}
+.cc-name{color:#fff;font-size:16px;font-weight:800;text-shadow:0 1px 8px rgba(0,0,0,.55);line-height:1.3}
+.cc-count{color:rgba(255,255,255,.75);font-size:12px;margin-top:4px;font-weight:500}
+@media(max-width:640px){.cc-name{font-size:13px}.cc-label{padding:12px 12px}}
 /* Scroll sections */
 .tl-scroll-section{overflow-x:auto;scrollbar-width:none;padding-bottom:4px;-webkit-overflow-scrolling:touch}
 .tl-scroll-section::-webkit-scrollbar{display:none}

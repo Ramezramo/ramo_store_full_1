@@ -38,6 +38,7 @@ class WebController extends Controller
         $sectionArrivals        = [];
         $sectionActivity        = [];
         $sectionReviewsCarousel = [];
+        $sectionCategoryCards   = [];
 
         foreach ($sections as $i => $section) {
             $layout = $section['layout'] ?? '';
@@ -190,6 +191,34 @@ class WebController extends Controller
                     ->limit($max)->get();
             }
 
+            if ($layout === 'categoryCards') {
+                $max         = (int) ($section['maxItemsToShow'] ?? 12);
+                $max         = max(1, min($max, 24));
+                $parentOnly  = $section['parentOnly'] ?? true;
+                $q = DB::table('categories2 as c')
+                    ->leftJoin('product_category as pc', 'c.id', '=', 'pc.category_id')
+                    ->leftJoin('products_data as p', function ($join) {
+                        $join->on('p.id', '=', 'pc.product_id')
+                             ->where('p.status', '=', 'publish')
+                             ->where('p.acceptance_status', '=', 'approved');
+                    })
+                    ->select('c.id', 'c.name', 'c.slug', 'c.image as cat_image')
+                    ->selectRaw('COUNT(DISTINCT pc.product_id) as product_count')
+                    ->selectRaw('MIN(p.images) as first_product_images')
+                    ->groupBy('c.id', 'c.name', 'c.slug', 'c.image')
+                    ->orderByRaw('COUNT(DISTINCT pc.product_id) DESC')
+                    ->limit($max);
+                if ($parentOnly) {
+                    $q->where(fn($sq) => $sq->where('c.parent', 0)->orWhereNull('c.parent'));
+                }
+                $sectionCategoryCards[$i] = $q->get()->map(function ($c) {
+                    $c->thumbnail_url = $c->cat_image
+                        ? AppConstants::imageUrl($c->cat_image)
+                        : AppConstants::productThumbnailUrl($c->first_product_images);
+                    return $c;
+                });
+            }
+
             if ($layout === 'topVendors') {
                 $max    = (int) ($section['maxItemsToShow'] ?? 6);
                 $max    = max(1, min($max, 20));
@@ -243,7 +272,8 @@ class WebController extends Controller
             'sections', 'sectionProducts', 'sectionVariations',
             'sectionVendors', 'allCategories', 'brands',
             'sectionTestimonials', 'sectionStats', 'sectionCoupons',
-            'sectionTrending', 'sectionArrivals', 'sectionActivity', 'sectionReviewsCarousel'
+            'sectionTrending', 'sectionArrivals', 'sectionActivity', 'sectionReviewsCarousel',
+            'sectionCategoryCards'
         ));
     }
 
