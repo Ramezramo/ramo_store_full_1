@@ -180,4 +180,12 @@ Route::prefix('admin')->middleware(['auth', 'admin.auth'])->group(function () {
     Route::get('/category-brand-requests', [AdminCategoryBrandController::class, 'index'])->name('admin.cbr');
     Route::patch('/category-brand-requests/{id}/approve', [AdminCategoryBrandController::class, 'approve'])->name('admin.cbr.approve');
     Route::patch('/category-brand-requests/{id}/reject', [AdminCategoryBrandController::class, 'reject'])->name('admin.cbr.reject');
+    // Category CRUD
+    Route::post('/categories', [AdminCategoryBrandController::class, 'storeCategory'])->name('admin.categories.store');
+    Route::patch('/categories/{id}', [AdminCategoryBrandController::class, 'updateCategory'])->name('admin.categories.update');
+    Route::delete('/categories/{id}', [AdminCategoryBrandController::class, 'destroyCategory'])->name('admin.categories.destroy');
+    // Brand CRUD
+    Route::post('/brands', [AdminCategoryBrandController::class, 'storeBrand'])->name('admin.brands.store');
+    Route::patch('/brands/{id}', [AdminCategoryBrandController::class, 'updateBrand'])->name('admin.brands.update');
+    Route::delete('/brands/{id}', [AdminCategoryBrandController::class, 'destroyBrand'])->name('admin.brands.destroy');
 });
