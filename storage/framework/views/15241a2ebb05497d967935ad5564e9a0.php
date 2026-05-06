@@ -241,7 +241,9 @@
               <select name="parent_id">
                 <option value="">— Top-level —</option>
                 <?php $__currentLoopData = $parentCats; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $pc): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                  <?php if($pc->id===$parent->id): ?><?php continue; ?>@endif
+                  <?php if($pc->id===$parent->id): ?>
+                    <?php continue; ?>
+                  <?php endif; ?>
                   <option value="<?php echo e($pc->id); ?>" <?php echo e($parent->parent==$pc->id ? 'selected':''); ?>><?php echo e($pc->name); ?></option>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
               </select>
@@ -336,7 +338,9 @@
                     <option value="<?php echo e($pc->id); ?>" <?php echo e($child->parent==$pc->id ? 'selected':''); ?>><?php echo e($pc->name); ?></option>
                     <?php if(isset($childCats[$pc->id])): ?>
                       <?php $__currentLoopData = $childCats[$pc->id]; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $cc): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                        <?php if($cc->id===$child->id): ?><?php continue; ?>@endif
+                        <?php if($cc->id===$child->id): ?>
+                          <?php continue; ?>
+                        <?php endif; ?>
                         <option value="<?php echo e($cc->id); ?>">&nbsp;&nbsp;↳ <?php echo e($cc->name); ?></option>
                       <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     <?php endif; ?>
