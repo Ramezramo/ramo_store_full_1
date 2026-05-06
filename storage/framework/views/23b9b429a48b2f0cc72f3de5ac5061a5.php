@@ -22,13 +22,6 @@ body{display:flex;height:100vh;overflow:hidden;background:var(--bg);font-family:
 #lp-title{font-size:13px;font-weight:800;color:#fff;display:flex;align-items:center;gap:8px;margin-bottom:8px}
 #lp-btns{display:flex;gap:6px;margin-bottom:6px}
 #lp-status{font-size:11px;color:var(--green);min-height:16px;padding:1px 0}
-#lp-search-wrap{padding:6px 8px 0;flex-shrink:0}
-#lp-search{width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#fff;padding:6px 10px 6px 28px;font-size:12px;font-family:inherit;outline:none;transition:.12s}
-#lp-search:focus{border-color:var(--accent)}
-#lp-search::placeholder{color:rgba(255,255,255,.3)}
-#lp-search-icon{position:absolute;left:20px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.3);font-size:12px;pointer-events:none}
-#lp-search-wrap{position:relative}
-#lp-filter-count{font-size:10px;color:var(--muted);padding:4px 8px 0;display:none}
 #lp-body{flex:1;overflow-y:auto;padding:8px}
 #lp-foot{padding:10px 14px;border-top:1px solid var(--border);flex-shrink:0;font-size:11px;color:var(--muted)}
 
@@ -114,19 +107,19 @@ body{display:flex;height:100vh;overflow:hidden;background:var(--bg);font-family:
 </head>
 <body>
 
-{{-- ────────────────────────────── LEFT PANEL ────────────────────────────── --}}
+
 <div id="lp-left">
   <div id="lp-head">
     <div id="lp-title">
       <span style="font-size:18px">✏️</span>
       <span>Live Section Editor</span>
-      @if($langs->count() > 1)
+      <?php if($langs->count() > 1): ?>
       <select id="langSwitch" style="margin-left:auto" onchange="switchLang(this.value)">
-        @foreach($langs as $l)
-          <option value="{{ $l }}" {{ $lang === $l ? 'selected' : '' }}>{{ strtoupper($l) }}</option>
-        @endforeach
+        <?php $__currentLoopData = $langs; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $l): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+          <option value="<?php echo e($l); ?>" <?php echo e($lang === $l ? 'selected' : ''); ?>><?php echo e(strtoupper($l)); ?></option>
+        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
       </select>
-      @endif
+      <?php endif; ?>
     </div>
     <div id="lp-btns">
       <button class="btn btn-sm" style="flex:1" onclick="openPicker()">＋ Add Widget</button>
@@ -135,40 +128,34 @@ body{display:flex;height:100vh;overflow:hidden;background:var(--bg);font-family:
     <div id="lp-status"></div>
   </div>
 
-  <div id="lp-search-wrap">
-    <span id="lp-search-icon">🔍</span>
-    <input id="lp-search" type="text" placeholder="Filter widgets by name or type…" oninput="filterWidgets(this.value)">
-  </div>
-  <div id="lp-filter-count"></div>
-
   <div id="lp-body">
     <div id="lpSectionList"></div>
   </div>
 
   <div id="lp-foot">
-    <a href="{{ route('admin.timeline') }}" style="color:var(--accent);text-decoration:none;font-weight:700">← Full Timeline Editor</a>
+    <a href="<?php echo e(route('admin.timeline')); ?>" style="color:var(--accent);text-decoration:none;font-weight:700">← Full Timeline Editor</a>
     <span style="margin:0 8px;opacity:.4">·</span>
     <span>Click any section in the preview to open its editor</span>
   </div>
 </div>
 
-{{-- ────────────────────────────── RIGHT PANEL ────────────────────────────── --}}
+
 <div id="lp-right">
   <div id="lp-bar">
     <span class="lp-dot"></span>
-    <span id="lp-url" class="lp-url">{{ url('/') }}?tl_preview=1</span>
+    <span id="lp-url" class="lp-url"><?php echo e(url('/')); ?>?tl_preview=1</span>
     <button class="btn btn-sm btn-ghost" onclick="reloadIframe()" title="Reload preview">↺ Reload</button>
-    <a id="lp-open-btn" href="{{ url('/') }}?tl_preview=1" target="_blank" class="btn btn-sm btn-ghost" title="Open in new tab">⬡ Open</a>
+    <a id="lp-open-btn" href="<?php echo e(url('/')); ?>?tl_preview=1" target="_blank" class="btn btn-sm btn-ghost" title="Open in new tab">⬡ Open</a>
   </div>
   <div id="lp-solo-bar">
     <span style="font-size:13px">👁</span>
     <span id="lp-solo-label" style="flex:1;font-weight:600">Viewing widget</span>
     <button class="btn btn-sm" onclick="viewFull()" style="background:rgba(99,102,241,.25);border-color:rgba(99,102,241,.5);color:#c7d2fe;font-size:11px">← Full Page View</button>
   </div>
-  <iframe id="lpIframe" src="{{ url('/') }}?tl_preview=1" sandbox="allow-same-origin allow-scripts allow-forms allow-popups"></iframe>
+  <iframe id="lpIframe" src="<?php echo e(url('/')); ?>?tl_preview=1" sandbox="allow-same-origin allow-scripts allow-forms allow-popups"></iframe>
 </div>
 
-{{-- ────────────────────────────── WIDGET PICKER ────────────────────────────── --}}
+
 <div id="typePicker">
   <div id="wp-panel">
     <div id="wp-head">
@@ -226,11 +213,11 @@ body{display:flex;height:100vh;overflow:hidden;background:var(--bg);font-family:
 
 <script>
 // ── DATA ──────────────────────────────────────────────────────────
-const CATEGORIES = @json($categories);
-const LANG       = '{{ $lang }}';
-const SAVE_URL   = '{{ route('admin.timeline.save') }}';
-const CSRF       = '{{ csrf_token() }}';
-let sections     = @json($sections ?? []);
+const CATEGORIES = <?php echo json_encode($categories, 15, 512) ?>;
+const LANG       = '<?php echo e($lang); ?>';
+const SAVE_URL   = '<?php echo e(route('admin.timeline.save')); ?>';
+const CSRF       = '<?php echo e(csrf_token()); ?>';
+let sections     = <?php echo json_encode($sections ?? [], 15, 512) ?>;
 let _lpCurrentPreview = null;
 
 // ── TYPE META ──────────────────────────────────────────────────────
@@ -805,7 +792,7 @@ async function lpSave(){
 
 // ── IFRAME CONTROL ────────────────────────────────────────────────
 let _soloIdx = null;
-const BASE_PREVIEW_URL = '{{ url('/') }}?tl_preview=1';
+const BASE_PREVIEW_URL = '<?php echo e(url('/')); ?>?tl_preview=1';
 
 function reloadIframe(){
   const fr = document.getElementById('lpIframe');
@@ -957,30 +944,6 @@ function flashAddProduct(idx,prodId,prodName){
   if(inp) flashSearchProducts(idx,inp.value);
 }
 
-// ── WIDGET FILTER / SEARCH ────────────────────────────────────────
-function filterWidgets(q){
-  const term = q.trim().toLowerCase();
-  const cards = document.querySelectorAll('#lpSectionList .tl-card');
-  let visible = 0;
-  cards.forEach((card, i) => {
-    const sec = sections[i];
-    if(!sec){ card.style.display=''; return; }
-    const meta = TYPE_META[sec.layout] || { label: sec.layout };
-    const name = (sec.name || sec.headerText || sec.title || meta.label || '').toLowerCase();
-    const type = (meta.label || sec.layout || '').toLowerCase();
-    const match = !term || name.includes(term) || type.includes(term);
-    card.style.display = match ? '' : 'none';
-    if(match) visible++;
-  });
-  const countEl = document.getElementById('lp-filter-count');
-  if(term){
-    countEl.style.display = 'block';
-    countEl.textContent = visible + ' of ' + cards.length + ' widgets match';
-  } else {
-    countEl.style.display = 'none';
-  }
-}
-
 // ── CLOSE PICKER ON BACKDROP ──────────────────────────────────────
 document.getElementById('typePicker').addEventListener('click',function(e){
   if(e.target===this) closePicker();
@@ -996,3 +959,4 @@ renderAll();
 </script>
 </body>
 </html>
+<?php /**PATH /home/runner/workspace/resources/views/admin/live_preview.blade.php ENDPATH**/ ?>
