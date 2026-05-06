@@ -481,7 +481,7 @@ function buildEditor(sec, idx) {
       </div>
       <div id="flash-targeting-${idx}"></div>
     </div>`;
-    setTimeout(() => renderFlashTargeting(${idx}), 0);
+    setTimeout(() => renderFlashTargeting(idx), 0);
   }
 
   else if (type === 'bundle') {
