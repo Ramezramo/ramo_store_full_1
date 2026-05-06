@@ -116,14 +116,15 @@
     {{-- BANNER IMAGE (Slider or Static) --}}
     @elseif($layout === 'bannerImage')
       @php
-        $items    = $sec['items'] ?? [];
-        $isSlider = ($sec['design'] ?? 'default') !== 'static' && count($items) > 1;
-        $radius   = $sec['radius'] ?? 2;
-        $sliderId = 'slider-'.$si;
+        $items        = $sec['items'] ?? [];
+        $isSlider     = ($sec['design'] ?? 'default') !== 'static' && count($items) > 1;
+        $radius       = $sec['radius'] ?? 2;
+        $sliderId     = 'slider-'.$si;
+        $bannerHeight = (int)($sec['bannerHeight'] ?? 420);
       @endphp
       @if(count($items))
         @if($isSlider)
-        <div class="tl-banner-slider" id="{{ $sliderId }}" style="border-radius:{{ $radius }}px;margin-bottom:28px">
+        <div class="tl-banner-slider" id="{{ $sliderId }}" style="border-radius:{{ $radius }}px;margin-bottom:28px;max-height:{{ $bannerHeight }}px">
           <div class="tl-slides" id="{{ $sliderId }}-track">
             @foreach($items as $bi => $item)
               @php
@@ -133,7 +134,7 @@
               @endphp
               <div class="tl-slide">
                 <a href="{{ $href }}" class="tl-slide-link">
-                  <img src="{{ $url }}" alt="Banner {{ $bi+1 }}" loading="{{ $bi===0?'eager':'lazy' }}">
+                  <img src="{{ $url }}" alt="Banner {{ $bi+1 }}" loading="{{ $bi===0?'eager':'lazy' }}" style="height:{{ $bannerHeight }}px;max-height:{{ $bannerHeight }}px">
                 </a>
               </div>
             @endforeach
@@ -154,10 +155,9 @@
               $url   = $item['image'] ?? '';
               $catId = $item['category'] ?? null;
               $href  = $catId ? route('shop', ['category' => $catId]) : '#';
-              $ht    = isset($sec['height']) ? 'height:'.((float)$sec['height'] * 100).'vw;max-height:280px;' : '';
             @endphp
             <a href="{{ $href }}" class="tl-static-banner" style="border-radius:{{ $radius }}px;overflow:hidden;display:block;margin-bottom:20px">
-              <img src="{{ $url }}" alt="Banner" style="width:100%;object-fit:cover;{{ $ht }}display:block">
+              <img src="{{ $url }}" alt="Banner" style="width:100%;object-fit:cover;height:{{ $bannerHeight }}px;max-height:{{ $bannerHeight }}px;display:block">
             </a>
           @endforeach
         @endif

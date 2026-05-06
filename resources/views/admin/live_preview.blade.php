@@ -322,6 +322,7 @@ function buildEditor(sec, idx) {
       <div class="form-group"><label>Style</label><select onchange="updateField(${idx},'design',this.value)"><option value="default" ${(sec.design||'default')==='default'?'selected':''}>Slider</option><option value="static" ${sec.design==='static'?'selected':''}>Static</option></select></div>
       <div class="form-group"><label>Auto Play</label><select onchange="updateField(${idx},'autoPlay',this.value==='true')"><option value="true" ${sec.autoPlay!==false?'selected':''}>Yes</option><option value="false" ${sec.autoPlay===false?'selected':''}>No</option></select></div>
       <div class="form-group"><label>Border Radius</label><input type="number" value="${sec.radius||2}" min="0" max="30" onchange="updateField(${idx},'radius',parseFloat(this.value)||0)"></div>
+      <div class="form-group"><label>Image Height (px)</label><input type="number" value="${sec.bannerHeight||420}" min="80" max="900" step="10" onchange="updateField(${idx},'bannerHeight',parseInt(this.value)||420)" placeholder="420"></div>
     </div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Banner images:</div>
     <div class="items-list" id="bannerItems-${idx}">` + (sec.items||[]).map((item,ii)=>buildBannerItem(idx,ii,item)).join('') + `</div>

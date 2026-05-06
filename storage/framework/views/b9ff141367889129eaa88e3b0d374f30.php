@@ -116,14 +116,15 @@
     
     <?php elseif($layout === 'bannerImage'): ?>
       <?php
-        $items    = $sec['items'] ?? [];
-        $isSlider = ($sec['design'] ?? 'default') !== 'static' && count($items) > 1;
-        $radius   = $sec['radius'] ?? 2;
-        $sliderId = 'slider-'.$si;
+        $items        = $sec['items'] ?? [];
+        $isSlider     = ($sec['design'] ?? 'default') !== 'static' && count($items) > 1;
+        $radius       = $sec['radius'] ?? 2;
+        $sliderId     = 'slider-'.$si;
+        $bannerHeight = (int)($sec['bannerHeight'] ?? 420);
       ?>
       <?php if(count($items)): ?>
         <?php if($isSlider): ?>
-        <div class="tl-banner-slider" id="<?php echo e($sliderId); ?>" style="border-radius:<?php echo e($radius); ?>px;margin-bottom:28px">
+        <div class="tl-banner-slider" id="<?php echo e($sliderId); ?>" style="border-radius:<?php echo e($radius); ?>px;margin-bottom:28px;max-height:<?php echo e($bannerHeight); ?>px">
           <div class="tl-slides" id="<?php echo e($sliderId); ?>-track">
             <?php $__currentLoopData = $items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $bi => $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
               <?php
@@ -133,7 +134,7 @@
               ?>
               <div class="tl-slide">
                 <a href="<?php echo e($href); ?>" class="tl-slide-link">
-                  <img src="<?php echo e($url); ?>" alt="Banner <?php echo e($bi+1); ?>" loading="<?php echo e($bi===0?'eager':'lazy'); ?>">
+                  <img src="<?php echo e($url); ?>" alt="Banner <?php echo e($bi+1); ?>" loading="<?php echo e($bi===0?'eager':'lazy'); ?>" style="height:<?php echo e($bannerHeight); ?>px;max-height:<?php echo e($bannerHeight); ?>px">
                 </a>
               </div>
             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
@@ -154,10 +155,9 @@
               $url   = $item['image'] ?? '';
               $catId = $item['category'] ?? null;
               $href  = $catId ? route('shop', ['category' => $catId]) : '#';
-              $ht    = isset($sec['height']) ? 'height:'.((float)$sec['height'] * 100).'vw;max-height:280px;' : '';
             ?>
             <a href="<?php echo e($href); ?>" class="tl-static-banner" style="border-radius:<?php echo e($radius); ?>px;overflow:hidden;display:block;margin-bottom:20px">
-              <img src="<?php echo e($url); ?>" alt="Banner" style="width:100%;object-fit:cover;<?php echo e($ht); ?>display:block">
+              <img src="<?php echo e($url); ?>" alt="Banner" style="width:100%;object-fit:cover;height:<?php echo e($bannerHeight); ?>px;max-height:<?php echo e($bannerHeight); ?>px;display:block">
             </a>
           <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
         <?php endif; ?>

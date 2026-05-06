@@ -22,6 +22,13 @@ body{display:flex;height:100vh;overflow:hidden;background:var(--bg);font-family:
 #lp-title{font-size:13px;font-weight:800;color:#fff;display:flex;align-items:center;gap:8px;margin-bottom:8px}
 #lp-btns{display:flex;gap:6px;margin-bottom:6px}
 #lp-status{font-size:11px;color:var(--green);min-height:16px;padding:1px 0}
+#lp-search-wrap{padding:6px 8px 0;flex-shrink:0}
+#lp-search{width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#fff;padding:6px 10px 6px 28px;font-size:12px;font-family:inherit;outline:none;transition:.12s}
+#lp-search:focus{border-color:var(--accent)}
+#lp-search::placeholder{color:rgba(255,255,255,.3)}
+#lp-search-icon{position:absolute;left:20px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.3);font-size:12px;pointer-events:none}
+#lp-search-wrap{position:relative}
+#lp-filter-count{font-size:10px;color:var(--muted);padding:4px 8px 0;display:none}
 #lp-body{flex:1;overflow-y:auto;padding:8px}
 #lp-foot{padding:10px 14px;border-top:1px solid var(--border);flex-shrink:0;font-size:11px;color:var(--muted)}
 
@@ -127,6 +134,12 @@ body{display:flex;height:100vh;overflow:hidden;background:var(--bg);font-family:
     </div>
     <div id="lp-status"></div>
   </div>
+
+  <div id="lp-search-wrap">
+    <span id="lp-search-icon">🔍</span>
+    <input id="lp-search" type="text" placeholder="Filter widgets by name or type…" oninput="filterWidgets(this.value)">
+  </div>
+  <div id="lp-filter-count"></div>
 
   <div id="lp-body">
     <div id="lpSectionList"></div>
@@ -942,6 +955,30 @@ function flashAddProduct(idx,prodId,prodName){
   renderFlashTargeting(idx);
   const inp=document.getElementById('flash-psearch-'+idx);
   if(inp) flashSearchProducts(idx,inp.value);
+}
+
+// ── WIDGET FILTER / SEARCH ────────────────────────────────────────
+function filterWidgets(q){
+  const term = q.trim().toLowerCase();
+  const cards = document.querySelectorAll('#lpSectionList .tl-card');
+  let visible = 0;
+  cards.forEach((card, i) => {
+    const sec = sections[i];
+    if(!sec){ card.style.display=''; return; }
+    const meta = TYPE_META[sec.layout] || { label: sec.layout };
+    const name = (sec.name || sec.headerText || sec.title || meta.label || '').toLowerCase();
+    const type = (meta.label || sec.layout || '').toLowerCase();
+    const match = !term || name.includes(term) || type.includes(term);
+    card.style.display = match ? '' : 'none';
+    if(match) visible++;
+  });
+  const countEl = document.getElementById('lp-filter-count');
+  if(term){
+    countEl.style.display = 'block';
+    countEl.textContent = visible + ' of ' + cards.length + ' widgets match';
+  } else {
+    countEl.style.display = 'none';
+  }
 }
 
 // ── CLOSE PICKER ON BACKDROP ──────────────────────────────────────
