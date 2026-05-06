@@ -77,7 +77,7 @@ echo "Existing tables: $TABLE_COUNT"
 
 if [ "${TABLE_COUNT:-0}" -lt "5" ] 2>/dev/null; then
     echo "Importing database..."
-    SQL_FILE="project_last_database_updated_use_it_for_first_time_conigration.sql"
+    SQL_FILE="project_last_database_exported_1.sql.sql"
     if [ -f "$SQL_FILE" ]; then
         grep -v '\\restrict' "$SQL_FILE" | PGPASSWORD=$PGPASSWORD psql -h $PGHOST -p $PGPORT -U $PGUSER -d $PGDATABASE 2>&1 | grep -E "(ERROR|FATAL)" || true
         echo "✓ Database imported from $SQL_FILE"
