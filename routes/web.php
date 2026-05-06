@@ -159,6 +159,7 @@ Route::prefix('admin')->middleware(['auth', 'admin.auth'])->group(function () {
     Route::delete('/devices/{id}', [AdminDashboardController::class, 'deleteDevice'])->name('admin.devices.delete');
     Route::post('/devices/block-by-id', [AdminDashboardController::class, 'blockDeviceByDeviceId'])->name('admin.devices.block-by-id');
     Route::get('/timeline', [AdminTimelineController::class, 'index'])->name('admin.timeline');
+    Route::get('/live-preview', [AdminTimelineController::class, 'livePreview'])->name('admin.live.preview');
     Route::post('/timeline/save', [AdminTimelineController::class, 'save'])->name('admin.timeline.save');
     Route::get('/products/search', [AdminTimelineController::class, 'searchProducts'])->name('admin.products.search');
     Route::get('/analytics', [AdminDashboardController::class, 'analytics'])->name('admin.analytics');

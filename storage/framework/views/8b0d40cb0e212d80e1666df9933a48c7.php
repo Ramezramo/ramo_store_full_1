@@ -86,7 +86,8 @@
       <div style="font-size:12px;color:var(--muted);margin-top:3px">Drag to reorder · Click a section to edit · Changes only saved when you press Save</div>
     </div>
     <div style="display:flex;gap:8px">
-      <a href="<?php echo e(url('/')); ?>" target="_blank" class="btn btn-ghost btn-sm">Preview →</a>
+      <a href="<?php echo e(url('/')); ?>?tl_preview=1" target="_blank" class="btn btn-ghost btn-sm" style="opacity:.7">👁 Quick Preview</a>
+      <a href="<?php echo e(route('admin.live.preview')); ?>" target="_blank" class="btn btn-ghost btn-sm" style="background:rgba(232,93,38,.15);border-color:rgba(232,93,38,.35);color:#e85d26">✏️ Live Editor</a>
     </div>
   </div>
 </div>

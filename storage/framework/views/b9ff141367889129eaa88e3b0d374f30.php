@@ -1101,7 +1101,7 @@ function slidePrev(id) {
     '<a href="/admin/timeline" class="tl-pt-btn">← Back to Timeline Editor</a>';
   document.body.prepend(toolbar);
 
-  // Decorate each .tl-pw wrapper
+  // Decorate each .tl-pw wrapper + wire click → postMessage to parent
   document.querySelectorAll('.tl-pw').forEach(function(el) {
     var layout = el.dataset.layout || '';
     var name   = el.dataset.name   || layout;
@@ -1116,8 +1116,37 @@ function slidePrev(id) {
     label.innerHTML =
       '<span class="tl-pw-idx">' + (parseInt(si) + 1) + '</span>' +
       '<span>' + name + '</span>' +
-      '<span style="opacity:.65;font-size:10px;font-weight:500;margin-left:2px">· ' + typeLabel + '</span>';
+      '<span style="opacity:.65;font-size:10px;font-weight:500;margin-left:2px">· ' + typeLabel + '</span>' +
+      '<span style="opacity:.8;font-size:10px;margin-left:8px;background:rgba(232,93,38,.25);border:1px solid rgba(232,93,38,.5);padding:1px 7px;border-radius:8px;color:#e85d26;font-weight:700">✏ Edit</span>';
     el.prepend(label);
+
+    el.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var siNum = parseInt(si);
+      // notify parent (Live Preview Editor)
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'tlSectionClick', si: siNum }, '*');
+      }
+      // highlight in this page
+      document.querySelectorAll('.tl-pw').forEach(function(x) { x.style.outline = ''; });
+      el.style.outline = '3px solid ' + color;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  });
+
+  // Listen for highlight command from parent
+  window.addEventListener('message', function(e) {
+    if (e.data && e.data.type === 'tlHighlight') {
+      var target = document.querySelector('.tl-pw[data-si="' + e.data.si + '"]');
+      if (target) {
+        document.querySelectorAll('.tl-pw').forEach(function(x) { x.style.outline = ''; });
+        target.style.outline = '3px solid #e85d26';
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+    if (e.data && e.data.type === 'tlReload') {
+      window.location.reload();
+    }
   });
 })();
 <?php endif; ?>

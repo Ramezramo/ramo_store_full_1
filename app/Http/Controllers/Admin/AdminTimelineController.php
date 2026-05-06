@@ -46,6 +46,19 @@ class AdminTimelineController extends Controller
         return response()->json($results);
     }
 
+    public function livePreview(Request $request)
+    {
+        $lang = $request->input('lang', 'en');
+        $sections = $this->getLayout($lang);
+        $categories = DB::table('categories2')->orderBy('name')->get(['id', 'name']);
+        $langs = DB::table('app_configs')
+            ->where('config_key', 'horizon_layout')
+            ->pluck('lang')->filter()->unique()->values();
+        if ($langs->isEmpty()) $langs = collect(['en']);
+        if (!$langs->contains($lang)) $lang = $langs->first();
+        return view('admin.live_preview', compact('sections', 'categories', 'lang', 'langs'));
+    }
+
     public function save(Request $request)
     {
         $request->validate([
