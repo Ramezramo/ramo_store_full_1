@@ -11,18 +11,22 @@
   <a href="{{ route('admin.cbr') }}?status=" class="btn btn-sm {{ $status === '' ? 'btn-primary' : 'btn-ghost' }}">All</a>
 @endsection
 
-@section('content')
-
 @push('styles')
 <style>
 .req-note-form{display:none;margin-top:8px}
-.req-note-form.open{display:block}
+.req-note-form.open{display:flex;flex-direction:column;gap:6px}
 .req-row-actions{display:flex;gap:6px;align-items:flex-start;flex-direction:column}
+.req-note-form input,.req-note-form select{
+  padding:5px 8px;border-radius:5px;border:1px solid var(--border);
+  background:var(--card);color:var(--text);font-size:12px;width:220px;
+}
 </style>
 @endpush
 
+@section('content')
+
 <div style="display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap">
-  @foreach(['pending'=>['yellow','Pending'],'approved'=>['green','Approved'],'rejected'=>['red','Rejected']] as $s=>[$color,$label])
+  @foreach(['pending'=>'Pending','approved'=>'Approved','rejected'=>'Rejected'] as $s=>$label)
   <div class="stat-card" style="min-width:140px;flex:1">
     <div class="stat-value" style="font-size:22px">{{ $counts[$s] }}</div>
     <div class="stat-label">{{ $label }}</div>
@@ -30,7 +34,6 @@
   @endforeach
 </div>
 
-@if(request('type') || true)
 <form method="GET" style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
   <input type="hidden" name="status" value="{{ $status }}">
   <div class="form-group">
@@ -42,7 +45,6 @@
     </select>
   </div>
 </form>
-@endif
 
 @if($requests->isEmpty())
   <div class="card" style="text-align:center;padding:48px">
@@ -57,6 +59,7 @@
           <th>#</th>
           <th>Type</th>
           <th>Name</th>
+          <th>Parent Category</th>
           <th>Description</th>
           <th>Vendor</th>
           <th>Status</th>
@@ -76,7 +79,18 @@
             @endif
           </td>
           <td style="font-weight:600">{{ $req->name }}</td>
-          <td style="color:var(--muted);max-width:180px;font-size:12px">{{ $req->description ? Str::limit($req->description, 60) : '—' }}</td>
+          <td style="font-size:12px">
+            @if($req->type === 'category')
+              @if($req->parent_category_name)
+                <span class="badge badge-green">↳ {{ $req->parent_category_name }}</span>
+              @else
+                <span style="color:var(--muted)">Top-level</span>
+              @endif
+            @else
+              <span style="color:var(--muted)">—</span>
+            @endif
+          </td>
+          <td style="color:var(--muted);max-width:160px;font-size:12px">{{ $req->description ? Str::limit($req->description, 50) : '—' }}</td>
           <td style="font-size:12px">{{ $req->vendor_name ?? '—' }}</td>
           <td>
             @if($req->status === 'pending')
@@ -100,7 +114,24 @@
               <div id="approve-{{ $req->id }}" class="req-note-form">
                 <form method="POST" action="{{ route('admin.cbr.approve', $req->id) }}">
                   @csrf @method('PATCH')
-                  <input type="text" name="admin_note" class="form-control" placeholder="Note (optional)" style="margin-bottom:4px;padding:5px 8px;border-radius:5px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:12px;width:200px">
+                  @if($req->type === 'category')
+                  <div>
+                    <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:2px">Parent category (override)</label>
+                    <select name="parent_category_id">
+                      <option value="">— No parent (top-level) —</option>
+                      @php
+                        $topLevel = $allCategories->filter(fn($c) => $c->parent == 0 || $c->parent === null);
+                      @endphp
+                      @foreach($topLevel as $cat)
+                        <option value="{{ $cat->id }}" {{ $req->parent_category_id == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
+                        @foreach($allCategories->where('parent', $cat->id) as $child)
+                          <option value="{{ $child->id }}" {{ $req->parent_category_id == $child->id ? 'selected' : '' }}>&nbsp;&nbsp;↳ {{ $child->name }}</option>
+                        @endforeach
+                      @endforeach
+                    </select>
+                  </div>
+                  @endif
+                  <input type="text" name="admin_note" placeholder="Note (optional)">
                   <button type="submit" class="btn btn-sm btn-success">Confirm Approve</button>
                 </form>
               </div>
@@ -113,7 +144,7 @@
               <div id="reject-{{ $req->id }}" class="req-note-form">
                 <form method="POST" action="{{ route('admin.cbr.reject', $req->id) }}">
                   @csrf @method('PATCH')
-                  <input type="text" name="admin_note" class="form-control" placeholder="Reason (optional)" style="margin-bottom:4px;padding:5px 8px;border-radius:5px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:12px;width:200px">
+                  <input type="text" name="admin_note" placeholder="Reason (optional)">
                   <button type="submit" class="btn btn-sm btn-danger">Confirm Reject</button>
                 </form>
               </div>
@@ -134,8 +165,7 @@
 
 <script>
 function toggleNote(id) {
-  const el = document.getElementById(id);
-  el.classList.toggle('open');
+  document.getElementById(id).classList.toggle('open');
 }
 </script>
 @endsection

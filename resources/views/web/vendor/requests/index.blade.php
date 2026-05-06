@@ -25,6 +25,7 @@
           <th>#</th>
           <th>Type</th>
           <th>Name</th>
+          <th>Parent Category</th>
           <th>Description</th>
           <th>Status</th>
           <th>Admin Note</th>
@@ -43,7 +44,16 @@
             @endif
           </td>
           <td style="font-weight:600">{{ $req->name }}</td>
-          <td style="color:var(--mid);max-width:200px">{{ $req->description ? Str::limit($req->description, 60) : '—' }}</td>
+          <td style="font-size:12px;color:var(--mid)">
+            @if($req->type === 'category' && $req->parent_category_name)
+              <span style="background:#f0fdf4;color:#166534;padding:2px 7px;border-radius:20px;font-size:11px">↳ {{ $req->parent_category_name }}</span>
+            @elseif($req->type === 'category')
+              <span style="color:var(--mid)">Top-level</span>
+            @else
+              —
+            @endif
+          </td>
+          <td style="color:var(--mid);max-width:160px;font-size:12px">{{ $req->description ? Str::limit($req->description, 50) : '—' }}</td>
           <td>
             @if($req->status === 'pending')
               <span class="badge-pending">Pending</span>
@@ -53,7 +63,7 @@
               <span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">Rejected</span>
             @endif
           </td>
-          <td style="color:var(--mid);font-size:12px;max-width:180px">{{ $req->admin_note ?: '—' }}</td>
+          <td style="color:var(--mid);font-size:12px;max-width:160px">{{ $req->admin_note ?: '—' }}</td>
           <td style="color:var(--mid);font-size:12px;white-space:nowrap">{{ \Carbon\Carbon::parse($req->created_at)->format('M d, Y') }}</td>
         </tr>
         @endforeach

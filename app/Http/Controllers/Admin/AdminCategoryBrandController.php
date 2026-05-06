@@ -27,7 +27,9 @@ class AdminCategoryBrandController extends Controller
             'rejected' => DB::table('category_brand_requests')->where('status', 'rejected')->count(),
         ];
 
-        return view('admin.category-brand-requests.index', compact('requests', 'status', 'type', 'counts'));
+        $allCategories = DB::table('categories2')->orderBy('name')->get(['id', 'name', 'parent']);
+
+        return view('admin.category-brand-requests.index', compact('requests', 'status', 'type', 'counts', 'allCategories'));
     }
 
     public function approve(Request $request, int $id)
@@ -37,20 +39,26 @@ class AdminCategoryBrandController extends Controller
         if ($req->status !== 'pending') return back()->with('error', 'This request has already been processed.');
 
         $note = $request->input('admin_note', '');
+        $parentId = $request->input('parent_category_id') ?: ($req->parent_category_id ?: null);
 
         if ($req->type === 'category') {
             $slug = Str::slug($req->name);
             $exists = DB::table('categories2')->whereRaw('LOWER(name) = ?', [strtolower($req->name)])->exists();
             if (!$exists) {
-                DB::table('categories2')->insert([
-                    'name'       => $req->name,
-                    'slug'       => $slug,
-                    'display'    => 'visible',
-                    'menu_order' => 0,
-                    'count'      => 0,
-                    'has_children' => false,
+                $newId = DB::table('categories2')->insertGetId([
+                    'name'        => $req->name,
+                    'slug'        => $slug,
+                    'parent'      => $parentId ?? 0,
+                    'display'     => 'visible',
+                    'menu_order'  => 0,
+                    'count'       => 0,
+                    'has_children'=> 0,
                     'description' => $req->description ?? '',
                 ]);
+
+                if ($parentId) {
+                    DB::table('categories2')->where('id', $parentId)->update(['has_children' => 1]);
+                }
             }
         } else {
             $exists = DB::table('brands')->whereRaw('LOWER(name) = ?', [strtolower($req->name)])->exists();
@@ -74,11 +82,9 @@ class AdminCategoryBrandController extends Controller
         if (!$req) return back()->with('error', 'Request not found.');
         if ($req->status !== 'pending') return back()->with('error', 'This request has already been processed.');
 
-        $note = $request->input('admin_note', '');
-
         DB::table('category_brand_requests')->where('id', $id)->update([
             'status'     => 'rejected',
-            'admin_note' => $note,
+            'admin_note' => $request->input('admin_note', ''),
             'updated_at' => now(),
         ]);
 

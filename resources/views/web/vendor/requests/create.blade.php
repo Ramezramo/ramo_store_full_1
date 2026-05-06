@@ -20,12 +20,12 @@
       </div>
     @endif
 
-    <form method="POST" action="{{ route('vendor.requests.store') }}">
+    <form method="POST" action="{{ route('vendor.requests.store') }}" id="req-form">
       @csrf
 
       <div class="vs-form-group">
         <label class="vs-label">Request Type <span style="color:var(--red)">*</span></label>
-        <select name="type" class="vs-input {{ $errors->has('type') ? 'err' : '' }}" required>
+        <select name="type" id="req-type" class="vs-input {{ $errors->has('type') ? 'err' : '' }}" required onchange="toggleParent()">
           <option value="">— Select type —</option>
           <option value="category" {{ old('type') === 'category' ? 'selected' : '' }}>Category</option>
           <option value="brand" {{ old('type') === 'brand' ? 'selected' : '' }}>Brand</option>
@@ -38,6 +38,35 @@
         <input type="text" name="name" class="vs-input {{ $errors->has('name') ? 'err' : '' }}"
                value="{{ old('name') }}" placeholder="e.g. Electronics, Nike, Furniture…" required maxlength="255">
         @error('name')<div class="vs-err">{{ $message }}</div>@enderror
+      </div>
+
+      {{-- Parent category selector — only shown when type = category --}}
+      <div class="vs-form-group" id="parent-group" style="display:none">
+        <label class="vs-label">
+          Parent Category
+          <span style="color:var(--mid);font-weight:400;text-transform:none">(leave empty for top-level)</span>
+        </label>
+        <select name="parent_category_id" id="parent-select" class="vs-input">
+          <option value="">— No parent (top-level category) —</option>
+          @php
+            $topLevel = $categories->filter(fn($c) => $c->parent == 0 || $c->parent === null);
+            $children = $categories->filter(fn($c) => $c->parent > 0)->keyBy('id');
+          @endphp
+          @foreach($topLevel as $cat)
+            <option value="{{ $cat->id }}" {{ old('parent_category_id') == $cat->id ? 'selected' : '' }}>
+              {{ $cat->name }}
+            </option>
+            @foreach($categories->where('parent', $cat->id) as $child)
+              <option value="{{ $child->id }}" {{ old('parent_category_id') == $child->id ? 'selected' : '' }}>
+                &nbsp;&nbsp;&nbsp;↳ {{ $child->name }}
+              </option>
+            @endforeach
+          @endforeach
+        </select>
+        <div style="font-size:12px;color:var(--mid);margin-top:4px">
+          Selecting a parent makes this a sub-category of the chosen one.
+        </div>
+        @error('parent_category_id')<div class="vs-err">{{ $message }}</div>@enderror
       </div>
 
       <div class="vs-form-group">
@@ -57,4 +86,20 @@
     </form>
   </div>
 </div>
+
+<script>
+function toggleParent() {
+  const type = document.getElementById('req-type').value;
+  const group = document.getElementById('parent-group');
+  const sel = document.getElementById('parent-select');
+  if (type === 'category') {
+    group.style.display = 'block';
+  } else {
+    group.style.display = 'none';
+    sel.value = '';
+  }
+}
+// Run on load in case of old() repopulation
+document.addEventListener('DOMContentLoaded', toggleParent);
+</script>
 @endsection

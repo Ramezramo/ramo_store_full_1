@@ -114,6 +114,10 @@ table.vs-table tr:last-child td{border-bottom:none}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
       Refund Requests
     </a>
+    <a href="<?php echo e(route('vendor.requests')); ?>" class="vs-nav-item <?php echo e(request()->routeIs('vendor.requests*') ? 'active' : ''); ?>">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2z"/><path d="M7 7h.01"/></svg>
+      Category &amp; Brand
+    </a>
     <a href="<?php echo e(route('vendor.store.profile')); ?>" class="vs-nav-item <?php echo e(request()->routeIs('vendor.store.profile') ? 'active' : ''); ?>">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
       Store Profile
