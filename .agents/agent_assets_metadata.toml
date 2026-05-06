@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "roY03Pak3lqIdf2mAx-mj"
+uri = "file://replit_skills/time_line_editor.md"
+type = "text"
+title = "time_line_editor.md — Timeline Editor Reference"
