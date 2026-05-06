@@ -94,6 +94,7 @@ Route::post('/track', [OrderTrackingController::class, 'track'])->name('order.tr
 
 use App\Http\Controllers\Web\VendorWebController;
 use App\Http\Controllers\Web\VendorProductController;
+use App\Http\Controllers\Web\CategoryBrandRequestController;
 Route::get('/become-a-vendor', [VendorWebController::class, 'showRegister'])->name('vendor.register');
 Route::post('/become-a-vendor', [VendorWebController::class, 'register'])->name('vendor.register.submit');
 Route::get('/vendor-login', [VendorWebController::class, 'showLogin'])->name('vendor.login');
@@ -119,11 +120,15 @@ Route::middleware('vendor.web.auth')->group(function () {
     Route::post('/seller/products/{id}', [VendorProductController::class, 'update'])->name('vendor.products.update');
     Route::post('/seller/products/{id}/section', [VendorProductController::class, 'updateSection'])->name('vendor.products.update-section');
     Route::delete('/seller/products/{id}', [VendorProductController::class, 'destroy'])->name('vendor.products.destroy');
+    Route::get('/seller/requests', [CategoryBrandRequestController::class, 'index'])->name('vendor.requests');
+    Route::get('/seller/requests/create', [CategoryBrandRequestController::class, 'create'])->name('vendor.requests.create');
+    Route::post('/seller/requests', [CategoryBrandRequestController::class, 'store'])->name('vendor.requests.store');
 });
 
 Route::get('/admin/login', [AuthWebController::class, 'showAdminLogin'])->name('admin.login');
 Route::post('/admin/login', [AuthWebController::class, 'adminLogin'])->name('admin.login.post');
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminCategoryBrandController;
 Route::prefix('admin')->middleware(['auth', 'admin.auth'])->group(function () {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/users', [AdminDashboardController::class, 'users'])->name('admin.users');
@@ -172,4 +177,7 @@ Route::prefix('admin')->middleware(['auth', 'admin.auth'])->group(function () {
     Route::delete('/configs/{id}', [ConfigAdminController::class, 'destroy'])->name('admin.configs.destroy');
     Route::get('/auth-settings', [AuthSettingsController::class, 'index'])->name('admin.auth-settings');
     Route::put('/auth-settings', [AuthSettingsController::class, 'update'])->name('admin.auth-settings.update');
+    Route::get('/category-brand-requests', [AdminCategoryBrandController::class, 'index'])->name('admin.cbr');
+    Route::patch('/category-brand-requests/{id}/approve', [AdminCategoryBrandController::class, 'approve'])->name('admin.cbr.approve');
+    Route::patch('/category-brand-requests/{id}/reject', [AdminCategoryBrandController::class, 'reject'])->name('admin.cbr.reject');
 });

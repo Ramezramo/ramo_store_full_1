@@ -157,6 +157,12 @@ select option{background:var(--card)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
       Reviews
     </a>
+    <a href="{{ route('admin.cbr') }}" class="nav-item {{ request()->routeIs('admin.cbr') ? 'active' : '' }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2z"/><path d="M7 7h.01"/></svg>
+      Cat & Brand Requests
+      @php $pendingCbr = \DB::table('category_brand_requests')->where('status','pending')->count(); @endphp
+      @if($pendingCbr > 0)<span class="nav-badge yellow">{{ $pendingCbr }}</span>@endif
+    </a>
     <div class="nav-section">Content & Analytics</div>
     <a href="{{ route('admin.timeline') }}" class="nav-item {{ request()->routeIs('admin.timeline') ? 'active' : '' }}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="4" rx="1"/><rect x="3" y="10" width="11" height="4" rx="1"/><rect x="3" y="17" width="14" height="4" rx="1"/></svg>
