@@ -1,12 +1,86 @@
 @extends('layouts.app')
 @section('title', 'Shop — Ramo Store')
 
+@push('styles')
+<style>
+/* ── Category sidebar hierarchy ─────────────────────────── */
+.cat-list { list-style:none; margin:0; padding:0; }
+.cat-list > li { border-bottom:1px solid #f0f0ee; }
+.cat-list > li:last-child { border-bottom:none; }
+
+/* Parent row */
+.cat-parent-row {
+  display:flex; align-items:center; justify-content:space-between;
+  gap:6px;
+}
+.cat-parent-link {
+  flex:1; display:block; padding:9px 4px 9px 0;
+  font-size:14px; font-weight:600; color:#333;
+  transition:.15s;
+}
+.cat-parent-link:hover { color:#e85d26; }
+.cat-parent-link.active { color:#e85d26; }
+
+/* Toggle chevron */
+.cat-toggle {
+  background:none; border:none; cursor:pointer;
+  color:#aaa; padding:6px; border-radius:4px;
+  transition:.15s; flex-shrink:0; line-height:1;
+}
+.cat-toggle:hover { color:#e85d26; background:#fff5f2; }
+.cat-toggle svg { display:block; transition:transform .2s; }
+.cat-toggle.open svg { transform:rotate(180deg); }
+
+/* Children list */
+.cat-children {
+  list-style:none; margin:0; padding:0 0 6px 14px;
+  display:none;
+  border-left:2px solid #f0ede8;
+}
+.cat-children.open { display:block; }
+.cat-children li { }
+.cat-children a {
+  display:flex; align-items:center; gap:5px;
+  padding:5px 4px; font-size:13px; color:#666;
+  transition:.15s; border-radius:4px;
+}
+.cat-children a:hover { color:#e85d26; }
+.cat-children a.active { color:#e85d26; font-weight:600; }
+.cat-children a::before {
+  content:''; width:5px; height:5px;
+  border-radius:50%; background:#d5cfc9; flex-shrink:0;
+}
+.cat-children a.active::before { background:#e85d26; }
+
+/* All Products link */
+.cat-all-link {
+  display:block; padding:10px 4px; font-size:14px; font-weight:600;
+  color:#333; border-bottom:1px solid #f0f0ee; margin-bottom:4px;
+  transition:.15s;
+}
+.cat-all-link:hover,.cat-all-link.active { color:#e85d26; }
+
+/* Product count badge next to category */
+.cat-count {
+  font-size:11px; color:#bbb; font-weight:400; margin-left:3px;
+}
+</style>
+@endpush
+
 @section('content')
 <div class="page">
 
+  {{-- Breadcrumb --}}
   <div class="breadcrumb">
     <a href="{{ route('home') }}">Home</a><span>/</span><strong>Shop</strong>
     @if(request('search'))<span>/</span><span>"{{ request('search') }}"</span>@endif
+    @if($activeCategoryId)
+      @php
+        $activeCat = $parentCats->firstWhere('id', $activeCategoryId)
+          ?? $childCats->flatten()->firstWhere('id', $activeCategoryId);
+      @endphp
+      @if($activeCat)<span>/</span><span>{{ $activeCat->name }}</span>@endif
+    @endif
   </div>
 
   <button class="shop-filter-toggle" id="shop-filter-btn" onclick="toggleShopFilter()">
@@ -16,19 +90,57 @@
 
   <div class="shop-layout">
 
-    {{-- SIDEBAR --}}
+    {{-- ── SIDEBAR ─────────────────────────────────────── --}}
     <aside class="sidebar">
       <h3>Categories</h3>
+
       <ul class="cat-list">
+        {{-- All Products --}}
         <li>
           <a href="{{ route('shop', array_filter(request()->except('category','page'))) }}"
-             class="{{ !request('category') ? 'active' : '' }}">All Products</a>
+             class="cat-all-link {{ !$activeCategoryId ? 'active' : '' }}">
+            All Products
+          </a>
         </li>
-        @foreach($categories as $cat)
-        <li>
-          <a href="{{ route('shop', array_merge(request()->except('category','page'), ['category'=>$cat->id])) }}"
-             class="{{ request('category') == $cat->id ? 'active' : '' }}">{{ $cat->name }}</a>
-        </li>
+
+        {{-- Parent categories --}}
+        @foreach($parentCats as $parent)
+          @php
+            $hasChildren = isset($childCats[$parent->id]) && $childCats[$parent->id]->count() > 0;
+            $isParentActive = $activeCategoryId == $parent->id;
+            $isOpen = $activeParentId == $parent->id;
+            $parentUrl = route('shop', array_merge(request()->except('category','page'), ['category' => $parent->id]));
+          @endphp
+          <li>
+            <div class="cat-parent-row">
+              <a href="{{ $parentUrl }}"
+                 class="cat-parent-link {{ $isParentActive ? 'active' : '' }}">
+                {{ $parent->name }}
+              </a>
+              @if($hasChildren)
+                <button class="cat-toggle {{ $isOpen ? 'open' : '' }}"
+                        onclick="toggleChildren('children-{{ $parent->id }}', this)"
+                        aria-label="Toggle sub-categories">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </button>
+              @endif
+            </div>
+
+            @if($hasChildren)
+              <ul class="cat-children {{ $isOpen ? 'open' : '' }}" id="children-{{ $parent->id }}">
+                @foreach($childCats[$parent->id] as $child)
+                  <li>
+                    <a href="{{ route('shop', array_merge(request()->except('category','page'), ['category' => $child->id])) }}"
+                       class="{{ $activeCategoryId == $child->id ? 'active' : '' }}">
+                      {{ $child->name }}
+                    </a>
+                  </li>
+                @endforeach
+              </ul>
+            @endif
+          </li>
         @endforeach
       </ul>
 
@@ -46,13 +158,22 @@
       </form>
     </aside>
 
-    {{-- MAIN --}}
+    {{-- ── MAIN ─────────────────────────────────────────── --}}
     <div>
       <div class="shop-toolbar">
-        <span class="result-count">{{ $products->total() }} product{{ $products->total()!=1?'s':'' }}</span>
+        <span class="result-count">
+          {{ $products->total() }} product{{ $products->total()!=1?'s':'' }}
+          @if($activeCategoryId && isset($activeCat))
+            in <strong>{{ $activeCat->name }}</strong>
+            @php $isParentFilter = $parentCats->firstWhere('id', $activeCategoryId) && isset($childCats[$activeCategoryId]); @endphp
+            @if($isParentFilter)
+              <span style="font-size:12px;color:#aaa">(incl. sub-categories)</span>
+            @endif
+          @endif
+        </span>
         <div class="search-bar">
           <form method="GET" action="{{ route('shop') }}" style="display:contents">
-            @if(request('category'))<input type="hidden" name="category" value="{{ request('category') }}">@endif
+            @if($activeCategoryId)<input type="hidden" name="category" value="{{ $activeCategoryId }}">@endif
             <input type="text" name="search" placeholder="Search…" value="{{ request('search') }}">
             <button type="submit">🔍</button>
           </form>
@@ -129,6 +250,12 @@ function toggleShopFilter() {
   btn.innerHTML = open
     ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Close Filters'
     : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg> Filters & Categories';
+}
+
+function toggleChildren(listId, btn) {
+  const list = document.getElementById(listId);
+  const open = list.classList.toggle('open');
+  btn.classList.toggle('open', open);
 }
 </script>
 @endpush

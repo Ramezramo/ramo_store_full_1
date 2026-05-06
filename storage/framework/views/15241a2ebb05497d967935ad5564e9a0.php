@@ -10,18 +10,22 @@
   <a href="<?php echo e(route('admin.cbr')); ?>?status=" class="btn btn-sm <?php echo e($status === '' ? 'btn-primary' : 'btn-ghost'); ?>">All</a>
 <?php $__env->stopSection(); ?>
 
-<?php $__env->startSection('content'); ?>
-
 <?php $__env->startPush('styles'); ?>
 <style>
 .req-note-form{display:none;margin-top:8px}
-.req-note-form.open{display:block}
+.req-note-form.open{display:flex;flex-direction:column;gap:6px}
 .req-row-actions{display:flex;gap:6px;align-items:flex-start;flex-direction:column}
+.req-note-form input,.req-note-form select{
+  padding:5px 8px;border-radius:5px;border:1px solid var(--border);
+  background:var(--card);color:var(--text);font-size:12px;width:220px;
+}
 </style>
 <?php $__env->stopPush(); ?>
 
+<?php $__env->startSection('content'); ?>
+
 <div style="display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap">
-  <?php $__currentLoopData = ['pending'=>['yellow','Pending'],'approved'=>['green','Approved'],'rejected'=>['red','Rejected']]; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $s=>[$color,$label]): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+  <?php $__currentLoopData = ['pending'=>'Pending','approved'=>'Approved','rejected'=>'Rejected']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $s=>$label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
   <div class="stat-card" style="min-width:140px;flex:1">
     <div class="stat-value" style="font-size:22px"><?php echo e($counts[$s]); ?></div>
     <div class="stat-label"><?php echo e($label); ?></div>
@@ -29,7 +33,6 @@
   <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 </div>
 
-<?php if(request('type') || true): ?>
 <form method="GET" style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
   <input type="hidden" name="status" value="<?php echo e($status); ?>">
   <div class="form-group">
@@ -41,7 +44,6 @@
     </select>
   </div>
 </form>
-<?php endif; ?>
 
 <?php if($requests->isEmpty()): ?>
   <div class="card" style="text-align:center;padding:48px">
@@ -56,6 +58,7 @@
           <th>#</th>
           <th>Type</th>
           <th>Name</th>
+          <th>Parent Category</th>
           <th>Description</th>
           <th>Vendor</th>
           <th>Status</th>
@@ -75,7 +78,18 @@
             <?php endif; ?>
           </td>
           <td style="font-weight:600"><?php echo e($req->name); ?></td>
-          <td style="color:var(--muted);max-width:180px;font-size:12px"><?php echo e($req->description ? Str::limit($req->description, 60) : '—'); ?></td>
+          <td style="font-size:12px">
+            <?php if($req->type === 'category'): ?>
+              <?php if($req->parent_category_name): ?>
+                <span class="badge badge-green">↳ <?php echo e($req->parent_category_name); ?></span>
+              <?php else: ?>
+                <span style="color:var(--muted)">Top-level</span>
+              <?php endif; ?>
+            <?php else: ?>
+              <span style="color:var(--muted)">—</span>
+            <?php endif; ?>
+          </td>
+          <td style="color:var(--muted);max-width:160px;font-size:12px"><?php echo e($req->description ? Str::limit($req->description, 50) : '—'); ?></td>
           <td style="font-size:12px"><?php echo e($req->vendor_name ?? '—'); ?></td>
           <td>
             <?php if($req->status === 'pending'): ?>
@@ -99,7 +113,24 @@
               <div id="approve-<?php echo e($req->id); ?>" class="req-note-form">
                 <form method="POST" action="<?php echo e(route('admin.cbr.approve', $req->id)); ?>">
                   <?php echo csrf_field(); ?> <?php echo method_field('PATCH'); ?>
-                  <input type="text" name="admin_note" class="form-control" placeholder="Note (optional)" style="margin-bottom:4px;padding:5px 8px;border-radius:5px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:12px;width:200px">
+                  <?php if($req->type === 'category'): ?>
+                  <div>
+                    <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:2px">Parent category (override)</label>
+                    <select name="parent_category_id">
+                      <option value="">— No parent (top-level) —</option>
+                      <?php
+                        $topLevel = $allCategories->filter(fn($c) => $c->parent == 0 || $c->parent === null);
+                      ?>
+                      <?php $__currentLoopData = $topLevel; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $cat): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <option value="<?php echo e($cat->id); ?>" <?php echo e($req->parent_category_id == $cat->id ? 'selected' : ''); ?>><?php echo e($cat->name); ?></option>
+                        <?php $__currentLoopData = $allCategories->where('parent', $cat->id); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $child): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                          <option value="<?php echo e($child->id); ?>" <?php echo e($req->parent_category_id == $child->id ? 'selected' : ''); ?>>&nbsp;&nbsp;↳ <?php echo e($child->name); ?></option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                      <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    </select>
+                  </div>
+                  <?php endif; ?>
+                  <input type="text" name="admin_note" placeholder="Note (optional)">
                   <button type="submit" class="btn btn-sm btn-success">Confirm Approve</button>
                 </form>
               </div>
@@ -112,7 +143,7 @@
               <div id="reject-<?php echo e($req->id); ?>" class="req-note-form">
                 <form method="POST" action="<?php echo e(route('admin.cbr.reject', $req->id)); ?>">
                   <?php echo csrf_field(); ?> <?php echo method_field('PATCH'); ?>
-                  <input type="text" name="admin_note" class="form-control" placeholder="Reason (optional)" style="margin-bottom:4px;padding:5px 8px;border-radius:5px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:12px;width:200px">
+                  <input type="text" name="admin_note" placeholder="Reason (optional)">
                   <button type="submit" class="btn btn-sm btn-danger">Confirm Reject</button>
                 </form>
               </div>
@@ -133,8 +164,7 @@
 
 <script>
 function toggleNote(id) {
-  const el = document.getElementById(id);
-  el.classList.toggle('open');
+  document.getElementById(id).classList.toggle('open');
 }
 </script>
 <?php $__env->stopSection(); ?>

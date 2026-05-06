@@ -19,12 +19,12 @@
       </div>
     <?php endif; ?>
 
-    <form method="POST" action="<?php echo e(route('vendor.requests.store')); ?>">
+    <form method="POST" action="<?php echo e(route('vendor.requests.store')); ?>" id="req-form">
       <?php echo csrf_field(); ?>
 
       <div class="vs-form-group">
         <label class="vs-label">Request Type <span style="color:var(--red)">*</span></label>
-        <select name="type" class="vs-input <?php echo e($errors->has('type') ? 'err' : ''); ?>" required>
+        <select name="type" id="req-type" class="vs-input <?php echo e($errors->has('type') ? 'err' : ''); ?>" required onchange="toggleParent()">
           <option value="">— Select type —</option>
           <option value="category" <?php echo e(old('type') === 'category' ? 'selected' : ''); ?>>Category</option>
           <option value="brand" <?php echo e(old('type') === 'brand' ? 'selected' : ''); ?>>Brand</option>
@@ -44,6 +44,44 @@ unset($__errorArgs, $__bag); ?>
         <input type="text" name="name" class="vs-input <?php echo e($errors->has('name') ? 'err' : ''); ?>"
                value="<?php echo e(old('name')); ?>" placeholder="e.g. Electronics, Nike, Furniture…" required maxlength="255">
         <?php $__errorArgs = ['name'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?><div class="vs-err"><?php echo e($message); ?></div><?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+      </div>
+
+      
+      <div class="vs-form-group" id="parent-group" style="display:none">
+        <label class="vs-label">
+          Parent Category
+          <span style="color:var(--mid);font-weight:400;text-transform:none">(leave empty for top-level)</span>
+        </label>
+        <select name="parent_category_id" id="parent-select" class="vs-input">
+          <option value="">— No parent (top-level category) —</option>
+          <?php
+            $topLevel = $categories->filter(fn($c) => $c->parent == 0 || $c->parent === null);
+            $children = $categories->filter(fn($c) => $c->parent > 0)->keyBy('id');
+          ?>
+          <?php $__currentLoopData = $topLevel; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $cat): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <option value="<?php echo e($cat->id); ?>" <?php echo e(old('parent_category_id') == $cat->id ? 'selected' : ''); ?>>
+              <?php echo e($cat->name); ?>
+
+            </option>
+            <?php $__currentLoopData = $categories->where('parent', $cat->id); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $child): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+              <option value="<?php echo e($child->id); ?>" <?php echo e(old('parent_category_id') == $child->id ? 'selected' : ''); ?>>
+                &nbsp;&nbsp;&nbsp;↳ <?php echo e($child->name); ?>
+
+              </option>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+          <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+        </select>
+        <div style="font-size:12px;color:var(--mid);margin-top:4px">
+          Selecting a parent makes this a sub-category of the chosen one.
+        </div>
+        <?php $__errorArgs = ['parent_category_id'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :
 if (isset($message)) { $__messageOriginal = $message; }
@@ -77,6 +115,22 @@ unset($__errorArgs, $__bag); ?>
     </form>
   </div>
 </div>
+
+<script>
+function toggleParent() {
+  const type = document.getElementById('req-type').value;
+  const group = document.getElementById('parent-group');
+  const sel = document.getElementById('parent-select');
+  if (type === 'category') {
+    group.style.display = 'block';
+  } else {
+    group.style.display = 'none';
+    sel.value = '';
+  }
+}
+// Run on load in case of old() repopulation
+document.addEventListener('DOMContentLoaded', toggleParent);
+</script>
 <?php $__env->stopSection(); ?>
 
 <?php echo $__env->make('web.vendor.layout', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH /home/runner/workspace/resources/views/web/vendor/requests/create.blade.php ENDPATH**/ ?>

@@ -1,11 +1,85 @@
 <?php $__env->startSection('title', 'Shop — Ramo Store'); ?>
 
+<?php $__env->startPush('styles'); ?>
+<style>
+/* ── Category sidebar hierarchy ─────────────────────────── */
+.cat-list { list-style:none; margin:0; padding:0; }
+.cat-list > li { border-bottom:1px solid #f0f0ee; }
+.cat-list > li:last-child { border-bottom:none; }
+
+/* Parent row */
+.cat-parent-row {
+  display:flex; align-items:center; justify-content:space-between;
+  gap:6px;
+}
+.cat-parent-link {
+  flex:1; display:block; padding:9px 4px 9px 0;
+  font-size:14px; font-weight:600; color:#333;
+  transition:.15s;
+}
+.cat-parent-link:hover { color:#e85d26; }
+.cat-parent-link.active { color:#e85d26; }
+
+/* Toggle chevron */
+.cat-toggle {
+  background:none; border:none; cursor:pointer;
+  color:#aaa; padding:6px; border-radius:4px;
+  transition:.15s; flex-shrink:0; line-height:1;
+}
+.cat-toggle:hover { color:#e85d26; background:#fff5f2; }
+.cat-toggle svg { display:block; transition:transform .2s; }
+.cat-toggle.open svg { transform:rotate(180deg); }
+
+/* Children list */
+.cat-children {
+  list-style:none; margin:0; padding:0 0 6px 14px;
+  display:none;
+  border-left:2px solid #f0ede8;
+}
+.cat-children.open { display:block; }
+.cat-children li { }
+.cat-children a {
+  display:flex; align-items:center; gap:5px;
+  padding:5px 4px; font-size:13px; color:#666;
+  transition:.15s; border-radius:4px;
+}
+.cat-children a:hover { color:#e85d26; }
+.cat-children a.active { color:#e85d26; font-weight:600; }
+.cat-children a::before {
+  content:''; width:5px; height:5px;
+  border-radius:50%; background:#d5cfc9; flex-shrink:0;
+}
+.cat-children a.active::before { background:#e85d26; }
+
+/* All Products link */
+.cat-all-link {
+  display:block; padding:10px 4px; font-size:14px; font-weight:600;
+  color:#333; border-bottom:1px solid #f0f0ee; margin-bottom:4px;
+  transition:.15s;
+}
+.cat-all-link:hover,.cat-all-link.active { color:#e85d26; }
+
+/* Product count badge next to category */
+.cat-count {
+  font-size:11px; color:#bbb; font-weight:400; margin-left:3px;
+}
+</style>
+<?php $__env->stopPush(); ?>
+
 <?php $__env->startSection('content'); ?>
 <div class="page">
 
+  
   <div class="breadcrumb">
     <a href="<?php echo e(route('home')); ?>">Home</a><span>/</span><strong>Shop</strong>
     <?php if(request('search')): ?><span>/</span><span>"<?php echo e(request('search')); ?>"</span><?php endif; ?>
+    <?php if($activeCategoryId): ?>
+      <?php
+        $activeCat = $parentCats->firstWhere('id', $activeCategoryId)
+          ?? $childCats->flatten()->firstWhere('id', $activeCategoryId);
+      ?>
+      <?php if($activeCat): ?><span>/</span><span><?php echo e($activeCat->name); ?></span><?php endif; ?>
+    <?php endif; ?>
   </div>
 
   <button class="shop-filter-toggle" id="shop-filter-btn" onclick="toggleShopFilter()">
@@ -18,16 +92,56 @@
     
     <aside class="sidebar">
       <h3>Categories</h3>
+
       <ul class="cat-list">
+        
         <li>
           <a href="<?php echo e(route('shop', array_filter(request()->except('category','page')))); ?>"
-             class="<?php echo e(!request('category') ? 'active' : ''); ?>">All Products</a>
+             class="cat-all-link <?php echo e(!$activeCategoryId ? 'active' : ''); ?>">
+            All Products
+          </a>
         </li>
-        <?php $__currentLoopData = $categories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $cat): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-        <li>
-          <a href="<?php echo e(route('shop', array_merge(request()->except('category','page'), ['category'=>$cat->id]))); ?>"
-             class="<?php echo e(request('category') == $cat->id ? 'active' : ''); ?>"><?php echo e($cat->name); ?></a>
-        </li>
+
+        
+        <?php $__currentLoopData = $parentCats; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $parent): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+          <?php
+            $hasChildren = isset($childCats[$parent->id]) && $childCats[$parent->id]->count() > 0;
+            $isParentActive = $activeCategoryId == $parent->id;
+            $isOpen = $activeParentId == $parent->id;
+            $parentUrl = route('shop', array_merge(request()->except('category','page'), ['category' => $parent->id]));
+          ?>
+          <li>
+            <div class="cat-parent-row">
+              <a href="<?php echo e($parentUrl); ?>"
+                 class="cat-parent-link <?php echo e($isParentActive ? 'active' : ''); ?>">
+                <?php echo e($parent->name); ?>
+
+              </a>
+              <?php if($hasChildren): ?>
+                <button class="cat-toggle <?php echo e($isOpen ? 'open' : ''); ?>"
+                        onclick="toggleChildren('children-<?php echo e($parent->id); ?>', this)"
+                        aria-label="Toggle sub-categories">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </button>
+              <?php endif; ?>
+            </div>
+
+            <?php if($hasChildren): ?>
+              <ul class="cat-children <?php echo e($isOpen ? 'open' : ''); ?>" id="children-<?php echo e($parent->id); ?>">
+                <?php $__currentLoopData = $childCats[$parent->id]; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $child): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                  <li>
+                    <a href="<?php echo e(route('shop', array_merge(request()->except('category','page'), ['category' => $child->id]))); ?>"
+                       class="<?php echo e($activeCategoryId == $child->id ? 'active' : ''); ?>">
+                      <?php echo e($child->name); ?>
+
+                    </a>
+                  </li>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+              </ul>
+            <?php endif; ?>
+          </li>
         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
       </ul>
 
@@ -48,10 +162,20 @@
     
     <div>
       <div class="shop-toolbar">
-        <span class="result-count"><?php echo e($products->total()); ?> product<?php echo e($products->total()!=1?'s':''); ?></span>
+        <span class="result-count">
+          <?php echo e($products->total()); ?> product<?php echo e($products->total()!=1?'s':''); ?>
+
+          <?php if($activeCategoryId && isset($activeCat)): ?>
+            in <strong><?php echo e($activeCat->name); ?></strong>
+            <?php $isParentFilter = $parentCats->firstWhere('id', $activeCategoryId) && isset($childCats[$activeCategoryId]); ?>
+            <?php if($isParentFilter): ?>
+              <span style="font-size:12px;color:#aaa">(incl. sub-categories)</span>
+            <?php endif; ?>
+          <?php endif; ?>
+        </span>
         <div class="search-bar">
           <form method="GET" action="<?php echo e(route('shop')); ?>" style="display:contents">
-            <?php if(request('category')): ?><input type="hidden" name="category" value="<?php echo e(request('category')); ?>"><?php endif; ?>
+            <?php if($activeCategoryId): ?><input type="hidden" name="category" value="<?php echo e($activeCategoryId); ?>"><?php endif; ?>
             <input type="text" name="search" placeholder="Search…" value="<?php echo e(request('search')); ?>">
             <button type="submit">🔍</button>
           </form>
@@ -128,6 +252,12 @@ function toggleShopFilter() {
   btn.innerHTML = open
     ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Close Filters'
     : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg> Filters & Categories';
+}
+
+function toggleChildren(listId, btn) {
+  const list = document.getElementById(listId);
+  const open = list.classList.toggle('open');
+  btn.classList.toggle('open', open);
 }
 </script>
 <?php $__env->stopPush(); ?>

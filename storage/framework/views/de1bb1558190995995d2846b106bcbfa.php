@@ -24,6 +24,7 @@
           <th>#</th>
           <th>Type</th>
           <th>Name</th>
+          <th>Parent Category</th>
           <th>Description</th>
           <th>Status</th>
           <th>Admin Note</th>
@@ -42,7 +43,16 @@
             <?php endif; ?>
           </td>
           <td style="font-weight:600"><?php echo e($req->name); ?></td>
-          <td style="color:var(--mid);max-width:200px"><?php echo e($req->description ? Str::limit($req->description, 60) : '—'); ?></td>
+          <td style="font-size:12px;color:var(--mid)">
+            <?php if($req->type === 'category' && $req->parent_category_name): ?>
+              <span style="background:#f0fdf4;color:#166534;padding:2px 7px;border-radius:20px;font-size:11px">↳ <?php echo e($req->parent_category_name); ?></span>
+            <?php elseif($req->type === 'category'): ?>
+              <span style="color:var(--mid)">Top-level</span>
+            <?php else: ?>
+              —
+            <?php endif; ?>
+          </td>
+          <td style="color:var(--mid);max-width:160px;font-size:12px"><?php echo e($req->description ? Str::limit($req->description, 50) : '—'); ?></td>
           <td>
             <?php if($req->status === 'pending'): ?>
               <span class="badge-pending">Pending</span>
@@ -52,7 +62,7 @@
               <span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">Rejected</span>
             <?php endif; ?>
           </td>
-          <td style="color:var(--mid);font-size:12px;max-width:180px"><?php echo e($req->admin_note ?: '—'); ?></td>
+          <td style="color:var(--mid);font-size:12px;max-width:160px"><?php echo e($req->admin_note ?: '—'); ?></td>
           <td style="color:var(--mid);font-size:12px;white-space:nowrap"><?php echo e(\Carbon\Carbon::parse($req->created_at)->format('M d, Y')); ?></td>
         </tr>
         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>

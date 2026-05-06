@@ -247,11 +247,32 @@ class WebController extends Controller
     {
         $query = $this->baseProductQuery();
 
-        if ($request->filled('category')) {
-            $query->join('product_category as pc', function ($j) use ($request) {
+        // Build category hierarchy for sidebar
+        $allCats = DB::table('categories2')->orderBy('menu_order')->orderBy('name')->get();
+
+        $parentCats = $allCats->filter(fn($c) => $c->parent == 0 || $c->parent === null)->values();
+        $childCats  = $allCats->filter(fn($c) => $c->parent > 0)->groupBy('parent');
+
+        // Collect all child IDs for a given category ID (including itself)
+        $activeCategoryId = $request->filled('category') ? (int) $request->category : null;
+        $filterCategoryIds = [];
+
+        if ($activeCategoryId) {
+            $filterCategoryIds[] = $activeCategoryId;
+            // If this is a parent, also include its children
+            if (isset($childCats[$activeCategoryId])) {
+                foreach ($childCats[$activeCategoryId] as $child) {
+                    $filterCategoryIds[] = $child->id;
+                }
+            }
+        }
+
+        if (!empty($filterCategoryIds)) {
+            $ids = $filterCategoryIds;
+            $query->join('product_category as pc', function ($j) use ($ids) {
                 $j->on('pc.product_id', '=', 'p.id')
-                  ->where('pc.category_id', $request->category);
-            });
+                  ->whereIn('pc.category_id', $ids);
+            })->distinct();
         }
 
         if ($request->filled('search')) {
@@ -266,13 +287,24 @@ class WebController extends Controller
         elseif ($request->sort === 'price_desc') $query->orderBy('price', 'desc');
         else $query->orderBy('p.id', 'desc');
 
-        $rawProducts = $query->paginate(12)->withQueryString();
+        $rawProducts = $query->paginate(16)->withQueryString();
         $products    = $rawProducts->through(fn($p) => $this->parseProduct($p));
 
-        $categories = DB::table('categories2')->orderBy('name')->get();
-        $activeCategory = $request->category;
+        // Find active parent: if a child is selected, its parent is considered "open"
+        $activeParentId = null;
+        if ($activeCategoryId) {
+            $activeCat = $allCats->firstWhere('id', $activeCategoryId);
+            if ($activeCat && $activeCat->parent > 0) {
+                $activeParentId = $activeCat->parent;
+            } else {
+                $activeParentId = $activeCategoryId;
+            }
+        }
 
-        return view('web.shop', compact('products', 'categories', 'activeCategory'));
+        return view('web.shop', compact(
+            'products', 'parentCats', 'childCats',
+            'activeCategoryId', 'activeParentId'
+        ));
     }
 
     public function product($id)
