@@ -197,9 +197,8 @@
         $title       = $sec['headerText'] ?? $sec['name'] ?? 'Products';
         $catId       = $sec['category'] ?? null;
         $prodWidth   = (int)($sec['productWidth'] ?? 230);
-        $imgRatio    = (float)($sec['imageRatio'] ?? 1.0);
+        $imgHeight   = isset($sec['imageHeight']) ? (int)$sec['imageHeight'] : (isset($sec['imageRatio']) ? round($prodWidth * (float)$sec['imageRatio']) : 230);
         $cardRadius  = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 12;
-        $imgHeight   = $imgRatio > 0 ? round($prodWidth * $imgRatio) : null;
         $secId       = 'sg-'.$si;
       @endphp
       @if($products->count())
@@ -227,9 +226,8 @@
         $title      = $sec['headerText'] ?? 'Products';
         $catId      = $sec['category'] ?? null;
         $prodWidth  = (int)($sec['productWidth'] ?? 140);
-        $imgRatio   = (float)($sec['imageRatio'] ?? 1.4);
+        $imgHeight  = isset($sec['imageHeight']) ? max(60, (int)$sec['imageHeight']) : (isset($sec['imageRatio']) ? max(60, round($prodWidth * (float)$sec['imageRatio'])) : 196);
         $cardRadius = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 10;
-        $imgHeight  = max(60, round($prodWidth * $imgRatio));
       @endphp
       @if($products->count())
       <div class="sec-head">
@@ -274,9 +272,8 @@
         $title      = $sec['name'] ?? $sec['headerText'] ?? 'Featured';
         $catId      = $sec['category'] ?? null;
         $prodWidth  = (int)($sec['productWidth'] ?? 200);
-        $imgRatio   = (float)($sec['imageRatio'] ?? 1.0);
+        $imgHeight  = isset($sec['imageHeight']) ? (int)$sec['imageHeight'] : (isset($sec['imageRatio']) ? round($prodWidth * (float)$sec['imageRatio']) : 200);
         $cardRadius = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 10;
-        $imgHeight  = $imgRatio > 0 ? round($prodWidth * $imgRatio) : null;
         $secId      = 'sg-'.$si;
       @endphp
       @if($products->count())
