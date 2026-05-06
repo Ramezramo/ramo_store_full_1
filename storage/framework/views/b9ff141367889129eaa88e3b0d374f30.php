@@ -193,16 +193,27 @@
     
     <?php elseif($layout === 'twoColumn'): ?>
       <?php
-        $products  = $sectionProducts[$si] ?? collect();
-        $title     = $sec['headerText'] ?? $sec['name'] ?? 'Products';
-        $catId     = $sec['category'] ?? null;
+        $products    = $sectionProducts[$si] ?? collect();
+        $title       = $sec['headerText'] ?? $sec['name'] ?? 'Products';
+        $catId       = $sec['category'] ?? null;
+        $prodWidth   = (int)($sec['productWidth'] ?? 230);
+        $imgRatio    = (float)($sec['imageRatio'] ?? 1.0);
+        $cardRadius  = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 12;
+        $imgHeight   = $imgRatio > 0 ? round($prodWidth * $imgRatio) : null;
+        $secId       = 'sg-'.$si;
       ?>
       <?php if($products->count()): ?>
+      <style>
+        #<?php echo e($secId); ?> .product-card { border-radius: <?php echo e($cardRadius); ?>px }
+        <?php if($imgHeight): ?>
+        #<?php echo e($secId); ?> .product-card-img { aspect-ratio: unset; height: <?php echo e($imgHeight); ?>px }
+        <?php endif; ?>
+      </style>
       <div class="sec-head">
         <h2 class="sec-title"><?php echo e($title); ?></h2>
         <a href="<?php echo e(route('shop', array_filter(['category' => $catId]))); ?>" class="sec-link">View all →</a>
       </div>
-      <div class="product-grid" style="margin-bottom:40px">
+      <div class="product-grid" id="<?php echo e($secId); ?>" style="grid-template-columns:repeat(auto-fill,minmax(<?php echo e($prodWidth); ?>px,1fr));margin-bottom:40px">
         <?php $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $p): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
         <?php echo $__env->make('web.partials.product-card', ['p' => $p, 'cardVariations' => $sectionVariations[$p->id] ?? []], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
@@ -212,9 +223,13 @@
     
     <?php elseif($layout === 'saleImages'): ?>
       <?php
-        $products = $sectionProducts[$si] ?? collect();
-        $title    = $sec['headerText'] ?? 'Products';
-        $catId    = $sec['category'] ?? null;
+        $products   = $sectionProducts[$si] ?? collect();
+        $title      = $sec['headerText'] ?? 'Products';
+        $catId      = $sec['category'] ?? null;
+        $prodWidth  = (int)($sec['productWidth'] ?? 140);
+        $imgRatio   = (float)($sec['imageRatio'] ?? 1.4);
+        $cardRadius = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 10;
+        $imgHeight  = max(60, round($prodWidth * $imgRatio));
       ?>
       <?php if($products->count()): ?>
       <div class="sec-head">
@@ -224,9 +239,9 @@
       <div class="tl-scroll-section" style="margin-bottom:36px">
         <div class="tl-scroll-track">
           <?php $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $p): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-          <div class="tl-scroll-card">
-            <div class="product-card">
-              <a href="<?php echo e(route('product', $p->id)); ?>" class="product-card-img" style="height:180px">
+          <div class="tl-scroll-card" style="width:<?php echo e($prodWidth); ?>px">
+            <div class="product-card" style="border-radius:<?php echo e($cardRadius); ?>px">
+              <a href="<?php echo e(route('product', $p->id)); ?>" class="product-card-img" style="height:<?php echo e($imgHeight); ?>px;border-radius:<?php echo e($cardRadius); ?>px <?php echo e($cardRadius); ?>px 0 0">
                 <?php if($p->thumbnail_url): ?>
                   <img src="<?php echo e($p->thumbnail_url); ?>" alt="<?php echo e($p->name); ?>" loading="lazy">
                 <?php else: ?>
@@ -255,16 +270,27 @@
     
     <?php elseif($layout === 'seupermarketstars'): ?>
       <?php
-        $products = $sectionProducts[$si] ?? collect();
-        $title    = $sec['name'] ?? $sec['headerText'] ?? 'Featured';
-        $catId    = $sec['category'] ?? null;
+        $products   = $sectionProducts[$si] ?? collect();
+        $title      = $sec['name'] ?? $sec['headerText'] ?? 'Featured';
+        $catId      = $sec['category'] ?? null;
+        $prodWidth  = (int)($sec['productWidth'] ?? 200);
+        $imgRatio   = (float)($sec['imageRatio'] ?? 1.0);
+        $cardRadius = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 10;
+        $imgHeight  = $imgRatio > 0 ? round($prodWidth * $imgRatio) : null;
+        $secId      = 'sg-'.$si;
       ?>
       <?php if($products->count()): ?>
+      <style>
+        #<?php echo e($secId); ?> .product-card { border-radius: <?php echo e($cardRadius); ?>px }
+        <?php if($imgHeight): ?>
+        #<?php echo e($secId); ?> .product-card-img { aspect-ratio: unset; height: <?php echo e($imgHeight); ?>px }
+        <?php endif; ?>
+      </style>
       <div class="sec-head">
         <h2 class="sec-title"><?php echo e($title); ?></h2>
         <a href="<?php echo e(route('shop', array_filter(['category' => $catId]))); ?>" class="sec-link">View all →</a>
       </div>
-      <div class="product-grid cols-4" style="margin-bottom:40px">
+      <div class="product-grid" id="<?php echo e($secId); ?>" style="grid-template-columns:repeat(auto-fill,minmax(<?php echo e($prodWidth); ?>px,1fr));margin-bottom:40px">
         <?php $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $p): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
         <?php echo $__env->make('web.partials.product-card', ['p' => $p, 'cardVariations' => $sectionVariations[$p->id] ?? []], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>

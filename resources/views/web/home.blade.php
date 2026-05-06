@@ -193,16 +193,27 @@
     {{-- TWO-COLUMN PRODUCTS GRID --}}
     @elseif($layout === 'twoColumn')
       @php
-        $products  = $sectionProducts[$si] ?? collect();
-        $title     = $sec['headerText'] ?? $sec['name'] ?? 'Products';
-        $catId     = $sec['category'] ?? null;
+        $products    = $sectionProducts[$si] ?? collect();
+        $title       = $sec['headerText'] ?? $sec['name'] ?? 'Products';
+        $catId       = $sec['category'] ?? null;
+        $prodWidth   = (int)($sec['productWidth'] ?? 230);
+        $imgRatio    = (float)($sec['imageRatio'] ?? 1.0);
+        $cardRadius  = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 12;
+        $imgHeight   = $imgRatio > 0 ? round($prodWidth * $imgRatio) : null;
+        $secId       = 'sg-'.$si;
       @endphp
       @if($products->count())
+      <style>
+        #{{ $secId }} .product-card { border-radius: {{ $cardRadius }}px }
+        @if($imgHeight)
+        #{{ $secId }} .product-card-img { aspect-ratio: unset; height: {{ $imgHeight }}px }
+        @endif
+      </style>
       <div class="sec-head">
         <h2 class="sec-title">{{ $title }}</h2>
         <a href="{{ route('shop', array_filter(['category' => $catId])) }}" class="sec-link">View all →</a>
       </div>
-      <div class="product-grid" style="margin-bottom:40px">
+      <div class="product-grid" id="{{ $secId }}" style="grid-template-columns:repeat(auto-fill,minmax({{ $prodWidth }}px,1fr));margin-bottom:40px">
         @foreach($products as $p)
         @include('web.partials.product-card', ['p' => $p, 'cardVariations' => $sectionVariations[$p->id] ?? []])
         @endforeach
@@ -212,9 +223,13 @@
     {{-- SALE IMAGES — Horizontal scroll of products --}}
     @elseif($layout === 'saleImages')
       @php
-        $products = $sectionProducts[$si] ?? collect();
-        $title    = $sec['headerText'] ?? 'Products';
-        $catId    = $sec['category'] ?? null;
+        $products   = $sectionProducts[$si] ?? collect();
+        $title      = $sec['headerText'] ?? 'Products';
+        $catId      = $sec['category'] ?? null;
+        $prodWidth  = (int)($sec['productWidth'] ?? 140);
+        $imgRatio   = (float)($sec['imageRatio'] ?? 1.4);
+        $cardRadius = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 10;
+        $imgHeight  = max(60, round($prodWidth * $imgRatio));
       @endphp
       @if($products->count())
       <div class="sec-head">
@@ -224,9 +239,9 @@
       <div class="tl-scroll-section" style="margin-bottom:36px">
         <div class="tl-scroll-track">
           @foreach($products as $p)
-          <div class="tl-scroll-card">
-            <div class="product-card">
-              <a href="{{ route('product', $p->id) }}" class="product-card-img" style="height:180px">
+          <div class="tl-scroll-card" style="width:{{ $prodWidth }}px">
+            <div class="product-card" style="border-radius:{{ $cardRadius }}px">
+              <a href="{{ route('product', $p->id) }}" class="product-card-img" style="height:{{ $imgHeight }}px;border-radius:{{ $cardRadius }}px {{ $cardRadius }}px 0 0">
                 @if($p->thumbnail_url)
                   <img src="{{ $p->thumbnail_url }}" alt="{{ $p->name }}" loading="lazy">
                 @else
@@ -255,16 +270,27 @@
     {{-- SUPERMARKET STARS — product grid by category --}}
     @elseif($layout === 'seupermarketstars')
       @php
-        $products = $sectionProducts[$si] ?? collect();
-        $title    = $sec['name'] ?? $sec['headerText'] ?? 'Featured';
-        $catId    = $sec['category'] ?? null;
+        $products   = $sectionProducts[$si] ?? collect();
+        $title      = $sec['name'] ?? $sec['headerText'] ?? 'Featured';
+        $catId      = $sec['category'] ?? null;
+        $prodWidth  = (int)($sec['productWidth'] ?? 200);
+        $imgRatio   = (float)($sec['imageRatio'] ?? 1.0);
+        $cardRadius = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 10;
+        $imgHeight  = $imgRatio > 0 ? round($prodWidth * $imgRatio) : null;
+        $secId      = 'sg-'.$si;
       @endphp
       @if($products->count())
+      <style>
+        #{{ $secId }} .product-card { border-radius: {{ $cardRadius }}px }
+        @if($imgHeight)
+        #{{ $secId }} .product-card-img { aspect-ratio: unset; height: {{ $imgHeight }}px }
+        @endif
+      </style>
       <div class="sec-head">
         <h2 class="sec-title">{{ $title }}</h2>
         <a href="{{ route('shop', array_filter(['category' => $catId])) }}" class="sec-link">View all →</a>
       </div>
-      <div class="product-grid cols-4" style="margin-bottom:40px">
+      <div class="product-grid" id="{{ $secId }}" style="grid-template-columns:repeat(auto-fill,minmax({{ $prodWidth }}px,1fr));margin-bottom:40px">
         @foreach($products as $p)
         @include('web.partials.product-card', ['p' => $p, 'cardVariations' => $sectionVariations[$p->id] ?? []])
         @endforeach

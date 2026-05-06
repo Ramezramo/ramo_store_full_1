@@ -329,10 +329,15 @@ function buildEditor(sec, idx) {
     <button class="add-item-btn" onclick="addBannerItem(${idx})">+ Add Banner Image</button>`;
   }
   else if (type === 'twoColumn' || type === 'saleImages' || type === 'seupermarketstars') {
+    const defWidth = type === 'saleImages' ? 140 : (type === 'seupermarketstars' ? 200 : 230);
+    const defRatio = type === 'saleImages' ? 1.4 : 1.0;
     html = `<div class="form-grid">
       <div class="form-group"><label>Section Title</label><input type="text" value="${escAttr(sec.headerText||sec.name||'')}" onchange="updateField(${idx},'headerText',this.value)" placeholder="e.g. On Sale Today"></div>
       <div class="form-group"><label>Category</label><select onchange="updateField(${idx},'category',parseInt(this.value))"><option value="">All Products</option>${catOptions(sec.category)}</select></div>
       <div class="form-group"><label>Max Items</label><input type="number" value="${sec.maxItemsToShow||8}" min="1" max="20" onchange="updateField(${idx},'maxItemsToShow',parseInt(this.value))"></div>
+      <div class="form-group"><label>Card Width (px)</label><input type="number" value="${sec.productWidth||defWidth}" min="80" max="500" step="10" onchange="updateField(${idx},'productWidth',parseInt(this.value)||defWidth)"></div>
+      <div class="form-group"><label>Image Ratio (H÷W)</label><input type="number" value="${sec.imageRatio||defRatio}" min="0.4" max="3" step="0.05" onchange="updateField(${idx},'imageRatio',parseFloat(this.value)||defRatio)" placeholder="e.g. 1.2"></div>
+      <div class="form-group"><label>Corner Radius (px)</label><input type="number" value="${sec.cardBorderRadius!=null?sec.cardBorderRadius:10}" min="0" max="40" step="1" onchange="updateField(${idx},'cardBorderRadius',parseInt(this.value))"></div>
     </div>`;
   }
   else if (type === 'topVendors') {
