@@ -42,11 +42,11 @@ button{cursor:pointer;font-family:inherit}
 .nav-dashboard-btn{display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:8px;font-size:12px;font-weight:700;color:#fff;background:var(--c-dark);border:none;white-space:nowrap;cursor:pointer;text-decoration:none;transition:all .15s;user-select:none}
 .nav-dashboard-btn:hover{background:#333}
 .nav-dashboard-btn .caret{margin-left:2px;transition:transform .2s}
-.nav-portal:hover .caret,.nav-portal.open .caret{transform:rotate(180deg)}
+.nav-portal.open .caret{transform:rotate(180deg)}
 .nav-dashboard-vendor{background:var(--c-orange)}
 .nav-dashboard-vendor:hover{background:#d44f1a}
-.nav-portal-dropdown{position:absolute;top:calc(100% + 6px);right:0;min-width:160px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:6px;z-index:200;opacity:0;pointer-events:none;transform:translateY(-6px);transition:opacity .15s,transform .15s}
-.nav-portal:hover .nav-portal-dropdown,.nav-portal.open .nav-portal-dropdown{opacity:1;pointer-events:all;transform:translateY(0)}
+.nav-portal-dropdown{position:absolute;top:calc(100% + 8px);right:0;min-width:168px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.13);padding:6px;z-index:200;visibility:hidden;opacity:0;transform:translateY(-4px) scale(.98);transform-origin:top right;transition:opacity .18s ease,transform .18s ease,visibility 0s .18s}
+.nav-portal.open .nav-portal-dropdown{visibility:visible;opacity:1;transform:translateY(0) scale(1);transition:opacity .18s ease,transform .18s ease,visibility 0s 0s}
 .nav-portal-item{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:7px;font-size:13px;font-weight:600;color:#374151;text-decoration:none;transition:.12s;width:100%;background:none;border:none;cursor:pointer;text-align:left;white-space:nowrap}
 .nav-portal-item:hover{background:#f5f5f2;color:#111}
 .nav-portal-item.danger{color:#dc2626}
@@ -700,7 +700,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
         @endphp
         @if($__isAdmin)
           <div class="nav-portal" id="admin-portal">
-            <button class="nav-dashboard-btn" onclick="togglePortal('admin-portal')">
+            <button class="nav-dashboard-btn" onclick="togglePortal('admin-portal',event)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
               Admin Panel
               <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><polyline points="6 9 12 15 18 9"/></svg>
@@ -727,7 +727,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
       @if(auth()->guard('vendor_web')->check())
         @php $__vw = auth()->guard('vendor_web')->user(); @endphp
         <div class="nav-portal" id="vendor-portal">
-          <button class="nav-dashboard-btn nav-dashboard-vendor" onclick="togglePortal('vendor-portal')">
+          <button class="nav-dashboard-btn nav-dashboard-vendor" onclick="togglePortal('vendor-portal',event)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
             {{ Str::limit($__vw->shop_name, 14) }}
             <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><polyline points="6 9 12 15 18 9"/></svg>
@@ -757,7 +757,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
       @auth
         @php $__au = Auth::user(); @endphp
         <div class="nav-portal" id="account-portal">
-          <button class="nav-user-btn" onclick="togglePortal('account-portal')" style="padding:7px 12px">
+          <button class="nav-user-btn" onclick="togglePortal('account-portal',event)" style="padding:7px 12px">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             {{ Str::limit($__au->first_name ?: $__au->name, 12) }}
             <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><polyline points="6 9 12 15 18 9"/></svg>
@@ -912,7 +912,8 @@ function closeMobileMenu() {
 }
 document.getElementById('nav-mobile-menu')?.querySelectorAll('a').forEach(a => a.addEventListener('click', closeMobileMenu));
 
-function togglePortal(id) {
+function togglePortal(id, e) {
+  if (e) e.stopPropagation();
   const el = document.getElementById(id);
   const isOpen = el.classList.contains('open');
   document.querySelectorAll('.nav-portal.open').forEach(p => p.classList.remove('open'));
@@ -920,6 +921,11 @@ function togglePortal(id) {
 }
 document.addEventListener('click', function(e) {
   if (!e.target.closest('.nav-portal')) {
+    document.querySelectorAll('.nav-portal.open').forEach(p => p.classList.remove('open'));
+  }
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
     document.querySelectorAll('.nav-portal.open').forEach(p => p.classList.remove('open'));
   }
 });
