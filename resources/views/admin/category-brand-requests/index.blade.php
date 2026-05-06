@@ -243,7 +243,9 @@
               <select name="parent_id">
                 <option value="">— Top-level —</option>
                 @foreach($parentCats as $pc)
-                  @if($pc->id===$parent->id)@continue@endif
+                  @if($pc->id===$parent->id)
+                    @continue
+                  @endif
                   <option value="{{ $pc->id }}" {{ $parent->parent==$pc->id ? 'selected':'' }}>{{ $pc->name }}</option>
                 @endforeach
               </select>
@@ -338,7 +340,9 @@
                     <option value="{{ $pc->id }}" {{ $child->parent==$pc->id ? 'selected':'' }}>{{ $pc->name }}</option>
                     @if(isset($childCats[$pc->id]))
                       @foreach($childCats[$pc->id] as $cc)
-                        @if($cc->id===$child->id)@continue@endif
+                        @if($cc->id===$child->id)
+                          @continue
+                        @endif
                         <option value="{{ $cc->id }}">&nbsp;&nbsp;↳ {{ $cc->name }}</option>
                       @endforeach
                     @endif
