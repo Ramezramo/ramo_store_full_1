@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 3tl5Pdv8JCKXc4MS0mGYqqg0hyE8AXgKkvGKemxge46ZujSh4di1QXvPP4w43ei
+\restrict MP2UjsadX5oEsh5ir9engWsRr5GjJWB7acCf2SIE3S0lX4QqPfTDpkH4eaBqZGZ
 
 -- Dumped from database version 16.10
 -- Dumped by pg_dump version 16.10
@@ -261,7 +261,8 @@ ALTER SEQUENCE public.blogposts_id_seq OWNED BY public.blogposts.id;
 
 CREATE TABLE public.brands (
     id integer NOT NULL,
-    name character varying(255) NOT NULL
+    name character varying(255) NOT NULL,
+    image character varying(255)
 );
 
 
@@ -367,6 +368,51 @@ ALTER SEQUENCE public.categories2_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.categories2_id_seq OWNED BY public.categories2.id;
+
+
+--
+-- Name: category_brand_requests; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.category_brand_requests (
+    id bigint NOT NULL,
+    type character varying(255) NOT NULL,
+    name character varying(255) NOT NULL,
+    description text,
+    status character varying(255) DEFAULT 'pending'::character varying NOT NULL,
+    admin_note text,
+    vendor_user_id bigint,
+    vendor_name character varying(255),
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone,
+    parent_category_id bigint,
+    parent_category_name character varying(255),
+    CONSTRAINT category_brand_requests_status_check CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'approved'::character varying, 'rejected'::character varying])::text[]))),
+    CONSTRAINT category_brand_requests_type_check CHECK (((type)::text = ANY ((ARRAY['category'::character varying, 'brand'::character varying])::text[])))
+);
+
+
+ALTER TABLE public.category_brand_requests OWNER TO postgres;
+
+--
+-- Name: category_brand_requests_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.category_brand_requests_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.category_brand_requests_id_seq OWNER TO postgres;
+
+--
+-- Name: category_brand_requests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.category_brand_requests_id_seq OWNED BY public.category_brand_requests.id;
 
 
 --
@@ -1919,6 +1965,13 @@ ALTER TABLE ONLY public.categories2 ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
+-- Name: category_brand_requests id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.category_brand_requests ALTER COLUMN id SET DEFAULT nextval('public.category_brand_requests_id_seq'::regclass);
+
+
+--
 -- Name: countries id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2175,12 +2228,12 @@ COPY public.blogposts (id, date, date_gmt, guid, modified, modified_gmt, slug, s
 -- Data for Name: brands; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.brands (id, name) FROM stdin;
-1	Apple
-2	Samsung
-3	Microsoft
-4	Sony
-5	Intel
+COPY public.brands (id, name, image) FROM stdin;
+1	Apple	\N
+2	Samsung	\N
+3	Microsoft	\N
+4	Sony	\N
+5	Intel	\N
 \.
 
 
@@ -2212,6 +2265,18 @@ COPY public.categories2 (id, name, slug, parent, description, display, image, me
 208	Clothing	clothing	0	\N	\N	\N	3	\N	\N	\N
 311	mobile-phones	Mobile-phones	2	\N	\N	\N	2	\N	\N	\N
 314	Uncategorized	uncategorized-ar	0	\N	\N	\N	0	\N	\N	\N
+316	Shooter	shooter	315		visible	\N	0	0	0	\N
+315	Games	games	\N		visible	\N	0	0	1	\N
+\.
+
+
+--
+-- Data for Name: category_brand_requests; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.category_brand_requests (id, type, name, description, status, admin_note, vendor_user_id, vendor_name, created_at, updated_at, parent_category_id, parent_category_name) FROM stdin;
+1	category	Games	\N	approved	\N	10	Cairo Fashion Hub	2026-05-06 15:05:35	2026-05-06 15:05:51	\N	\N
+2	category	Shooter	\N	approved	\N	10	Cairo Fashion Hub	2026-05-06 15:10:09	2026-05-06 15:10:26	315	Games
 \.
 
 
@@ -2329,6 +2394,9 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 8	2026_05_03_012000_create_order_sub_orders_table	4
 9	2026_05_03_012001_add_sub_order_id_to_order_messages	4
 10	2026_05_04_000001_add_auth_fields_and_otp_verifications	5
+11	2025_05_06_000001_create_category_brand_requests_table	6
+12	2025_05_06_000002_add_parent_to_category_brand_requests	7
+13	2026_05_06_152830_add_image_to_brands_table	8
 \.
 
 
@@ -2609,9 +2677,9 @@ COPY public.users (id, name, email, email_verified_at, password, remember_token,
 27	Layla Farouk	layla.farouk@gmail.com	2026-05-03 22:04:50	$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi	\N	2026-05-01 14:32:45	2026-05-03 14:32:45	\N	\N	\N	\N	\N	\N	\N	\N	+20111000008	normal_user								\N	f	f	\N	\N
 8	Ramez MalakFarouk	otp_3454553455@ramostore.local	2026-05-03 22:04:50	$2y$12$BTFjPtoL6Jg5QUnEczRa4urLCVU9xgO1DjNB.WQQRm8yEE7cLq8DK	\N	2026-05-03 17:54:52	2026-05-03 17:54:52	\N	\N	\N	\N	Ramez	MalakFarouk	\N	\N	+3454553455	normal_user	ramez-malakfarouk-3455	2026-05-03 17:54:52	Ramez	MalakFarouk		{"customer":true}	[]	phone_otp	t	f	\N	\N
 9	ramez malak	otp_76587658787@ramostore.local	2026-05-03 22:04:50	$2y$12$UkHiyMpXbOA/yNQBh7rCMOLUDHFeNbaX.759/DuGqXg0/vTKujMe2	\N	2026-05-03 20:33:25	2026-05-03 20:33:25	\N	\N	\N	\N	ramez	malak	\N	\N	+76587658787	normal_user	ramez-malak-8787	2026-05-03 20:33:25	ramez	malak		{"customer":true}	[]	phone_otp	t	f	\N	\N
-1	Admin	adminramoui@gmail.com	2026-05-03 22:04:50	$2y$12$KhLzICGblMSTkg3vntNe8e7QmXrrDOuJT6GgeoQ3PA6tSb5JHJ8wa	cKCN56QWYnas7doR1qrDz38urnGjJ0A6vU3VmgBHfQ0AbTozkb2Psqs9eWaM	2026-05-02 22:43:55	2026-05-03 15:31:00	\N	\N	\N	\N	ramo	malak	\N	\N	q23wertw345	admin							{"first_name":"ramo","last_name":"malak","address":"Al Kufur","address_note":null,"city":"Al Kufur","state":"Minya","email":"adminramoui@gmail.com","phone":"q23wertw345","latitude":"28.445427","longitude":"30.805958"}	\N	f	f	\N	\N
 28	RAMEZ_HADE MALAK	hadeer1hadeer11@gmail.com	2026-05-03 22:10:04	$2y$12$RVH3SP6YJ0Qvxi9Fk1uTkuF/htYH4GbFIH3BqPfUk6FyEqwIVxxtq	\N	2026-05-03 22:07:59	2026-05-03 22:12:36	\N	\N	\N	\N	RAMEZ_HADE	MALAK	\N	\N	01002722375	normal_user	ramez_hade-malak	2026-05-03 22:07:59	RAMEZ_HADE	MALAK		{"customer":true}	{"first_name":"RAMEZ_HADE","last_name":"MALAK","address":"1000 Factory Area","address_note":null,"city":"Cairo","state":"Cairo","email":"hadeer1hadeer11@gmail.com","phone":"01002722375","latitude":"29.9714","longitude":"31.4808"}	email_password	f	f	\N	\N
 29	RAMEZ MALAK	otp_202394857987@ramostore.local	\N	$2y$12$XPVOOEawY6IJaDkkRVRmaOsFkoMMExq4wrgTZy5EYSzfIqvu3tSvq	\N	2026-05-04 02:06:56	2026-05-04 02:15:11	\N	\N	\N	\N	RAMEZ	MALAK	\N	\N	+202394857987	normal_user	ramez-malak-7987	2026-05-04 02:06:56	RAMEZ	MALAK		{"customer":true}	{"first_name":"RAMEZ","last_name":"MALAK","address":"1000 Factory Area","address_note":null,"city":"Cairo","state":"Cairo","email":"otp_202394857987@ramostore.local","phone":"+202394857987","latitude":"29.9714","longitude":"31.4808"}	phone_otp	t	f	\N	\N
+1	Admin	adminramoui@gmail.com	2026-05-06 15:03:45	$2y$12$1JP33X5fnHrSdPJZA3DbUOBSjM6YQA8Pd/r8pwL9P6sh4xhswMqzG	cKCN56QWYnas7doR1qrDz38urnGjJ0A6vU3VmgBHfQ0AbTozkb2Psqs9eWaM	2026-05-02 22:43:55	2026-05-03 15:31:00	\N	\N	\N	\N	ramo	malak	\N	\N	q23wertw345	admin							{"first_name":"ramo","last_name":"malak","address":"Al Kufur","address_note":null,"city":"Al Kufur","state":"Minya","email":"adminramoui@gmail.com","phone":"q23wertw345","latitude":"28.445427","longitude":"30.805958"}	\N	f	f	\N	\N
 \.
 
 
@@ -2620,7 +2688,6 @@ COPY public.users (id, name, email, email_verified_at, password, remember_token,
 --
 
 COPY public.vendor_users (id, profile_image, first_name, last_name, phone, email, password, email_verified_at, remember_token, created_at, updated_at, shop_name, shop_address, shop_logo, shop_banner, secondary_banner, bottom_banner, status, rating, rating_count, temporary_close, vacation_end_date, vacation_start_date, vacation_status, offer_banner, product_count, orders_count, minimum_order_amount, free_delivery_over_amount, free_delivery_status, sales_commission_percentage, auth_token, holder_name, account_no, bank_name, branch, free_delivery_features_status, free_delivery_responsibility, minimum_order_amount_by_seller) FROM stdin;
-10	\N	Cairo	Fashion	+20100000001	cairo.fashion@ramostore.com	$2y$12$9hgmXfd.lytKSQUSCqufNeYgaYvBPpgFAxZKBkddoSOEL4kdetwLO	\N	\N	2026-05-03 14:42:03	2026-05-03 14:44:33	Cairo Fashion Hub	12 Tahrir Square, Cairo	\N	\N	\N		approved	4.7	23	0	empty	empty	0	empty	9	5	\N	\N	\N	\N	tok-cf-001	Cairo Fashion	\N	CIB Bank	Cairo Main	\N	\N	\N
 11	\N	Tech	Zone	+20100000002	techzone@ramostore.com	$2y$12$9hgmXfd.lytKSQUSCqufNeYgaYvBPpgFAxZKBkddoSOEL4kdetwLO	\N	\N	2026-05-03 14:42:03	2026-05-03 14:44:33	TechZone Egypt	45 Corniche, Alexandria	\N	\N	\N		approved	4.8	42	0	empty	empty	0	empty	3	3	\N	\N	\N	\N	tok-tz-002	TechZone	\N	NBE Bank	Alexandria Main	\N	\N	\N
 12	\N	Luxury	Bags	+20100000003	luxurybags@ramostore.com	$2y$12$9hgmXfd.lytKSQUSCqufNeYgaYvBPpgFAxZKBkddoSOEL4kdetwLO	\N	\N	2026-05-03 14:42:03	2026-05-03 14:44:33	Luxury Bags Co	88 Pyramids Rd, Giza	\N	\N	\N		approved	4.9	14	0	empty	empty	0	empty	2	2	\N	\N	\N	\N	tok-lb-003	Luxury Bags	\N	QNB Bank	Giza Branch	\N	\N	\N
 13	\N	Shoe	Palace	+20100000004	shoepalace@ramostore.com	$2y$12$9hgmXfd.lytKSQUSCqufNeYgaYvBPpgFAxZKBkddoSOEL4kdetwLO	\N	\N	2026-05-03 14:42:03	2026-05-03 14:44:33	Shoe Palace Egypt	22 Nasr City, Cairo	\N	\N	\N		approved	4.6	22	0	empty	empty	0	empty	2	3	\N	\N	\N	\N	tok-sp-004	Shoe Palace	\N	CIB Bank	Nasr City Branch	\N	\N	\N
@@ -2629,6 +2696,7 @@ COPY public.vendor_users (id, profile_image, first_name, last_name, phone, email
 16	\N	Desert	Rose	+20100000007	desert.rose@ramostore.com	$2y$12$9hgmXfd.lytKSQUSCqufNeYgaYvBPpgFAxZKBkddoSOEL4kdetwLO	\N	\N	2026-05-03 14:42:03	2026-05-03 14:44:33	Desert Rose Fashion	3 Corniche El Nile, Aswan	\N	\N	\N		approved	4.8	31	0	empty	empty	0	empty	1	2	\N	\N	\N	\N	tok-dr-007	Desert Rose	\N	CIB Bank	Aswan Branch	\N	\N	\N
 17	\N	Delta	Denim	+20100000008	delta.denim@ramostore.com	$2y$12$9hgmXfd.lytKSQUSCqufNeYgaYvBPpgFAxZKBkddoSOEL4kdetwLO	\N	\N	2026-05-03 14:42:03	2026-05-03 14:44:33	Delta Denim Co	9 El-Geish Street, Tanta	\N	\N	\N		approved	4.5	18	0	empty	empty	0	empty	1	1	\N	\N	\N	\N	tok-dd-008	Delta Denim	\N	QNB Bank	Tanta Branch	\N	\N	\N
 1	\N	Demo	Vendor	+201234567890	vendor@ramostore.com	$2y$12$9hgmXfd.lytKSQUSCqufNeYgaYvBPpgFAxZKBkddoSOEL4kdetwLO	\N	dkCQS3yYE3LP9Omzr3ykusWKhpqyjG17s8r75JTMxmMkooPBPJAwDZK4aiCJ	2026-05-02 22:51:36	2026-05-03 15:16:08	Demo Shop	123 Main Street, Cairo	stores/logo/RDwg507gd88nsWamB9b3rb6SkkdOZ9Rw7kgKA7C1.jpg	\N	\N		approved	0	0	0	empty	empty	0	empty	\N	\N	0	0	0	\N	2vjpOvLzjU8O57TsDA5TkigQXt5jxdmqFzgUDo7B	Demo Vendor	\N	Demo Bank	Main Branch	\N	\N	\N
+10	\N	Cairo	Fashion	+20100000001	cairo.fashion@ramostore.com	$2y$12$kMp81QiQtxIht9zsVqPZ3O7w0emD2cWdRu6/jOlND8V6XgR8uizHC	\N	\N	2026-05-03 14:42:03	2026-05-03 14:44:33	Cairo Fashion Hub	12 Tahrir Square, Cairo	\N	\N	\N		approved	4.7	23	0	empty	empty	0	empty	9	5	\N	\N	\N	\N	tok-cf-001	Cairo Fashion	\N	CIB Bank	Cairo Main	\N	\N	\N
 \.
 
 
@@ -2712,7 +2780,14 @@ SELECT pg_catalog.setval('public.cart_items_id_seq', 1, false);
 -- Name: categories2_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.categories2_id_seq', 315, false);
+SELECT pg_catalog.setval('public.categories2_id_seq', 316, true);
+
+
+--
+-- Name: category_brand_requests_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.category_brand_requests_id_seq', 2, true);
 
 
 --
@@ -2796,7 +2871,7 @@ SELECT pg_catalog.setval('public.links_logs_two_id_seq', 1, false);
 -- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.migrations_id_seq', 11, false);
+SELECT pg_catalog.setval('public.migrations_id_seq', 13, true);
 
 
 --
@@ -2987,6 +3062,14 @@ ALTER TABLE ONLY public.cart_items
 
 ALTER TABLE ONLY public.categories2
     ADD CONSTRAINT categories2_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: category_brand_requests category_brand_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.category_brand_requests
+    ADD CONSTRAINT category_brand_requests_pkey PRIMARY KEY (id);
 
 
 --
@@ -3326,5 +3409,5 @@ GRANT ALL ON SCHEMA public TO PUBLIC;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 3tl5Pdv8JCKXc4MS0mGYqqg0hyE8AXgKkvGKemxge46ZujSh4di1QXvPP4w43ei
+\unrestrict MP2UjsadX5oEsh5ir9engWsRr5GjJWB7acCf2SIE3S0lX4QqPfTDpkH4eaBqZGZ
 
