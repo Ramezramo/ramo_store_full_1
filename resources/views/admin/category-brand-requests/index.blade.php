@@ -387,7 +387,7 @@
 
   <div class="cat-tree" id="brand-tree">
     @forelse($brands as $brand)
-      @php $bCount = $brandCounts[$brand->name] ?? 0; @endphp
+      @php $bCount = $brandCounts[$brand->id] ?? 0; @endphp
       <div class="cat-row brand-item" data-name="{{ strtolower($brand->name) }}"
            onclick="toggleEdit('bedit-{{ $brand->id }}')">
         <div class="cat-row-name">{{ $brand->name }}</div>

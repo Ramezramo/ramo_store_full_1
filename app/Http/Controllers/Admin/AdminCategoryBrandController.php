@@ -43,10 +43,10 @@ class AdminCategoryBrandController extends Controller
         $brands = DB::table('brands')->orderBy('name')->get();
 
         $brandCounts = DB::table('products_data')
-            ->whereNotNull('brand')
-            ->select('brand', DB::raw('count(*) as cnt'))
-            ->groupBy('brand')
-            ->pluck('cnt', 'brand');
+            ->whereNotNull('brand_id')
+            ->select('brand_id', DB::raw('count(*) as cnt'))
+            ->groupBy('brand_id')
+            ->pluck('cnt', 'brand_id');
 
         return view('admin.category-brand-requests.index', compact(
             'tab', 'requests', 'status', 'type', 'counts',
