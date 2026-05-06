@@ -35,9 +35,15 @@
 <div class="page">
 
   {{-- ── DYNAMIC TIMELINE SECTIONS ── --}}
+  @php $inPreview = request()->has('tl_preview'); @endphp
   @forelse($sections as $si => $sec)
-    @php $layout = $sec['layout'] ?? ''; @endphp
+    @php
+      $layout    = $sec['layout'] ?? '';
+      $tlNoWrap  = in_array($layout, ['logo', 'announcement']);
+      $tlName    = $sec['name'] ?? $sec['headerText'] ?? $sec['title'] ?? ucfirst($layout);
+    @endphp
     @if($sec['hidden'] ?? false) @continue @endif
+    @if($inPreview && !$tlNoWrap)<div class="tl-pw" data-si="{{ $si }}" data-layout="{{ $layout }}" data-name="{{ htmlspecialchars($tlName, ENT_QUOTES) }}">@endif
 
     {{-- LOGO — skip (web has its own header) --}}
     @if($layout === 'logo')
@@ -777,6 +783,7 @@
       {{-- intentionally skipped — rendered as full-width elements above --}}
 
     @endif
+    @if($inPreview && !$tlNoWrap)</div>@endif
 
   @empty
     {{-- Fallback when no timeline config --}}
@@ -795,6 +802,21 @@
 
 @push('styles')
 <style>
+@if(request()->has('tl_preview'))
+/* ── TIMELINE PREVIEW OVERLAY ── */
+.tl-preview-toolbar{position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a1a2e;color:#fff;display:flex;align-items:center;gap:12px;padding:0 20px;height:44px;font-size:13px;font-family:system-ui,sans-serif;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.tl-preview-toolbar .tl-pt-badge{background:#e85d26;color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;letter-spacing:.5px;text-transform:uppercase}
+.tl-preview-toolbar .tl-pt-msg{color:rgba(255,255,255,.7);font-size:12px}
+.tl-preview-toolbar a.tl-pt-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:5px 14px;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;transition:.15s}
+.tl-preview-toolbar a.tl-pt-btn:hover{background:rgba(255,255,255,.2)}
+.tl-preview-toolbar .tl-pt-spacer{flex:1}
+.tl-pw{position:relative;outline:2px dashed transparent;transition:outline-color .15s}
+.tl-pw:hover{outline-color:var(--tl-pw-color,#e85d26)}
+.tl-pw-label{position:absolute;top:6px;left:6px;z-index:9999;display:flex;align-items:center;gap:6px;background:var(--tl-pw-color,#e85d26);color:#fff;font-size:11px;font-weight:700;padding:3px 10px 3px 7px;border-radius:20px;pointer-events:none;font-family:system-ui,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.25);opacity:0;transition:opacity .15s;white-space:nowrap}
+.tl-pw:hover .tl-pw-label{opacity:1}
+.tl-pw-label .tl-pw-idx{background:rgba(0,0,0,.2);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px}
+body{padding-top:44px}
+@endif
 .tl-stats-bar{display:flex;flex-wrap:wrap;justify-content:center;gap:0;border-radius:var(--radius-lg);padding:36px 20px;margin-top:0}
 .tl-stat-item{flex:1;min-width:140px;text-align:center;padding:16px 24px;border-right:1px solid rgba(255,255,255,.15)}
 .tl-stat-item:last-child{border-right:none}
@@ -1040,5 +1062,62 @@ function slidePrev(id) {
     @endif
   @endif
 @endforeach
+
+@if(request()->has('tl_preview'))
+(function(){
+  // ── SECTION COLORS BY TYPE ──
+  const COLORS = {
+    bannerImage:'#3b82f6', category:'#8b5cf6', twoColumn:'#22c55e',
+    saleImages:'#f59e0b', seupermarketstars:'#ec4899', topVendors:'#f97316',
+    brands:'#06b6d4', coupons:'#eab308', statsBar:'#6366f1',
+    promoBlock:'#e85d26', testimonials:'#10b981', newsletter:'#0ea5e9',
+    bundle:'#22c55e', loyalty:'#f59e0b', activity:'#ef4444',
+    referral:'#0ea5e9', recent:'#8b5cf6', recommended:'#6366f1',
+    complete:'#ec4899', trending:'#ef4444', arrivals:'#8b5cf6',
+    brandLogos:'#0ea5e9', reviewsCarousel:'#f59e0b', announcement:'#111111',
+    flash:'#ef4444', seasonal:'#22c55e', spacer:'#6b7280', divider:'#6b7280',
+  };
+  const TYPE_LABEL = {
+    bannerImage:'Banner / Slider', category:'Categories Strip', twoColumn:'Products Grid',
+    saleImages:'Products Scroll', seupermarketstars:'Featured Items', topVendors:'Top Vendors',
+    brands:'Brands', coupons:'Coupons Strip', statsBar:'Stats Bar',
+    promoBlock:'Promo Block', testimonials:'Testimonials', newsletter:'Newsletter',
+    bundle:'Bundle Deal', loyalty:'Loyalty Points', activity:'Live Activity',
+    referral:'Referral Widget', recent:'Recently Viewed', recommended:'Recommended',
+    complete:'Complete the Look', trending:'Trending Now', arrivals:'New Arrivals',
+    brandLogos:'Brand Logos', reviewsCarousel:'Reviews Carousel',
+    flash:'Flash Sale Timer', seasonal:'Seasonal Banner', spacer:'Spacer', divider:'Divider',
+  };
+
+  // Inject the toolbar
+  var toolbar = document.createElement('div');
+  toolbar.className = 'tl-preview-toolbar';
+  toolbar.innerHTML =
+    '<span class="tl-pt-badge">Preview Mode</span>' +
+    '<span class="tl-pt-msg">Hover any section to see its widget type</span>' +
+    '<div class="tl-pt-spacer"></div>' +
+    '<a href="/admin/timeline" class="tl-pt-btn">← Back to Timeline Editor</a>';
+  document.body.prepend(toolbar);
+
+  // Decorate each .tl-pw wrapper
+  document.querySelectorAll('.tl-pw').forEach(function(el) {
+    var layout = el.dataset.layout || '';
+    var name   = el.dataset.name   || layout;
+    var si     = el.dataset.si     || '';
+    var color  = COLORS[layout] || '#e85d26';
+    var typeLabel = TYPE_LABEL[layout] || layout;
+
+    el.style.setProperty('--tl-pw-color', color);
+
+    var label = document.createElement('div');
+    label.className = 'tl-pw-label';
+    label.innerHTML =
+      '<span class="tl-pw-idx">' + (parseInt(si) + 1) + '</span>' +
+      '<span>' + name + '</span>' +
+      '<span style="opacity:.65;font-size:10px;font-weight:500;margin-left:2px">· ' + typeLabel + '</span>';
+    el.prepend(label);
+  });
+})();
+@endif
 </script>
 @endpush

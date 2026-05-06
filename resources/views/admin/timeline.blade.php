@@ -86,7 +86,7 @@
       <div style="font-size:12px;color:var(--muted);margin-top:3px">Drag to reorder · Click a section to edit · Changes only saved when you press Save</div>
     </div>
     <div style="display:flex;gap:8px">
-      <a href="{{ url('/') }}" target="_blank" class="btn btn-ghost btn-sm">Preview →</a>
+      <a href="{{ url('/') }}?tl_preview=1" target="_blank" class="btn btn-ghost btn-sm">👁 Preview Sections</a>
     </div>
   </div>
 </div>
