@@ -35,8 +35,19 @@
 <div class="page">
 
   
-  <?php $__currentLoopData = $sections; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $si => $sec): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-    <?php if(($sec['layout'] ?? '') === 'flash'): ?>
+  <?php $__empty_1 = true; $__currentLoopData = $sections; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $si => $sec): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+    <?php $layout = $sec['layout'] ?? ''; ?>
+
+    
+    <?php if($layout === 'logo'): ?>
+      
+
+    
+    <?php elseif($layout === 'announcement'): ?>
+      
+
+    
+    <?php elseif($layout === 'flash'): ?>
       <?php
         $fTitle    = $sec['title']    ?? 'Flash Sale';
         $fDiscount = $sec['discount'] ?? 20;
@@ -79,16 +90,6 @@
         tick();
       })();
       </script>
-    <?php endif; ?>
-  <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-
-  
-  <?php $__empty_1 = true; $__currentLoopData = $sections; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $si => $sec): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-    <?php $layout = $sec['layout'] ?? ''; ?>
-
-    
-    <?php if($layout === 'logo'): ?>
-      
 
     
     <?php elseif($layout === 'spacer'): ?>

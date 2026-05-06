@@ -34,9 +34,20 @@
 
 <div class="page">
 
-  {{-- ── FLASH SALE TIMERS (top of page, full-width) ── --}}
-  @foreach($sections as $si => $sec)
-    @if(($sec['layout'] ?? '') === 'flash')
+  {{-- ── DYNAMIC TIMELINE SECTIONS ── --}}
+  @forelse($sections as $si => $sec)
+    @php $layout = $sec['layout'] ?? ''; @endphp
+
+    {{-- LOGO — skip (web has its own header) --}}
+    @if($layout === 'logo')
+      {{-- intentionally skipped --}}
+
+    {{-- ANNOUNCEMENT — already rendered above the page wrapper --}}
+    @elseif($layout === 'announcement')
+      {{-- intentionally skipped (rendered above .page div) --}}
+
+    {{-- FLASH SALE TIMER --}}
+    @elseif($layout === 'flash')
       @php
         $fTitle    = $sec['title']    ?? 'Flash Sale';
         $fDiscount = $sec['discount'] ?? 20;
@@ -79,16 +90,6 @@
         tick();
       })();
       </script>
-    @endif
-  @endforeach
-
-  {{-- ── DYNAMIC TIMELINE SECTIONS ── --}}
-  @forelse($sections as $si => $sec)
-    @php $layout = $sec['layout'] ?? ''; @endphp
-
-    {{-- LOGO — skip (web has its own header) --}}
-    @if($layout === 'logo')
-      {{-- intentionally skipped --}}
 
     {{-- SPACER --}}
     @elseif($layout === 'spacer')
