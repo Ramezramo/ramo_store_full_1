@@ -253,6 +253,15 @@ class WebController extends Controller
         $parentCats = $allCats->filter(fn($c) => $c->parent == 0 || $c->parent === null)->values();
         $childCats  = $allCats->filter(fn($c) => $c->parent > 0)->groupBy('parent');
 
+        // Product counts per category
+        $catCounts = DB::table('product_category as pc')
+            ->join('products_data as p', 'p.id', '=', 'pc.product_id')
+            ->where('p.status', 'publish')
+            ->where('p.acceptance_status', 'approved')
+            ->select('pc.category_id', DB::raw('count(*) as cnt'))
+            ->groupBy('pc.category_id')
+            ->pluck('cnt', 'category_id');
+
         // Collect all child IDs for a given category ID (including itself)
         $activeCategoryId = $request->filled('category') ? (int) $request->category : null;
         $filterCategoryIds = [];
@@ -303,7 +312,7 @@ class WebController extends Controller
 
         return view('web.shop', compact(
             'products', 'parentCats', 'childCats',
-            'activeCategoryId', 'activeParentId'
+            'activeCategoryId', 'activeParentId', 'catCounts'
         ));
     }
 
