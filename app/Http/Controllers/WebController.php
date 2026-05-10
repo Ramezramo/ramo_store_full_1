@@ -441,11 +441,17 @@ class WebController extends Controller
 
         $helpfulVoted = session('review_helpful_voted', []);
 
+        // Check wishlist state from DB (logged-in) or session (guest)
+        $inWishlist = Auth::check()
+            ? DB::table('wishlists')->where('user_id', Auth::id())->where('product_id', $id)->exists()
+            : in_array((int)$id, session('ramo_wishlist', []));
+
         return view('web.product', compact(
             'product', 'variations', 'related',
             'vendor', 'vendorProducts',
             'reviews', 'userReviewed', 'userReview',
-            'distribution', 'helpfulVoted'
+            'distribution', 'helpfulVoted',
+            'inWishlist'
         ));
     }
 

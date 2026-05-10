@@ -86,23 +86,38 @@
 
     {{-- INFO --}}
     <div class="product-info">
-      <h1>{{ $product->name }}</h1>
 
-      {{-- Rating summary --}}
-      @if($reviews->count())
-        @php $avg = round($reviews->avg('rating'), 1); @endphp
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-          <div style="display:flex;gap:2px;font-size:15px">
-            @for($s=1;$s<=5;$s++)
-              <span style="color:{{ $s <= round($avg) ? '#f5a623' : '#ddd' }}">★</span>
-            @endfor
-          </div>
-          <span style="font-size:13px;color:var(--c-mid)">{{ $avg }} ({{ $reviews->count() }} review{{ $reviews->count()!=1?'s':'' }})</span>
+      {{-- Title + Wishlist --}}
+      <div class="pi-title-row">
+        <h1 class="pi-title">{{ $product->name }}</h1>
+        <button class="pi-wish-btn {{ $inWishlist ? 'wished' : '' }}" id="wish-btn"
+                onclick="toggleWishlist(this, {{ $product->id }})"
+                title="{{ $inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist' }}">
+          {{ $inWishlist ? '♥' : '♡' }}
+        </button>
+      </div>
+
+      {{-- Rating summary — always visible --}}
+      @php
+        $totalRev = $reviews->count();
+        $avgRating = $totalRev ? round($reviews->avg('rating'), 1) : 0;
+      @endphp
+      <div class="pi-rating-row">
+        <div class="pi-stars">
+          @for($s=1;$s<=5;$s++)
+            <span class="{{ $s <= round($avgRating) ? 'pi-star-filled' : 'pi-star-empty' }}">★</span>
+          @endfor
         </div>
-      @endif
+        @if($totalRev)
+          <span class="pi-rating-val">{{ $avgRating }}</span>
+          <a href="#reviews" class="pi-rating-count">({{ $totalRev }} review{{ $totalRev!=1?'s':'' }})</a>
+        @else
+          <span class="pi-rating-none">No reviews yet</span>
+        @endif
+      </div>
 
-      {{-- Stock badge (dynamic, updated by JS when variation selected) --}}
-      <div id="stock-display">
+      {{-- Stock badge --}}
+      <div id="stock-display" class="pi-stock">
         @if($product->stock_quantity > 0)
           <span class="badge-stock-ok">✓ In Stock ({{ number_format($product->stock_quantity) }} available)</span>
         @else
@@ -110,12 +125,10 @@
         @endif
       </div>
 
-      {{-- Price block (dynamic) --}}
+      {{-- Price block --}}
       @php
         $discPct  = (float)($product->discount_percentage ?? 0);
         $hasDisc  = $discPct > 0;
-        // Compute effective price per variation — use discount_percentage fallback when
-        // the variation's price column was never updated (sale_price == regular_price).
         $varEffPrices = $variations->map(function ($v) use ($discPct) {
           $reg = (float)$v->regular_price;
           $eff = (float)$v->price;
@@ -130,26 +143,31 @@
         $minReg = $varRegPrices->first() ?? $minEff;
         $isRange = $variations->count() > 0 && round($minEff, 2) !== round($maxEff, 2);
       @endphp
-      <div class="price-block" id="price-block">
-        <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+
+      <div class="pi-price-block" id="price-block">
+        <div class="pi-price-row">
           @if($isRange)
-            <span class="big-price sale-price" id="price-display">{{ number_format($minEff,2) }} – {{ number_format($maxEff,2) }} EGP</span>
-            <span class="orig-price" id="orig-display" style="display:none"></span>
+            <span class="pi-price-main on-sale" id="price-display">{{ number_format($minEff,2) }} – {{ number_format($maxEff,2) }} EGP</span>
+            <span class="pi-price-orig" id="orig-display" style="display:none"></span>
           @elseif($hasDisc)
-            <span class="big-price sale-price" id="price-display">{{ number_format($minEff,2) }} EGP</span>
-            <span class="orig-price" id="orig-display">{{ number_format($minReg,2) }} EGP</span>
+            <span class="pi-price-main on-sale" id="price-display">{{ number_format($minEff,2) }} EGP</span>
+            <span class="pi-price-orig" id="orig-display">{{ number_format($minReg,2) }} EGP</span>
           @else
-            <span class="big-price" id="price-display">{{ number_format($minEff,2) }} EGP</span>
-            <span class="orig-price" id="orig-display" style="display:none"></span>
+            <span class="pi-price-main" id="price-display">{{ number_format($minEff,2) }} EGP</span>
+            <span class="pi-price-orig" id="orig-display" style="display:none"></span>
+          @endif
+          @if($hasDisc)
+            <span class="pi-disc-badge" id="disc-badge">{{ round($discPct) }}% OFF</span>
+          @else
+            <span class="pi-disc-badge" id="disc-badge" style="display:none"></span>
           @endif
         </div>
         @if($hasDisc)
-          <span class="disc-badge" id="disc-badge">{{ round($discPct) }}% OFF</span>
-        @else
-          <span class="disc-badge" id="disc-badge" style="display:none"></span>
+        <div class="pi-sale-note">🏷️ Sale price — you save {{ round($discPct) }}% off the original price</div>
         @endif
       </div>
-      <div class="var-selected-label" id="product-sel-summary" aria-live="polite" style="margin:6px 0 10px"></div>
+
+      <div class="var-selected-label" id="product-sel-summary" aria-live="polite" style="margin:4px 0 12px;font-size:13px;color:var(--c-mid)"></div>
 
       {{-- VARIATIONS ENGINE --}}
       @php
@@ -167,7 +185,6 @@
           )),
         ])->values();
 
-        // Collect all attribute keys and their unique values in order
         $attrMap = [];
         foreach ($varData as $v) {
           foreach (($v['attrs'] ?? []) as $k => $val) {
@@ -177,59 +194,71 @@
         }
       @endphp
 
-      @foreach($attrMap as $attrKey => $attrValues)
-        @php $isColor = strtolower($attrKey) === 'color'; @endphp
-        <div class="var-label">
-          {{ $attrKey }}
-          @if($isColor) <span class="var-selected-label" id="sel-{{ Str::slug($attrKey) }}"></span>@endif
-        </div>
-        <div class="var-options" id="opts-{{ Str::slug($attrKey) }}">
-          @foreach($attrValues as $val)
-            @if($isColor)
-              <button class="var-swatch"
-                      data-attr-key="{{ $attrKey }}"
-                      data-attr-val="{{ $val }}"
-                      onclick="selectAttr('{{ $attrKey }}','{{ $val }}',this)"
-                      onmouseenter="previewColorImage('{{ $attrKey }}','{{ $val }}')"
-                      onmouseleave="restoreImage()"
-                      title="{{ $val }}"
-                      style="background-color: var(--swatch-{{ Str::slug($val) }}, #999)">
-              </button>
-            @else
-              <button class="var-btn"
-                      data-attr-key="{{ $attrKey }}"
-                      data-attr-val="{{ $val }}"
-                      onclick="selectAttr('{{ $attrKey }}','{{ $val }}',this)">{{ $val }}</button>
-            @endif
-          @endforeach
-        </div>
-        <div class="var-hint" id="hint-{{ Str::slug($attrKey) }}"></div>
-      @endforeach
+      @if(!empty($attrMap))
+      <div class="pi-variations-wrap">
+        @foreach($attrMap as $attrKey => $attrValues)
+          @php $isColor = strtolower($attrKey) === 'color'; @endphp
+          <div class="pi-var-group">
+            <div class="var-label">
+              {{ $attrKey }}
+              @if($isColor) <span class="var-selected-label" id="sel-{{ Str::slug($attrKey) }}"></span>@endif
+            </div>
+            <div class="var-options" id="opts-{{ Str::slug($attrKey) }}">
+              @foreach($attrValues as $val)
+                @if($isColor)
+                  <button class="var-swatch"
+                          data-attr-key="{{ $attrKey }}"
+                          data-attr-val="{{ $val }}"
+                          onclick="selectAttr('{{ $attrKey }}','{{ $val }}',this)"
+                          onmouseenter="previewColorImage('{{ $attrKey }}','{{ $val }}')"
+                          onmouseleave="restoreImage()"
+                          title="{{ $val }}"
+                          style="background-color: var(--swatch-{{ Str::slug($val) }}, #999)">
+                  </button>
+                @else
+                  <button class="var-btn"
+                          data-attr-key="{{ $attrKey }}"
+                          data-attr-val="{{ $val }}"
+                          onclick="selectAttr('{{ $attrKey }}','{{ $val }}',this)">{{ $val }}</button>
+                @endif
+              @endforeach
+            </div>
+            <div class="var-hint" id="hint-{{ Str::slug($attrKey) }}"></div>
+          </div>
+        @endforeach
+      </div>
+      @endif
 
       {{-- ADD TO CART + WISHLIST --}}
-      <div class="add-to-cart-row">
+      <div class="pi-cart-row">
         <div class="qty-input">
           <button type="button" onclick="changeQty(-1)">−</button>
           <input type="number" id="qty" value="1" min="1" max="{{ $product->stock_quantity ?: 99 }}">
           <button type="button" onclick="changeQty(1)">+</button>
         </div>
-        <button class="add-to-cart-btn" id="add-to-cart-btn"
+        <button class="add-to-cart-btn pi-atc-btn" id="add-to-cart-btn"
                 onclick="handleAddToCart({{ $product->id }}, '{{ addslashes($product->name) }}', {{ $product->display_price }}, '{{ $product->thumbnail_url }}')">
-          Add to Cart
-        </button>
-        <button class="wish-toggle-btn" id="wish-btn"
-                onclick="toggleWishlist(this, {{ $product->id }})"
-                title="{{ in_array($product->id, session('ramo_wishlist',[])) ? 'Remove from Wishlist' : 'Add to Wishlist' }}">
-          {{ in_array($product->id, session('ramo_wishlist',[])) ? '♥' : '♡' }}
+          🛒 Add to Cart
         </button>
       </div>
 
+      {{-- COUPON --}}
+      <div class="pi-coupon-wrap">
+        <div class="pi-coupon-label">🏷️ Have a coupon?</div>
+        <div class="pi-coupon-row">
+          <input type="text" id="pi-coupon-input" class="pi-coupon-input" placeholder="Enter promo code" maxlength="50">
+          <button class="pi-coupon-btn" onclick="applyProductCoupon()">Apply</button>
+        </div>
+        <div id="pi-coupon-msg" class="pi-coupon-msg"></div>
+      </div>
+
       @if($product->description || $product->unit_label)
-      <div class="desc-block">
+      <div class="desc-block pi-desc">
         @if($product->description)<p>{{ $product->description }}</p>@endif
         @if($product->unit_label)<p style="margin-top:10px;font-size:13px"><strong>Unit:</strong> {{ $product->unit_label }}</p>@endif
       </div>
       @endif
+
     </div>
 
   </div>
@@ -743,6 +772,7 @@ function renderPriceStock(v) {
       eff = Math.round(reg * (1 - DISC_PCT / 100) * 100) / 100;
     }
     showDiscount(eff, reg);
+    if (priceEl) priceEl.classList.toggle('on-sale', eff < reg);
 
     if (stockEl) {
       stockEl.innerHTML = v.stock > 0
@@ -1091,15 +1121,142 @@ function deleteReview(btn, id, productId) {
 }
 
 // ── Wishlist btn initial state ────────────────────────────────────────
-@php $wishedIds = session('ramo_wishlist',[]); @endphp
-const wishedIds = @json($wishedIds);
-const wishBtn = document.getElementById('wish-btn');
-if (wishBtn && wishedIds.includes({{ $product->id }})) { wishBtn.classList.add('wished'); wishBtn.textContent = '♥'; }
+// State already rendered server-side via $inWishlist — nothing to do here.
+
+// ── Product page coupon ───────────────────────────────────────────────
+function applyProductCoupon() {
+  const code = document.getElementById('pi-coupon-input')?.value?.trim();
+  const msg  = document.getElementById('pi-coupon-msg');
+  if (!code) { if (msg) { msg.textContent = 'Please enter a coupon code.'; msg.className = 'pi-coupon-msg error'; } return; }
+
+  fetch('/cart/coupon', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+      'Accept': 'application/json',
+    },
+    body: 'code=' + encodeURIComponent(code),
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (!msg) return;
+    if (data.success) {
+      msg.textContent = '✓ Coupon applied! Discount will be reflected at checkout.';
+      msg.className = 'pi-coupon-msg success';
+      document.getElementById('pi-coupon-input').value = '';
+    } else {
+      msg.textContent = data.message || 'Invalid coupon code.';
+      msg.className = 'pi-coupon-msg error';
+    }
+  })
+  .catch(() => { if (msg) { msg.textContent = 'Could not apply coupon. Try again.'; msg.className = 'pi-coupon-msg error'; } });
+}
 </script>
 <style>
 @keyframes shake {
   0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)}
 }
+
+/* ── Product Info Panel (pi-*) ─────────────────────────────────────── */
+
+/* Title row with wishlist heart */
+.pi-title-row {
+  display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px;
+}
+.pi-title {
+  flex: 1; font-size: 22px; font-weight: 800; color: #1a1a1a;
+  line-height: 1.3; margin: 0;
+}
+.pi-wish-btn {
+  flex-shrink: 0; width: 42px; height: 42px; border-radius: 50%;
+  border: 2px solid #e0e0e0; background: #fff; font-size: 20px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: #ccc; transition: border-color .2s, color .2s, transform .15s;
+  margin-top: 2px;
+}
+.pi-wish-btn:hover { border-color: #e85d26; color: #e85d26; transform: scale(1.1); }
+.pi-wish-btn.wished { border-color: #e85d26; color: #e85d26; }
+
+/* Rating row */
+.pi-rating-row {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 12px;
+}
+.pi-stars { display: flex; gap: 2px; }
+.pi-star-filled { color: #f5a623; font-size: 15px; }
+.pi-star-empty  { color: #ddd;    font-size: 15px; }
+.pi-rating-val  { font-size: 14px; font-weight: 700; color: #1a1a1a; }
+.pi-rating-count { font-size: 13px; color: var(--c-mid, #888); text-decoration: underline; text-underline-offset: 2px; }
+.pi-rating-count:hover { color: #e85d26; }
+.pi-rating-none { font-size: 13px; color: #bbb; font-style: italic; }
+
+/* Stock */
+.pi-stock { margin-bottom: 14px; }
+
+/* Price block */
+.pi-price-block { margin-bottom: 16px; }
+.pi-price-row {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 4px;
+}
+.pi-price-main {
+  font-size: 28px; font-weight: 800; color: #1a1a1a; letter-spacing: -.5px;
+}
+.pi-price-main.on-sale { color: #e85d26; }
+.pi-price-orig {
+  font-size: 16px; color: #aaa; text-decoration: line-through; font-weight: 400;
+}
+.pi-disc-badge {
+  background: #e85d26; color: #fff; font-size: 12px; font-weight: 700;
+  padding: 3px 9px; border-radius: 20px; letter-spacing: .03em;
+}
+.pi-sale-note {
+  font-size: 12px; color: #22a35c; font-weight: 600;
+  background: #f0fdf4; border: 1px solid #bbf7d0;
+  padding: 6px 12px; border-radius: 8px; margin-top: 6px; display: inline-block;
+}
+
+/* Variations wrapper */
+.pi-variations-wrap { margin-bottom: 16px; }
+.pi-var-group { margin-bottom: 10px; }
+
+/* Cart row */
+.pi-cart-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap;
+}
+.pi-atc-btn {
+  flex: 1; min-width: 160px; font-size: 15px; font-weight: 700;
+  padding: 14px 20px; border-radius: 12px;
+}
+
+/* Coupon block */
+.pi-coupon-wrap {
+  border: 1px dashed #ddd; border-radius: 12px;
+  padding: 14px 16px; margin-bottom: 16px; background: #fafaf8;
+}
+.pi-coupon-label {
+  font-size: 13px; font-weight: 700; color: #555; margin-bottom: 8px;
+}
+.pi-coupon-row { display: flex; gap: 8px; }
+.pi-coupon-input {
+  flex: 1; padding: 9px 12px; border: 1px solid #ddd; border-radius: 8px;
+  font-size: 13px; outline: none; background: #fff; text-transform: uppercase;
+  letter-spacing: .05em; transition: border-color .2s;
+}
+.pi-coupon-input:focus { border-color: #e85d26; }
+.pi-coupon-btn {
+  padding: 9px 16px; background: #1a1a1a; color: #fff; border: none;
+  border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: background .2s;
+}
+.pi-coupon-btn:hover { background: #e85d26; }
+.pi-coupon-msg {
+  font-size: 12px; margin-top: 6px; font-weight: 600; min-height: 16px;
+}
+.pi-coupon-msg.success { color: #22a35c; }
+.pi-coupon-msg.error   { color: #e85d26; }
+
+/* Description */
+.pi-desc { margin-top: 4px; }
 
 /* ═══ Reviews Section ═══════════════════════════════════════════════ */
 .reviews-section { margin-top: 64px; }
