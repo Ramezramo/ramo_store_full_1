@@ -848,6 +848,145 @@
       </div></div>
       @endif
 
+    {{-- PRODUCT CUSTOMIZER WIDGET --}}
+    @elseif($layout === 'productCustomizer')
+      @php
+        $fp  = $sectionFeaturedProduct[$si]    ?? null;
+        $fv  = $sectionFeaturedVariations[$si] ?? collect();
+        $st  = $sec['sectionTitle'] ?? '';
+        $showWishlist   = $sec['showWishlist']   ?? true;
+        $showRating     = $sec['showRating']     ?? true;
+        $showVariations = $sec['showVariations'] ?? true;
+        $showCoupon     = $sec['showCoupon']     ?? true;
+      @endphp
+      @if($fp)
+        @php
+          $pcwInWishlist = false;
+          if (auth()->check()) {
+            $pcwInWishlist = DB::table('wishlists')->where('user_id', auth()->id())->where('product_id', $fp->id)->exists();
+          } else {
+            $ws = session('ramo_wishlist', []);
+            $pcwInWishlist = isset($ws[$fp->id]);
+          }
+          $pcwRevs  = DB::table('product_reviews')->where('product_id', $fp->id)->where('approved', true)->get(['rating']);
+          $pcwTotal = $pcwRevs->count();
+          $pcwAvg   = $pcwTotal ? round($pcwRevs->avg('rating'), 1) : 0;
+          $pcwDiscPct  = (float)($fp->discount_percentage ?? 0);
+          $pcwHasDisc  = $pcwDiscPct > 0;
+          $pcwMinEff   = $fv->min('price') ?? $fp->display_price;
+          $pcwMaxEff   = $fv->max('price') ?? $fp->display_price;
+          $pcwMinReg   = $fv->min('regular_price') ?? $pcwMinEff;
+          $pcwIsRange  = $fv->count() > 0 && round((float)$pcwMinEff,2) !== round((float)$pcwMaxEff,2);
+          $pcwAttrMap  = [];
+          foreach ($fv as $v) {
+            foreach (($v->attributes ?? []) as $k => $val) {
+              if (!isset($pcwAttrMap[$k])) $pcwAttrMap[$k] = [];
+              if (!in_array($val, $pcwAttrMap[$k])) $pcwAttrMap[$k][] = $val;
+            }
+          }
+        @endphp
+        @if($st)
+        <div class="sec-head" style="margin-bottom:20px"><h2 class="sec-title">{{ $st }}</h2></div>
+        @endif
+        <div class="pcw-card" style="margin-bottom:44px">
+          <a href="{{ route('product', $fp->id) }}" class="pcw-img-wrap">
+            @if($fp->thumbnail_url)
+              <img src="{{ $fp->thumbnail_url }}" alt="{{ $fp->name }}" class="pcw-img" loading="lazy">
+            @else
+              <div class="pcw-img-placeholder">🛍️</div>
+            @endif
+            @if($pcwHasDisc)<span class="badge-sale">{{ round($pcwDiscPct) }}% OFF</span>@endif
+          </a>
+          <div class="pcw-info">
+            <div class="pcw-title-row">
+              <h2 class="pcw-title"><a href="{{ route('product', $fp->id) }}" style="color:inherit;text-decoration:none">{{ $fp->name }}</a></h2>
+              @if($showWishlist)
+              <button class="pcw-wish-btn {{ $pcwInWishlist ? 'wished' : '' }}"
+                      onclick="toggleWishlist(this, {{ $fp->id }})"
+                      title="{{ $pcwInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist' }}">{{ $pcwInWishlist ? '♥' : '♡' }}</button>
+              @endif
+            </div>
+            @if($showRating)
+            <div class="pcw-rating-row">
+              <div class="pcw-stars">
+                @for($s=1;$s<=5;$s++)<span style="color:{{ $s<=round($pcwAvg)?'#f5a623':'#ddd' }}">★</span>@endfor
+              </div>
+              @if($pcwTotal)
+                <span class="pcw-rating-val">{{ $pcwAvg }}</span>
+                <a href="{{ route('product', $fp->id) }}#reviews" class="pcw-rating-cnt">({{ $pcwTotal }} review{{ $pcwTotal!=1?'s':'' }})</a>
+              @else
+                <span class="pcw-rating-none">No reviews yet</span>
+              @endif
+            </div>
+            @endif
+            <div class="pcw-stock">
+              @if($fp->stock_quantity > 0)
+                <span class="pcw-stock-ok">✓ In Stock ({{ number_format($fp->stock_quantity) }} available)</span>
+              @else
+                <span class="pcw-stock-no">Out of Stock</span>
+              @endif
+            </div>
+            <div class="pcw-price-block">
+              <div class="pcw-price-row">
+                @if($pcwIsRange)
+                  <span class="pcw-price on-sale">{{ number_format((float)$pcwMinEff,2) }} – {{ number_format((float)$pcwMaxEff,2) }} EGP</span>
+                @elseif($pcwHasDisc)
+                  <span class="pcw-price on-sale">{{ number_format((float)$pcwMinEff,2) }} EGP</span>
+                  <span class="pcw-price-orig">{{ number_format((float)$pcwMinReg,2) }} EGP</span>
+                @else
+                  <span class="pcw-price">{{ number_format((float)$pcwMinEff,2) }} EGP</span>
+                @endif
+                @if($pcwHasDisc)<span class="pcw-disc-badge">{{ round($pcwDiscPct) }}% OFF</span>@endif
+              </div>
+              @if($pcwHasDisc)
+              <div class="pcw-sale-note">🏷️ Sale price — you save {{ round($pcwDiscPct) }}% off the original price</div>
+              @endif
+            </div>
+            @if($showVariations && !empty($pcwAttrMap))
+            <div class="pcw-variations">
+              @foreach($pcwAttrMap as $attrKey => $attrValues)
+                @php $isColor = strtolower($attrKey) === 'color'; @endphp
+                <div class="pcw-var-group">
+                  <div class="pcw-var-label">{{ strtoupper($attrKey) }}</div>
+                  <div class="pcw-var-opts">
+                    @foreach($attrValues as $val)
+                      @if($isColor)
+                        <span class="pcw-swatch" title="{{ $val }}" style="background:var(--swatch-{{ Str::slug($val) }},#999)"></span>
+                      @else
+                        <span class="pcw-chip">{{ $val }}</span>
+                      @endif
+                    @endforeach
+                  </div>
+                </div>
+              @endforeach
+            </div>
+            @endif
+            <div class="pcw-cart-row">
+              <div class="qty-input">
+                <button type="button" onclick="this.nextElementSibling.value=Math.max(1,+this.nextElementSibling.value-1)">−</button>
+                <input type="number" value="1" min="1" max="{{ $fp->stock_quantity ?: 99 }}" id="pcw-qty-{{ $si }}">
+                <button type="button" onclick="this.previousElementSibling.value=Math.min({{ $fp->stock_quantity ?: 99 }},+this.previousElementSibling.value+1)">+</button>
+              </div>
+              <button class="pcw-atc-btn"
+                      onclick="addToCart({{ $fp->id }}, '{{ addslashes($fp->name) }}', {{ (float)$pcwMinEff }}, '{{ $fp->thumbnail_url }}', parseInt(document.getElementById('pcw-qty-{{ $si }}').value)||1)">
+                🛒 Add to Cart
+              </button>
+            </div>
+            @if($showCoupon)
+            <div class="pcw-coupon-wrap">
+              <div class="pcw-coupon-label">🏷️ Have a coupon?</div>
+              <div class="pcw-coupon-row">
+                <input type="text" id="pcw-coupon-{{ $si }}" class="pcw-coupon-input" placeholder="Enter promo code" maxlength="50">
+                <button class="pcw-coupon-btn" onclick="applyPcwCoupon('pcw-coupon-{{ $si }}','pcw-msg-{{ $si }}')">Apply</button>
+              </div>
+              <div id="pcw-msg-{{ $si }}" class="pcw-coupon-msg"></div>
+            </div>
+            @endif
+            <a href="{{ route('product', $fp->id) }}" class="pcw-view-link">View full details →</a>
+          </div>
+        </div>
+      @endif
+
     {{-- FLASH / ANNOUNCEMENT: already rendered above, skip here --}}
     @elseif($layout === 'flash' || $layout === 'announcement')
       {{-- intentionally skipped — rendered as full-width elements above --}}
@@ -1045,6 +1184,59 @@ body{padding-top:44px}
 .tl-complete-card{background:var(--c-white);border:1.5px solid var(--c-light);border-radius:var(--radius-lg);padding:24px}
 .tl-complete-inner{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
 
+/* ── PRODUCT CUSTOMIZER WIDGET ── */
+.pcw-card{display:grid;grid-template-columns:1fr 1fr;gap:40px;background:var(--c-white);border:1.5px solid var(--c-light);border-radius:var(--radius-lg);overflow:hidden;padding:0}
+.pcw-img-wrap{display:block;position:relative;overflow:hidden;background:#f8f8f8;min-height:360px}
+.pcw-img{width:100%;height:100%;object-fit:cover;min-height:360px;display:block;transition:transform .3s}
+.pcw-img-wrap:hover .pcw-img{transform:scale(1.03)}
+.pcw-img-placeholder{width:100%;min-height:360px;display:flex;align-items:center;justify-content:center;font-size:60px;color:#ccc}
+.pcw-info{padding:36px 36px 36px 0;display:flex;flex-direction:column;gap:14px;justify-content:center}
+.pcw-title-row{display:flex;align-items:flex-start;gap:12px}
+.pcw-title{font-size:22px;font-weight:800;letter-spacing:-.4px;line-height:1.25;flex:1;margin:0}
+.pcw-wish-btn{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--c-light);background:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;color:#bbb}
+.pcw-wish-btn:hover,.pcw-wish-btn.wished{border-color:#e85d26;color:#e85d26}
+.pcw-rating-row{display:flex;align-items:center;gap:6px;font-size:13px}
+.pcw-stars{display:flex;gap:1px;font-size:15px}
+.pcw-rating-val{font-weight:700;color:#333}
+.pcw-rating-cnt{color:var(--c-mid);text-decoration:none}
+.pcw-rating-cnt:hover{color:#e85d26}
+.pcw-rating-none{color:var(--c-mid);font-size:13px}
+.pcw-stock-ok{color:#22c55e;font-size:13px;font-weight:600}
+.pcw-stock-no{color:#ef4444;font-size:13px;font-weight:600}
+.pcw-price-block{display:flex;flex-direction:column;gap:6px}
+.pcw-price-row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.pcw-price{font-size:26px;font-weight:800;color:#222}
+.pcw-price.on-sale{color:#e85d26}
+.pcw-price-orig{font-size:16px;color:var(--c-mid);text-decoration:line-through}
+.pcw-disc-badge{background:#e85d26;color:#fff;font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px}
+.pcw-sale-note{font-size:12px;color:#22c55e;font-weight:600;border:1px solid #dcfce7;background:#f0fdf4;padding:6px 12px;border-radius:8px;display:inline-block}
+.pcw-variations{display:flex;flex-direction:column;gap:10px}
+.pcw-var-group{display:flex;flex-direction:column;gap:6px}
+.pcw-var-label{font-size:11px;font-weight:700;color:var(--c-mid);text-transform:uppercase;letter-spacing:.5px}
+.pcw-var-opts{display:flex;flex-wrap:wrap;gap:6px}
+.pcw-swatch{display:inline-block;width:28px;height:28px;border-radius:50%;border:2px solid rgba(0,0,0,.12);cursor:default}
+.pcw-chip{display:inline-block;padding:4px 12px;border:1.5px solid var(--c-light);border-radius:6px;font-size:12px;font-weight:600;color:#444;cursor:default}
+.pcw-cart-row{display:flex;gap:12px;align-items:center}
+.pcw-atc-btn{flex:1;background:#111;color:#fff;border:none;border-radius:10px;padding:14px 20px;font-size:14px;font-weight:700;cursor:pointer;transition:.15s}
+.pcw-atc-btn:hover{background:#e85d26}
+.pcw-coupon-wrap{border:1.5px dashed var(--c-light);border-radius:10px;padding:14px 16px;background:#fafafa}
+.pcw-coupon-label{font-size:13px;font-weight:600;color:#555;margin-bottom:8px}
+.pcw-coupon-row{display:flex;gap:8px}
+.pcw-coupon-input{flex:1;padding:9px 14px;border:1.5px solid var(--c-light);border-radius:8px;font-size:13px;font-family:inherit;outline:none;background:#fff;transition:border-color .15s}
+.pcw-coupon-input:focus{border-color:#e85d26}
+.pcw-coupon-btn{padding:9px 18px;background:#111;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:.15s}
+.pcw-coupon-btn:hover{background:#e85d26}
+.pcw-coupon-msg{font-size:12px;margin-top:6px;font-weight:600}
+.pcw-view-link{font-size:13px;color:#e85d26;font-weight:700;text-decoration:none;margin-top:2px}
+.pcw-view-link:hover{text-decoration:underline}
+@media(max-width:700px){
+  .pcw-card{grid-template-columns:1fr}
+  .pcw-img-wrap{min-height:240px}
+  .pcw-img{min-height:240px}
+  .pcw-img-placeholder{min-height:240px}
+  .pcw-info{padding:24px}
+}
+
 @media(max-width:640px){
   .tl-flash-inner{gap:10px}
   .tl-cd-num{font-size:18px}
@@ -1059,6 +1251,28 @@ body{padding-top:44px}
 
 @push('scripts')
 <script>
+function applyPcwCoupon(inputId, msgId) {
+  const code = document.getElementById(inputId)?.value?.trim();
+  const msgEl = document.getElementById(msgId);
+  if (!code) { if(msgEl){msgEl.style.color='#e85d26';msgEl.textContent='Please enter a coupon code.';} return; }
+  if(msgEl){msgEl.style.color='var(--c-mid)';msgEl.textContent='Checking…';}
+  fetch('/cart/coupon', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]')?.content||''},
+    body: JSON.stringify({ coupon_code: code })
+  }).then(r=>r.json()).then(d=>{
+    if(msgEl){
+      if(d.success){
+        msgEl.style.color='#22c55e';
+        msgEl.textContent = '✓ ' + (d.message || 'Coupon applied!');
+      } else {
+        msgEl.style.color='#e85d26';
+        msgEl.textContent = d.message || 'Invalid coupon code.';
+      }
+    }
+  }).catch(()=>{ if(msgEl){msgEl.style.color='#e85d26';msgEl.textContent='Could not apply coupon.';} });
+}
+
 function nlSubmit(e, form) {
   e.preventDefault();
   form.style.display = 'none';

@@ -38,7 +38,9 @@ class WebController extends Controller
         $sectionArrivals        = [];
         $sectionActivity        = [];
         $sectionReviewsCarousel = [];
-        $sectionCategoryCards   = [];
+        $sectionCategoryCards      = [];
+        $sectionFeaturedProduct    = [];
+        $sectionFeaturedVariations = [];
 
         foreach ($sections as $i => $section) {
             $layout = $section['layout'] ?? '';
@@ -219,6 +221,29 @@ class WebController extends Controller
                 });
             }
 
+            if ($layout === 'productCustomizer') {
+                $productId = (int)($section['productId'] ?? 0);
+                if ($productId > 0) {
+                    $p = $this->baseProductQuery()->where('p.id', $productId)->first();
+                    if ($p) {
+                        $sectionFeaturedProduct[$i] = $this->parseProduct($p, $flashSale);
+                        $sectionFeaturedVariations[$i] = DB::table('product_variations')
+                            ->where('product_id', $productId)
+                            ->orderBy('main_variation', 'desc')
+                            ->get()
+                            ->map(function ($v) {
+                                $v->attributes = is_string($v->attributes)
+                                    ? (json_decode($v->attributes, true) ?? json_decode(stripslashes($v->attributes), true) ?? [])
+                                    : (array) $v->attributes;
+                                $v->images = is_string($v->images)
+                                    ? (json_decode($v->images, true) ?? json_decode(stripslashes($v->images), true) ?? [])
+                                    : (array) $v->images;
+                                return $v;
+                            });
+                    }
+                }
+            }
+
             if ($layout === 'topVendors') {
                 $max    = (int) ($section['maxItemsToShow'] ?? 6);
                 $max    = max(1, min($max, 20));
@@ -273,7 +298,7 @@ class WebController extends Controller
             'sectionVendors', 'allCategories', 'brands',
             'sectionTestimonials', 'sectionStats', 'sectionCoupons',
             'sectionTrending', 'sectionArrivals', 'sectionActivity', 'sectionReviewsCarousel',
-            'sectionCategoryCards'
+            'sectionCategoryCards', 'sectionFeaturedProduct', 'sectionFeaturedVariations'
         ));
     }
 

@@ -208,6 +208,8 @@ body{display:flex;height:100vh;overflow:hidden;background:var(--bg);font-family:
         <div class="wp-btn" onmouseenter="lpShowPreview('announcement')" onclick="lpAddSection('announcement')"><span class="wp-ico">📢</span><span class="wp-name">Announcement Bar</span></div>
         <div class="wp-btn" onmouseenter="lpShowPreview('flash')" onclick="lpAddSection('flash')"><span class="wp-ico">⚡</span><span class="wp-name">Flash Sale Timer</span></div>
         <div class="wp-btn" onmouseenter="lpShowPreview('seasonal')" onclick="lpAddSection('seasonal')"><span class="wp-ico">🎄</span><span class="wp-name">Seasonal Banner</span></div>
+        <div class="wp-group-label">Featured</div>
+        <div class="wp-btn" onmouseenter="lpShowPreview('productCustomizer')" onclick="lpAddSection('productCustomizer')"><span class="wp-ico">🎯</span><span class="wp-name">Product Customizer</span></div>
         <div class="wp-group-label">Layout</div>
         <div class="wp-btn" onmouseenter="lpShowPreview('spacer')" onclick="lpAddSection('spacer')"><span class="wp-ico">↕️</span><span class="wp-name">Spacer</span></div>
         <div class="wp-btn" onmouseenter="lpShowPreview('divider')" onclick="lpAddSection('divider')"><span class="wp-ico">➖</span><span class="wp-name">Divider</span></div>
@@ -266,6 +268,7 @@ const TYPE_META = {
   newsletter:       { icon:'📧', label:'Newsletter Signup',  color:'#06b6d4' },
   spacer:           { icon:'↕️', label:'Spacer',            color:'#6b7280' },
   divider:          { icon:'➖', label:'Divider',           color:'#6b7280' },
+  productCustomizer:{ icon:'🎯', label:'Product Customizer', color:'#e85d26' },
 };
 
 // ── HELPERS ────────────────────────────────────────────────────────
@@ -520,6 +523,26 @@ function buildEditor(sec, idx) {
       <div class="form-group"><label>Strategy</label><select onchange="updateField(${idx},'strategy',this.value)"><option value="Same category" ${(sec.strategy||'Same category')==='Same category'?'selected':''}>Same Category</option><option value="Complementary" ${sec.strategy==='Complementary'?'selected':''}>Complementary</option><option value="AI picks" ${sec.strategy==='AI picks'?'selected':''}>AI Picks</option></select></div>
     </div>`;
   }
+  else if (type === 'productCustomizer') {
+    html = `<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Pick a product to feature. All its details (title, price, rating, variations, Add to Cart, coupon) will be shown as a beautiful two-column card on the homepage.</div>
+    <div class="form-grid">
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Product ID <span style="font-weight:400;color:var(--muted)">(find it in the product list URL: /admin/products/{id}/edit)</span></label>
+        <input type="number" value="${sec.productId||''}" min="1" placeholder="e.g. 12" style="max-width:180px" onchange="updateField(${idx},'productId',parseInt(this.value)||'')">
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Section Heading <span style="font-weight:400;color:var(--muted)">(optional, shown above the card)</span></label>
+        <input type="text" value="${escAttr(sec.sectionTitle||'')}" placeholder="e.g. Featured Product" onchange="updateField(${idx},'sectionTitle',this.value)">
+      </div>
+    </div>
+    <div style="font-size:12px;font-weight:700;color:var(--muted);margin:10px 0 6px;text-transform:uppercase;letter-spacing:.5px">Show / Hide elements</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" ${sec.showWishlist!==false?'checked':''} onchange="updateField(${idx},'showWishlist',this.checked)" style="width:14px;height:14px"> Wishlist button</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" ${sec.showRating!==false?'checked':''} onchange="updateField(${idx},'showRating',this.checked)" style="width:14px;height:14px"> Star rating</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" ${sec.showVariations!==false?'checked':''} onchange="updateField(${idx},'showVariations',this.checked)" style="width:14px;height:14px"> Variations</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" ${sec.showCoupon!==false?'checked':''} onchange="updateField(${idx},'showCoupon',this.checked)" style="width:14px;height:14px"> Coupon input</label>
+    </div>`;
+  }
   else if (type === 'recommended') {
     html = `<div class="form-grid">
       <div class="form-group"><label>Section Title</label><input type="text" value="${escAttr(sec.headerText||'Recommended For You')}" onchange="updateField(${idx},'headerText',this.value)"></div>
@@ -686,6 +709,7 @@ const DEFAULTS = {
   flash:             { layout:'flash', title:'Flash Sale', discount:20, duration:4, minOrder:0, showCountdownSeconds:true, applyTo:'all', targetCategories:[], targetProductIds:[] },
   spacer:            { layout:'spacer', height:24 },
   divider:           { layout:'divider' },
+  productCustomizer: { layout:'productCustomizer', productId:'', sectionTitle:'', showWishlist:true, showRating:true, showVariations:true, showCoupon:true },
 };
 
 // ── WIDGET INFO ───────────────────────────────────────────────────
@@ -717,8 +741,9 @@ const WIDGET_INFO = {
   announcement:    { title:'Announcement Bar', desc:'Full-width scrolling ticker above the page header.', tags:['Full-width','Scrolling text','Dismissable'] },
   flash:           { title:'Flash Sale Timer', desc:'Urgency countdown bar in fire-red at the top of the page.', tags:['Countdown timer','Full-width'] },
   seasonal:        { title:'Seasonal Banner', desc:'Full-width gradient banner that auto-shows/hides based on dates.', tags:['Date range','Color themes'] },
-  spacer:          { title:'Spacer', desc:'Adds vertical empty space between sections.', tags:['Layout','Height control'] },
-  divider:         { title:'Divider Line', desc:'Adds a subtle horizontal rule between sections.', tags:['Layout'] },
+  spacer:            { title:'Spacer', desc:'Adds vertical empty space between sections.', tags:['Layout','Height control'] },
+  divider:           { title:'Divider Line', desc:'Adds a subtle horizontal rule between sections.', tags:['Layout'] },
+  productCustomizer: { title:'Product Customizer', desc:'Showcases a single product with full detail: title, wishlist, rating, price, variations, Add to Cart, and coupon input.', tags:['Featured product','Add to cart','Wishlist','Coupon'] },
 };
 
 // ── WIDGET MOCKUPS ────────────────────────────────────────────────
@@ -752,6 +777,7 @@ const WIDGET_MOCKUPS = {
   seasonal:`<div style="background:linear-gradient(135deg,#7c3aed,#c2410c);color:#fff;padding:14px;border-radius:8px;text-align:center"><div style="font-size:20px;margin-bottom:4px">🎄</div><div style="font-size:14px;font-weight:800;margin-bottom:2px">Special Season</div><div style="font-size:11px;opacity:.8">Limited-time offers for this season</div></div>`,
   spacer:`<div style="border:2px dashed #ddd;border-radius:6px;height:30px;display:flex;align-items:center;justify-content:center"><span style="font-size:11px;color:#bbb">↕ Spacer (24px)</span></div>`,
   divider:`<div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:1px;background:#ddd"></div><span style="font-size:10px;color:#ccc">DIVIDER</span><div style="flex:1;height:1px;background:#ddd"></div></div>`,
+  productCustomizer:`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;border:1.5px solid #eee;border-radius:8px;overflow:hidden"><div style="background:linear-gradient(135deg,#f0f0f0,#e0e0e0);min-height:130px;display:flex;align-items:center;justify-content:center;font-size:32px;position:relative"><span>🛍️</span><span style="position:absolute;top:7px;left:7px;background:#e85d26;color:#fff;font-size:8px;font-weight:700;padding:2px 6px;border-radius:10px">15% OFF</span></div><div style="padding:12px;display:flex;flex-direction:column;gap:7px"><div style="display:flex;justify-content:space-between;align-items:center"><div style="height:9px;background:#222;border-radius:3px;width:75%"></div><div style="width:20px;height:20px;border-radius:50%;border:1.5px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:11px;color:#bbb">♡</div></div><div style="display:flex;gap:2px;font-size:11px;color:#f5a623">★★★★☆</div><div style="display:flex;align-items:baseline;gap:6px"><div style="height:14px;background:#e85d26;border-radius:3px;width:50%"></div><div style="height:8px;background:#ddd;border-radius:3px;width:28%;text-decoration:line-through"></div></div><div style="background:#f0fdf4;border-radius:4px;height:7px;width:80%"></div><div style="display:flex;gap:4px">${['#222','#c0392b','#f59e0b'].map(c=>`<div style="width:16px;height:16px;border-radius:50%;background:${c};border:1.5px solid rgba(0,0,0,.15)"></div>`).join('')}</div><div style="height:26px;background:#111;border-radius:5px;display:flex;align-items:center;justify-content:center"><span style="font-size:9px;color:#fff;font-weight:700">🛒 Add to Cart</span></div><div style="border:1px dashed #ddd;border-radius:4px;height:18px;display:flex;align-items:center;padding:0 6px;gap:4px"><div style="flex:1;height:5px;background:#eee;border-radius:2px"></div><div style="width:28px;height:12px;background:#111;border-radius:3px"></div></div></div></div>`,
 };
 
 // ── WIDGET PICKER LOGIC ───────────────────────────────────────────
