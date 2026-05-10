@@ -1,6 +1,15 @@
 @php
   $pid = $p->id;
   $vars = collect($cardVariations ?? []);
+  $co = $cardOptions ?? [];
+  $coShowBadge     = $co['showBadge']     ?? true;
+  $coShowWishlist  = $co['showWishlist']  ?? true;
+  $coShowSwatches  = $co['showSwatches']  ?? true;
+  $coShowSizes     = $co['showSizes']     ?? true;
+  $coShowOldPrice  = $co['showOldPrice']  ?? true;
+  $coShowAddToCart = $co['showAddToCart'] ?? true;
+  $coShowCoupon    = $co['showCoupon']    ?? true;
+  $coShowRating    = $co['showRating']    ?? false;
 
   /* ── Build color & size maps ────────────────── */
   $colorMap  = [];
@@ -63,7 +72,7 @@
     @else
       <div class="placeholder" id="pc-img-{{ $pid }}">🛍️</div>
     @endif
-    @if($p->on_sale)
+    @if($coShowBadge && $p->on_sale)
       @if(!empty($p->flash_sale))
         <span class="badge-sale badge-flash">⚡ {{ round($p->flash_discount_pct) }}% OFF</span>
       @elseif($p->discount_percentage > 0)
@@ -72,14 +81,30 @@
         <span class="badge-sale">SALE</span>
       @endif
     @endif
+    @if($coShowWishlist)
     <button class="wish-btn" onclick="event.preventDefault();toggleWishlist(this,{{ $pid }})" title="Wishlist">♡</button>
+    @endif
   </a>
 
   <div class="product-card-body">
     <a href="{{ route('product', $pid) }}" class="product-card-name">{{ $p->name }}</a>
 
+    @if($coShowRating)
+    @php
+      $__avgRating = \Illuminate\Support\Facades\DB::table('product_reviews')
+        ->where('product_id', $pid)->where('approved', true)->avg('rating') ?? 0;
+      $__avgRating = round((float)$__avgRating, 1);
+    @endphp
+    @if($__avgRating > 0)
+    <div class="pc-rating-row">
+      @for($__s=1;$__s<=5;$__s++)<span style="color:{{ $__s<=round($__avgRating)?'#f5a623':'#ddd' }};font-size:11px">★</span>@endfor
+      <span style="font-size:11px;color:#666;margin-left:3px">{{ $__avgRating }}</span>
+    </div>
+    @endif
+    @endif
+
     {{-- Color swatches (only when 2+ colors exist) --}}
-    @if($hasColors)
+    @if($coShowSwatches && $hasColors)
     <div class="pc-swatches" id="pc-swatches-{{ $pid }}">
       @foreach($colorMap as $colorName => $cdata)
       <button class="pc-swatch"
@@ -96,7 +121,7 @@
     <div class="pc-selected" id="pc-selected-{{ $pid }}" aria-live="polite"></div>
 
     {{-- Size pills --}}
-    @if($hasSizes)
+    @if($coShowSizes && $hasSizes)
     <div class="pc-sizes" id="pc-sizes-{{ $pid }}">
       @foreach($sizeList as $sz)
       <button class="pc-size"
@@ -112,21 +137,25 @@
     <div class="product-card-price">
       @if($p->on_sale)
         <span class="price-main sale" id="pc-price-{{ $pid }}">{{ number_format($p->sale_price, 2) }} EGP</span>
+        @if($coShowOldPrice)
         <span class="price-old" id="pc-orig-{{ $pid }}">{{ number_format($p->price, 2) }}</span>
+        @endif
       @else
         <span class="price-main" id="pc-price-{{ $pid }}">{{ number_format($p->price, 2) }} EGP</span>
       @endif
     </div>
 
+    @if($coShowAddToCart)
     <button class="card-add-btn" id="pc-add-{{ $pid }}"
             data-name="{{ addslashes($p->name) }}"
             data-img="{{ $displayImg }}"
             onclick="pcAddToCart({{ $pid }})">
       Add to Cart
     </button>
+    @endif
 
     {{-- Coupon banner --}}
-    @if(!empty($p->coupon))
+    @if($coShowCoupon && !empty($p->coupon))
     @php
       $__coupon = $p->coupon;
       $__base   = $p->on_sale ? $p->sale_price : $p->price;

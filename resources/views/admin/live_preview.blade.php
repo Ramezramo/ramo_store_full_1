@@ -354,6 +354,17 @@ function buildEditor(sec, idx) {
       <div class="form-group"><label>Image Width (px)</label><input type="number" value="${sec.productWidth||defWidth}" min="80" max="500" step="10" onchange="updateField(${idx},'productWidth',parseInt(this.value)||defWidth)"></div>
       <div class="form-group"><label>Image Height (px)</label><input type="number" value="${sec.imageHeight||defHeight}" min="60" max="800" step="10" onchange="updateField(${idx},'imageHeight',parseInt(this.value)||defHeight)"></div>
       <div class="form-group"><label>Corner Radius (px)</label><input type="number" value="${sec.cardBorderRadius!=null?sec.cardBorderRadius:10}" min="0" max="40" step="1" onchange="updateField(${idx},'cardBorderRadius',parseInt(this.value))"></div>
+    </div>
+    <div style="font-size:12px;font-weight:700;color:var(--muted);margin:12px 0 8px;text-transform:uppercase;letter-spacing:.5px;border-top:1px solid rgba(255,255,255,.07);padding-top:12px">Card Elements</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px 18px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" ${sec.showBadge!==false?'checked':''} onchange="updateField(${idx},'showBadge',this.checked)" style="width:14px;height:14px"> Sale Badge</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" ${sec.showWishlist!==false?'checked':''} onchange="updateField(${idx},'showWishlist',this.checked)" style="width:14px;height:14px"> Wishlist ♡</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" ${sec.showSwatches!==false?'checked':''} onchange="updateField(${idx},'showSwatches',this.checked)" style="width:14px;height:14px"> Color Swatches</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" ${sec.showSizes!==false?'checked':''} onchange="updateField(${idx},'showSizes',this.checked)" style="width:14px;height:14px"> Size Chips</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" ${sec.showOldPrice!==false?'checked':''} onchange="updateField(${idx},'showOldPrice',this.checked)" style="width:14px;height:14px"> Original Price</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" ${sec.showAddToCart!==false?'checked':''} onchange="updateField(${idx},'showAddToCart',this.checked)" style="width:14px;height:14px"> Add to Cart</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" ${sec.showCoupon!==false?'checked':''} onchange="updateField(${idx},'showCoupon',this.checked)" style="width:14px;height:14px"> Coupon Bar</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" ${sec.showRating?'checked':''} onchange="updateField(${idx},'showRating',this.checked)" style="width:14px;height:14px"> Star Rating</label>
     </div>`;
   }
   else if (type === 'topVendors') {

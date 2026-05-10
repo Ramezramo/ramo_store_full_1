@@ -243,6 +243,16 @@
         $imgHeight   = isset($sec['imageHeight']) ? (int)$sec['imageHeight'] : (isset($sec['imageRatio']) ? round($prodWidth * (float)$sec['imageRatio']) : 230);
         $cardRadius  = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 12;
         $secId       = 'sg-'.$si;
+        $cardOptions = [
+          'showBadge'     => $sec['showBadge']     ?? true,
+          'showWishlist'  => $sec['showWishlist']  ?? true,
+          'showSwatches'  => $sec['showSwatches']  ?? true,
+          'showSizes'     => $sec['showSizes']     ?? true,
+          'showOldPrice'  => $sec['showOldPrice']  ?? true,
+          'showAddToCart' => $sec['showAddToCart'] ?? true,
+          'showCoupon'    => $sec['showCoupon']    ?? true,
+          'showRating'    => $sec['showRating']    ?? false,
+        ];
       @endphp
       @if($products->count())
       <style>
@@ -257,7 +267,7 @@
       </div>
       <div class="product-grid" id="{{ $secId }}" style="grid-template-columns:repeat(auto-fill,minmax({{ $prodWidth }}px,1fr));margin-bottom:40px">
         @foreach($products as $p)
-        @include('web.partials.product-card', ['p' => $p, 'cardVariations' => $sectionVariations[$p->id] ?? []])
+        @include('web.partials.product-card', ['p' => $p, 'cardVariations' => $sectionVariations[$p->id] ?? [], 'cardOptions' => $cardOptions])
         @endforeach
       </div>
       @endif
@@ -271,6 +281,16 @@
         $prodWidth  = (int)($sec['productWidth'] ?? 140);
         $imgHeight  = isset($sec['imageHeight']) ? max(60, (int)$sec['imageHeight']) : (isset($sec['imageRatio']) ? max(60, round($prodWidth * (float)$sec['imageRatio'])) : 196);
         $cardRadius = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 10;
+        $cardOptions = [
+          'showBadge'     => $sec['showBadge']     ?? true,
+          'showWishlist'  => $sec['showWishlist']  ?? true,
+          'showSwatches'  => $sec['showSwatches']  ?? true,
+          'showSizes'     => $sec['showSizes']     ?? true,
+          'showOldPrice'  => $sec['showOldPrice']  ?? true,
+          'showAddToCart' => $sec['showAddToCart'] ?? true,
+          'showCoupon'    => $sec['showCoupon']    ?? true,
+          'showRating'    => $sec['showRating']    ?? false,
+        ];
       @endphp
       @if($products->count())
       <div class="sec-head">
@@ -281,27 +301,11 @@
         <div class="tl-scroll-track">
           @foreach($products as $p)
           <div class="tl-scroll-card" style="width:{{ $prodWidth }}px">
-            <div class="product-card" style="border-radius:{{ $cardRadius }}px">
-              <a href="{{ route('product', $p->id) }}" class="product-card-img" style="height:{{ $imgHeight }}px;border-radius:{{ $cardRadius }}px {{ $cardRadius }}px 0 0">
-                @if($p->thumbnail_url)
-                  <img src="{{ $p->thumbnail_url }}" alt="{{ $p->name }}" loading="lazy">
-                @else
-                  <div class="placeholder">🛍️</div>
-                @endif
-                @if($p->on_sale)<span class="badge-sale">SALE</span>@endif
-                <button class="wish-btn" onclick="event.preventDefault();toggleWishlist(this,{{ $p->id }})" title="Wishlist">♡</button>
-              </a>
-              <div class="product-card-body" style="padding:8px">
-                <a href="{{ route('product', $p->id) }}" class="product-card-name" style="font-size:12px">{{ Str::limit($p->name, 28) }}</a>
-                <div class="product-card-price">
-                  @if($p->on_sale)
-                    <span class="price-main sale" style="font-size:12px">{{ number_format($p->sale_price, 0) }} EGP</span>
-                  @else
-                    <span class="price-main" style="font-size:12px">{{ number_format($p->price, 0) }} EGP</span>
-                  @endif
-                </div>
-              </div>
-            </div>
+            @include('web.partials.product-card', [
+              'p'            => $p,
+              'cardVariations' => $sectionVariations[$p->id] ?? [],
+              'cardOptions'  => $cardOptions,
+            ])
           </div>
           @endforeach
         </div>
@@ -318,6 +322,16 @@
         $imgHeight  = isset($sec['imageHeight']) ? (int)$sec['imageHeight'] : (isset($sec['imageRatio']) ? round($prodWidth * (float)$sec['imageRatio']) : 200);
         $cardRadius = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 10;
         $secId      = 'sg-'.$si;
+        $cardOptions = [
+          'showBadge'     => $sec['showBadge']     ?? true,
+          'showWishlist'  => $sec['showWishlist']  ?? true,
+          'showSwatches'  => $sec['showSwatches']  ?? true,
+          'showSizes'     => $sec['showSizes']     ?? true,
+          'showOldPrice'  => $sec['showOldPrice']  ?? true,
+          'showAddToCart' => $sec['showAddToCart'] ?? true,
+          'showCoupon'    => $sec['showCoupon']    ?? true,
+          'showRating'    => $sec['showRating']    ?? false,
+        ];
       @endphp
       @if($products->count())
       <style>
@@ -332,7 +346,7 @@
       </div>
       <div class="product-grid" id="{{ $secId }}" style="grid-template-columns:repeat(auto-fill,minmax({{ $prodWidth }}px,1fr));margin-bottom:40px">
         @foreach($products as $p)
-        @include('web.partials.product-card', ['p' => $p, 'cardVariations' => $sectionVariations[$p->id] ?? []])
+        @include('web.partials.product-card', ['p' => $p, 'cardVariations' => $sectionVariations[$p->id] ?? [], 'cardOptions' => $cardOptions])
         @endforeach
       </div>
       @endif
