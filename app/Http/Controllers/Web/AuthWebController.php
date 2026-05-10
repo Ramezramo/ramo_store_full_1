@@ -155,13 +155,6 @@ class AuthWebController extends Controller
 
     public function logout(Request $r)
     {
-        if (Auth::check()) {
-            $userId = Auth::id();
-            // Clear the user's cart and wishlist from the database on logout
-            DB::table('cart_items')->where('user_id', $userId)->delete();
-            DB::table('wishlists')->where('user_id', $userId)->delete();
-        }
-
         Auth::logout();
         $r->session()->invalidate();
         $r->session()->regenerateToken();
