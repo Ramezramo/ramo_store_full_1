@@ -24,9 +24,13 @@ class AuthWebController extends Controller
     public function login(Request $r)
     {
         $r->validate([
-            'email' => 'required|email',
+            'email'    => 'required|email',
             'password' => 'required|string',
         ]);
+
+        // Capture guest session data before session regeneration
+        $guestCart     = session('ramo_cart', []);
+        $guestWishlist = session('ramo_wishlist', []);
 
         if (Auth::attempt(['email' => $r->email, 'password' => $r->password], $r->boolean('remember'))) {
             $r->session()->regenerate();
@@ -36,10 +40,68 @@ class AuthWebController extends Controller
                 return redirect()->route('email.verify.notice');
             }
 
+            // Merge guest cart into DB cart
+            $this->mergeGuestCartToDb($user->id, $guestCart);
+
+            // Merge guest wishlist into DB wishlist
+            $this->mergeGuestWishlistToDb($user->id, $guestWishlist);
+
+            // Clear session cart/wishlist (now stored in DB)
+            session()->forget(['ramo_cart', 'ramo_wishlist', 'ramo_coupon']);
+
             return redirect()->intended(route('account.profile'));
         }
 
         return back()->withErrors(['email' => 'Invalid email or password.'])->withInput();
+    }
+
+    private function mergeGuestCartToDb(int $userId, array $guestCart): void
+    {
+        if (empty($guestCart)) return;
+
+        foreach ($guestCart as $item) {
+            $existing = DB::table('cart_items')
+                ->where('user_id', $userId)
+                ->where('product_id', $item['product_id'])
+                ->where('variation_id', $item['variation_id'] ?? null)
+                ->first();
+
+            if ($existing) {
+                DB::table('cart_items')->where('id', $existing->id)->update([
+                    'qty'        => min($existing->qty + $item['qty'], $item['stock'] ?? 999),
+                    'updated_at' => now(),
+                ]);
+            } else {
+                DB::table('cart_items')->insert([
+                    'user_id'      => $userId,
+                    'product_id'   => $item['product_id'],
+                    'variation_id' => $item['variation_id'] ?? null,
+                    'qty'          => $item['qty'],
+                    'created_at'   => now(),
+                    'updated_at'   => now(),
+                ]);
+            }
+        }
+    }
+
+    private function mergeGuestWishlistToDb(int $userId, array $guestWishlist): void
+    {
+        if (empty($guestWishlist)) return;
+
+        foreach ($guestWishlist as $productId) {
+            $exists = DB::table('wishlists')
+                ->where('user_id', $userId)
+                ->where('product_id', $productId)
+                ->exists();
+
+            if (!$exists) {
+                DB::table('wishlists')->insert([
+                    'user_id'    => $userId,
+                    'product_id' => $productId,
+                    'created_at' => now(),
+                ]);
+            }
+        }
     }
 
     public function showRegister()
@@ -52,39 +114,54 @@ class AuthWebController extends Controller
     {
         $r->validate([
             'first_name' => 'required|string|max:100',
-            'last_name' => 'required|string|max:100',
-            'email' => 'required|email|unique:users,email|max:255',
-            'phone' => 'required|string|max:20',
-            'password' => 'required|string|min:6|confirmed',
+            'last_name'  => 'required|string|max:100',
+            'email'      => 'required|email|unique:users,email|max:255',
+            'phone'      => 'required|string|max:20',
+            'password'   => 'required|string|min:6|confirmed',
         ]);
 
+        $guestCart     = session('ramo_cart', []);
+        $guestWishlist = session('ramo_wishlist', []);
+
         $user = User::create([
-            'name' => $r->first_name . ' ' . $r->last_name,
-            'first_name' => $r->first_name,
-            'last_name' => $r->last_name,
-            'email' => $r->email,
-            'phone' => $r->phone,
-            'password' => Hash::make($r->password),
-            'role' => 'normal_user',
-            'nicename' => strtolower(str_replace(' ', '-', $r->first_name . ' ' . $r->last_name)),
-            'firstname' => $r->first_name,
-            'lastname' => $r->last_name,
-            'registered' => now()->toDateTimeString(),
-            'description' => '',
-            'capabilities' => json_encode(['customer' => true]),
-            'shipping' => json_encode([]),
+            'name'                => $r->first_name . ' ' . $r->last_name,
+            'first_name'          => $r->first_name,
+            'last_name'           => $r->last_name,
+            'email'               => $r->email,
+            'phone'               => $r->phone,
+            'password'            => Hash::make($r->password),
+            'role'                => 'normal_user',
+            'nicename'            => strtolower(str_replace(' ', '-', $r->first_name . ' ' . $r->last_name)),
+            'firstname'           => $r->first_name,
+            'lastname'            => $r->last_name,
+            'registered'          => now()->toDateTimeString(),
+            'description'         => '',
+            'capabilities'        => json_encode(['customer' => true]),
+            'shipping'            => json_encode([]),
             'registration_method' => 'email_password',
-            'email_verified_at' => now(),
+            'email_verified_at'   => now(),
         ]);
 
         Auth::login($user);
         $r->session()->regenerate();
+
+        // Merge any guest session data into the new account
+        $this->mergeGuestCartToDb($user->id, $guestCart);
+        $this->mergeGuestWishlistToDb($user->id, $guestWishlist);
+        session()->forget(['ramo_cart', 'ramo_wishlist', 'ramo_coupon']);
 
         return redirect()->intended(route('account.profile'));
     }
 
     public function logout(Request $r)
     {
+        if (Auth::check()) {
+            $userId = Auth::id();
+            // Clear the user's cart and wishlist from the database on logout
+            DB::table('cart_items')->where('user_id', $userId)->delete();
+            DB::table('wishlists')->where('user_id', $userId)->delete();
+        }
+
         Auth::logout();
         $r->session()->invalidate();
         $r->session()->regenerateToken();
@@ -94,8 +171,8 @@ class AuthWebController extends Controller
     public function showAdminLogin()
     {
         if (Auth::check()) {
-            $u = Auth::user();
-            $isAdmin = $u->role === 'admin' || $u->email === 'adminramoui@gmail.com' || str_contains((string)$u->role, 'admin');
+            $u       = Auth::user();
+            $isAdmin = $u->role === 'admin' || $u->email === 'adminramoui@gmail.com' || str_contains((string) $u->role, 'admin');
             if ($isAdmin) return redirect()->route('admin.dashboard');
         }
         return view('admin.login');
@@ -104,13 +181,13 @@ class AuthWebController extends Controller
     public function adminLogin(Request $r)
     {
         $r->validate([
-            'email' => 'required|email',
+            'email'    => 'required|email',
             'password' => 'required|string',
         ]);
 
         if (Auth::check()) {
-            $existing = Auth::user();
-            $existingIsAdmin = $existing->role === 'admin' || $existing->email === 'adminramoui@gmail.com' || str_contains((string)$existing->role, 'admin');
+            $existing        = Auth::user();
+            $existingIsAdmin = $existing->role === 'admin' || $existing->email === 'adminramoui@gmail.com' || str_contains((string) $existing->role, 'admin');
             if (!$existingIsAdmin) {
                 Auth::logout();
                 $r->session()->invalidate();
@@ -119,8 +196,8 @@ class AuthWebController extends Controller
         }
 
         if (Auth::attempt(['email' => $r->email, 'password' => $r->password])) {
-            $user = Auth::user();
-            $isAdmin = $user->role === 'admin' || $user->email === 'adminramoui@gmail.com' || str_contains((string)$user->role, 'admin');
+            $user    = Auth::user();
+            $isAdmin = $user->role === 'admin' || $user->email === 'adminramoui@gmail.com' || str_contains((string) $user->role, 'admin');
 
             if ($isAdmin) {
                 $r->session()->regenerate();
