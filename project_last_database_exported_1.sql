@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict MP2UjsadX5oEsh5ir9engWsRr5GjJWB7acCf2SIE3S0lX4QqPfTDpkH4eaBqZGZ
+\restrict F2UtdlyqyrEYlyXc8xzcubQfamenOFpb3zJQmGUTx2aaMNthDMMwWO5BuTdGII8
 
 -- Dumped from database version 16.10
 -- Dumped by pg_dump version 16.10
@@ -387,8 +387,8 @@ CREATE TABLE public.category_brand_requests (
     updated_at timestamp(0) without time zone,
     parent_category_id bigint,
     parent_category_name character varying(255),
-    CONSTRAINT category_brand_requests_status_check CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'approved'::character varying, 'rejected'::character varying])::text[]))),
-    CONSTRAINT category_brand_requests_type_check CHECK (((type)::text = ANY ((ARRAY['category'::character varying, 'brand'::character varying])::text[])))
+    CONSTRAINT category_brand_requests_status_check CHECK (((status)::text = ANY (ARRAY[('pending'::character varying)::text, ('approved'::character varying)::text, ('rejected'::character varying)::text]))),
+    CONSTRAINT category_brand_requests_type_check CHECK (((type)::text = ANY (ARRAY[('category'::character varying)::text, ('brand'::character varying)::text])))
 );
 
 
@@ -591,19 +591,6 @@ ALTER SEQUENCE public.device_access_tokens_id_seq OWNER TO postgres;
 
 ALTER SEQUENCE public.device_access_tokens_id_seq OWNED BY public.device_access_tokens.id;
 
-
---
--- Name: email_verification_tokens; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.email_verification_tokens (
-    email character varying(255) NOT NULL,
-    token character varying(255) NOT NULL,
-    created_at timestamp without time zone DEFAULT now()
-);
-
-
-ALTER TABLE public.email_verification_tokens OWNER TO postgres;
 
 --
 -- Name: failed_jobs; Type: TABLE; Schema: public; Owner: postgres
@@ -2202,9 +2189,8 @@ COPY public.app_config (id, config_json, created_at, updated_at) FROM stdin;
 --
 
 COPY public.app_configs (id, config_key, config_group, lang, value, label, description, is_public, sort_order, updated_at) FROM stdin;
-2	horizon_layout	layout	ar	[{"layout":"logo","showMenu":true,"showSearch":true,"showLogo":true,"showliked":true},{"layout":"category","type":"icon","wrap":false,"size":1,"radius":50,"items":[{"category":18,"label":"Phones","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/phones_image.jpg","colors":["#3CC2BF","#3CC2BF"]},{"category":23,"label":"Bag","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/bag_image_.jpg","colors":["#3E6AB5","#3E6AB5"]},{"category":25,"label":"Blazers","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/women_blazers.webp","colors":["#53A2CC","#53A2CC"]},{"category":28,"label":"Shoes","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/sheos.jpg","colors":["#53688A","#53688A"]},{"category":29,"label":"Jeans","image":"https:\\/\\/us.dockers.com\\/cdn\\/shop\\/files\\/Monte-Mid-Rise-Jeans-Relaxed-Fit-alt5-A64720005_360x450_crop_center.png?v=1741351564","colors":["#43506A","#43506A"]},{"category":30,"label":"Jeans Man","image":"https:\\/\\/images.squarespace-cdn.com\\/content\\/v1\\/58add8dd6a49639a87822092\\/1654105465923-95DJO7H19YLTGOSB4CLO\\/how-to-style-mens-jeans.jpg?format=750w","colors":["#12B58C","#12B58C"]}]},{"layout":"bannerImage","isSlider":true,"autoPlay":true,"showNumber":false,"design":"default","showBackGround":true,"radius":2,"items":[{"category":29,"image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/HP-Banner.webp","padding":7},{"product":30,"image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/Campaign-LP-04.webp","padding":7},{"category":28,"image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/Campaign-LP-07.webp","padding":7}]},{"layout":"saleImages","category":19,"headerText":"Shop by Look","maxItemsToShow":8,"productWidth":130,"productConfig":{"imageRatio":1.4,"borderRadius":10}},{"name":"Man Collections","layout":"twoColumn","headerText":"On Sale Today \\u26a1\\ufe0f","productWidth":200,"maxItemsToShow":7,"category":19,"addToCartButtonStyle":{"style":"iconed","backgroundColor":"#E0E0E0","textColor":"#3D3D3D"},"productConfig":{"borderRadius":12.5,"hMargin":10,"vMargin":6,"showHeart":true,"imageRatio":1.5,"layout":"grid"}},{"layout":"bannerImage","design":"static","fit":"fitWidth","marginLeft":0,"marginRight":0,"marginTop":20,"marginBottom":0,"height":0.15,"items":[{"product":30,"image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/kobunatkhasm.png","padding":7}]},{"name":"SuperMarket Stars","layout":"seupermarketstars","category":21},{"name":"Brands","layout":"brands","category":21}]	Homepage Layout (AR)	\N	t	0	2026-05-03 00:39:38
-3	auth_settings	auth	\N	{"otp_length": 6, "email_login": true, "google_login": true, "guest_checkout": false, "phone_otp_login": true, "max_otp_attempts": 3, "auto_register_otp": true, "max_login_attempts": 5, "otp_expiry_minutes": 5, "auto_register_google": true, "max_resends_per_hour": 3, "session_expiry_hours": 24, "resend_cooldown_seconds": 60, "lockout_duration_minutes": 15, "require_name_on_register": true, "require_email_on_register": false}	Auth Settings	Login methods and security configuration	f	0	2026-05-03 15:42:04
-1	horizon_layout	layout	en	[{"layout":"coupons","headerText":"This Week's Deals","subLabel":"Use code at checkout","maxItemsToShow":6,"sortBy":"amount","showExpiredFallback":true,"hideWhenEmpty":true},{"layout":"logo","showMenu":true,"showSearch":true,"showLogo":true,"showliked":true},{"layout":"category","type":"icon","wrap":false,"size":1,"radius":50,"items":[{"category":18,"label":"Phones","image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/phones_image.jpg","colors":["#3CC2BF","#3CC2BF"]},{"category":23,"label":"Bag","image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/bag_image_.jpg","colors":["#3E6AB5","#3E6AB5"]},{"category":25,"label":"Blazers","image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/women_blazers.webp","colors":["#53A2CC","#53A2CC"]},{"category":28,"label":"Shoes","image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/sheos.jpg","colors":["#53688A","#53688A"]},{"category":29,"label":"Jeans","image":"https://us.dockers.com/cdn/shop/files/Monte-Mid-Rise-Jeans-Relaxed-Fit-alt5-A64720005_360x450_crop_center.png?v=1741351564","colors":["#43506A","#43506A"]},{"category":30,"label":"Jeans Man","image":"https://images.squarespace-cdn.com/content/v1/58add8dd6a49639a87822092/1654105465923-95DJO7H19YLTGOSB4CLO/how-to-style-mens-jeans.jpg?format=750w","colors":["#12B58C","#12B58C"]}]},{"layout":"bannerImage","isSlider":true,"autoPlay":false,"showNumber":false,"design":"default","showBackGround":true,"radius":2,"items":[{"category":29,"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/HP-Banner.webp","padding":7},{"product":30,"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/Campaign-LP-04.webp","padding":7},{"category":28,"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/Campaign-LP-07.webp","padding":7}]},{"layout":"saleImages","category":19,"headerText":"Shop by Look","maxItemsToShow":8,"productWidth":130,"productConfig":{"imageRatio":1.4,"borderRadius":10}},{"name":"Man Collections","layout":"twoColumn","headerText":"On Sale Today ⚡️","productWidth":200,"maxItemsToShow":7,"category":19,"addToCartButtonStyle":{"style":"iconed","backgroundColor":"#E0E0E0","textColor":"#3D3D3D"},"productConfig":{"borderRadius":12.5,"hMargin":10,"vMargin":6,"showHeart":true,"imageRatio":1.5,"layout":"grid"}},{"layout":"bannerImage","design":"static","fit":"fitWidth","marginLeft":0,"marginRight":0,"marginTop":20,"marginBottom":0,"height":0.15,"items":[{"product":30,"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/kobunatkhasm.png","padding":7}]},{"name":"SuperMarket Stars","layout":"seupermarketstars","category":21},{"name":"Brands","layout":"brands","category":21},{"layout":"statsBar","bgColor":"#111111","textColor":"#ffffff","items":[{"key":"products","label":"Products"},{"key":"vendors","label":"Sellers"},{"key":"categories","label":"Categories"},{"key":"reviews","label":"Reviews"}]},{"layout":"promoBlock","headline":"New Season, New Look","subtext":"Discover the best deals from top brands. Limited time offers updated weekly.","btnText":"Shop All Deals","btnLink":"/shop","bgColor":"#1a1a2e","textColor":"#ffffff","btnColor":"#e85d26","align":"left"},{"layout":"testimonials","headerText":"What Our Customers Say","maxItemsToShow":4,"minRating":4}]	Homepage Layout (EN)	\N	t	0	2026-05-03 21:37:17
+2	horizon_layout	layout	ar	[{"layout":"logo","showMenu":true,"showSearch":true,"showLogo":true,"showliked":true},{"layout":"category","type":"icon","wrap":false,"size":1,"radius":50,"items":[{"category":18,"label":"هواتف","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/phones_image.jpg","colors":["#3CC2BF","#3CC2BF"]},{"category":23,"label":"حقائب","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/bag_image_.jpg","colors":["#3E6AB5","#3E6AB5"]},{"category":25,"label":"بليزرات","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/women_blazers.webp","colors":["#53A2CC","#53A2CC"]},{"category":28,"label":"أحذية","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/sheos.jpg","colors":["#53688A","#53688A"]},{"category":29,"label":"جينز","image":"https:\\/\\/us.dockers.com\\/cdn\\/shop\\/files\\/Monte-Mid-Rise-Jeans-Relaxed-Fit-alt5-A64720005_360x450_crop_center.png?v=1741351564","colors":["#43506A","#43506A"]}]},{"layout":"bannerImage","isSlider":true,"autoPlay":true,"design":"default","radius":2,"items":[{"category":29,"image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/HP-Banner.webp","padding":7},{"category":28,"image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/Campaign-LP-07.webp","padding":7}]},{"layout":"saleImages","category":23,"headerText":"تسوق بالمظهر","maxItemsToShow":8,"productWidth":130,"productConfig":{"imageRatio":1.4,"borderRadius":10}},{"name":"مجموعات الرجال","layout":"twoColumn","headerText":"تخفيضات اليوم ⚡️","productWidth":200,"maxItemsToShow":7,"category":23,"productConfig":{"borderRadius":12.5,"showHeart":true,"imageRatio":1.5,"layout":"grid"}},{"layout":"category","name":"Men's Collection","type":"icon","wrap":false,"size":1,"radius":50,"items":[{"category":18,"label":"Men","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/men_cat.jpg","colors":["#3E6AB5","#3E6AB5"]},{"category":19,"label":"Shirts","image":"","colors":["#53A2CC","#53A2CC"]},{"category":21,"label":"T-Shirts","image":"","colors":["#3CC2BF","#3CC2BF"]},{"category":30,"label":"Jeans Man","image":"https:\\/\\/us.dockers.com\\/cdn\\/shop\\/files\\/Monte-Mid-Rise-Jeans-Relaxed-Fit-alt5-A64720005_360x450_crop_center.png?v=1741351564","colors":["#43506A","#43506A"]},{"category":28,"label":"Jackets","image":"","colors":["#53688A","#53688A"]}]},{"layout":"category","name":"Women's Collection","type":"icon","wrap":false,"size":1,"radius":50,"items":[{"category":22,"label":"Women","image":"","colors":["#EC4899","#EC4899"]},{"category":25,"label":"Blazers","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/women_blazers.webp","colors":["#8B5CF6","#8B5CF6"]},{"category":26,"label":"Dresses","image":"","colors":["#F59E0B","#F59E0B"]},{"category":29,"label":"Jeans","image":"https:\\/\\/us.dockers.com\\/cdn\\/shop\\/files\\/Monte-Mid-Rise-Jeans-Relaxed-Fit-alt5-A64720005_360x450_crop_center.png?v=1741351564","colors":["#43506A","#43506A"]},{"category":23,"label":"Bags","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/bag_image_.jpg","colors":["#3E6AB5","#3E6AB5"]}]},{"layout":"category","name":"All Categories","type":"icon","wrap":false,"size":1,"radius":50,"items":[{"category":208,"label":"Clothing","image":"","colors":["#E85D26","#E85D26"]},{"category":18,"label":"Men","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/men_cat.jpg","colors":["#3E6AB5","#3E6AB5"]},{"category":22,"label":"Women","image":"","colors":["#EC4899","#EC4899"]},{"category":23,"label":"Bags","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/bag_image_.jpg","colors":["#3CC2BF","#3CC2BF"]},{"category":311,"label":"Phones","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/phones_image.jpg","colors":["#22C55E","#22C55E"]}]}]	Homepage Layout (AR)	\N	t	0	2026-05-06 21:26:09
+1	horizon_layout	layout	en	[{"layout":"logo","showMenu":true,"showSearch":true,"showLogo":true,"showliked":true,"hidden":false},{"layout":"category","type":"icon","wrap":false,"size":1,"radius":50,"items":[{"category":18,"label":"Phones","image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/phones_image.jpg","colors":["#3CC2BF","#3CC2BF"]},{"category":23,"label":"Bag","image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/bag_image_.jpg","colors":["#3E6AB5","#3E6AB5"]},{"category":25,"label":"Blazers","image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/women_blazers.webp","colors":["#53A2CC","#53A2CC"]},{"category":28,"label":"Shoes","image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/sheos.jpg","colors":["#53688A","#53688A"]},{"category":29,"label":"Jeans","image":"https://us.dockers.com/cdn/shop/files/Monte-Mid-Rise-Jeans-Relaxed-Fit-alt5-A64720005_360x450_crop_center.png?v=1741351564","colors":["#43506A","#43506A"]},{"category":30,"label":"Jeans Man","image":"https://images.squarespace-cdn.com/content/v1/58add8dd6a49639a87822092/1654105465923-95DJO7H19YLTGOSB4CLO/how-to-style-mens-jeans.jpg?format=750w","colors":["#12B58C","#12B58C"]}],"hidden":false},{"layout":"saleImages","category":null,"headerText":"Shop by Look","maxItemsToShow":8,"productWidth":130,"productConfig":{"imageRatio":1.4,"borderRadius":10},"hidden":false},{"layout":"brands"},{"layout":"bannerImage","isSlider":true,"autoPlay":true,"showNumber":false,"design":"default","showBackGround":true,"radius":10,"items":[{"category":29,"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/HP-Banner.webp","padding":7},{"product":30,"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/Campaign-LP-04.webp","padding":7,"category":18},{"category":28,"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/Campaign-LP-07.webp","padding":7}],"bannerHeight":260},{"name":"Man Collections","layout":"twoColumn","headerText":"On Sale Today ⚡️","productWidth":200,"maxItemsToShow":7,"category":23,"addToCartButtonStyle":{"style":"iconed","backgroundColor":"#E0E0E0","textColor":"#3D3D3D"},"productConfig":{"borderRadius":12.5,"hMargin":10,"vMargin":6,"showHeart":true,"imageRatio":1.5,"layout":"grid"}},{"layout":"bannerImage","design":"static","fit":"fitWidth","marginLeft":0,"marginRight":0,"marginTop":20,"marginBottom":0,"height":0.15,"items":[{"product":30,"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/kobunatkhasm.png","padding":7}],"bannerHeight":280,"radius":7},{"name":"SuperMarket Stars","layout":"seupermarketstars","category":18},{"name":"Brands","layout":"brands","category":21},{"layout":"topVendors","headerText":"Top Sellers","maxItemsToShow":6,"sortBy":"products"},{"layout":"seupermarketstars","name":"Featured","category":26},{"layout":"coupons","headerText":"This Week's Deals","subLabel":"Use code at checkout","maxItemsToShow":6,"sortBy":"amount","showExpiredFallback":true,"hideWhenEmpty":true}]	Homepage Layout (EN)	\N	t	0	2026-05-06 21:34:36
 \.
 
 
@@ -2265,8 +2251,6 @@ COPY public.categories2 (id, name, slug, parent, description, display, image, me
 208	Clothing	clothing	0	\N	\N	\N	3	\N	\N	\N
 311	mobile-phones	Mobile-phones	2	\N	\N	\N	2	\N	\N	\N
 314	Uncategorized	uncategorized-ar	0	\N	\N	\N	0	\N	\N	\N
-316	Shooter	shooter	315		visible	\N	0	0	0	\N
-315	Games	games	\N		visible	\N	0	0	1	\N
 \.
 
 
@@ -2275,8 +2259,6 @@ COPY public.categories2 (id, name, slug, parent, description, display, image, me
 --
 
 COPY public.category_brand_requests (id, type, name, description, status, admin_note, vendor_user_id, vendor_name, created_at, updated_at, parent_category_id, parent_category_name) FROM stdin;
-1	category	Games	\N	approved	\N	10	Cairo Fashion Hub	2026-05-06 15:05:35	2026-05-06 15:05:51	\N	\N
-2	category	Shooter	\N	approved	\N	10	Cairo Fashion Hub	2026-05-06 15:10:09	2026-05-06 15:10:26	315	Games
 \.
 
 
@@ -2301,8 +2283,8 @@ COPY public.coupon_user_limits (id, coupon_id, user_id, use_count, created_at, u
 --
 
 COPY public.coupons (id, code, amount, status, discount_type, date_created, date_created_gmt, date_modified, date_modified_gmt, date_expires, date_expires_gmt, usage_count, individual_use, usage_limit, usage_limit_per_user, limit_usage_to_x_items, product_ids, excluded_product_ids, product_categories, excluded_product_categories, free_shipping, exclude_sale_items, minimum_amount, maximum_amount, email_restrictions, used_by, description, meta_data) FROM stdin;
-2	SAVERR20	20.00	publish	percent	2026-05-02 22:43:56	2026-05-02 22:43:56	2026-05-02 22:43:56	2026-05-02 22:43:56	\N	\N	0	f	\N	\N	\N	[]	[]	[]	[]	f	f	50.00	0.00	[]	[]	\N	[]
-1	SAVER20	20.00	publish	percent	2026-05-02 22:43:56	2026-05-02 22:43:56	2026-05-02 22:43:56	2026-05-02 22:43:56	\N	\N	0	f	\N	\N	\N	[9]	[]	[]	[]	f	f	50.00	0.00	[]	[]	\N	[]
+1	SAVER20	20.00	publish	percent	2026-05-06 17:10:02	2026-05-06 17:10:02	2026-05-06 17:10:02	2026-05-06 17:10:02	\N	\N	0	f	\N	\N	\N	[]	[]	[]	[]	f	f	50.00	0.00	[]	[]	\N	[]
+2	SAVERR20	20.00	publish	percent	2026-05-06 17:10:02	2026-05-06 17:10:02	2026-05-06 17:10:02	2026-05-06 17:10:02	\N	\N	0	f	\N	\N	\N	[]	[]	[]	[]	f	f	50.00	0.00	[]	[]	\N	[]
 \.
 
 
@@ -2311,15 +2293,6 @@ COPY public.coupons (id, code, amount, status, discount_type, date_created, date
 --
 
 COPY public.device_access_tokens (id, device_id, tokenable_id, name, token, abilities, last_used_at, expires_at, created_at, updated_at, key_pass, identifier, blocked, about_device) FROM stdin;
-\.
-
-
---
--- Data for Name: email_verification_tokens; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-COPY public.email_verification_tokens (email, token, created_at) FROM stdin;
-hadeer1hadeer11@gmail.com	$2y$12$lWxIfkNllou7xgCLlZY1n.Km6KyaebgjC9MUe8z.u2yocqNgKGU36	2026-05-03 22:09:09
 \.
 
 
@@ -2385,18 +2358,18 @@ COPY public.links_logs_two (id, link, data, post_data, created_at, updated_at) F
 
 COPY public.migrations (id, migration, batch) FROM stdin;
 1	2019_12_14_000001_create_personal_access_tokens_table	1
-2	2024_01_01_000001_create_ramo_store_schema	2
-3	2026_01_18_155149_add_registration_fields_to_users_table	2
-4	2026_05_02_000001_create_ecommerce_tables	2
-5	2026_05_02_100000_add_is_blocked_to_users_table	2
-6	2026_05_03_011946_create_refund_requests_table	3
-7	2026_05_03_011947_create_order_messages_table	4
-8	2026_05_03_012000_create_order_sub_orders_table	4
-9	2026_05_03_012001_add_sub_order_id_to_order_messages	4
-10	2026_05_04_000001_add_auth_fields_and_otp_verifications	5
-11	2025_05_06_000001_create_category_brand_requests_table	6
-12	2025_05_06_000002_add_parent_to_category_brand_requests	7
-13	2026_05_06_152830_add_image_to_brands_table	8
+2	2024_01_01_000001_create_ramo_store_schema	1
+3	2025_05_06_000001_create_category_brand_requests_table	1
+4	2025_05_06_000002_add_parent_to_category_brand_requests	1
+5	2026_01_18_155149_add_registration_fields_to_users_table	1
+6	2026_05_02_000001_create_ecommerce_tables	1
+7	2026_05_02_100000_add_is_blocked_to_users_table	1
+8	2026_05_03_011946_create_refund_requests_table	1
+9	2026_05_03_011947_create_order_messages_table	1
+10	2026_05_03_012000_create_order_sub_orders_table	1
+11	2026_05_03_012001_add_sub_order_id_to_order_messages	1
+12	2026_05_04_000001_add_auth_fields_and_otp_verifications	1
+13	2026_05_06_152830_add_image_to_brands_table	1
 \.
 
 
@@ -2405,8 +2378,6 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 --
 
 COPY public.order_messages (id, order_id, customer_id, vendor_id, sender_type, message, is_vendor_response, created_at, updated_at, sub_order_id) FROM stdin;
-1	5	1	1	vendor	phone number is invalid	t	2026-05-03 15:31:51	2026-05-03 15:31:51	5
-2	5	1	1	customer	ok sorry update it to 343453454	f	2026-05-03 15:33:16	2026-05-03 15:33:16	5
 \.
 
 
@@ -2415,15 +2386,6 @@ COPY public.order_messages (id, order_id, customer_id, vendor_id, sender_type, m
 --
 
 COPY public.order_sub_orders (id, parent_order_id, vendor_id, customer_id, status, line_items, subtotal, discount_total, total, tracking_number, tracking_carrier, timeline, notes, created_at, updated_at) FROM stdin;
-1	1	1	1	completed	[{"product_id":7,"variation_id":11,"name":"MacBook Pro Test","quantity":2,"price":1500,"subtotal":3000,"attributes":{"RAM":"16GB","Storage":"512GB SSD","Color":"Space Gray"}}]	3000.00	600.00	2400.00	\N	\N	[{"status":"processing","note":null,"by":"vendor:1","at":"2026-05-03 01:52:08"},{"status":"shipped","note":null,"by":"vendor:1","at":"2026-05-03 01:59:53"},{"status":"processing","note":null,"by":"vendor:1","at":"2026-05-03 02:00:31"},{"status":"completed","note":null,"by":"vendor:1","at":"2026-05-03 02:10:41"}]	\N	2026-05-03 01:48:50	2026-05-03 02:10:41
-2	2	1	1	pending	[{"product_id":8,"variation_id":23,"name":"Ramez Premium Cotton Polo Shirt \\u2014 Limited Edition","quantity":10,"price":239.2,"subtotal":2392,"attributes":{"Color":"Navy Blue","Size":"S"}}]	2392.00	0.00	2392.00	\N	\N	[]	\N	2026-05-03 02:16:22	2026-05-03 02:16:22
-3	3	1	1	pending	[{"product_id":8,"variation_id":23,"name":"Ramez Premium Cotton Polo Shirt \\u2014 Limited Edition","quantity":1,"price":239.2,"subtotal":239.2,"attributes":{"Color":"Navy Blue","Size":"S"}}]	239.20	0.00	239.20	\N	\N	[]	\N	2026-05-03 02:29:15	2026-05-03 02:29:15
-4	4	1	1	pending	[{"product_id":8,"variation_id":null,"name":"Ramez Premium Cotton Polo Shirt \\u2014 Limited Edition","quantity":1,"price":239.2,"subtotal":239.2,"attributes":[]}]	239.20	0.00	239.20	\N	\N	[]	\N	2026-05-03 10:02:17	2026-05-03 10:02:17
-5	5	1	1	processing	[{"product_id":9,"variation_id":72,"name":"ramez product 2","quantity":1,"price":2344,"subtotal":2344,"attributes":{"Color":"Green","Size":"XXL"}}]	2344.00	468.80	1875.20	\N	\N	[{"status":"processing","note":null,"by":"vendor:1","at":"2026-05-03 15:33:58"}]	\N	2026-05-03 15:31:00	2026-05-03 15:33:58
-6	6	1	\N	pending	[{"product_id":9,"variation_id":null,"name":"ramez product 2","quantity":1,"price":2355,"subtotal":2355,"attributes":[]}]	2355.00	0.00	2355.00	\N	\N	[]	\N	2026-05-03 15:39:00	2026-05-03 15:39:00
-7	18	1	28	pending	[{"product_id":9,"variation_id":null,"name":"ramez product 2","quantity":1,"price":2355,"subtotal":2355,"attributes":[]}]	2355.00	0.00	2355.00	\N	\N	[]	\N	2026-05-03 22:12:36	2026-05-03 22:12:36
-40	51	1	29	pending	[{"product_id":9,"variation_id":71,"name":"ramez product 2","quantity":6,"price":1177.74,"subtotal":7066.44,"attributes":{"Color":"Black","Size":"38"}},{"product_id":9,"variation_id":73,"name":"ramez product 2","quantity":1,"price":117.02,"subtotal":117.02,"attributes":{"Color":"White","Size":"XXXL"}}]	7183.46	1436.69	5746.77	\N	\N	[]	\N	2026-05-04 02:07:38	2026-05-04 02:07:38
-41	52	1	29	pending	[{"product_id":9,"variation_id":null,"name":"ramez product 2","quantity":132,"price":1177.74,"subtotal":155461.68,"attributes":[]}]	155461.68	31092.34	124369.34	\N	\N	[]	\N	2026-05-04 02:10:48	2026-05-04 02:10:48
 \.
 
 
@@ -2432,23 +2394,6 @@ COPY public.order_sub_orders (id, parent_order_id, vendor_id, customer_id, statu
 --
 
 COPY public.orders (id, parent_id, parent_vendors_ids, parent_vendors_data, status, currency, version, prices_include_tax, date_created, date_modified, discount_total, discount_tax, shipping_total, shipping_tax, cart_tax, coupon_code, final_total, original_total, coupon_applied, total_tax, customer_id, order_key, billing, shipping, payment_method, payment_method_title, transaction_id, customer_ip_address, customer_user_agent, created_via, customer_note, date_completed, date_paid, cart_hash, meta_data, line_items, tax_lines, shipping_lines, fee_lines, coupon_lines, refunds, payment_url, is_editable, needs_payment, needs_processing, bacs_info, currency_symbol, _links, date_created_gmt, date_modified_gmt, date_completed_gmt, date_paid_gmt, set_paid, number, timeline, updated_at, created_at) FROM stdin;
-1	0	\N	\N	completed	EGP	\N	f	2026-05-03 01:48:50	2026-05-03 02:10:41	600.00	0.00	0.00	0.00	0.00	SAVER20	2400.00	3000	1	0.00	1	wc_re0gNKaI967FgGXY2uh7	{"first_name":"ramez","last_name":"malak","email":"adminramoui@gmail.com","phone":"252355342","address_1":"Al Kufur, Al Minya, 61681, Egypt","address_2":null,"city":"Al Kufur","state":"Cairo","country":"EG"}	{"first_name":"ramez","last_name":"malak","email":"adminramoui@gmail.com","phone":"252355342","address_1":"Al Kufur, Al Minya, 61681, Egypt","address_2":null,"city":"Al Kufur","state":"Cairo","country":"EG"}	cod	Cash on Delivery	\N	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36	website		\N	\N	77495e89fcfbea2429e57f7c5707b6dd	\N	[{"product_id":7,"variation_id":11,"name":"MacBook Pro Test","quantity":2,"price":1500,"subtotal":3000,"attributes":{"RAM":"16GB","Storage":"512GB SSD","Color":"Space Gray"}}]	\N	\N	\N	\N	\N		t	f	t	\N	ج.م	\N	2026-05-03 01:48:50	2026-05-03 01:48:50			f	1	[]	2026-05-03 02:10:41	2026-05-03 01:48:50
-2	0	\N	\N	pending	EGP	\N	f	2026-05-03 02:16:22	2026-05-03 02:16:22	0.00	0.00	0.00	0.00	0.00	\N	2392.00	2392	0	0.00	1	wc_049XP0PVA0HbxnGOJ3EI	{"first_name":"ramo","last_name":"malak","email":"adminramoui@gmail.com","phone":"q23wertw345","address_1":"El Tahrir Square","address_2":null,"city":"Cairo","state":"Cairo","country":"EG"}	{"first_name":"ramo","last_name":"malak","email":"adminramoui@gmail.com","phone":"q23wertw345","address_1":"El Tahrir Square","address_2":null,"city":"Cairo","state":"Cairo","country":"EG"}	cod	Cash on Delivery	\N	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36	website		\N	\N	1b57e597b2aa467aa6c0f2632ce305d6	\N	[{"product_id":8,"variation_id":23,"name":"Ramez Premium Cotton Polo Shirt \\u2014 Limited Edition","quantity":10,"price":239.2,"subtotal":2392,"attributes":{"Color":"Navy Blue","Size":"S"}}]	\N	\N	\N	\N	\N		t	f	t	\N	ج.م	\N	2026-05-03 02:16:22	2026-05-03 02:16:22			f	2	[]	2026-05-03 02:16:22	2026-05-03 02:16:22
-3	0	\N	\N	pending	EGP	\N	f	2026-05-03 02:29:15	2026-05-03 02:29:15	0.00	0.00	0.00	0.00	0.00	\N	239.20	239	0	0.00	1	wc_4KJPFOumgrFyMXC8EwiG	{"first_name":"ramo","last_name":"malak","email":"adminramoui@gmail.com","phone":"q23wertw345","address_1":"Al Kufur, Al Minya, 61681, Egypt","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.445463","longitude":"30.80584"}	{"first_name":"ramo","last_name":"malak","email":"adminramoui@gmail.com","phone":"q23wertw345","address_1":"Al Kufur, Al Minya, 61681, Egypt","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.445463","longitude":"30.80584"}	cod	Cash on Delivery	\N	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36	website		\N	\N	9ac7b847bf8fd7f0c7c964b76ccd0e96	\N	[{"product_id":8,"variation_id":23,"name":"Ramez Premium Cotton Polo Shirt \\u2014 Limited Edition","quantity":1,"price":239.2,"subtotal":239.2,"attributes":{"Color":"Navy Blue","Size":"S"}}]	\N	\N	\N	\N	\N		t	f	t	\N	ج.م	\N	2026-05-03 02:29:15	2026-05-03 02:29:15			f	3	[]	2026-05-03 02:29:15	2026-05-03 02:29:15
-4	0	\N	\N	pending	EGP	\N	f	2026-05-03 10:02:17	2026-05-03 10:02:17	0.00	0.00	0.00	0.00	0.00	\N	239.20	239	0	0.00	1	wc_XtjYTkAVV7FnkooctZr8	{"first_name":"ramo","last_name":"malak","email":"adminramoui@gmail.com","phone":"q23wertw345","address_1":"Al Kufur, Al Minya, 61681, Egypt","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.445431","longitude":"30.805944"}	{"first_name":"ramo","last_name":"malak","email":"adminramoui@gmail.com","phone":"q23wertw345","address_1":"Al Kufur, Al Minya, 61681, Egypt","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.445431","longitude":"30.805944"}	cod	Cash on Delivery	\N	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36	website		\N	\N	fd82481340ab64f3727c535ab76b357b	\N	[{"product_id":8,"variation_id":null,"name":"Ramez Premium Cotton Polo Shirt \\u2014 Limited Edition","quantity":1,"price":239.2,"subtotal":239.2,"attributes":[]}]	\N	\N	\N	\N	\N		t	f	t	\N	ج.م	\N	2026-05-03 10:02:17	2026-05-03 10:02:17			f	4	[]	2026-05-03 10:02:17	2026-05-03 10:02:17
-10	0	\N	\N	completed	EGP	\N	f	2026-04-08 14:32:45	2026-04-11 14:32:45	0.00	0.00	30.00	0.00	0.00	\N	590.00	590	0	0.00	20	ORD-2025-0010	{"first_name":"Ahmed","last_name":"Hassan","address_1":"12 Tahrir Sq","city":"Cairo","country":"EG","phone":"+20111000001"}	\N	cod	Cash on Delivery	\N	\N	\N	\N	\N	\N	\N	\N	\N	[{"product_id":33,"name":"Cotton V-Neck T-Shirt","quantity":2,"price":120,"subtotal":240},{"product_id":20,"name":"Classic White Oxford Shirt","quantity":1,"price":350,"subtotal":350}]	\N	\N	\N	\N	\N		t	f	t	\N	ج.م	\N					t	10	[{"status":"pending","time":"2025-04-08T10:00:00Z"},{"status":"processing","time":"2025-04-08T12:00:00Z"},{"status":"completed","time":"2025-04-10T14:00:00Z"}]	2026-05-03 14:32:45	2026-04-08 14:32:45
-11	0	\N	\N	completed	EGP	\N	f	2026-04-11 14:32:45	2026-04-14 14:32:45	50.00	0.00	30.00	0.00	0.00	\N	750.00	800	0	0.00	21	ORD-2025-0011	{"first_name":"Sara","last_name":"Mohamed","address_1":"45 Corniche","city":"Alexandria","country":"EG","phone":"+20111000002"}	\N	cod	Cash on Delivery	\N	\N	\N	\N	\N	\N	\N	\N	\N	[{"product_id":22,"name":"Women Floral Summer Dress","quantity":1,"price":520,"subtotal":520},{"product_id":31,"name":"Classic Aviator Sunglasses","quantity":1,"price":280,"subtotal":280}]	\N	\N	\N	\N	\N		t	f	t	\N	ج.م	\N					t	11	[{"status":"pending","time":"2025-04-11T09:00:00Z"},{"status":"processing","time":"2025-04-11T11:00:00Z"},{"status":"completed","time":"2025-04-14T16:00:00Z"}]	2026-05-03 14:32:45	2026-04-11 14:32:45
-12	0	\N	\N	processing	EGP	\N	f	2026-04-23 14:32:45	2026-04-24 14:32:45	0.00	0.00	30.00	0.00	0.00	\N	1230.00	1230	0	0.00	22	ORD-2025-0012	{"first_name":"Omar","last_name":"Ali","address_1":"88 Pyramids Rd","city":"Giza","country":"EG","phone":"+20111000003"}	\N	cod	Cash on Delivery	\N	\N	\N	\N	\N	\N	\N	\N	\N	[{"product_id":25,"name":"Wireless Noise-Cancelling Headphones","quantity":1,"price":1200,"subtotal":1200}]	\N	\N	\N	\N	\N		t	f	t	\N	ج.م	\N					f	12	[{"status":"pending","time":"2025-04-23T08:00:00Z"},{"status":"processing","time":"2025-04-23T10:00:00Z"}]	2026-05-03 14:32:45	2026-04-23 14:32:45
-13	0	\N	\N	completed	EGP	\N	f	2026-04-18 14:32:45	2026-04-22 14:32:45	135.00	0.00	30.00	0.00	0.00	\N	1695.00	1830	0	0.00	23	ORD-2025-0013	{"first_name":"Nour","last_name":"Ibrahim","address_1":"22 Nasr City","city":"Cairo","country":"EG","phone":"+20111000004"}	\N	cod	Cash on Delivery	\N	\N	\N	\N	\N	\N	\N	\N	\N	[{"product_id":26,"name":"Smart Watch Series X","quantity":1,"price":1800,"subtotal":1800}]	\N	\N	\N	\N	\N		t	f	t	\N	ج.م	\N					t	13	[{"status":"pending","time":"2025-04-18T09:30:00Z"},{"status":"processing","time":"2025-04-18T11:00:00Z"},{"status":"completed","time":"2025-04-22T15:00:00Z"}]	2026-05-03 14:32:45	2026-04-18 14:32:45
-14	0	\N	\N	pending	EGP	\N	f	2026-05-01 14:32:45	2026-05-01 14:32:45	0.00	0.00	30.00	0.00	0.00	\N	1000.00	970	0	0.00	24	ORD-2025-0014	{"first_name":"Youssef","last_name":"Kamal","address_1":"17 Univ St","city":"Mansoura","country":"EG","phone":"+20111000005"}	\N	cod	Cash on Delivery	\N	\N	\N	\N	\N	\N	\N	\N	\N	[{"product_id":24,"name":"Running Sneakers Pro","quantity":1,"price":750,"subtotal":750},{"product_id":27,"name":"Wireless Charging Pad","quantity":1,"price":220,"subtotal":220}]	\N	\N	\N	\N	\N		t	f	t	\N	ج.م	\N					f	14	[{"status":"pending","time":"2025-05-01T08:00:00Z"}]	2026-05-03 14:32:45	2026-05-01 14:32:45
-15	0	\N	\N	processing	EGP	\N	f	2026-04-28 14:32:45	2026-04-29 14:32:45	0.00	0.00	30.00	0.00	0.00	\N	1740.00	1710	0	0.00	25	ORD-2025-0015	{"first_name":"Mariam","last_name":"Saad","address_1":"9 El-Geish St","city":"Tanta","country":"EG","phone":"+20111000006"}	\N	cod	Cash on Delivery	\N	\N	\N	\N	\N	\N	\N	\N	\N	[{"product_id":23,"name":"Leather Shoulder Bag","quantity":1,"price":890,"subtotal":890},{"product_id":29,"name":"Women Leather Ankle Boots","quantity":1,"price":820,"subtotal":820}]	\N	\N	\N	\N	\N		t	f	t	\N	ج.م	\N					f	15	[{"status":"pending","time":"2025-04-28T10:00:00Z"},{"status":"processing","time":"2025-04-28T13:00:00Z"}]	2026-05-03 14:32:45	2026-04-28 14:32:45
-16	0	\N	\N	completed	EGP	\N	f	2026-04-25 14:32:45	2026-04-28 14:32:45	78.00	0.00	30.00	0.00	0.00	\N	1022.00	1100	0	0.00	26	ORD-2025-0016	{"first_name":"Khaled","last_name":"Nasser","address_1":"3 Corniche El Nile","city":"Aswan","country":"EG","phone":"+20111000007"}	\N	cod	Cash on Delivery	\N	\N	\N	\N	\N	\N	\N	\N	\N	[{"product_id":32,"name":"Laptop Backpack 15.6","quantity":1,"price":420,"subtotal":420},{"product_id":34,"name":"Portable Bluetooth Speaker","quantity":1,"price":650,"subtotal":650}]	\N	\N	\N	\N	\N		t	f	t	\N	ج.م	\N					t	16	[{"status":"pending","time":"2025-04-25T07:00:00Z"},{"status":"processing","time":"2025-04-25T09:00:00Z"},{"status":"completed","time":"2025-04-28T14:00:00Z"}]	2026-05-03 14:32:45	2026-04-25 14:32:45
-17	0	\N	\N	pending	EGP	\N	f	2026-05-02 14:32:45	2026-05-02 14:32:45	0.00	0.00	30.00	0.00	0.00	\N	1460.00	1430	0	0.00	27	ORD-2025-0017	{"first_name":"Layla","last_name":"Farouk","address_1":"12 Zamalek","city":"Cairo","country":"EG","phone":"+20111000008"}	\N	cod	Cash on Delivery	\N	\N	\N	\N	\N	\N	\N	\N	\N	[{"product_id":28,"name":"Men Slim Blazer","quantity":1,"price":980,"subtotal":980},{"product_id":21,"name":"Slim Fit Blue Jeans","quantity":1,"price":450,"subtotal":450}]	\N	\N	\N	\N	\N		t	f	t	\N	ج.م	\N					f	17	[{"status":"pending","time":"2025-05-02T18:00:00Z"}]	2026-05-03 14:32:45	2026-05-02 14:32:45
-5	0	\N	\N	processing	EGP	\N	f	2026-05-03 15:31:00	2026-05-03 15:33:58	468.80	0.00	0.00	0.00	0.00	SAVER20	1875.20	2344	1	0.00	1	wc_rYAGCTj0ibWErfpxCR0C	{"first_name":"ramo","last_name":"malak","email":"adminramoui@gmail.com","phone":"q23wertw345","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.445427","longitude":"30.805958"}	{"first_name":"ramo","last_name":"malak","email":"adminramoui@gmail.com","phone":"q23wertw345","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.445427","longitude":"30.805958"}	cod	Cash on Delivery	\N	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36	website		\N	\N	dc39b21ea08ae05a3ec4cbd9823bb2f4	\N	[{"product_id":9,"variation_id":72,"name":"ramez product 2","quantity":1,"price":2344,"subtotal":2344,"attributes":{"Color":"Green","Size":"XXL"}}]	\N	\N	\N	\N	\N		t	f	t	\N	ج.م	\N	2026-05-03 15:31:00	2026-05-03 15:31:00			f	5	[]	2026-05-03 15:33:58	2026-05-03 15:31:00
-6	0	\N	\N	pending	EGP	\N	f	2026-05-03 15:39:00	2026-05-03 15:39:00	0.00	0.00	0.00	0.00	0.00	\N	2355.00	2355	0	0.00	\N	wc_aiL7hhZAFiD3QLZD3TJr	{"first_name":"Ramez","last_name":"Malak","email":"ramzmlak40@gmail.com","phone":"2455444","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.4458292","longitude":"30.804548"}	{"first_name":"Ramez","last_name":"Malak","email":"ramzmlak40@gmail.com","phone":"2455444","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.4458292","longitude":"30.804548"}	cod	Cash on Delivery	\N	127.0.0.1	Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36	website		\N	\N	eec403f80a83dbae0ec1d345e2c75397	\N	[{"product_id":9,"variation_id":null,"name":"ramez product 2","quantity":1,"price":2355,"subtotal":2355,"attributes":[]}]	\N	\N	\N	\N	\N		t	f	t	\N	ج.م	\N	2026-05-03 15:39:00	2026-05-03 15:39:00			f	6	[]	2026-05-03 15:39:00	2026-05-03 15:39:00
-18	0	\N	\N	pending	EGP	\N	f	2026-05-03 22:12:36	2026-05-03 22:12:36	0.00	0.00	0.00	0.00	0.00	\N	2355.00	2355	0	0.00	28	wc_dn98d1HH1K4N2QWojUcy	{"first_name":"RAMEZ_HADE","last_name":"MALAK","email":"hadeer1hadeer11@gmail.com","phone":"01002722375","address_1":"1000 Factory Area","address_2":null,"city":"Cairo","state":"Cairo","country":"EG","latitude":"29.9714","longitude":"31.4808"}	{"first_name":"RAMEZ_HADE","last_name":"MALAK","email":"hadeer1hadeer11@gmail.com","phone":"01002722375","address_1":"1000 Factory Area","address_2":null,"city":"Cairo","state":"Cairo","country":"EG","latitude":"29.9714","longitude":"31.4808"}	cod	Cash on Delivery	\N	10.28.198.18	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36	website		\N	\N	eec403f80a83dbae0ec1d345e2c75397	\N	[{"product_id":9,"variation_id":null,"name":"ramez product 2","quantity":1,"price":2355,"subtotal":2355,"attributes":[]}]	\N	\N	\N	\N	\N		t	f	t	\N	ج.م	\N	2026-05-03 22:12:36	2026-05-03 22:12:36			f	18	[]	2026-05-03 22:12:36	2026-05-03 22:12:36
-51	0	\N	\N	pending	EGP	\N	f	2026-05-04 02:07:38	2026-05-04 02:07:38	1436.69	0.00	0.00	0.00	0.00	SAVER20	5746.77	7183	1	0.00	29	wc_3l1NwZxXYQzGBrxMqCZt	{"first_name":"RAMEZ","last_name":"MALAK","email":"otp_202394857987@ramostore.local","phone":"+202394857987","address_1":"1000 Factory Area","address_2":null,"city":"Cairo","state":"Cairo","country":"EG","latitude":"29.9714","longitude":"31.4808"}	{"first_name":"RAMEZ","last_name":"MALAK","email":"otp_202394857987@ramostore.local","phone":"+202394857987","address_1":"1000 Factory Area","address_2":null,"city":"Cairo","state":"Cairo","country":"EG","latitude":"29.9714","longitude":"31.4808"}	cod	Cash on Delivery	\N	10.82.15.226	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36	website		\N	\N	252125a785e7c80530374736173b3f16	\N	[{"product_id":9,"variation_id":71,"name":"ramez product 2","quantity":6,"price":1177.74,"subtotal":7066.44,"attributes":{"Color":"Black","Size":"38"}},{"product_id":9,"variation_id":73,"name":"ramez product 2","quantity":1,"price":117.02,"subtotal":117.02,"attributes":{"Color":"White","Size":"XXXL"}}]	\N	\N	\N	\N	\N		t	f	t	\N	ج.م	\N	2026-05-04 02:07:38	2026-05-04 02:07:38			f	51	[]	2026-05-04 02:07:38	2026-05-04 02:07:38
-52	0	\N	\N	pending	EGP	\N	f	2026-05-04 02:10:48	2026-05-04 02:10:48	31092.34	0.00	0.00	0.00	0.00	SAVER20	124369.34	155462	1	0.00	29	wc_Z16l3g1HmYRYd4Aiyusb	{"first_name":"RAMEZ","last_name":"MALAK","email":"otp_202394857987@ramostore.local","phone":"+202394857987","address_1":"1000 Factory Area","address_2":null,"city":"Cairo","state":"Cairo","country":"EG","latitude":"29.9714","longitude":"31.4808"}	{"first_name":"RAMEZ","last_name":"MALAK","email":"otp_202394857987@ramostore.local","phone":"+202394857987","address_1":"1000 Factory Area","address_2":null,"city":"Cairo","state":"Cairo","country":"EG","latitude":"29.9714","longitude":"31.4808"}	cod	Cash on Delivery	\N	10.82.15.226	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36	website		\N	\N	8b06bb2e1707b349b7ed5743e736f92b	\N	[{"product_id":9,"variation_id":null,"name":"ramez product 2","quantity":132,"price":1177.74,"subtotal":155461.68,"attributes":[]}]	\N	\N	\N	\N	\N		t	f	t	\N	ج.م	\N	2026-05-04 02:10:48	2026-05-04 02:10:48			f	52	[]	2026-05-04 02:10:48	2026-05-04 02:10:48
 \.
 
 
@@ -2457,11 +2402,6 @@ COPY public.orders (id, parent_id, parent_vendors_ids, parent_vendors_data, stat
 --
 
 COPY public.otp_verifications (id, phone, otp_code, expires_at, attempts, resend_count, resend_window_start, verified, created_at, updated_at) FROM stdin;
-1	+3454553455	777562	2026-05-03 17:54:35	0	0	\N	t	2026-05-03 17:49:35	2026-05-03 17:49:46
-2	+3454553455	822316	2026-05-03 18:08:09	0	0	\N	t	2026-05-03 18:03:09	2026-05-03 18:03:20
-3	+76587658787	363158	2026-05-03 20:37:15	0	0	\N	t	2026-05-03 20:32:15	2026-05-03 20:33:04
-4	+202394857987	036300	2026-05-04 02:11:38	0	0	\N	t	2026-05-04 02:06:38	2026-05-04 02:06:45
-6	+2023948579	082940	2026-05-04 02:18:52	0	1	2026-05-04 02:13:52	t	2026-05-04 02:13:52	2026-05-04 02:13:59
 \.
 
 
@@ -2486,17 +2426,27 @@ COPY public.personal_access_tokens (id, tokenable_type, tokenable_id, name, toke
 --
 
 COPY public.product_category (product_id, category_id) FROM stdin;
+1	23
 2	23
-2	18
-2	24
-2	25
-2	28
-7	23
-7	18
-7	24
-9	23
-9	24
-9	311
+3	23
+4	23
+5	29
+6	29
+7	29
+8	19
+9	19
+10	19
+11	25
+12	25
+13	28
+14	28
+15	28
+16	21
+17	21
+18	21
+19	30
+20	26
+21	26
 \.
 
 
@@ -2505,26 +2455,6 @@ COPY public.product_category (product_id, category_id) FROM stdin;
 --
 
 COPY public.product_reviews (id, product_id, user_id, rating, title, body, created_at, updated_at, approved, is_verified_purchase, helpful_count) FROM stdin;
-1	20	20	5	Excellent quality!	Excellent shirt! The fabric quality is outstanding and the fit is perfect. Highly recommend!	2026-04-18 14:32:45	2026-05-03 14:32:45	t	t	8
-2	20	21	4	Great shirt	Great shirt, very comfortable. Delivery was fast. Would order again.	2026-04-23 14:32:45	2026-05-03 14:32:45	t	f	3
-3	21	22	5	Perfect jeans!	Perfect jeans! Great fit and the stretch makes them very comfortable for daily wear.	2026-04-21 14:32:45	2026-05-03 14:32:45	t	t	6
-4	21	23	4	Nice quality denim	Nice jeans, good quality denim. Size was accurate.	2026-04-25 14:32:45	2026-05-03 14:32:45	t	f	2
-5	22	24	5	Stunning dress!	Beautiful dress! The fabric is lightweight and the floral print is stunning.	2026-04-24 14:32:45	2026-05-03 14:32:45	t	t	12
-6	22	25	5	Love it!	Wore it to a summer wedding and got so many compliments. Absolutely love it.	2026-04-28 14:32:45	2026-05-03 14:32:45	t	t	9
-7	23	20	5	Gorgeous leather bag	Absolutely gorgeous bag. The leather quality is real and the stitching is perfect.	2026-04-26 14:32:45	2026-05-03 14:32:45	t	t	7
-8	24	26	5	Best running shoes ever	Best running shoes I have owned. Very comfortable for long runs.	2026-04-27 14:32:45	2026-05-03 14:32:45	t	t	11
-9	24	27	4	Good quality sneakers	Good quality sneakers. Cushioning is great. Shipping was faster than expected.	2026-04-30 14:32:45	2026-05-03 14:32:45	t	f	4
-10	25	22	5	Amazing headphones!	Amazing headphones! Noise cancellation is top-notch. Worth every penny.	2026-04-28 14:32:45	2026-05-03 14:32:45	t	t	15
-11	25	21	5	Incredible sound quality	Sound quality is incredible. Battery lasts exactly as advertised. Very happy.	2026-04-29 14:32:45	2026-05-03 14:32:45	t	t	10
-12	26	20	5	Love the smart watch!	Smart watch is great! Health tracking is accurate. Love the always-on display.	2026-04-30 14:32:45	2026-05-03 14:32:45	t	t	8
-13	28	23	5	Perfect fit blazer	Excellent blazer. Fits perfectly and looks very professional.	2026-05-01 14:32:45	2026-05-03 14:32:45	t	t	5
-14	30	24	4	Super comfortable hoodie	Super comfortable hoodie. Very soft fabric. Great for winter.	2026-05-02 14:32:45	2026-05-03 14:32:45	t	f	3
-15	32	25	5	Perfect laptop bag!	Perfect laptop bag! Very spacious and the USB charging port is super convenient.	2026-05-02 14:32:45	2026-05-03 14:32:45	t	t	6
-16	34	26	5	Speaker sounds amazing!	Speaker sound is amazing for its size. Waterproof feature actually works!	2026-05-03 14:32:45	2026-05-03 14:32:45	t	t	9
-17	4	20	5	Great T-shirt!	Great T-shirt! Premium cotton feel. Fits true to size.	2026-04-13 14:32:45	2026-05-03 14:32:45	t	f	5
-18	4	21	4	Good quality	Good quality shirt. Color stays after washing.	2026-04-16 14:32:45	2026-05-03 14:32:45	t	f	2
-19	5	22	5	Very sturdy stand	Laptop stand is very sturdy and adjustable. Helps a lot with posture.	2026-04-19 14:32:45	2026-05-03 14:32:45	t	t	4
-20	9	1	4	great job	this is a pretty good and good quality	2026-05-04 01:08:12	2026-05-04 01:08:12	t	f	0
 \.
 
 
@@ -2533,49 +2463,90 @@ COPY public.product_reviews (id, product_id, user_id, rating, title, body, creat
 --
 
 COPY public.product_variations (id, product_id, main_variation, attributes, price, regular_price, sale_price, stock_quantity, images, created_at, updated_at) FROM stdin;
-2	2	t	{}	600.00	500.00	600.00	32	[]	2026-05-02 23:05:52	2026-05-02 23:05:52
-3	4	t	{"Color":"Red","Size":"XL"}	120.00	150.00	120.00	10	[]	2026-05-02 23:25:11	2026-05-02 23:25:11
-4	4	f	{"Color":"Blue","Size":"M"}	140.00	140.00	\N	5	[]	2026-05-02 23:25:11	2026-05-02 23:25:11
-5	4	f	{"Color":"Black","Size":"L"}	130.00	160.00	130.00	8	[]	2026-05-02 23:25:11	2026-05-02 23:25:11
-6	5	t	{}	249.00	299.00	249.00	25	[]	2026-05-02 23:25:11	2026-05-02 23:25:11
-7	6	t	{"Color":"Red","Size":"XL"}	120.00	150.00	120.00	10	[]	2026-05-02 23:25:34	2026-05-02 23:25:34
-8	6	f	{"Color":"Blue","Size":"M"}	140.00	140.00	\N	5	[]	2026-05-02 23:25:34	2026-05-02 23:25:34
-9	6	f	{"Color":"Black","Size":"L"}	130.00	160.00	130.00	8	[]	2026-05-02 23:25:34	2026-05-02 23:25:34
-10	7	t	{"RAM":"8GB","Storage":"256GB SSD","Color":"Space Gray"}	999.00	1200.00	999.00	5	[]	2026-05-02 23:25:43	2026-05-02 23:25:43
-11	7	f	{"RAM":"16GB","Storage":"512GB SSD","Color":"Space Gray"}	1500.00	1500.00	\N	3	[]	2026-05-02 23:25:43	2026-05-02 23:25:43
-12	7	f	{"RAM":"16GB","Storage":"1TB SSD","Color":"Silver"}	1650.00	1800.00	1650.00	2	[]	2026-05-02 23:25:43	2026-05-02 23:25:43
-38	20	t	[{"name":"Size","option":"M"},{"name":"Color","option":"White"}]	350.00	350.00	\N	80	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-39	21	t	[{"name":"Size","option":"32"},{"name":"Color","option":"Blue"}]	405.00	450.00	405.00	60	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-40	21	f	[{"name":"Size","option":"30"},{"name":"Color","option":"Black"}]	450.00	450.00	\N	20	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-41	22	t	[{"name":"Size","option":"M"},{"name":"Color","option":"Red Floral"}]	442.00	520.00	442.00	45	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-42	22	f	[{"name":"Size","option":"S"},{"name":"Color","option":"Blue Floral"}]	520.00	520.00	\N	15	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-43	23	t	[{"name":"Color","option":"Brown"}]	890.00	890.00	\N	30	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-44	23	f	[{"name":"Color","option":"Black"}]	890.00	890.00	\N	15	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-45	24	t	[{"name":"Size","option":"42"},{"name":"Color","option":"White"}]	600.00	750.00	600.00	55	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-46	24	f	[{"name":"Size","option":"41"},{"name":"Color","option":"Black"}]	750.00	750.00	\N	20	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-47	25	t	[{"name":"Color","option":"Black"}]	1080.00	1200.00	1080.00	25	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-48	25	f	[{"name":"Color","option":"Midnight Blue"}]	1200.00	1200.00	\N	10	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-49	26	t	[{"name":"Color","option":"Black"},{"name":"Size","option":"45mm"}]	1710.00	1800.00	1710.00	20	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-50	26	f	[{"name":"Color","option":"Rose Gold"},{"name":"Size","option":"41mm"}]	1800.00	1800.00	\N	10	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-51	27	t	[{"name":"Color","option":"Black"}]	220.00	220.00	\N	100	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-52	27	f	[{"name":"Color","option":"White"}]	220.00	220.00	\N	50	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-53	28	t	[{"name":"Size","option":"48"},{"name":"Color","option":"Navy"}]	980.00	980.00	\N	35	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-54	28	f	[{"name":"Size","option":"50"},{"name":"Color","option":"Charcoal"}]	980.00	980.00	\N	15	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-55	29	t	[{"name":"Size","option":"38"},{"name":"Color","option":"Black"}]	697.00	820.00	697.00	40	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-56	29	f	[{"name":"Size","option":"39"},{"name":"Color","option":"Brown"}]	820.00	820.00	\N	20	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-57	30	t	[{"name":"Size","option":"L"},{"name":"Color","option":"Black"}]	380.00	380.00	\N	70	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-58	30	f	[{"name":"Size","option":"M"},{"name":"Color","option":"Dusty Pink"}]	380.00	380.00	\N	30	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-59	31	t	[{"name":"Color","option":"Gold/Green"}]	280.00	280.00	\N	90	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-60	31	f	[{"name":"Color","option":"Black/Black"}]	280.00	280.00	\N	40	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-61	32	t	[{"name":"Color","option":"Black"}]	420.00	420.00	\N	50	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-62	32	f	[{"name":"Color","option":"Navy"}]	420.00	420.00	\N	25	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-63	33	t	[{"name":"Size","option":"M"},{"name":"Color","option":"White"}]	120.00	120.00	\N	150	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-64	33	f	[{"name":"Size","option":"L"},{"name":"Color","option":"Black"}]	120.00	120.00	\N	80	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-65	34	t	[{"name":"Color","option":"Black"}]	650.00	650.00	\N	35	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-66	34	f	[{"name":"Color","option":"Camo Green"}]	650.00	650.00	\N	15	[]	2026-05-03 14:33:49	2026-05-03 14:33:49
-71	9	t	{"Color":"Black","Size":"38"}	2355.00	2355.00	2355.00	32	["products\\/variations\\/black\\/Sa50lnKqhkx0tYU0BLJFGzVaV427rireGj2vA6RC.jpg"]	2026-05-03 15:01:54	2026-05-04 00:18:01
-73	9	f	{"Color":"White","Size":"XXXL"}	234.00	234.00	234.00	234	["products\\/variations\\/white\\/zNPMws2JrKQPMjUo0zcEsniDDVVyhvfLyCvtvFF5.jpg"]	2026-05-03 15:01:54	2026-05-04 00:18:39
-72	9	f	{"Color":"Green","Size":"XXL"}	2344.00	2344.00	2344.00	344	[]	2026-05-03 15:01:54	2026-05-04 01:06:52
+1	1	t	{"Color":"Black"}	1850.00	1850.00	\N	25	[]	2026-02-12 17:10:14	2026-02-12 17:10:14
+2	1	f	{"Color":"Tan"}	1850.00	1850.00	\N	18	[]	2026-02-12 17:10:14	2026-02-12 17:10:14
+3	1	f	{"Color":"Brown"}	1850.00	1850.00	\N	12	[]	2026-02-12 17:10:14	2026-02-12 17:10:14
+4	2	t	{"Color":"Beige"}	637.50	750.00	637.50	40	[]	2025-12-18 17:10:14	2025-12-18 17:10:14
+5	2	f	{"Color":"Black"}	637.50	750.00	637.50	35	[]	2025-12-18 17:10:14	2025-12-18 17:10:14
+6	2	f	{"Color":"Red"}	637.50	750.00	637.50	20	[]	2025-12-18 17:10:14	2025-12-18 17:10:14
+7	3	t	{"Color":"Black"}	2200.00	2200.00	\N	15	[]	2025-08-16 17:10:14	2025-08-16 17:10:14
+8	3	f	{"Color":"Cream"}	2200.00	2200.00	\N	10	[]	2025-08-16 17:10:14	2025-08-16 17:10:14
+9	4	t	{"Color":"Navy"}	760.00	950.00	760.00	60	[]	2025-07-21 17:10:14	2025-07-21 17:10:14
+10	4	f	{"Color":"Khaki"}	760.00	950.00	760.00	45	[]	2025-07-21 17:10:14	2025-07-21 17:10:14
+11	4	f	{"Color":"Black"}	760.00	950.00	760.00	55	[]	2025-07-21 17:10:14	2025-07-21 17:10:14
+12	5	t	{"Size":"S"}	699.00	699.00	\N	30	[]	2025-01-29 17:10:14	2025-01-29 17:10:14
+13	5	f	{"Size":"M"}	699.00	699.00	\N	45	[]	2025-01-29 17:10:14	2025-01-29 17:10:14
+14	5	f	{"Size":"L"}	699.00	699.00	\N	35	[]	2025-01-29 17:10:14	2025-01-29 17:10:14
+15	5	f	{"Size":"XL"}	699.00	699.00	\N	20	[]	2025-01-29 17:10:14	2025-01-29 17:10:14
+16	6	t	{"Size":"XS"}	674.10	749.00	674.10	25	[]	2024-12-05 17:10:14	2024-12-05 17:10:14
+17	6	f	{"Size":"S"}	674.10	749.00	674.10	40	[]	2024-12-05 17:10:14	2024-12-05 17:10:14
+18	6	f	{"Size":"M"}	674.10	749.00	674.10	50	[]	2024-12-05 17:10:14	2024-12-05 17:10:14
+19	6	f	{"Size":"L"}	674.10	749.00	674.10	30	[]	2024-12-05 17:10:14	2024-12-05 17:10:14
+20	7	t	{"Size":"S"}	615.00	820.00	615.00	22	[]	2024-11-17 17:10:14	2024-11-17 17:10:14
+21	7	f	{"Size":"M"}	615.00	820.00	615.00	38	[]	2024-11-17 17:10:14	2024-11-17 17:10:14
+22	7	f	{"Size":"L"}	615.00	820.00	615.00	28	[]	2024-11-17 17:10:14	2024-11-17 17:10:14
+23	8	t	{"Size":"S"}	450.00	450.00	\N	35	[]	2024-09-12 17:10:14	2024-09-12 17:10:14
+24	8	f	{"Size":"M"}	450.00	450.00	\N	50	[]	2024-09-12 17:10:14	2024-09-12 17:10:14
+25	8	f	{"Size":"L"}	450.00	450.00	\N	40	[]	2024-09-12 17:10:14	2024-09-12 17:10:14
+26	8	f	{"Size":"XL"}	450.00	450.00	\N	25	[]	2024-09-12 17:10:14	2024-09-12 17:10:14
+27	8	f	{"Size":"XXL"}	450.00	450.00	\N	15	[]	2024-09-12 17:10:14	2024-09-12 17:10:14
+28	9	t	{"Color":"White","Size":"M"}	520.00	520.00	\N	30	[]	2024-06-06 17:10:14	2024-06-06 17:10:14
+29	9	f	{"Color":"Blue","Size":"M"}	520.00	520.00	\N	28	[]	2024-06-06 17:10:14	2024-06-06 17:10:14
+30	9	f	{"Color":"White","Size":"L"}	520.00	520.00	\N	25	[]	2024-06-06 17:10:14	2024-06-06 17:10:14
+31	9	f	{"Color":"Blue","Size":"L"}	520.00	520.00	\N	22	[]	2024-06-06 17:10:14	2024-06-06 17:10:14
+32	10	t	{"Color":"Navy","Size":"S"}	323.00	380.00	323.00	40	[]	2024-06-03 17:10:14	2024-06-03 17:10:14
+33	10	f	{"Color":"Navy","Size":"M"}	323.00	380.00	323.00	55	[]	2024-06-03 17:10:14	2024-06-03 17:10:14
+34	10	f	{"Color":"Red","Size":"M"}	323.00	380.00	323.00	35	[]	2024-06-03 17:10:14	2024-06-03 17:10:14
+35	10	f	{"Color":"White","Size":"L"}	323.00	380.00	323.00	30	[]	2024-06-03 17:10:14	2024-06-03 17:10:14
+36	11	t	{"Color":"Black","Size":"S"}	1250.00	1250.00	\N	18	[]	2024-02-14 17:10:14	2024-02-14 17:10:14
+37	11	f	{"Color":"Black","Size":"M"}	1250.00	1250.00	\N	22	[]	2024-02-14 17:10:14	2024-02-14 17:10:14
+38	11	f	{"Color":"Black","Size":"L"}	1250.00	1250.00	\N	15	[]	2024-02-14 17:10:14	2024-02-14 17:10:14
+39	11	f	{"Color":"Camel","Size":"M"}	1250.00	1250.00	\N	12	[]	2024-02-14 17:10:14	2024-02-14 17:10:14
+40	12	t	{"Color":"Navy","Size":"M"}	1512.00	1890.00	1512.00	10	[]	2023-12-10 17:10:14	2023-12-10 17:10:14
+41	12	f	{"Color":"Navy","Size":"L"}	1512.00	1890.00	1512.00	12	[]	2023-12-10 17:10:14	2023-12-10 17:10:14
+42	12	f	{"Color":"Grey","Size":"M"}	1512.00	1890.00	1512.00	8	[]	2023-12-10 17:10:14	2023-12-10 17:10:14
+43	12	f	{"Color":"Grey","Size":"L"}	1512.00	1890.00	1512.00	9	[]	2023-12-10 17:10:14	2023-12-10 17:10:14
+44	13	t	{"Color":"White","Size":"40"}	1150.00	1150.00	\N	20	[]	2023-11-07 17:10:14	2023-11-07 17:10:14
+45	13	f	{"Color":"White","Size":"41"}	1150.00	1150.00	\N	30	[]	2023-11-07 17:10:14	2023-11-07 17:10:14
+46	13	f	{"Color":"White","Size":"42"}	1150.00	1150.00	\N	28	[]	2023-11-07 17:10:14	2023-11-07 17:10:14
+47	13	f	{"Color":"Black","Size":"41"}	1150.00	1150.00	\N	25	[]	2023-11-07 17:10:14	2023-11-07 17:10:14
+48	13	f	{"Color":"Black","Size":"42"}	1150.00	1150.00	\N	22	[]	2023-11-07 17:10:14	2023-11-07 17:10:14
+49	14	t	{"Color":"Black","Size":"37"}	1332.00	1480.00	1332.00	15	[]	2023-11-06 17:10:14	2023-11-06 17:10:14
+50	14	f	{"Color":"Black","Size":"38"}	1332.00	1480.00	1332.00	20	[]	2023-11-06 17:10:14	2023-11-06 17:10:14
+51	14	f	{"Color":"Black","Size":"39"}	1332.00	1480.00	1332.00	18	[]	2023-11-06 17:10:14	2023-11-06 17:10:14
+52	14	f	{"Color":"Brown","Size":"38"}	1332.00	1480.00	1332.00	12	[]	2023-11-06 17:10:14	2023-11-06 17:10:14
+53	15	t	{"Color":"Black","Size":"41"}	2100.00	2100.00	\N	10	[]	2023-08-07 17:10:14	2023-08-07 17:10:14
+54	15	f	{"Color":"Black","Size":"42"}	2100.00	2100.00	\N	12	[]	2023-08-07 17:10:14	2023-08-07 17:10:14
+55	15	f	{"Color":"Brown","Size":"41"}	2100.00	2100.00	\N	8	[]	2023-08-07 17:10:14	2023-08-07 17:10:14
+56	15	f	{"Color":"Brown","Size":"42"}	2100.00	2100.00	\N	10	[]	2023-08-07 17:10:14	2023-08-07 17:10:14
+57	16	t	{"Color":"White","Size":"S"}	280.00	280.00	\N	60	[]	2023-06-18 17:10:14	2023-06-18 17:10:14
+58	16	f	{"Color":"White","Size":"M"}	280.00	280.00	\N	80	[]	2023-06-18 17:10:14	2023-06-18 17:10:14
+59	16	f	{"Color":"Black","Size":"M"}	280.00	280.00	\N	75	[]	2023-06-18 17:10:14	2023-06-18 17:10:14
+60	16	f	{"Color":"Black","Size":"L"}	280.00	280.00	\N	65	[]	2023-06-18 17:10:14	2023-06-18 17:10:14
+61	16	f	{"Color":"Grey","Size":"L"}	280.00	280.00	\N	50	[]	2023-06-18 17:10:14	2023-06-18 17:10:14
+62	17	t	{"Color":"Sand","Size":"S"}	455.00	650.00	455.00	30	[]	2023-03-09 17:10:14	2023-03-09 17:10:14
+63	17	f	{"Color":"Sand","Size":"M"}	455.00	650.00	455.00	45	[]	2023-03-09 17:10:14	2023-03-09 17:10:14
+64	17	f	{"Color":"Black","Size":"M"}	455.00	650.00	455.00	50	[]	2023-03-09 17:10:14	2023-03-09 17:10:14
+65	17	f	{"Color":"Black","Size":"L"}	455.00	650.00	455.00	40	[]	2023-03-09 17:10:14	2023-03-09 17:10:14
+66	17	f	{"Color":"Grey","Size":"XL"}	455.00	650.00	455.00	25	[]	2023-03-09 17:10:14	2023-03-09 17:10:14
+67	18	t	{"Color":"Navy\\/White","Size":"S"}	320.00	320.00	\N	35	[]	2022-10-24 17:10:14	2022-10-24 17:10:14
+68	18	f	{"Color":"Navy\\/White","Size":"M"}	320.00	320.00	\N	50	[]	2022-10-24 17:10:14	2022-10-24 17:10:14
+69	18	f	{"Color":"Red\\/White","Size":"M"}	320.00	320.00	\N	40	[]	2022-10-24 17:10:14	2022-10-24 17:10:14
+70	18	f	{"Color":"Red\\/White","Size":"L"}	320.00	320.00	\N	30	[]	2022-10-24 17:10:14	2022-10-24 17:10:14
+71	19	t	{"Color":"Khaki","Size":"S"}	550.00	550.00	\N	30	[]	2022-10-07 17:10:14	2022-10-07 17:10:14
+72	19	f	{"Color":"Khaki","Size":"M"}	550.00	550.00	\N	45	[]	2022-10-07 17:10:14	2022-10-07 17:10:14
+73	19	f	{"Color":"Khaki","Size":"L"}	550.00	550.00	\N	35	[]	2022-10-07 17:10:14	2022-10-07 17:10:14
+74	19	f	{"Color":"Navy","Size":"M"}	550.00	550.00	\N	40	[]	2022-10-07 17:10:14	2022-10-07 17:10:14
+75	19	f	{"Color":"Navy","Size":"L"}	550.00	550.00	\N	30	[]	2022-10-07 17:10:14	2022-10-07 17:10:14
+76	20	t	{"Color":"Multi","Size":"XS"}	890.00	890.00	\N	20	[]	2022-08-23 17:10:14	2022-08-23 17:10:14
+77	20	f	{"Color":"Multi","Size":"S"}	890.00	890.00	\N	35	[]	2022-08-23 17:10:14	2022-08-23 17:10:14
+78	20	f	{"Color":"Multi","Size":"M"}	890.00	890.00	\N	40	[]	2022-08-23 17:10:14	2022-08-23 17:10:14
+79	20	f	{"Color":"Multi","Size":"L"}	890.00	890.00	\N	25	[]	2022-08-23 17:10:14	2022-08-23 17:10:14
+80	21	t	{"Color":"Black","Size":"XS"}	880.00	1100.00	880.00	15	[]	2022-05-22 17:10:14	2022-05-22 17:10:14
+81	21	f	{"Color":"Black","Size":"S"}	880.00	1100.00	880.00	22	[]	2022-05-22 17:10:14	2022-05-22 17:10:14
+82	21	f	{"Color":"Black","Size":"M"}	880.00	1100.00	880.00	28	[]	2022-05-22 17:10:14	2022-05-22 17:10:14
+83	21	f	{"Color":"Nude","Size":"S"}	880.00	1100.00	880.00	18	[]	2022-05-22 17:10:14	2022-05-22 17:10:14
+84	21	f	{"Color":"Nude","Size":"M"}	880.00	1100.00	880.00	20	[]	2022-05-22 17:10:14	2022-05-22 17:10:14
 \.
 
 
@@ -2584,7 +2555,27 @@ COPY public.product_variations (id, product_id, main_variation, attributes, pric
 --
 
 COPY public.products_data (id, name, slug, search_text, permalink, date_created, date_created_gmt, date_modified, date_modified_gmt, type, status, featured, catalog_visibility, description, discount_percentage, short_description, sku, date_on_sale_from, date_on_sale_from_gmt, date_on_sale_to, date_on_sale_to_gmt, on_sale, purchasable, total_sales, virtual, downloadable, downloads, download_limit, download_expiry, external_url, button_text, manage_stock, stock_quantity, backorders, backorders_allowed, backordered, low_stock_amount, sold_individually, dimensions, shipping_required, shipping_taxable, shipping_class, shipping_class_id, reviews_allowed, average_rating, rating_count, upsell_ids, cross_sell_ids, parent_id, purchase_note, categories, tags, images, attributes, default_attributes, variations, grouped_products, menu_order, related_ids, meta_data, stock_status, has_options, has_variations, global_unique_id, better_featured_image, is_purchased, "attributesData", is_wallet_product, _links, lang, min_price, brand_id, max_price, created_at, updated_at, minimum_order_qty, max_orders_per_person, product_type, vendor_id, translations, acceptance_status, unit, whatsapp) FROM stdin;
-9	ramez product 2	ramez-product-2	ramez product 2 full description (english) short description (english) black	ramez-product-2					physical	publish	f	visible	Full Description (English)	49.99	Short Description (English)	asgddd	\N	\N	\N	\N	t	t	0	f	f	[]	0	0	\N		t	610		f	f	0	f	[]	t	f		0	t	0	0	[]	[]	0		[]	["dsfggg","sdfggg"]	{"other_images":["products\\/other_images\\/DKZhLkgSjshveMEyQ9TdKiPo8NNkUIyNoqEgP0kv.jpg","products\\/other_images\\/1k52EdldtKUNPoFZQQxvAp3Jd5A1tKBB1xmKIjxT.jpg","products\\/other_images\\/Mfr6Ez6Ox3kMJ8OAqT4L4w4LLa3hHjFLKdpNYmCV.jpg","products\\/other_images\\/KOs2ITvngKi8HlOOOdyotjOaHnDn0kmN9bnMLgLV.jpg"],"natural_images":["products\\/natural_images\\/BX2cDRSVIOq5NhQnwGujzV73vMXeVe0DwJPT58Sd.jpg","products\\/natural_images\\/ekLBai1usaLpwBdv0EtNn6ErwA5WHfDeJRJOTW6R.jpg","products\\/natural_images\\/GrI8fJqV1Yts3JnyReEuDv8e74ta09NdhWVCY5dr.jpg","products\\/natural_images\\/PLEr1pfWnQ3Pb18N0Omxa6w6XJR6Uv0umswYYxFm.jpg"],"thumbnail":"products\\/thumbnails\\/7FY9WFLyVqto7zR1SPzHU9izsRljSnff53Lc9yN3.jpg"}	[{"name":"sfg","values":["sdfggg"]},{"name":"sdfg","values":["sdfggg"]}]	[]	[]	[]	0	[]	[]	instock	t	t		\N	f	[]	f	[]	["en"]	0	3	0	2026-05-03 14:57:09	2026-05-04 01:06:34	1	100	physical	1	[]	approved	{"kg":1.06}	{"whatsapp":{"available":true,"number":"01012345678"}}
+1	Classic Leather Tote Bag	classic-leather-tote-bag	classic leather tote bag premium full-grain leather tote perfect for everyday use. spacious interior with magnetic closure.		2026-02-12 17:10:14		2026-02-12 17:10:14		variable	publish	f		Premium full-grain leather tote perfect for everyday use. Spacious interior with magnetic closure.	0	Premium full-grain leather tote perfect for everyday use. Spacious interior with magnetic closure.	\N	\N	\N	\N	\N	f	t	142	f	f	[]	0	0	\N		t	55		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":23}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1584917865442-de89df76afd3?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	12		approved		
+2	Mini Crossbody Bag	mini-crossbody-bag	mini crossbody bag compact crossbody bag with adjustable strap. fits your phone, keys, and essentials.		2025-12-18 17:10:14		2025-12-18 17:10:14		variable	publish	f		Compact crossbody bag with adjustable strap. Fits your phone, keys, and essentials.	15	Compact crossbody bag with adjustable strap. Fits your phone, keys, and essentials.	\N	\N	\N	\N	\N	t	t	98	f	f	[]	0	0	\N		t	95		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":23}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1548036328-c9fa89d128fa?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	12		approved		
+3	Quilted Chain Shoulder Bag	quilted-chain-shoulder-bag	quilted chain shoulder bag elegant quilted bag with gold-tone chain strap. a timeless piece for any outfit.		2025-08-16 17:10:14		2025-08-16 17:10:14		variable	publish	f		Elegant quilted bag with gold-tone chain strap. A timeless piece for any outfit.	0	Elegant quilted bag with gold-tone chain strap. A timeless piece for any outfit.	\N	\N	\N	\N	\N	f	t	67	f	f	[]	0	0	\N		t	25		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":23}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1591561954555-607968c989ab?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	12		approved		
+4	Canvas Backpack	canvas-backpack	canvas backpack durable canvas backpack with laptop sleeve and multiple pockets. perfect for work or travel.		2025-07-21 17:10:14		2025-07-21 17:10:14		variable	publish	f		Durable canvas backpack with laptop sleeve and multiple pockets. Perfect for work or travel.	20	Durable canvas backpack with laptop sleeve and multiple pockets. Perfect for work or travel.	\N	\N	\N	\N	\N	t	t	210	f	f	[]	0	0	\N		t	160		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":23}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1553062407-98eeb64c6a62?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	12		approved		
+5	Slim Fit Blue Denim Jeans	slim-fit-blue-denim-jeans	slim fit blue denim jeans classic slim-fit jeans in mid-wash blue denim. stretch fabric for all-day comfort.		2025-01-29 17:10:14		2025-01-29 17:10:14		variable	publish	f		Classic slim-fit jeans in mid-wash blue denim. Stretch fabric for all-day comfort.	0	Classic slim-fit jeans in mid-wash blue denim. Stretch fabric for all-day comfort.	\N	\N	\N	\N	\N	f	t	325	f	f	[]	0	0	\N		t	130		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":29}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1542272454315-4c01d7abdf4a?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	17		approved		
+6	Black Skinny Jeans	black-skinny-jeans	black skinny jeans sleek black skinny jeans with a high-rise waist. a wardrobe essential for every season.		2024-12-05 17:10:14		2024-12-05 17:10:14		variable	publish	f		Sleek black skinny jeans with a high-rise waist. A wardrobe essential for every season.	10	Sleek black skinny jeans with a high-rise waist. A wardrobe essential for every season.	\N	\N	\N	\N	\N	t	t	280	f	f	[]	0	0	\N		t	145		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":29}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1541099649105-f69ad21f3246?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	17		approved		
+7	Distressed Boyfriend Jeans	distressed-boyfriend-jeans	distressed boyfriend jeans relaxed boyfriend fit with authentic distressed detailing. effortlessly cool streetwear look.		2024-11-17 17:10:14		2024-11-17 17:10:14		variable	publish	f		Relaxed boyfriend fit with authentic distressed detailing. Effortlessly cool streetwear look.	25	Relaxed boyfriend fit with authentic distressed detailing. Effortlessly cool streetwear look.	\N	\N	\N	\N	\N	t	t	189	f	f	[]	0	0	\N		t	88		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":29}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1580651315530-69c8e0026377?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	17		approved		
+8	Classic White Oxford Shirt	classic-white-oxford-shirt	classic white oxford shirt crisp white oxford shirt crafted from 100% cotton. timeless style suitable for work or weekend.		2024-09-12 17:10:14		2024-09-12 17:10:14		variable	publish	f		Crisp white Oxford shirt crafted from 100% cotton. Timeless style suitable for work or weekend.	0	Crisp white Oxford shirt crafted from 100% cotton. Timeless style suitable for work or weekend.	\N	\N	\N	\N	\N	f	t	175	f	f	[]	0	0	\N		t	165		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":19}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1598033129183-c4f50c736f10?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	10		approved		
+9	Linen Casual Shirt	linen-casual-shirt	linen casual shirt breathable linen shirt perfect for warm weather. relaxed fit with a button-down collar.		2024-06-06 17:10:14		2024-06-06 17:10:14		variable	publish	f		Breathable linen shirt perfect for warm weather. Relaxed fit with a button-down collar.	0	Breathable linen shirt perfect for warm weather. Relaxed fit with a button-down collar.	\N	\N	\N	\N	\N	f	t	134	f	f	[]	0	0	\N		t	105		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":19}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1607962837359-5e7e89f86776?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	10		approved		
+10	Polo Shirt	polo-shirt	polo shirt classic piqué polo shirt with ribbed collar and cuffs. available in vibrant colors.		2024-06-03 17:10:14		2024-06-03 17:10:14		variable	publish	f		Classic piqué polo shirt with ribbed collar and cuffs. Available in vibrant colors.	15	Classic piqué polo shirt with ribbed collar and cuffs. Available in vibrant colors.	\N	\N	\N	\N	\N	t	t	201	f	f	[]	0	0	\N		t	160		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":19}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1586363104862-3a5e2ab60d99?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	10		approved		
+11	Women's Tailored Blazer	womens-tailored-blazer	women's tailored blazer sharp tailored blazer with a modern slim fit. perfect for the office or a night out.		2024-02-14 17:10:14		2024-02-14 17:10:14		variable	publish	f		Sharp tailored blazer with a modern slim fit. Perfect for the office or a night out.	0	Sharp tailored blazer with a modern slim fit. Perfect for the office or a night out.	\N	\N	\N	\N	\N	f	t	88	f	f	[]	0	0	\N		t	67		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":25}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1594938298603-c8148c4dae35?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	16		approved		
+12	Men's Double-Breasted Blazer	mens-double-breasted-blazer	men's double-breasted blazer sophisticated double-breasted blazer in premium wool blend. a statement piece for any wardrobe.		2023-12-10 17:10:14		2023-12-10 17:10:14		variable	publish	f		Sophisticated double-breasted blazer in premium wool blend. A statement piece for any wardrobe.	20	Sophisticated double-breasted blazer in premium wool blend. A statement piece for any wardrobe.	\N	\N	\N	\N	\N	t	t	55	f	f	[]	0	0	\N		t	39		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":25}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1507003211169-0a1dd7228f2d?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	16		approved		
+13	Men's Classic Sneakers	mens-classic-sneakers	men's classic sneakers iconic low-top leather sneakers with cushioned sole. goes with anything, from jeans to chinos.		2023-11-07 17:10:14		2023-11-07 17:10:14		variable	publish	f		Iconic low-top leather sneakers with cushioned sole. Goes with anything, from jeans to chinos.	0	Iconic low-top leather sneakers with cushioned sole. Goes with anything, from jeans to chinos.	\N	\N	\N	\N	\N	f	t	412	f	f	[]	0	0	\N		t	125		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":28}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1542291026-7eec264c27ff?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	13		approved		
+14	Women's Ankle Boots	womens-ankle-boots	women's ankle boots sleek leather ankle boots with a block heel. versatile enough for day or night wear.		2023-11-06 17:10:14		2023-11-06 17:10:14		variable	publish	f		Sleek leather ankle boots with a block heel. Versatile enough for day or night wear.	10	Sleek leather ankle boots with a block heel. Versatile enough for day or night wear.	\N	\N	\N	\N	\N	t	t	167	f	f	[]	0	0	\N		t	65		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":28}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1543163521-1bf539c55dd2?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	13		approved		
+15	Formal Oxford Shoes	formal-oxford-shoes	formal oxford shoes hand-crafted leather oxford shoes with goodyear welt construction. built to last a lifetime.		2023-08-07 17:10:14		2023-08-07 17:10:14		variable	publish	f		Hand-crafted leather Oxford shoes with Goodyear welt construction. Built to last a lifetime.	0	Hand-crafted leather Oxford shoes with Goodyear welt construction. Built to last a lifetime.	\N	\N	\N	\N	\N	f	t	93	f	f	[]	0	0	\N		t	40		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":28}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1533867617858-e7b97e060509?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	13		approved		
+16	Graphic Print T-Shirt	graphic-print-tshirt	graphic print t-shirt bold graphic tee printed on 100% organic cotton. express your style with attitude.		2023-06-18 17:10:14		2023-06-18 17:10:14		variable	publish	f		Bold graphic tee printed on 100% organic cotton. Express your style with attitude.	0	Bold graphic tee printed on 100% organic cotton. Express your style with attitude.	\N	\N	\N	\N	\N	f	t	398	f	f	[]	0	0	\N		t	330		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":21}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1521572163474-6864f9cf17ab?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	14		approved		
+17	Oversized Hoodie	oversized-hoodie	oversized hoodie super-soft heavyweight fleece hoodie with a relaxed oversized fit. cozy all day long.		2023-03-09 17:10:14		2023-03-09 17:10:14		variable	publish	f		Super-soft heavyweight fleece hoodie with a relaxed oversized fit. Cozy all day long.	30	Super-soft heavyweight fleece hoodie with a relaxed oversized fit. Cozy all day long.	\N	\N	\N	\N	\N	t	t	244	f	f	[]	0	0	\N		t	190		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":21}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1556821840-3a63f15732ce?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	14		approved		
+18	Striped Long-Sleeve Tee	striped-long-sleeve-tee	striped long-sleeve tee classic breton stripes on a breathable long-sleeve tee. a french-inspired everyday essential.		2022-10-24 17:10:14		2022-10-24 17:10:14		variable	publish	f		Classic Breton stripes on a breathable long-sleeve tee. A French-inspired everyday essential.	0	Classic Breton stripes on a breathable long-sleeve tee. A French-inspired everyday essential.	\N	\N	\N	\N	\N	f	t	156	f	f	[]	0	0	\N		t	155		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":21}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1581655353564-df123a1eb820?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	14		approved		
+19	Slim-Fit Chino Trousers	slim-fit-chino-trousers	slim-fit chino trousers smart-casual chinos in stretch cotton twill. office-ready yet weekend-worthy.		2022-10-07 17:10:14		2022-10-07 17:10:14		variable	publish	f		Smart-casual chinos in stretch cotton twill. Office-ready yet weekend-worthy.	0	Smart-casual chinos in stretch cotton twill. Office-ready yet weekend-worthy.	\N	\N	\N	\N	\N	f	t	188	f	f	[]	0	0	\N		t	180		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":30}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1552902865-b72c031ac5ea?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	17		approved		
+20	Floral Wrap Dress	floral-wrap-dress	floral wrap dress feminine wrap dress in a vibrant floral print. v-neckline and adjustable tie waist for a flattering fit.		2022-08-23 17:10:14		2022-08-23 17:10:14		variable	publish	f		Feminine wrap dress in a vibrant floral print. V-neckline and adjustable tie waist for a flattering fit.	0	Feminine wrap dress in a vibrant floral print. V-neckline and adjustable tie waist for a flattering fit.	\N	\N	\N	\N	\N	f	t	223	f	f	[]	0	0	\N		t	120		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":26}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1595777457583-95e059d581b8?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	16		approved		
+21	Midi Slip Dress	midi-slip-dress	midi slip dress satin midi slip dress with thin adjustable straps. effortlessly elegant for any occasion.		2022-05-22 17:10:14		2022-05-22 17:10:14		variable	publish	f		Satin midi slip dress with thin adjustable straps. Effortlessly elegant for any occasion.	20	Satin midi slip dress with thin adjustable straps. Effortlessly elegant for any occasion.	\N	\N	\N	\N	\N	t	t	145	f	f	[]	0	0	\N		t	103		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":26}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1614170153058-7a8e04b58f76?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	16		approved		
 \.
 
 
@@ -2617,14 +2608,6 @@ COPY public.refund_requests (id, order_id, customer_id, vendor_id, type, reason,
 --
 
 COPY public.shops (id, user_id, shop_name, shop_address, shop_logo, shop_banner, secondary_banner, status, created_at, updated_at, remember_token) FROM stdin;
-1	10	Cairo Fashion Hub	12 Tahrir Square, Cairo, Egypt	https://picsum.photos/seed/shop1/200/200	https://picsum.photos/seed/shopbanner1/1200/300	\N	approved	2026-05-03 14:32:45	2026-05-03 14:32:45	\N
-2	11	TechZone Egypt	45 Corniche Road, Alexandria, Egypt	https://picsum.photos/seed/shop2/200/200	https://picsum.photos/seed/shopbanner2/1200/300	\N	approved	2026-05-03 14:32:45	2026-05-03 14:32:45	\N
-3	12	Luxury Bags Co	88 Pyramids Road, Giza, Egypt	https://picsum.photos/seed/shop3/200/200	https://picsum.photos/seed/shopbanner3/1200/300	\N	approved	2026-05-03 14:32:45	2026-05-03 14:32:45	\N
-4	13	Shoe Palace Egypt	22 Nasr City, Cairo, Egypt	https://picsum.photos/seed/shop4/200/200	https://picsum.photos/seed/shopbanner4/1200/300	\N	approved	2026-05-03 14:32:45	2026-05-03 14:32:45	\N
-5	14	Street Style Store	5 Zamalek, Cairo, Egypt	https://picsum.photos/seed/shop5/200/200	https://picsum.photos/seed/shopbanner5/1200/300	\N	approved	2026-05-03 14:32:45	2026-05-03 14:32:45	\N
-6	15	Nile Electronics	17 University Street, Mansoura, Egypt	https://picsum.photos/seed/shop6/200/200	https://picsum.photos/seed/shopbanner6/1200/300	\N	approved	2026-05-03 14:32:45	2026-05-03 14:32:45	\N
-7	16	Desert Rose Fashion	3 Corniche El Nile, Aswan, Egypt	https://picsum.photos/seed/shop7/200/200	https://picsum.photos/seed/shopbanner7/1200/300	\N	approved	2026-05-03 14:32:45	2026-05-03 14:32:45	\N
-8	17	Delta Denim Co	9 El-Geish Street, Tanta, Egypt	https://picsum.photos/seed/shop8/200/200	https://picsum.photos/seed/shopbanner8/1200/300	\N	approved	2026-05-03 14:32:45	2026-05-03 14:32:45	\N
 \.
 
 
@@ -2657,29 +2640,7 @@ COPY public.user_notes (id, user_id, date_created, note, customer_note, created_
 --
 
 COPY public.users (id, name, email, email_verified_at, password, remember_token, created_at, updated_at, user_login, username, user_nicename, display_name, first_name, last_name, url, avatar, phone, role, nicename, registered, firstname, lastname, description, capabilities, shipping, registration_method, is_phone_verified, is_blocked, provider, provider_id) FROM stdin;
-3	Test User	user@ramostore.com	2026-05-03 22:04:50	$2y$12$zIy.ZUk8WdFwslwbqeTO7OcIlw37kG/sAtjK2L1Sv5XPQ1K6KtF.O	uz8zLXsmR9rf3RNIu3yik1C2D5kY7DWLGKa2gRVTyKqPbsQN5tZbSviQ5c6n	2026-05-02 22:47:40	2026-05-02 22:47:40	\N	\N	\N	Test User	\N	\N	\N	\N		normal_user								\N	f	f	\N	\N
-2	Vendor Store	vendor@ramostore.com	2026-05-03 22:04:50	$2y$12$YrFeeZgFhNZ8J3HxpLtQWOoLOG93fyzwn.YyQyHVCnOA4PCfdaxXG	UMHkL7WdAR0QX8v7KyyAoKcNzymbVn4LOnfSDzogSMXJ6Ul5UtyTIlvvaCGM	2026-05-02 22:47:40	2026-05-02 22:47:40	\N	\N	\N	Vendor Store	\N	\N	\N	\N		vendor								\N	f	f	\N	\N
-10	Cairo Fashion Hub	cairo.fashion@ramostore.com	2026-05-03 22:04:50	$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi	\N	2026-05-03 14:32:45	2026-05-03 14:32:45	\N	\N	\N	\N	\N	\N	\N	\N	+20100000001	vendor								\N	f	f	\N	\N
-11	TechZone Egypt	techzone@ramostore.com	2026-05-03 22:04:50	$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi	\N	2026-05-03 14:32:45	2026-05-03 14:32:45	\N	\N	\N	\N	\N	\N	\N	\N	+20100000002	vendor								\N	f	f	\N	\N
-12	Luxury Bags Co	luxurybags@ramostore.com	2026-05-03 22:04:50	$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi	\N	2026-05-03 14:32:45	2026-05-03 14:32:45	\N	\N	\N	\N	\N	\N	\N	\N	+20100000003	vendor								\N	f	f	\N	\N
-13	Shoe Palace Egypt	shoepalace@ramostore.com	2026-05-03 22:04:50	$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi	\N	2026-05-03 14:32:45	2026-05-03 14:32:45	\N	\N	\N	\N	\N	\N	\N	\N	+20100000004	vendor								\N	f	f	\N	\N
-14	Street Style Store	streetstyle@ramostore.com	2026-05-03 22:04:50	$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi	\N	2026-05-03 14:32:45	2026-05-03 14:32:45	\N	\N	\N	\N	\N	\N	\N	\N	+20100000005	vendor								\N	f	f	\N	\N
-15	Nile Electronics	nile.elec@ramostore.com	2026-05-03 22:04:50	$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi	\N	2026-05-03 14:32:45	2026-05-03 14:32:45	\N	\N	\N	\N	\N	\N	\N	\N	+20100000006	vendor								\N	f	f	\N	\N
-16	Desert Rose Fashion	desert.rose@ramostore.com	2026-05-03 22:04:50	$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi	\N	2026-05-03 14:32:45	2026-05-03 14:32:45	\N	\N	\N	\N	\N	\N	\N	\N	+20100000007	vendor								\N	f	f	\N	\N
-17	Delta Denim Co	delta.denim@ramostore.com	2026-05-03 22:04:50	$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi	\N	2026-05-03 14:32:45	2026-05-03 14:32:45	\N	\N	\N	\N	\N	\N	\N	\N	+20100000008	vendor								\N	f	f	\N	\N
-20	Ahmed Hassan	ahmed.hassan@gmail.com	2026-05-03 22:04:50	$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi	\N	2026-04-03 14:32:45	2026-05-03 14:32:45	\N	\N	\N	\N	\N	\N	\N	\N	+20111000001	normal_user								\N	f	f	\N	\N
-21	Sara Mohamed	sara.mohamed@gmail.com	2026-05-03 22:04:50	$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi	\N	2026-04-08 14:32:45	2026-05-03 14:32:45	\N	\N	\N	\N	\N	\N	\N	\N	+20111000002	normal_user								\N	f	f	\N	\N
-22	Omar Ali	omar.ali@gmail.com	2026-05-03 22:04:50	$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi	\N	2026-04-13 14:32:45	2026-05-03 14:32:45	\N	\N	\N	\N	\N	\N	\N	\N	+20111000003	normal_user								\N	f	f	\N	\N
-23	Nour Ibrahim	nour.ibrahim@gmail.com	2026-05-03 22:04:50	$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi	\N	2026-04-18 14:32:45	2026-05-03 14:32:45	\N	\N	\N	\N	\N	\N	\N	\N	+20111000004	normal_user								\N	f	f	\N	\N
-24	Youssef Kamal	youssef.kamal@gmail.com	2026-05-03 22:04:50	$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi	\N	2026-04-23 14:32:45	2026-05-03 14:32:45	\N	\N	\N	\N	\N	\N	\N	\N	+20111000005	normal_user								\N	f	f	\N	\N
-25	Mariam Saad	mariam.saad@gmail.com	2026-05-03 22:04:50	$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi	\N	2026-04-25 14:32:45	2026-05-03 14:32:45	\N	\N	\N	\N	\N	\N	\N	\N	+20111000006	normal_user								\N	f	f	\N	\N
-26	Khaled Nasser	khaled.nasser@gmail.com	2026-05-03 22:04:50	$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi	\N	2026-04-28 14:32:45	2026-05-03 14:32:45	\N	\N	\N	\N	\N	\N	\N	\N	+20111000007	normal_user								\N	f	f	\N	\N
-27	Layla Farouk	layla.farouk@gmail.com	2026-05-03 22:04:50	$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi	\N	2026-05-01 14:32:45	2026-05-03 14:32:45	\N	\N	\N	\N	\N	\N	\N	\N	+20111000008	normal_user								\N	f	f	\N	\N
-8	Ramez MalakFarouk	otp_3454553455@ramostore.local	2026-05-03 22:04:50	$2y$12$BTFjPtoL6Jg5QUnEczRa4urLCVU9xgO1DjNB.WQQRm8yEE7cLq8DK	\N	2026-05-03 17:54:52	2026-05-03 17:54:52	\N	\N	\N	\N	Ramez	MalakFarouk	\N	\N	+3454553455	normal_user	ramez-malakfarouk-3455	2026-05-03 17:54:52	Ramez	MalakFarouk		{"customer":true}	[]	phone_otp	t	f	\N	\N
-9	ramez malak	otp_76587658787@ramostore.local	2026-05-03 22:04:50	$2y$12$UkHiyMpXbOA/yNQBh7rCMOLUDHFeNbaX.759/DuGqXg0/vTKujMe2	\N	2026-05-03 20:33:25	2026-05-03 20:33:25	\N	\N	\N	\N	ramez	malak	\N	\N	+76587658787	normal_user	ramez-malak-8787	2026-05-03 20:33:25	ramez	malak		{"customer":true}	[]	phone_otp	t	f	\N	\N
-28	RAMEZ_HADE MALAK	hadeer1hadeer11@gmail.com	2026-05-03 22:10:04	$2y$12$RVH3SP6YJ0Qvxi9Fk1uTkuF/htYH4GbFIH3BqPfUk6FyEqwIVxxtq	\N	2026-05-03 22:07:59	2026-05-03 22:12:36	\N	\N	\N	\N	RAMEZ_HADE	MALAK	\N	\N	01002722375	normal_user	ramez_hade-malak	2026-05-03 22:07:59	RAMEZ_HADE	MALAK		{"customer":true}	{"first_name":"RAMEZ_HADE","last_name":"MALAK","address":"1000 Factory Area","address_note":null,"city":"Cairo","state":"Cairo","email":"hadeer1hadeer11@gmail.com","phone":"01002722375","latitude":"29.9714","longitude":"31.4808"}	email_password	f	f	\N	\N
-29	RAMEZ MALAK	otp_202394857987@ramostore.local	\N	$2y$12$XPVOOEawY6IJaDkkRVRmaOsFkoMMExq4wrgTZy5EYSzfIqvu3tSvq	\N	2026-05-04 02:06:56	2026-05-04 02:15:11	\N	\N	\N	\N	RAMEZ	MALAK	\N	\N	+202394857987	normal_user	ramez-malak-7987	2026-05-04 02:06:56	RAMEZ	MALAK		{"customer":true}	{"first_name":"RAMEZ","last_name":"MALAK","address":"1000 Factory Area","address_note":null,"city":"Cairo","state":"Cairo","email":"otp_202394857987@ramostore.local","phone":"+202394857987","latitude":"29.9714","longitude":"31.4808"}	phone_otp	t	f	\N	\N
-1	Admin	adminramoui@gmail.com	2026-05-06 15:03:45	$2y$12$1JP33X5fnHrSdPJZA3DbUOBSjM6YQA8Pd/r8pwL9P6sh4xhswMqzG	cKCN56QWYnas7doR1qrDz38urnGjJ0A6vU3VmgBHfQ0AbTozkb2Psqs9eWaM	2026-05-02 22:43:55	2026-05-03 15:31:00	\N	\N	\N	\N	ramo	malak	\N	\N	q23wertw345	admin							{"first_name":"ramo","last_name":"malak","address":"Al Kufur","address_note":null,"city":"Al Kufur","state":"Minya","email":"adminramoui@gmail.com","phone":"q23wertw345","latitude":"28.445427","longitude":"30.805958"}	\N	f	f	\N	\N
+1	Admin	adminramoui@gmail.com	\N	$2y$12$IoSnZPF4/2zQ9lVavUstge6X8OUqEWEbP14c0ae4fcf1p64rNCcUO	\N	2026-05-06 17:10:02	2026-05-06 17:10:02	\N	\N	\N	\N	\N	\N	\N	\N		admin								\N	f	f	\N	\N
 \.
 
 
@@ -2688,15 +2649,7 @@ COPY public.users (id, name, email, email_verified_at, password, remember_token,
 --
 
 COPY public.vendor_users (id, profile_image, first_name, last_name, phone, email, password, email_verified_at, remember_token, created_at, updated_at, shop_name, shop_address, shop_logo, shop_banner, secondary_banner, bottom_banner, status, rating, rating_count, temporary_close, vacation_end_date, vacation_start_date, vacation_status, offer_banner, product_count, orders_count, minimum_order_amount, free_delivery_over_amount, free_delivery_status, sales_commission_percentage, auth_token, holder_name, account_no, bank_name, branch, free_delivery_features_status, free_delivery_responsibility, minimum_order_amount_by_seller) FROM stdin;
-11	\N	Tech	Zone	+20100000002	techzone@ramostore.com	$2y$12$9hgmXfd.lytKSQUSCqufNeYgaYvBPpgFAxZKBkddoSOEL4kdetwLO	\N	\N	2026-05-03 14:42:03	2026-05-03 14:44:33	TechZone Egypt	45 Corniche, Alexandria	\N	\N	\N		approved	4.8	42	0	empty	empty	0	empty	3	3	\N	\N	\N	\N	tok-tz-002	TechZone	\N	NBE Bank	Alexandria Main	\N	\N	\N
-12	\N	Luxury	Bags	+20100000003	luxurybags@ramostore.com	$2y$12$9hgmXfd.lytKSQUSCqufNeYgaYvBPpgFAxZKBkddoSOEL4kdetwLO	\N	\N	2026-05-03 14:42:03	2026-05-03 14:44:33	Luxury Bags Co	88 Pyramids Rd, Giza	\N	\N	\N		approved	4.9	14	0	empty	empty	0	empty	2	2	\N	\N	\N	\N	tok-lb-003	Luxury Bags	\N	QNB Bank	Giza Branch	\N	\N	\N
-13	\N	Shoe	Palace	+20100000004	shoepalace@ramostore.com	$2y$12$9hgmXfd.lytKSQUSCqufNeYgaYvBPpgFAxZKBkddoSOEL4kdetwLO	\N	\N	2026-05-03 14:42:03	2026-05-03 14:44:33	Shoe Palace Egypt	22 Nasr City, Cairo	\N	\N	\N		approved	4.6	22	0	empty	empty	0	empty	2	3	\N	\N	\N	\N	tok-sp-004	Shoe Palace	\N	CIB Bank	Nasr City Branch	\N	\N	\N
-14	\N	Street	Style	+20100000005	streetstyle@ramostore.com	$2y$12$9hgmXfd.lytKSQUSCqufNeYgaYvBPpgFAxZKBkddoSOEL4kdetwLO	\N	\N	2026-05-03 14:42:03	2026-05-03 14:44:33	Street Style Store	5 Zamalek, Cairo	\N	\N	\N		approved	4.5	35	0	empty	empty	0	empty	3	4	\N	\N	\N	\N	tok-ss-005	Street Style	\N	Banque Misr	Zamalek Branch	\N	\N	\N
-15	\N	Nile	Elec	+20100000006	nile.elec@ramostore.com	$2y$12$9hgmXfd.lytKSQUSCqufNeYgaYvBPpgFAxZKBkddoSOEL4kdetwLO	\N	\N	2026-05-03 14:42:03	2026-05-03 14:44:33	Nile Electronics	17 Univ Street, Mansoura	\N	\N	\N		approved	4.6	19	0	empty	empty	0	empty	2	2	\N	\N	\N	\N	tok-ne-006	Nile Elec	\N	NBE Bank	Mansoura Branch	\N	\N	\N
-16	\N	Desert	Rose	+20100000007	desert.rose@ramostore.com	$2y$12$9hgmXfd.lytKSQUSCqufNeYgaYvBPpgFAxZKBkddoSOEL4kdetwLO	\N	\N	2026-05-03 14:42:03	2026-05-03 14:44:33	Desert Rose Fashion	3 Corniche El Nile, Aswan	\N	\N	\N		approved	4.8	31	0	empty	empty	0	empty	1	2	\N	\N	\N	\N	tok-dr-007	Desert Rose	\N	CIB Bank	Aswan Branch	\N	\N	\N
-17	\N	Delta	Denim	+20100000008	delta.denim@ramostore.com	$2y$12$9hgmXfd.lytKSQUSCqufNeYgaYvBPpgFAxZKBkddoSOEL4kdetwLO	\N	\N	2026-05-03 14:42:03	2026-05-03 14:44:33	Delta Denim Co	9 El-Geish Street, Tanta	\N	\N	\N		approved	4.5	18	0	empty	empty	0	empty	1	1	\N	\N	\N	\N	tok-dd-008	Delta Denim	\N	QNB Bank	Tanta Branch	\N	\N	\N
-1	\N	Demo	Vendor	+201234567890	vendor@ramostore.com	$2y$12$9hgmXfd.lytKSQUSCqufNeYgaYvBPpgFAxZKBkddoSOEL4kdetwLO	\N	dkCQS3yYE3LP9Omzr3ykusWKhpqyjG17s8r75JTMxmMkooPBPJAwDZK4aiCJ	2026-05-02 22:51:36	2026-05-03 15:16:08	Demo Shop	123 Main Street, Cairo	stores/logo/RDwg507gd88nsWamB9b3rb6SkkdOZ9Rw7kgKA7C1.jpg	\N	\N		approved	0	0	0	empty	empty	0	empty	\N	\N	0	0	0	\N	2vjpOvLzjU8O57TsDA5TkigQXt5jxdmqFzgUDo7B	Demo Vendor	\N	Demo Bank	Main Branch	\N	\N	\N
-10	\N	Cairo	Fashion	+20100000001	cairo.fashion@ramostore.com	$2y$12$kMp81QiQtxIht9zsVqPZ3O7w0emD2cWdRu6/jOlND8V6XgR8uizHC	\N	\N	2026-05-03 14:42:03	2026-05-03 14:44:33	Cairo Fashion Hub	12 Tahrir Square, Cairo	\N	\N	\N		approved	4.7	23	0	empty	empty	0	empty	9	5	\N	\N	\N	\N	tok-cf-001	Cairo Fashion	\N	CIB Bank	Cairo Main	\N	\N	\N
+3	\N	Cairo	Fashion	01000000000	cairo.fashion@ramostore.com	$2y$12$P0uaQxRMKLQ6BdgyT6W.RezeI18HgWfFfaDGtouWzvtwJapdLj6Fu	\N	\N	2026-05-06 17:10:50	2026-05-06 17:10:50	Cairo Fashion Hub	Cairo, Egypt	\N	\N	\N		approved	0	0	0	empty	empty	0	empty	\N	\N	\N	\N	\N	\N	token123	Cairo Fashion	\N	National Bank	Cairo Branch	\N	\N	\N
 \.
 
 
@@ -2714,16 +2667,7 @@ COPY public.version_config (id, supported_ver_from, supported_ver_to) FROM stdin
 --
 
 COPY public.wishlists (id, user_id, product_id, created_at) FROM stdin;
-2	20	22	2026-04-23 14:32:45
-3	20	25	2026-04-25 14:32:45
-4	21	23	2026-04-26 14:32:45
-5	21	26	2026-04-27 14:32:45
-6	22	28	2026-04-28 14:32:45
-7	23	29	2026-04-29 14:32:45
-8	24	32	2026-04-30 14:32:45
-9	25	34	2026-05-01 14:32:45
-10	26	30	2026-05-02 14:32:45
-11	27	24	2026-05-03 14:32:45
+1	1	2	2026-05-06 17:43:14
 \.
 
 
@@ -2745,7 +2689,7 @@ SELECT pg_catalog.setval('public.app_config_id_seq', 1, false);
 -- Name: app_configs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.app_configs_id_seq', 4, false);
+SELECT pg_catalog.setval('public.app_configs_id_seq', 2, true);
 
 
 --
@@ -2766,7 +2710,7 @@ SELECT pg_catalog.setval('public.blogposts_id_seq', 1, false);
 -- Name: brands_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.brands_id_seq', 6, false);
+SELECT pg_catalog.setval('public.brands_id_seq', 1, false);
 
 
 --
@@ -2780,14 +2724,14 @@ SELECT pg_catalog.setval('public.cart_items_id_seq', 1, false);
 -- Name: categories2_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.categories2_id_seq', 316, true);
+SELECT pg_catalog.setval('public.categories2_id_seq', 1, false);
 
 
 --
 -- Name: category_brand_requests_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.category_brand_requests_id_seq', 2, true);
+SELECT pg_catalog.setval('public.category_brand_requests_id_seq', 1, false);
 
 
 --
@@ -2808,7 +2752,7 @@ SELECT pg_catalog.setval('public.coupon_user_limits_id_seq', 1, false);
 -- Name: coupons_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.coupons_id_seq', 3, false);
+SELECT pg_catalog.setval('public.coupons_id_seq', 2, true);
 
 
 --
@@ -2878,28 +2822,28 @@ SELECT pg_catalog.setval('public.migrations_id_seq', 13, true);
 -- Name: order_messages_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.order_messages_id_seq', 3, false);
+SELECT pg_catalog.setval('public.order_messages_id_seq', 1, false);
 
 
 --
 -- Name: order_sub_orders_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.order_sub_orders_id_seq', 41, true);
+SELECT pg_catalog.setval('public.order_sub_orders_id_seq', 1, false);
 
 
 --
 -- Name: orders_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.orders_id_seq', 52, true);
+SELECT pg_catalog.setval('public.orders_id_seq', 1, false);
 
 
 --
 -- Name: otp_verifications_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.otp_verifications_id_seq', 6, true);
+SELECT pg_catalog.setval('public.otp_verifications_id_seq', 1, false);
 
 
 --
@@ -2913,21 +2857,21 @@ SELECT pg_catalog.setval('public.personal_access_tokens_id_seq', 1, false);
 -- Name: product_reviews_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.product_reviews_id_seq', 20, true);
+SELECT pg_catalog.setval('public.product_reviews_id_seq', 1, false);
 
 
 --
 -- Name: product_variations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.product_variations_id_seq', 74, false);
+SELECT pg_catalog.setval('public.product_variations_id_seq', 84, true);
 
 
 --
 -- Name: products_data_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.products_data_id_seq', 10, false);
+SELECT pg_catalog.setval('public.products_data_id_seq', 21, true);
 
 
 --
@@ -2948,7 +2892,7 @@ SELECT pg_catalog.setval('public.refund_requests_id_seq', 1, false);
 -- Name: shops_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.shops_id_seq', 9, false);
+SELECT pg_catalog.setval('public.shops_id_seq', 1, false);
 
 
 --
@@ -2976,28 +2920,28 @@ SELECT pg_catalog.setval('public.user_notes_id_seq', 1, false);
 -- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.users_id_seq', 30, true);
+SELECT pg_catalog.setval('public.users_id_seq', 1, true);
 
 
 --
 -- Name: vendor_users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.vendor_users_id_seq', 18, false);
+SELECT pg_catalog.setval('public.vendor_users_id_seq', 3, true);
 
 
 --
 -- Name: version_config_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.version_config_id_seq', 2, false);
+SELECT pg_catalog.setval('public.version_config_id_seq', 1, false);
 
 
 --
 -- Name: wishlists_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.wishlists_id_seq', 12, false);
+SELECT pg_catalog.setval('public.wishlists_id_seq', 1, true);
 
 
 --
@@ -3110,14 +3054,6 @@ ALTER TABLE ONLY public.coupons
 
 ALTER TABLE ONLY public.device_access_tokens
     ADD CONSTRAINT device_access_tokens_pkey PRIMARY KEY (id);
-
-
---
--- Name: email_verification_tokens email_verification_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.email_verification_tokens
-    ADD CONSTRAINT email_verification_tokens_pkey PRIMARY KEY (email);
 
 
 --
@@ -3402,12 +3338,11 @@ CREATE INDEX product_variations_product_id_index ON public.product_variations US
 --
 
 REVOKE USAGE ON SCHEMA public FROM PUBLIC;
-GRANT ALL ON SCHEMA public TO PUBLIC;
 
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict MP2UjsadX5oEsh5ir9engWsRr5GjJWB7acCf2SIE3S0lX4QqPfTDpkH4eaBqZGZ
+\unrestrict F2UtdlyqyrEYlyXc8xzcubQfamenOFpb3zJQmGUTx2aaMNthDMMwWO5BuTdGII8
 
