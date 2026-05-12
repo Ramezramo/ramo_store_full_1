@@ -11,12 +11,10 @@ class ConfigAdminController extends Controller
 {
     private function isAdmin(): bool
     {
-        if (!Auth::check()) return false;
-        $adminEmail = DB::table('app_configs')
-            ->where('config_key', 'admin_email')
-            ->value('value');
-        $adminEmail = $adminEmail ? trim(json_decode($adminEmail) ?? $adminEmail, '"') : null;
-        return Auth::user()->email === $adminEmail || Auth::user()->email === 'adminramoui@gmail.com';
+        $user = Auth::user();
+        if (!$user) return false;
+        $roles = is_array($user->role) ? $user->role : json_decode($user->role, true) ?? [];
+        return in_array('admin', $roles);
     }
 
     public function index(Request $request)
