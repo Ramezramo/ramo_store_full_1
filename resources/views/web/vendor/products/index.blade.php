@@ -81,6 +81,10 @@ tr.row-selected > td{background:#fff8f5}
 @keyframes priceFlash{0%{background:#fff3cd}100%{background:transparent}}
 .price-updated{animation:priceFlash .8s ease}
 .disc-badge{font-size:10px;color:var(--orange);font-weight:700;margin-top:2px}
+.var-alert{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;margin-top:3px;white-space:nowrap}
+.var-alert.oos{background:#fee2e2;color:#991b1b}
+.var-alert.backorder{background:#fef9c3;color:#854d0e}
+.var-alert.disabled{background:#f3f4f6;color:#6b7280}
 </style>
 @endpush
 
@@ -174,22 +178,47 @@ tr.row-selected > td{background:#fff8f5}
               </div>
             </td>
             <td>
-              @php $qty = $pr?->total_stock ?? 0; @endphp
-              @if($qty > 10)
-                <span style="color:var(--green);font-weight:600">{{ $qty }}</span>
-              @elseif($qty > 0)
-                <span style="color:var(--yellow);font-weight:600">{{ $qty }}</span>
-              @else
-                <span style="color:var(--red);font-weight:600">0</span>
-              @endif
+              @php
+                $qty     = $pr?->total_stock ?? 0;
+                $alerts  = $varAlerts[$p->id] ?? null;
+                $oosCnt  = (int) ($alerts?->out_of_stock_count ?? 0);
+                $boCnt   = (int) ($alerts?->backorder_count   ?? 0);
+                $disCnt  = (int) ($alerts?->disabled_count    ?? 0);
+              @endphp
+              <div>
+                @if($qty > 10)
+                  <span style="color:var(--green);font-weight:600">{{ $qty }}</span>
+                @elseif($qty > 0)
+                  <span style="color:var(--yellow);font-weight:600">{{ $qty }}</span>
+                @else
+                  <span style="color:var(--red);font-weight:600">0</span>
+                @endif
+                @if($oosCnt > 0)
+                  <div><span class="var-alert oos" title="{{ $oosCnt }} variation{{ $oosCnt !== 1 ? 's' : '' }} out of stock">
+                    ✕ {{ $oosCnt }} out of stock
+                  </span></div>
+                @endif
+                @if($boCnt > 0)
+                  <div><span class="var-alert backorder" title="{{ $boCnt }} variation{{ $boCnt !== 1 ? 's' : '' }} on backorder">
+                    ↻ {{ $boCnt }} backorder
+                  </span></div>
+                @endif
+              </div>
             </td>
             <td>
               @php $vc = $pr?->var_count ?? 0; @endphp
-              @if($vc > 1)
-                <span style="font-size:12px;color:var(--orange);font-weight:600">{{ $vc }} variations</span>
-              @else
-                <span style="font-size:12px;color:var(--mid)">Simple</span>
-              @endif
+              <div>
+                @if($vc > 1)
+                  <span style="font-size:12px;color:var(--orange);font-weight:600">{{ $vc }} variations</span>
+                @else
+                  <span style="font-size:12px;color:var(--mid)">Simple</span>
+                @endif
+                @if($disCnt > 0)
+                  <div><span class="var-alert disabled" title="{{ $disCnt }} variation{{ $disCnt !== 1 ? 's' : '' }} disabled">
+                    ⊘ {{ $disCnt }} disabled
+                  </span></div>
+                @endif
+              </div>
             </td>
             <td><span class="badge-{{ $p->status }}">{{ ucfirst($p->status) }}</span></td>
             <td><span class="badge-{{ $p->acceptance_status ?? 'pending' }}">{{ ucfirst($p->acceptance_status ?? 'pending') }}</span></td>

@@ -36,6 +36,7 @@ class VendorProductController extends Controller
         $ids = $products->pluck('id')->toArray();
 
         $priceRanges = collect();
+        $varAlerts   = collect();
         if (count($ids)) {
             $priceRanges = DB::table('product_variations')
                 ->whereIn('product_id', $ids)
@@ -49,9 +50,21 @@ class VendorProductController extends Controller
                 ->groupBy('product_id')
                 ->get()
                 ->keyBy('product_id');
+
+            $varAlerts = DB::table('product_variations')
+                ->whereIn('product_id', $ids)
+                ->select(
+                    'product_id',
+                    DB::raw("SUM(CASE WHEN stock_status = 'outofstock' THEN 1 ELSE 0 END) as out_of_stock_count"),
+                    DB::raw("SUM(CASE WHEN stock_status = 'onbackorder' THEN 1 ELSE 0 END) as backorder_count"),
+                    DB::raw("SUM(CASE WHEN status = 'draft' THEN 1 ELSE 0 END) as disabled_count")
+                )
+                ->groupBy('product_id')
+                ->get()
+                ->keyBy('product_id');
         }
 
-        return view('web.vendor.products.index', compact('products', 'priceRanges'));
+        return view('web.vendor.products.index', compact('products', 'priceRanges', 'varAlerts'));
     }
 
     // ─────────────────────────────────────────────────────────────────────
