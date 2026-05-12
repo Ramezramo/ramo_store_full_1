@@ -10,6 +10,7 @@ use App\Models\ProductVariation;
 use App\Models\UserNote;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -618,40 +619,6 @@ class OrdersController extends Controller
                     }
                 }],
 
-                // ──────── LINE ITEMS – THIS IS THE KEY PART ────────
-                'line_items' => 'required|array|min:1|max:100',
-                'line_items.*.product_id' => 'required|integer|exists:products_data,id',
-                'line_items.*.quantity' => 'required|integer|min:1|max:999',
-                'line_items.*.main_variation_order' => 'required|boolean',                    // ← must be 0 or 1
-                'line_items.*.variation_id' => 'nullable|integer|exists:product_variations,id',
-
-                // Smart custom rule: variation_id is required ONLY when main_variation_order = 0/false
-                'line_items.*.variation_id' => [
-                    'nullable',
-                    'integer',
-                    'exists:product_variations,id',
-                    function ($attribute, $value, $fail) {
-                        // Get current item index: line_items.0.variation_id → index = 0
-                        $index = explode('.', $attribute)[1];
-
-                        $mainVariationOrder = request()->input("line_items.{$index}.main_variation_order");
-
-                        // If user wants main variation → variation_id must be empty or 0
-                        if ($mainVariationOrder == 1) {
-                            if (! is_null($value) && $value != 0) {
-                                $fail('variation_id should not be sent or must be 0 when main_variation_order is true.');
-                            }
-
-                            return;
-                        }
-
-                        // If NOT main variation → variation_id is REQUIRED and must be valid
-                        if (is_null($value) || $value == 0) {
-                            $fail('variation_id is required when main_variation_order is false.');
-                        }
-                    },
-                ],
-
                 // ──────── SHIPPING LINES ────────
                 'shipping_lines' => 'required|array|min:1|max:5',
                 'shipping_lines.*.method_id' => 'required|string',
@@ -664,6 +631,19 @@ class OrdersController extends Controller
 
             $validatedData = $validator->validated();
             $userId = Auth::id();
+
+            // ──────── Load cart from DB (server-side source of truth) ────────
+            $cartItems = DB::table('cart_items')->where('user_id', $userId)->get();
+            if ($cartItems->isEmpty()) {
+                return $this->failureResponse('Your cart is empty.', 422);
+            }
+
+            $validatedData['line_items'] = $cartItems->map(fn($item) => [
+                'product_id'           => $item->product_id,
+                'variation_id'         => $item->variation_id,
+                'quantity'             => $item->qty,
+                'main_variation_order' => 0,
+            ])->all();
 
             // ──────── STEP 1: Collect IDs ────────
             $productIds = array_column($validatedData['line_items'], 'product_id');
@@ -923,6 +903,9 @@ class OrdersController extends Controller
             $order = Order::create($orderDbData);
 
             $order->update(['number' => $order->id + 2000]);
+
+            // ──────── Clear the user's cart after successful order ────────
+            DB::table('cart_items')->where('user_id', $userId)->delete();
 
             return $this->successResponse($order, 'Order created successfully.');
 
