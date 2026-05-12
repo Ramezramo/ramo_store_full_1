@@ -90,6 +90,14 @@ else
     echo "✓ Database already populated (${TABLE_COUNT} tables)"
 fi
 
+# Fix admin user role (ensure it is stored as JSON array) and set email verified
+PGPASSWORD=$PGPASSWORD psql -h $PGHOST -p $PGPORT -U $PGUSER -d $PGDATABASE -c "
+  UPDATE users
+  SET role = '[\"admin\"]', email_verified_at = COALESCE(email_verified_at, NOW())
+  WHERE email = 'adminramoui@gmail.com' AND (role = 'admin' OR role NOT LIKE '%admin%');
+" 2>/dev/null || true
+echo "✓ Admin user role verified"
+
 # Create required storage directories
 mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache/data storage/app/public
 mkdir -p storage/app/public/products/thumbnails storage/app/public/products/other_images storage/app/public/products/natural_images storage/app/public/products/variations
