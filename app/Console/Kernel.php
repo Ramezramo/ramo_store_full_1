@@ -12,7 +12,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // Remove idempotency keys older than 24 hours — runs once a day at midnight.
+        $schedule->command('idempotency:prune --hours=24')->dailyAt('00:00');
     }
 
     /**
