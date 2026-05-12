@@ -131,10 +131,10 @@ class ReviewController extends Controller
         if (!$review) return response()->json(['success' => false, 'message' => 'Not found.'], 404);
 
         // Must be the reviewer or admin
-        $adminEmail = DB::table('app_configs')->where('config_key', 'admin_email')->value('value');
-        $adminEmail = trim($adminEmail ?? '"adminramoui@gmail.com"', '"');
-        $isAdmin    = Auth::check() && (Auth::user()->email === $adminEmail || Auth::user()->email === 'adminramoui@gmail.com');
-        $isOwner    = Auth::check() && Auth::id() === (int)$review->user_id;
+        $user    = Auth::user();
+        $roles   = $user ? (is_array($user->role) ? $user->role : json_decode($user->role, true) ?? []) : [];
+        $isAdmin = in_array('admin', $roles);
+        $isOwner = Auth::check() && Auth::id() === (int)$review->user_id;
 
         if (!$isOwner && !$isAdmin) {
             return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
