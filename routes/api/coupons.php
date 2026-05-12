@@ -9,8 +9,9 @@ Route::middleware(['auth:sanctum', 'vendor.auth'])->prefix('ramo/coupons')->grou
     Route::get('get/{id}', [CouponController::class, 'show']);
     Route::put('update/{id}', [CouponController::class, 'update'])->middleware('throttle:3,1');
     Route::delete('remove/{id}', [CouponController::class, 'destroy'])->middleware('throttle:3,1');
+});
 
-    // Publicly usable by authenticated users (optional: move to user.php if needed)
+Route::middleware('auth:sanctum')->prefix('ramo/coupons')->group(function () {
     Route::post('/validate', [CouponController::class, 'validateCoupon']);
     Route::post('/apply', [CouponController::class, 'applyCoupon']);
 });

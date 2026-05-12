@@ -257,37 +257,22 @@ class OrdersController extends Controller
      */
     private function getProductImage($item)
     {
-        // Initialize debugger
-        $debuger = 'firststep';
-
         // Priority 1: Direct image from item
         if (isset($item['image']) && is_array($item['image']) && ! empty($item['image'])) {
-            $debuger = 'SUCCESS: Direct image found';
-
             return $item['image'][0]['src'] ?? null;
         }
 
         // Priority 2: Check if product_id exists
         if (isset($item['product_id'])) {
-            $debuger = 'Has product_id: '.$item['product_id'];
-
             $productController = app(ProductController::class);
             $result = $productController->getProductImages($item['product_id'], 'thumbnail');
-            $debuger = 'Controller called';
 
-            // Check if successful and has images
             if (isset($result['success']) && $result['success'] && ! empty($result['images'])) {
-                $debuger = 'SUCCESS: Thumbnail found';
-
-                return $this->image_link.'/'.$result['images'][0] ?? null; // Get first image path
-            } else {
-                $debuger = 'No thumbnail - Result: '.json_encode($result);
+                return $this->image_link.'/'.$result['images'][0] ?? null;
             }
-        } else {
-            $debuger = 'ERROR: No product_id found';
         }
 
-        return $debuger;
+        return null;
     }
 
     public function getAllVendorOrders(Request $request)
