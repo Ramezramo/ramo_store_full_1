@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\WishlistTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class WishlistController extends Controller
 {
+    use WishlistTrait;
+
     public function index()
     {
         $ids      = $this->getWishlistIds();
@@ -60,28 +63,4 @@ class WishlistController extends Controller
         return redirect()->route('wishlist')->with('success', 'Removed from wishlist.');
     }
 
-    private function getWishlistIds(): array
-    {
-        if (Auth::check()) {
-            return DB::table('wishlists')
-                ->where('user_id', Auth::id())
-                ->pluck('product_id')
-                ->map(fn($id) => (int)$id)
-                ->toArray();
-        }
-        return session('ramo_wishlist', []);
-    }
-
-    private function saveWishlistIds(array $ids): void
-    {
-        if (Auth::check()) {
-            $userId = Auth::id();
-            DB::table('wishlists')->where('user_id', $userId)->delete();
-            foreach ($ids as $pid) {
-                DB::table('wishlists')->insert(['user_id' => $userId, 'product_id' => $pid, 'created_at' => now()]);
-            }
-        } else {
-            session(['ramo_wishlist' => $ids]);
-        }
-    }
 }
