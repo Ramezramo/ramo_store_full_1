@@ -9,6 +9,20 @@
       $messageCount += isset($s->messages) ? count($s->messages) : 0;
     }
   }
+
+  // ── Savings calculation ──
+  $saleSavings = 0;
+  foreach ($lineItems as $li) {
+    $regPrice  = floatval($li['variation']['regular_price'] ?? $li['regular_price'] ?? 0);
+    $paidPrice = floatval($li['variation']['price_used']    ?? $li['price']['final'] ?? (is_numeric($li['price'] ?? null) ? $li['price'] : 0));
+    $lineQty   = intval($li['quantity'] ?? 1);
+    if ($regPrice > $paidPrice && $paidPrice > 0) {
+      $saleSavings += ($regPrice - $paidPrice) * $lineQty;
+    }
+  }
+  $couponSavings = floatval($order->discount_total ?? 0);
+  $totalSavings  = $saleSavings + $couponSavings;
+  $couponCode    = $order->coupon_code ?? null;
 @endphp
 
 @section('account-content')
@@ -36,6 +50,44 @@
     <div class="od-row"><span class="od-label">Notes</span><span>{{ $order->customer_note }}</span></div>
   @endif
 </div>
+
+{{-- ── YOU SAVED BANNER ──────────────────────────────────────────── --}}
+@if(!$cancelled && $totalSavings > 0)
+<div style="margin-top:14px;background:linear-gradient(135deg,#dcfce7 0%,#f0fdf4 100%);border:1.5px solid #86efac;border-radius:14px;padding:16px 20px">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+    <div style="font-size:22px">🎉</div>
+    <div>
+      <div style="font-size:15px;font-weight:800;color:#15803d">You saved {{ number_format($totalSavings, 2) }} EGP on this order!</div>
+      <div style="font-size:12px;color:#16a34a;margin-top:2px">Great deal — here's the breakdown:</div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:6px">
+    @if($saleSavings > 0)
+      <div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border-radius:8px;padding:8px 12px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:14px">🏷️</span>
+          <span style="font-size:13px;font-weight:600;color:#15803d">Sale price discount</span>
+        </div>
+        <span style="font-size:13px;font-weight:800;color:#15803d">−{{ number_format($saleSavings, 2) }} EGP</span>
+      </div>
+    @endif
+    @if($couponSavings > 0)
+      <div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border-radius:8px;padding:8px 12px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:14px">🎟️</span>
+          <div>
+            <span style="font-size:13px;font-weight:600;color:#15803d">Coupon</span>
+            @if($couponCode)
+              <span style="margin-left:6px;background:#dcfce7;color:#15803d;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;font-family:monospace;border:1px solid #86efac">{{ strtoupper($couponCode) }}</span>
+            @endif
+          </div>
+        </div>
+        <span style="font-size:13px;font-weight:800;color:#15803d">−{{ number_format($couponSavings, 2) }} EGP</span>
+      </div>
+    @endif
+  </div>
+</div>
+@endif
 
 {{-- ── SHIPPING ADDRESS ─────────────────────────────────────────── --}}
 @if(!empty($billing))

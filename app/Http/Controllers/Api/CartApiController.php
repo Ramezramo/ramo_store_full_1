@@ -47,17 +47,38 @@ class CartApiController extends Controller
             ->where('variation_id', $variationId)
             ->first();
 
-        // Cap: total units of this product across all its rows must not exceed 100
-        $totalQty = DB::table('cart_items')
-            ->where('user_id', $userId)
-            ->where('product_id', $productId)
-            ->sum('qty');
+        // ── Vendor per-order quantity limits ──
+        $product = DB::table('products_data')
+            ->where('id', $productId)
+            ->select('sold_individually', 'minimum_order_qty', 'max_orders_per_person')
+            ->first();
 
-        if ($totalQty + $qty > 100) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You cannot add more than 100 units of the same product to your cart.',
-            ], 422);
+        if ($product) {
+            if ($product->sold_individually) {
+                $alreadyInCart = DB::table('cart_items')
+                    ->where('user_id', $userId)->where('product_id', $productId)->sum('qty');
+                if ($alreadyInCart > 0) {
+                    return response()->json(['success' => false, 'message' => 'This product can only be purchased one at a time.'], 422);
+                }
+            }
+            if ($product->minimum_order_qty > 1 && $qty < $product->minimum_order_qty) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Minimum order quantity for this product is {$product->minimum_order_qty}.",
+                ], 422);
+            }
+        }
+
+        // ── Quantity caps (vendor max takes precedence over the universal 100-unit ceiling) ──
+        $totalQty  = DB::table('cart_items')
+            ->where('user_id', $userId)->where('product_id', $productId)->sum('qty');
+        $vendorMax = ($product && $product->max_orders_per_person > 0) ? (int) $product->max_orders_per_person : 100;
+
+        if ($totalQty + $qty > $vendorMax) {
+            $msg = $vendorMax < 100
+                ? "You can only order up to {$vendorMax} units of this product per order."
+                : 'You cannot add more than 100 units of the same product to your cart.';
+            return response()->json(['success' => false, 'message' => $msg], 422);
         }
 
         // Cap: no more than 50 distinct items (rows) in the cart
@@ -105,11 +126,30 @@ class CartApiController extends Controller
             ->where('id', '!=', $id)
             ->sum('qty');
 
-        if ($otherQty + $r->qty > 100) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You cannot have more than 100 units of the same product in your cart.',
-            ], 422);
+        // ── Vendor per-order quantity limits ──
+        $product = DB::table('products_data')
+            ->where('id', $item->product_id)
+            ->select('sold_individually', 'minimum_order_qty', 'max_orders_per_person')
+            ->first();
+
+        if ($product) {
+            if ($product->sold_individually && $r->qty > 1) {
+                return response()->json(['success' => false, 'message' => 'This product can only be purchased one at a time.'], 422);
+            }
+            if ($product->minimum_order_qty > 1 && $r->qty < $product->minimum_order_qty) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Minimum order quantity for this product is {$product->minimum_order_qty}.",
+                ], 422);
+            }
+        }
+
+        $vendorMax = ($product && $product->max_orders_per_person > 0) ? (int) $product->max_orders_per_person : 100;
+        if ($otherQty + $r->qty > $vendorMax) {
+            $msg = $vendorMax < 100
+                ? "You can only order up to {$vendorMax} units of this product per order."
+                : 'You cannot have more than 100 units of the same product in your cart.';
+            return response()->json(['success' => false, 'message' => $msg], 422);
         }
 
         DB::table('cart_items')->where('id', $id)->update(['qty' => $r->qty, 'updated_at' => now()]);

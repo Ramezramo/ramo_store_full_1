@@ -683,7 +683,7 @@ class OrdersController extends Controller
 
             // ──────── STEP 2: Load Products ────────
             $products = Product::whereIn('id', $productIds)
-                ->select('id', 'name', 'vendor_id', 'sku')
+                ->select('id', 'name', 'vendor_id', 'sku', 'minimum_order_qty', 'max_orders_per_person', 'sold_individually')
                 ->get()
                 ->keyBy('id');
 
@@ -782,6 +782,17 @@ class OrdersController extends Controller
                         $price = floatval($variation->regular_price);
                     } else {
                         $price = floatval($variation->price);
+                    }
+
+                    // ── Vendor per-order quantity limits ──
+                    if ($product->sold_individually && $quantity > 1) {
+                        throw new \InvalidArgumentException("'{$product->name}' can only be purchased one at a time.", 422);
+                    }
+                    if ($product->minimum_order_qty > 1 && $quantity < $product->minimum_order_qty) {
+                        throw new \InvalidArgumentException("Minimum order quantity for '{$product->name}' is {$product->minimum_order_qty}.", 422);
+                    }
+                    if ($product->max_orders_per_person > 0 && $quantity > $product->max_orders_per_person) {
+                        throw new \InvalidArgumentException("You can only order up to {$product->max_orders_per_person} units of '{$product->name}' per order.", 422);
                     }
 
                     // Acquire a row-level lock, re-read stock from DB, then decrement atomically.
