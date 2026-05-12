@@ -308,7 +308,6 @@ class ProductController extends Controller
                 'regular_price' => $regularPrice,
                 'sale_price' => $salePrice,
                 'price' => $finalPrice,
-                'discount_percentage' => $discount,
                 'unit' => [$validated['unit'] => round($validated['unit_amount'])],
                 'product_type' => $validated['product_type'],
                 'type' => $validated['product_type'],
@@ -2117,7 +2116,7 @@ class ProductController extends Controller
 
             // Get the top 2 popular products based on total_sales for the authenticated vendor
             $popularProducts = Product::where('vendor_id', auth()->id())
-                ->orderBy('total_sales', 'asc')
+                ->orderBy('total_sales', 'desc')
                 ->take(2)->select([
                     'id',
                     'name',
