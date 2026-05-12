@@ -705,6 +705,14 @@ class OrdersController extends Controller
                     if (! $variation || $variation->product_id != $productId) {
                         return $this->failureResponse("Invalid variation ID {$item['variation_id']} for product {$productId}.", 422);
                     }
+
+                    if (isset($variation->stock_status) && $variation->stock_status === 'outofstock') {
+                        return $this->failureResponse("The selected variation of {$product->name} is currently out of stock.", 422);
+                    }
+
+                    if (isset($variation->status) && $variation->status !== 'publish') {
+                        return $this->failureResponse("The selected variation of {$product->name} is not available.", 422);
+                    }
                 }
                 // CASE 3: Missing variation info
                 else {
