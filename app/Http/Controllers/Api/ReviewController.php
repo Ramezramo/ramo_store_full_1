@@ -50,10 +50,6 @@ class ReviewController extends Controller
             'body'       => 'required|string|min:5|max:1000',
         ]);
 
-        if (!Auth::check()) {
-            return response()->json(['success' => false, 'message' => 'Authentication required.'], 401);
-        }
-
         $existing = DB::table('product_reviews')
             ->where('user_id', Auth::id())
             ->where('product_id', $r->product_id)
