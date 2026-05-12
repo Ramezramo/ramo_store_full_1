@@ -328,7 +328,7 @@ class ProductController extends Controller
                 'catalog_visibility' => 'visible',
                 'acceptance_status' => 'pending',
                 'sku' => $this->generateUniqueSku(),
-                'on_sale' => true,
+                'on_sale' => $discount > 0,
                 'purchasable' => true,
                 'total_sales' => 0,
                 'virtual' => in_array($validated['product_type'], ['digital']),
@@ -1966,7 +1966,7 @@ class ProductController extends Controller
                 'message' => 'Product sale counter and stock updated successfully',
                 'product_id' => $product_id,
                 'quantity_ordered' => $quantity_ordered,
-                'total_sales' => $product->total_sales + $quantity_ordered, // New total
+                'total_sales' => $product->fresh()->total_sales,
                 'stock_quantity' => $newStockQuantity,
                 'stock_status' => $newStockStatus,
             ];
