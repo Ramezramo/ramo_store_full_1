@@ -671,252 +671,255 @@ class OrdersController extends Controller
                 ->get()
                 ->keyBy('id'); // Critical: fast lookup by ID
 
-            // ──────── STEP 4: Process Line Items ────────
-            $calculatedTotal = 0;
-            $enrichedLineItems = [];
+            // ──────── STEP 4 → Order Creation (transaction with pessimistic locking) ────────
+            $order = DB::transaction(function () use ($validatedData, $userId, $request, $products, $variations) {
+                $calculatedTotal = 0;
+                $enrichedLineItems = [];
 
-            foreach ($validatedData['line_items'] as $item) {
-                $productId = $item['product_id'];
-                $quantity = intval($item['quantity'] ?? 1);
+                foreach ($validatedData['line_items'] as $item) {
+                    $productId = $item['product_id'];
+                    $quantity  = intval($item['quantity'] ?? 1);
 
-                $product = $products->get($productId);
-                if (! $product) {
-                    return $this->failureResponse("Product ID {$productId} not found.", 422);
-                }
-
-                $variation = null;
-                $price = 0.0;
-
-                // CASE 1: User wants the MAIN variation
-                if (! empty($item['main_variation_order'])) {
-                    $variation = $variations
-                        ->where('product_id', $productId)
-                        ->where('main_variation', 1)
-                        ->first();
-
-                    if (! $variation) {
-                        return $this->failureResponse("This product (ID: {$productId}) has no main variation defined.", 422);
-                    }
-                }
-                // CASE 2: Specific variation selected
-                elseif (! empty($item['variation_id']) && $item['variation_id'] != 0) {
-                    $variation = $variations->get($item['variation_id']);
-
-                    if (! $variation || $variation->product_id != $productId) {
-                        return $this->failureResponse("Invalid variation ID {$item['variation_id']} for product {$productId}.", 422);
+                    $product = $products->get($productId);
+                    if (! $product) {
+                        throw new \InvalidArgumentException("Product ID {$productId} not found.", 422);
                     }
 
-                    if (isset($variation->stock_status) && $variation->stock_status === 'outofstock') {
-                        return $this->failureResponse("The selected variation of {$product->name} is currently out of stock.", 422);
+                    $variation = null;
+                    $price     = 0.0;
+
+                    // CASE 1: User wants the MAIN variation
+                    if (! empty($item['main_variation_order'])) {
+                        $variation = $variations
+                            ->where('product_id', $productId)
+                            ->where('main_variation', 1)
+                            ->first();
+
+                        if (! $variation) {
+                            throw new \InvalidArgumentException("This product (ID: {$productId}) has no main variation defined.", 422);
+                        }
+                    }
+                    // CASE 2: Specific variation selected
+                    elseif (! empty($item['variation_id']) && $item['variation_id'] != 0) {
+                        $variation = $variations->get($item['variation_id']);
+
+                        if (! $variation || $variation->product_id != $productId) {
+                            throw new \InvalidArgumentException("Invalid variation ID {$item['variation_id']} for product {$productId}.", 422);
+                        }
+
+                        if (isset($variation->stock_status) && $variation->stock_status === 'outofstock') {
+                            throw new \InvalidArgumentException("The selected variation of {$product->name} is currently out of stock.", 422);
+                        }
+
+                        if (isset($variation->status) && $variation->status !== 'publish') {
+                            throw new \InvalidArgumentException("The selected variation of {$product->name} is not available.", 422);
+                        }
+                    }
+                    // CASE 3: Missing variation info
+                    else {
+                        throw new \InvalidArgumentException("You must provide either 'main_variation_order' or a valid 'variation_id' for product: {$product->name}", 422);
                     }
 
-                    if (isset($variation->status) && $variation->status !== 'publish') {
-                        return $this->failureResponse("The selected variation of {$product->name} is not available.", 422);
+                    // Determine price: sale → regular → fallback
+                    if ($variation->sale_price && $variation->sale_price > 0) {
+                        $price = floatval($variation->sale_price);
+                    } elseif ($variation->regular_price && $variation->regular_price > 0) {
+                        $price = floatval($variation->regular_price);
+                    } else {
+                        $price = floatval($variation->price);
                     }
-                }
-                // CASE 3: Missing variation info
-                else {
-                    return $this->failureResponse("You must provide either 'main_variation_order' or a valid 'variation_id' for product: {$product->name}", 422);
-                }
 
-                // Determine price: sale → regular → fallback
-                if ($variation->sale_price && $variation->sale_price > 0) {
-                    $price = floatval($variation->sale_price);
-                } elseif ($variation->regular_price && $variation->regular_price > 0) {
-                    $price = floatval($variation->regular_price);
-                } else {
-                    $price = floatval($variation->price);
-                }
+                    // Acquire a row-level lock, re-read stock from DB, then decrement atomically.
+                    // This prevents overselling when two requests race on the same variation.
+                    if ($variation->manage_stock == 1) {
+                        $lockedVariation = ProductVariation::where('id', $variation->id)->lockForUpdate()->first();
+                        if ($lockedVariation->stock_quantity < $quantity) {
+                            throw new \InvalidArgumentException("Insufficient stock for {$product->name}. Only {$lockedVariation->stock_quantity} left.", 422);
+                        }
+                        $lockedVariation->decrement('stock_quantity', $quantity);
+                    }
 
-                // Stock check
-                if ($variation->manage_stock == 1 && (! is_null($variation->stock_quantity) && $variation->stock_quantity < $quantity)) {
-                    return $this->failureResponse("Insufficient stock. Only {$variation->stock_quantity} left for this variation of {$product->name}.", 422);
-                }
+                    $subtotal         = $price * $quantity;
+                    $calculatedTotal += $subtotal;
 
-                // Deduct stock
-                if ($variation->manage_stock == 1) {
-                    $variation->decrement('stock_quantity', $quantity);
-                }
-
-                $subtotal = $price * $quantity;
-                $calculatedTotal += $subtotal;
-
-                $enrichedLineItems[] = [
-                    'item' => $item,
-                    'product' => $product,
-                    'variation' => $variation,
-                    'price_used' => $price,
-                    'subtotal' => $subtotal,
-                    'quantity' => $quantity,
-                ];
-            }
-
-            $originalTotalFormatted = number_format($calculatedTotal, 2, '.', '');
-
-            // ──────── Coupon Logic (Unchanged) ────────
-            $couponController = app(CouponController::class);
-            $discountTotal = '0.00';
-            $finalTotal = $calculatedTotal;
-            $finalTotalFormatted = number_format($finalTotal, 2, '.', '');
-            $couponLines = [];
-            $couponData = null;
-            $appliedCoupon = null;
-
-            if (! empty($validatedData['coupon'])) {
-                $couponCode = strtoupper(trim($validatedData['coupon']));
-
-                // ──────── Use the NEW robust local method ────────
-                $couponResult = $couponController->applyCouponLocally(
-                    code: $couponCode,
-                    cartTotal: $calculatedTotal,
-                    userId: $userId
-                );
-
-                if (! $couponResult['success']) {
-                    return $this->failureResponse($couponResult['message'], $couponResult['code']);
-                }
-
-                // Extract successfully applied data
-                $resultData = $couponResult['data'];
-
-                $appliedCoupon = $resultData['coupon']; // already converted via couponToArray()
-                $discountAmount = $resultData['discount_amount'];
-                $newTotal = $resultData['new_total'];
-
-                $discountTotal = number_format($discountAmount, 2, '.', '');
-                $finalTotal = $newTotal;
-                $finalTotalFormatted = number_format($finalTotal, 2, '.', '');
-
-                $couponLines = [[
-                    'code' => $couponCode,
-                    'cart_total_before_discount' => $calculatedTotal,
-                    'cart_final_total' => $finalTotal,
-                    'discount' => $discountTotal,
-                ]];
-
-                // Save full coupon data (already clean from couponToArray())
-                $couponData = $appliedCoupon;
-                $couponData['amount'] = (string) ($couponData['amount'] ?? 0);
-            }
-            $finalTotalFormatted = number_format($finalTotal, 2, '.', '');
-            $timeLine = [['event' => 'order_placed',
-                'timestamp' => now(),
-                'status' => 'Order Placed']];
-            // will make a changes in the change order status to add more events
-            // ──────── Vendor Info ────────
-            $vendorIds = $products->pluck('vendor_id')->unique()->filter()->values()->all();
-            $vendorsById = [];
-            foreach ($vendorIds as $vendorId) {
-                $vendorsById[$vendorId] = $this->shopController->getUserLocally($vendorId);
-            }
-
-            $orderDbData = [
-                'set_paid' => false,
-                'parent_id' => 0,
-                'timeline' => $timeLine,
-                'status' => 'order_placed',
-                'currency' => $validatedData['currency'],
-                'version' => '0.0.0',
-                'prices_include_tax' => false,
-                'date_created' => now(),
-                'date_modified' => now(),
-                'original_total' => $originalTotalFormatted,
-                'discount_total' => $discountTotal,
-                'discount_tax' => '0.00',
-                'shipping_total' => '0.00',
-                'shipping_tax' => '0.00',
-                'cart_tax' => '0.00',
-                'total_tax' => '0.00',
-                'final_total' => $finalTotalFormatted,
-                'customer_id' => $userId,
-                'order_key' => 'RAMORDER'.Str::upper(Str::random(8)).now()->format('ymd'),
-                'billing' => $validatedData['billing'],
-                'shipping' => $validatedData['shipping'],
-                'payment_method' => $validatedData['payment_method'],
-                'payment_method_title' => $validatedData['payment_method_title'],
-                'transaction_id' => '',
-                'customer_ip_address' => $request->ip(),
-                'customer_userAgent' => $request->userAgent(),
-                'created_via' => 'flutter-api',
-                'customer_note' => $validatedData['customer_note'] ?? '',
-                'cart_hash' => '',
-                'number' => 0,
-                'coupon_code' => $validatedData['coupon'] ?? null,
-                'coupon_applied' => ! empty($couponLines),
-                'meta_data' => ! empty($couponData) ? [['key' => '_coupon_data', 'value' => $couponData]] : [],
-                'line_items' => collect($this->buildLineItems($enrichedLineItems))->map(function ($line) use ($variations) {
-                    $variation = ($line['variation_id'] ?? 0) ? ($variations->get($line['variation_id']) ?? null) : null;
-
-                    return [
-                        'product_id' => $line['product_id'],
-                        'variation_id' => $line['variation_id'] ?? 0,
-                        'name' => $line['name'],
-                        'quantity' => $line['quantity'],
-                        'sku' => $line['sku'],
-                        'image' => $line['image']['src'] ?? null,
-
-                        // Price breakdown
-                        'price' => [
-                            'final' => $line['price'],                    // price actually charged per item
-                            'subtotal' => $line['subtotal'],
-                            'total' => $line['total'],
-                        ],
-
-                        // Detailed variation info
-                        'variation' => $variation ? [
-                            'id' => $variation->id,
-                            'attributes' => $variation->attributes ?? [],        // e.g. ["size" => "XL", "color" => "Black"]
-                            'regular_price' => $variation->regular_price ? number_format($variation->regular_price, 2, '.', '') : null,
-                            'sale_price' => $variation->sale_price ? number_format($variation->sale_price, 2, '.', '') : null,
-                            'base_price' => $variation->price ? number_format($variation->price, 2, '.', '') : null,
-                            'price_used' => $line['price'], // shows which one was actually applied
-                            'stock_quantity' => $variation->stock_quantity,
-                            'images' => $variation->images ?? [],
-                        ] : null,
-
-                        // Raw meta data (attributes as separate entries)
-                        'meta_data' => $line['meta_data'] ?? [],
+                    $enrichedLineItems[] = [
+                        'item'       => $item,
+                        'product'    => $product,
+                        'variation'  => $variation,
+                        'price_used' => $price,
+                        'subtotal'   => $subtotal,
+                        'quantity'   => $quantity,
                     ];
-                })->values()->all(),
-                'tax_lines' => [],
-                'shipping_lines' => $validatedData['shipping_lines'],
-                'fee_lines' => [],
-                'coupon_lines' => $couponLines,
-                'refunds' => [],
-                'payment_url' => '',
-                'is_editable' => true,
-                'needs_payment' => true,
-                'needs_processing' => true,
-                'date_created_gmt' => now(),
-                'date_modified_gmt' => now(),
-                'date_completed_gmt' => '1970-01-01 00:00:00',
-                'date_paid_gmt' => '1970-01-01 00:00:00',
-                'bacs_info' => [[
-                    'account_name' => 'TEST RAMO', 'account_number' => '1212121212121212',
-                    'bank_name' => 'FARMERS STATE BANK & TRUST', 'sort_code' => '12121212',
-                    'iban' => 'TSTSTSTSTSTSSTTSTSTSTSSTST', 'bic' => 'TSTSTSTST',
-                ]],
-                'currency_symbol' => $validatedData['currency'] === 'EGP' ? 'EGP' : '$',
-                '_links' => [
-                    'self' => [['href' => 'https://ramo.io/wp-json/api/flutter_order/orders/']],
-                    'collection' => [['href' => 'https://ramo.io/wp-json/api/flutter_order/orders']],
-                    'customer' => [['href' => "https://ramo.io/wp-json/api/flutter_order/customers/{$userId}"]],
-                ],
-                'parent_vendors_data' => $vendorsById,
-                'parent_vendors_ids' => array_keys($vendorsById),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
-            // ──────── Create Order ────────
-            $order = Order::create($orderDbData);
+                }
 
-            $order->update(['number' => $order->id + 2000]);
+                $originalTotalFormatted = number_format($calculatedTotal, 2, '.', '');
 
-            // ──────── Clear the user's cart after successful order ────────
-            DB::table('cart_items')->where('user_id', $userId)->delete();
+                // ──────── Coupon Logic ────────
+                $couponController = app(CouponController::class);
+                $discountTotal        = '0.00';
+                $finalTotal           = $calculatedTotal;
+                $finalTotalFormatted  = number_format($finalTotal, 2, '.', '');
+                $couponLines          = [];
+                $couponData           = null;
+                $appliedCoupon        = null;
+
+                if (! empty($validatedData['coupon'])) {
+                    $couponCode = strtoupper(trim($validatedData['coupon']));
+
+                    $couponResult = $couponController->applyCouponLocally(
+                        code: $couponCode,
+                        cartTotal: $calculatedTotal,
+                        userId: $userId
+                    );
+
+                    if (! $couponResult['success']) {
+                        throw new \InvalidArgumentException($couponResult['message'], $couponResult['code'] ?: 422);
+                    }
+
+                    $resultData    = $couponResult['data'];
+                    $appliedCoupon = $resultData['coupon'];
+                    $discountAmount = $resultData['discount_amount'];
+                    $newTotal      = $resultData['new_total'];
+
+                    $discountTotal       = number_format($discountAmount, 2, '.', '');
+                    $finalTotal          = $newTotal;
+                    $finalTotalFormatted = number_format($finalTotal, 2, '.', '');
+
+                    $couponLines = [[
+                        'code'                      => $couponCode,
+                        'cart_total_before_discount' => $calculatedTotal,
+                        'cart_final_total'           => $finalTotal,
+                        'discount'                  => $discountTotal,
+                    ]];
+
+                    $couponData           = $appliedCoupon;
+                    $couponData['amount'] = (string) ($couponData['amount'] ?? 0);
+                }
+                $finalTotalFormatted = number_format($finalTotal, 2, '.', '');
+                $timeLine = [['event' => 'order_placed',
+                    'timestamp' => now(),
+                    'status'    => 'Order Placed']];
+                // will make a changes in the change order status to add more events
+                // ──────── Vendor Info ────────
+                $vendorIds  = $products->pluck('vendor_id')->unique()->filter()->values()->all();
+                $vendorsById = [];
+                foreach ($vendorIds as $vendorId) {
+                    $vendorsById[$vendorId] = $this->shopController->getUserLocally($vendorId);
+                }
+
+                $orderDbData = [
+                    'set_paid'            => false,
+                    'parent_id'           => 0,
+                    'timeline'            => $timeLine,
+                    'status'              => 'order_placed',
+                    'currency'            => $validatedData['currency'],
+                    'version'             => '0.0.0',
+                    'prices_include_tax'  => false,
+                    'date_created'        => now(),
+                    'date_modified'       => now(),
+                    'original_total'      => $originalTotalFormatted,
+                    'discount_total'      => $discountTotal,
+                    'discount_tax'        => '0.00',
+                    'shipping_total'      => '0.00',
+                    'shipping_tax'        => '0.00',
+                    'cart_tax'            => '0.00',
+                    'total_tax'           => '0.00',
+                    'final_total'         => $finalTotalFormatted,
+                    'customer_id'         => $userId,
+                    'order_key'           => 'RAMORDER'.Str::upper(Str::random(8)).now()->format('ymd'),
+                    'billing'             => $validatedData['billing'],
+                    'shipping'            => $validatedData['shipping'],
+                    'payment_method'      => $validatedData['payment_method'],
+                    'payment_method_title' => $validatedData['payment_method_title'],
+                    'transaction_id'      => '',
+                    'customer_ip_address' => $request->ip(),
+                    'customer_userAgent'  => $request->userAgent(),
+                    'created_via'         => 'flutter-api',
+                    'customer_note'       => $validatedData['customer_note'] ?? '',
+                    'cart_hash'           => '',
+                    'number'              => 0,
+                    'coupon_code'         => $validatedData['coupon'] ?? null,
+                    'coupon_applied'      => ! empty($couponLines),
+                    'meta_data'           => ! empty($couponData) ? [['key' => '_coupon_data', 'value' => $couponData]] : [],
+                    'line_items'          => collect($this->buildLineItems($enrichedLineItems))->map(function ($line) use ($variations) {
+                        $variation = ($line['variation_id'] ?? 0) ? ($variations->get($line['variation_id']) ?? null) : null;
+
+                        return [
+                            'product_id'   => $line['product_id'],
+                            'variation_id' => $line['variation_id'] ?? 0,
+                            'name'         => $line['name'],
+                            'quantity'     => $line['quantity'],
+                            'sku'          => $line['sku'],
+                            'image'        => $line['image']['src'] ?? null,
+
+                            // Price breakdown
+                            'price' => [
+                                'final'    => $line['price'],
+                                'subtotal' => $line['subtotal'],
+                                'total'    => $line['total'],
+                            ],
+
+                            // Detailed variation info
+                            'variation' => $variation ? [
+                                'id'             => $variation->id,
+                                'attributes'     => $variation->attributes ?? [],
+                                'regular_price'  => $variation->regular_price ? number_format($variation->regular_price, 2, '.', '') : null,
+                                'sale_price'     => $variation->sale_price ? number_format($variation->sale_price, 2, '.', '') : null,
+                                'base_price'     => $variation->price ? number_format($variation->price, 2, '.', '') : null,
+                                'price_used'     => $line['price'],
+                                'stock_quantity' => $variation->stock_quantity,
+                                'images'         => $variation->images ?? [],
+                            ] : null,
+
+                            // Raw meta data
+                            'meta_data' => $line['meta_data'] ?? [],
+                        ];
+                    })->values()->all(),
+                    'tax_lines'          => [],
+                    'shipping_lines'     => $validatedData['shipping_lines'],
+                    'fee_lines'          => [],
+                    'coupon_lines'       => $couponLines,
+                    'refunds'            => [],
+                    'payment_url'        => '',
+                    'is_editable'        => true,
+                    'needs_payment'      => true,
+                    'needs_processing'   => true,
+                    'date_created_gmt'   => now(),
+                    'date_modified_gmt'  => now(),
+                    'date_completed_gmt' => '1970-01-01 00:00:00',
+                    'date_paid_gmt'      => '1970-01-01 00:00:00',
+                    'bacs_info'          => [[
+                        'account_name'  => 'TEST RAMO', 'account_number' => '1212121212121212',
+                        'bank_name'     => 'FARMERS STATE BANK & TRUST', 'sort_code' => '12121212',
+                        'iban'          => 'TSTSTSTSTSTSSTTSTSTSTSSTST', 'bic' => 'TSTSTSTST',
+                    ]],
+                    'currency_symbol'     => $validatedData['currency'] === 'EGP' ? 'EGP' : '$',
+                    '_links'             => [
+                        'self'       => [['href' => 'https://ramo.io/wp-json/api/flutter_order/orders/']],
+                        'collection' => [['href' => 'https://ramo.io/wp-json/api/flutter_order/orders']],
+                        'customer'   => [['href' => "https://ramo.io/wp-json/api/flutter_order/customers/{$userId}"]],
+                    ],
+                    'parent_vendors_data' => $vendorsById,
+                    'parent_vendors_ids'  => array_keys($vendorsById),
+                    'created_at'          => now(),
+                    'updated_at'          => now(),
+                ];
+
+                // ──────── Create Order ────────
+                $order = Order::create($orderDbData);
+                $order->update(['number' => $order->id + 2000]);
+
+                // ──────── Clear the user's cart after successful order ────────
+                DB::table('cart_items')->where('user_id', $userId)->delete();
+
+                return $order;
+            });
 
             return $this->successResponse($order, 'Order created successfully.');
 
+        } catch (\InvalidArgumentException $e) {
+            // User-facing validation errors (bad input, out of stock, etc.) — no server log needed
+            return $this->failureResponse($e->getMessage(), $e->getCode() ?: 422);
         } catch (\Exception $e) {
             Log::error('Order creation failed: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
 
