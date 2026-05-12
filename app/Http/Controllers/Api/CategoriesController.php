@@ -34,14 +34,10 @@ class CategoriesController extends Controller
         
         // Check if validation fails
         if ($validator->fails()) {
-              ResponseHandlerRam::validationError(
-            errors: $validator->errors(),
-            message: 'Validation failed'
-        );
- 
-            // return response()->json([
-            //     'error' => $validator->errors()
-            // ], 400);
+            return ResponseHandlerRam::validationError(
+                errors: $validator->errors(),
+                message: 'Validation failed'
+            );
         }
 
         $validatedData = $validator->validated();
