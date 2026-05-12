@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Helpers\AuthConfig;
+use App\Http\Traits\CartTrait;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,6 +15,8 @@ use Illuminate\Support\Str;
 
 class AuthWebController extends Controller
 {
+    use CartTrait;
+
     public function showLogin()
     {
         if (Auth::check()) return redirect()->route('account.profile');
@@ -28,10 +31,6 @@ class AuthWebController extends Controller
             'password' => 'required|string',
         ]);
 
-        // Capture guest session data before session regeneration
-        $guestCart     = session('ramo_cart', []);
-        $guestWishlist = session('ramo_wishlist', []);
-
         if (Auth::attempt(['email' => $r->email, 'password' => $r->password], $r->boolean('remember'))) {
             $r->session()->regenerate();
             $user = Auth::user();
@@ -40,68 +39,12 @@ class AuthWebController extends Controller
                 return redirect()->route('email.verify.notice');
             }
 
-            // Merge guest cart into DB cart
-            $this->mergeGuestCartToDb($user->id, $guestCart);
-
-            // Merge guest wishlist into DB wishlist
-            $this->mergeGuestWishlistToDb($user->id, $guestWishlist);
-
-            // Clear session cart/wishlist (now stored in DB)
-            session()->forget(['ramo_cart', 'ramo_wishlist', 'ramo_coupon']);
+            $this->mergeGuestSessionOnLogin($user->id);
 
             return redirect()->intended(route('account.profile'));
         }
 
         return back()->withErrors(['email' => 'Invalid email or password.'])->withInput();
-    }
-
-    private function mergeGuestCartToDb(int $userId, array $guestCart): void
-    {
-        if (empty($guestCart)) return;
-
-        foreach ($guestCart as $item) {
-            $existing = DB::table('cart_items')
-                ->where('user_id', $userId)
-                ->where('product_id', $item['product_id'])
-                ->where('variation_id', $item['variation_id'] ?? null)
-                ->first();
-
-            if ($existing) {
-                DB::table('cart_items')->where('id', $existing->id)->update([
-                    'qty'        => min($existing->qty + $item['qty'], $item['stock'] ?? 999),
-                    'updated_at' => now(),
-                ]);
-            } else {
-                DB::table('cart_items')->insert([
-                    'user_id'      => $userId,
-                    'product_id'   => $item['product_id'],
-                    'variation_id' => $item['variation_id'] ?? null,
-                    'qty'          => $item['qty'],
-                    'created_at'   => now(),
-                    'updated_at'   => now(),
-                ]);
-            }
-        }
-    }
-
-    private function mergeGuestWishlistToDb(int $userId, array $guestWishlist): void
-    {
-        if (empty($guestWishlist)) return;
-
-        foreach ($guestWishlist as $productId) {
-            $exists = DB::table('wishlists')
-                ->where('user_id', $userId)
-                ->where('product_id', $productId)
-                ->exists();
-
-            if (!$exists) {
-                DB::table('wishlists')->insert([
-                    'user_id'    => $userId,
-                    'product_id' => $productId,
-                    'created_at' => now(),
-                ]);
-            }
-        }
     }
 
     public function showRegister()
@@ -119,9 +62,6 @@ class AuthWebController extends Controller
             'phone'      => 'required|string|max:20',
             'password'   => 'required|string|min:6|confirmed',
         ]);
-
-        $guestCart     = session('ramo_cart', []);
-        $guestWishlist = session('ramo_wishlist', []);
 
         $user = User::create([
             'name'                => $r->first_name . ' ' . $r->last_name,
@@ -145,10 +85,7 @@ class AuthWebController extends Controller
         Auth::login($user);
         $r->session()->regenerate();
 
-        // Merge any guest session data into the new account
-        $this->mergeGuestCartToDb($user->id, $guestCart);
-        $this->mergeGuestWishlistToDb($user->id, $guestWishlist);
-        session()->forget(['ramo_cart', 'ramo_wishlist', 'ramo_coupon']);
+        $this->mergeGuestSessionOnLogin($user->id);
 
         return redirect()->intended(route('account.profile'));
     }

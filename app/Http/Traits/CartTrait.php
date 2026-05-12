@@ -100,4 +100,60 @@ trait CartTrait
             ]);
         }
     }
+
+    protected function mergeGuestCartToDb(int $userId, array $guestCart): void
+    {
+        if (empty($guestCart)) return;
+
+        foreach ($guestCart as $item) {
+            $existing = DB::table('cart_items')
+                ->where('user_id', $userId)
+                ->where('product_id', $item['product_id'])
+                ->where('variation_id', $item['variation_id'] ?? null)
+                ->first();
+
+            if ($existing) {
+                DB::table('cart_items')->where('id', $existing->id)->update([
+                    'qty'        => min($existing->qty + $item['qty'], $item['stock'] ?? 999),
+                    'updated_at' => now(),
+                ]);
+            } else {
+                DB::table('cart_items')->insert([
+                    'user_id'      => $userId,
+                    'product_id'   => $item['product_id'],
+                    'variation_id' => $item['variation_id'] ?? null,
+                    'qty'          => $item['qty'],
+                    'created_at'   => now(),
+                    'updated_at'   => now(),
+                ]);
+            }
+        }
+    }
+
+    protected function mergeGuestWishlistToDb(int $userId, array $guestWishlist): void
+    {
+        if (empty($guestWishlist)) return;
+
+        foreach ($guestWishlist as $productId) {
+            $exists = DB::table('wishlists')
+                ->where('user_id', $userId)
+                ->where('product_id', $productId)
+                ->exists();
+
+            if (!$exists) {
+                DB::table('wishlists')->insert([
+                    'user_id'    => $userId,
+                    'product_id' => $productId,
+                    'created_at' => now(),
+                ]);
+            }
+        }
+    }
+
+    protected function mergeGuestSessionOnLogin(int $userId): void
+    {
+        $this->mergeGuestCartToDb($userId, session('ramo_cart', []));
+        $this->mergeGuestWishlistToDb($userId, session('ramo_wishlist', []));
+        session()->forget(['ramo_cart', 'ramo_wishlist', 'ramo_coupon']);
+    }
 }
