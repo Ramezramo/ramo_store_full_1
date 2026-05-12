@@ -3,5 +3,4 @@
 use App\Http\Controllers\ConfigController;
 use Illuminate\Support\Facades\Route;
 
-// Warning: This should be protected by proper admin middleware!
-Route::post('ramo/config-storing', [ConfigController::class, 'uploadConfig']);
+Route::middleware('auth:sanctum')->post('ramo/config-storing', [ConfigController::class, 'uploadConfig']);

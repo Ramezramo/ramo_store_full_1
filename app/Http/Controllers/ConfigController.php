@@ -10,6 +10,15 @@ class ConfigController extends Controller
 {
     public function uploadConfig(Request $request)
     {
+        $user = $request->user();
+        $roles = is_array($user->role) ? $user->role : json_decode($user->role, true) ?? [];
+        if (!in_array('admin', $roles)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Forbidden: admin access required.',
+            ], 403);
+        }
+
         $response = [
             'success' => false,
             'message' => '',
