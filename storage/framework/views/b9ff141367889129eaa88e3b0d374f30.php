@@ -243,6 +243,16 @@
         $imgHeight   = isset($sec['imageHeight']) ? (int)$sec['imageHeight'] : (isset($sec['imageRatio']) ? round($prodWidth * (float)$sec['imageRatio']) : 230);
         $cardRadius  = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 12;
         $secId       = 'sg-'.$si;
+        $cardOptions = [
+          'showBadge'     => $sec['showBadge']     ?? true,
+          'showWishlist'  => $sec['showWishlist']  ?? true,
+          'showSwatches'  => $sec['showSwatches']  ?? true,
+          'showSizes'     => $sec['showSizes']     ?? true,
+          'showOldPrice'  => $sec['showOldPrice']  ?? true,
+          'showAddToCart' => $sec['showAddToCart'] ?? true,
+          'showCoupon'    => $sec['showCoupon']    ?? true,
+          'showRating'    => $sec['showRating']    ?? false,
+        ];
       ?>
       <?php if($products->count()): ?>
       <style>
@@ -257,7 +267,7 @@
       </div>
       <div class="product-grid" id="<?php echo e($secId); ?>" style="grid-template-columns:repeat(auto-fill,minmax(<?php echo e($prodWidth); ?>px,1fr));margin-bottom:40px">
         <?php $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $p): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-        <?php echo $__env->make('web.partials.product-card', ['p' => $p, 'cardVariations' => $sectionVariations[$p->id] ?? []], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+        <?php echo $__env->make('web.partials.product-card', ['p' => $p, 'cardVariations' => $sectionVariations[$p->id] ?? [], 'cardOptions' => $cardOptions], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
       </div>
       <?php endif; ?>
@@ -271,6 +281,16 @@
         $prodWidth  = (int)($sec['productWidth'] ?? 140);
         $imgHeight  = isset($sec['imageHeight']) ? max(60, (int)$sec['imageHeight']) : (isset($sec['imageRatio']) ? max(60, round($prodWidth * (float)$sec['imageRatio'])) : 196);
         $cardRadius = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 10;
+        $cardOptions = [
+          'showBadge'     => $sec['showBadge']     ?? true,
+          'showWishlist'  => $sec['showWishlist']  ?? true,
+          'showSwatches'  => $sec['showSwatches']  ?? true,
+          'showSizes'     => $sec['showSizes']     ?? true,
+          'showOldPrice'  => $sec['showOldPrice']  ?? true,
+          'showAddToCart' => $sec['showAddToCart'] ?? true,
+          'showCoupon'    => $sec['showCoupon']    ?? true,
+          'showRating'    => $sec['showRating']    ?? false,
+        ];
       ?>
       <?php if($products->count()): ?>
       <div class="sec-head">
@@ -281,27 +301,11 @@
         <div class="tl-scroll-track">
           <?php $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $p): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
           <div class="tl-scroll-card" style="width:<?php echo e($prodWidth); ?>px">
-            <div class="product-card" style="border-radius:<?php echo e($cardRadius); ?>px">
-              <a href="<?php echo e(route('product', $p->id)); ?>" class="product-card-img" style="height:<?php echo e($imgHeight); ?>px;border-radius:<?php echo e($cardRadius); ?>px <?php echo e($cardRadius); ?>px 0 0">
-                <?php if($p->thumbnail_url): ?>
-                  <img src="<?php echo e($p->thumbnail_url); ?>" alt="<?php echo e($p->name); ?>" loading="lazy">
-                <?php else: ?>
-                  <div class="placeholder">🛍️</div>
-                <?php endif; ?>
-                <?php if($p->on_sale): ?><span class="badge-sale">SALE</span><?php endif; ?>
-                <button class="wish-btn" onclick="event.preventDefault();toggleWishlist(this,<?php echo e($p->id); ?>)" title="Wishlist">♡</button>
-              </a>
-              <div class="product-card-body" style="padding:8px">
-                <a href="<?php echo e(route('product', $p->id)); ?>" class="product-card-name" style="font-size:12px"><?php echo e(Str::limit($p->name, 28)); ?></a>
-                <div class="product-card-price">
-                  <?php if($p->on_sale): ?>
-                    <span class="price-main sale" style="font-size:12px"><?php echo e(number_format($p->sale_price, 0)); ?> EGP</span>
-                  <?php else: ?>
-                    <span class="price-main" style="font-size:12px"><?php echo e(number_format($p->price, 0)); ?> EGP</span>
-                  <?php endif; ?>
-                </div>
-              </div>
-            </div>
+            <?php echo $__env->make('web.partials.product-card', [
+              'p'            => $p,
+              'cardVariations' => $sectionVariations[$p->id] ?? [],
+              'cardOptions'  => $cardOptions,
+            ], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
           </div>
           <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
         </div>
@@ -318,6 +322,16 @@
         $imgHeight  = isset($sec['imageHeight']) ? (int)$sec['imageHeight'] : (isset($sec['imageRatio']) ? round($prodWidth * (float)$sec['imageRatio']) : 200);
         $cardRadius = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 10;
         $secId      = 'sg-'.$si;
+        $cardOptions = [
+          'showBadge'     => $sec['showBadge']     ?? true,
+          'showWishlist'  => $sec['showWishlist']  ?? true,
+          'showSwatches'  => $sec['showSwatches']  ?? true,
+          'showSizes'     => $sec['showSizes']     ?? true,
+          'showOldPrice'  => $sec['showOldPrice']  ?? true,
+          'showAddToCart' => $sec['showAddToCart'] ?? true,
+          'showCoupon'    => $sec['showCoupon']    ?? true,
+          'showRating'    => $sec['showRating']    ?? false,
+        ];
       ?>
       <?php if($products->count()): ?>
       <style>
@@ -332,7 +346,7 @@
       </div>
       <div class="product-grid" id="<?php echo e($secId); ?>" style="grid-template-columns:repeat(auto-fill,minmax(<?php echo e($prodWidth); ?>px,1fr));margin-bottom:40px">
         <?php $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $p): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-        <?php echo $__env->make('web.partials.product-card', ['p' => $p, 'cardVariations' => $sectionVariations[$p->id] ?? []], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+        <?php echo $__env->make('web.partials.product-card', ['p' => $p, 'cardVariations' => $sectionVariations[$p->id] ?? [], 'cardOptions' => $cardOptions], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
       </div>
       <?php endif; ?>

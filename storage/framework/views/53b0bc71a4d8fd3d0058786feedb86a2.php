@@ -1,6 +1,15 @@
 <?php
   $pid = $p->id;
   $vars = collect($cardVariations ?? []);
+  $co = $cardOptions ?? [];
+  $coShowBadge     = $co['showBadge']     ?? true;
+  $coShowWishlist  = $co['showWishlist']  ?? true;
+  $coShowSwatches  = $co['showSwatches']  ?? true;
+  $coShowSizes     = $co['showSizes']     ?? true;
+  $coShowOldPrice  = $co['showOldPrice']  ?? true;
+  $coShowAddToCart = $co['showAddToCart'] ?? true;
+  $coShowCoupon    = $co['showCoupon']    ?? true;
+  $coShowRating    = $co['showRating']    ?? false;
 
   /* ── Build color & size maps ────────────────── */
   $colorMap  = [];
@@ -63,7 +72,7 @@
     <?php else: ?>
       <div class="placeholder" id="pc-img-<?php echo e($pid); ?>">🛍️</div>
     <?php endif; ?>
-    <?php if($p->on_sale): ?>
+    <?php if($coShowBadge && $p->on_sale): ?>
       <?php if(!empty($p->flash_sale)): ?>
         <span class="badge-sale badge-flash">⚡ <?php echo e(round($p->flash_discount_pct)); ?>% OFF</span>
       <?php elseif($p->discount_percentage > 0): ?>
@@ -72,14 +81,30 @@
         <span class="badge-sale">SALE</span>
       <?php endif; ?>
     <?php endif; ?>
+    <?php if($coShowWishlist): ?>
     <button class="wish-btn" onclick="event.preventDefault();toggleWishlist(this,<?php echo e($pid); ?>)" title="Wishlist">♡</button>
+    <?php endif; ?>
   </a>
 
   <div class="product-card-body">
     <a href="<?php echo e(route('product', $pid)); ?>" class="product-card-name"><?php echo e($p->name); ?></a>
 
+    <?php if($coShowRating): ?>
+    <?php
+      $__avgRating = \Illuminate\Support\Facades\DB::table('product_reviews')
+        ->where('product_id', $pid)->where('approved', true)->avg('rating') ?? 0;
+      $__avgRating = round((float)$__avgRating, 1);
+    ?>
+    <?php if($__avgRating > 0): ?>
+    <div class="pc-rating-row">
+      <?php for($__s=1;$__s<=5;$__s++): ?><span style="color:<?php echo e($__s<=round($__avgRating)?'#f5a623':'#ddd'); ?>;font-size:11px">★</span><?php endfor; ?>
+      <span style="font-size:11px;color:#666;margin-left:3px"><?php echo e($__avgRating); ?></span>
+    </div>
+    <?php endif; ?>
+    <?php endif; ?>
+
     
-    <?php if($hasColors): ?>
+    <?php if($coShowSwatches && $hasColors): ?>
     <div class="pc-swatches" id="pc-swatches-<?php echo e($pid); ?>">
       <?php $__currentLoopData = $colorMap; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $colorName => $cdata): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
       <button class="pc-swatch"
@@ -96,7 +121,7 @@
     <div class="pc-selected" id="pc-selected-<?php echo e($pid); ?>" aria-live="polite"></div>
 
     
-    <?php if($hasSizes): ?>
+    <?php if($coShowSizes && $hasSizes): ?>
     <div class="pc-sizes" id="pc-sizes-<?php echo e($pid); ?>">
       <?php $__currentLoopData = $sizeList; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $sz): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
       <button class="pc-size"
@@ -113,21 +138,25 @@
     <div class="product-card-price">
       <?php if($p->on_sale): ?>
         <span class="price-main sale" id="pc-price-<?php echo e($pid); ?>"><?php echo e(number_format($p->sale_price, 2)); ?> EGP</span>
+        <?php if($coShowOldPrice): ?>
         <span class="price-old" id="pc-orig-<?php echo e($pid); ?>"><?php echo e(number_format($p->price, 2)); ?></span>
+        <?php endif; ?>
       <?php else: ?>
         <span class="price-main" id="pc-price-<?php echo e($pid); ?>"><?php echo e(number_format($p->price, 2)); ?> EGP</span>
       <?php endif; ?>
     </div>
 
+    <?php if($coShowAddToCart): ?>
     <button class="card-add-btn" id="pc-add-<?php echo e($pid); ?>"
             data-name="<?php echo e(addslashes($p->name)); ?>"
             data-img="<?php echo e($displayImg); ?>"
             onclick="pcAddToCart(<?php echo e($pid); ?>)">
       Add to Cart
     </button>
+    <?php endif; ?>
 
     
-    <?php if(!empty($p->coupon)): ?>
+    <?php if($coShowCoupon && !empty($p->coupon)): ?>
     <?php
       $__coupon = $p->coupon;
       $__base   = $p->on_sale ? $p->sale_price : $p->price;
@@ -148,7 +177,7 @@
   </div>
 </div>
 
-<?php if (! $__env->hasRenderedOnce('25ea5d51-f7ce-4001-ad45-e567296a143a')): $__env->markAsRenderedOnce('25ea5d51-f7ce-4001-ad45-e567296a143a'); ?>
+<?php if (! $__env->hasRenderedOnce('93889ec4-ec97-4788-9876-1c184e829953')): $__env->markAsRenderedOnce('93889ec4-ec97-4788-9876-1c184e829953'); ?>
 <style>
 .pc-coupon-bar{display:flex;text-decoration:none;border-radius:0 0 10px 10px;overflow:hidden;margin:10px -14px -14px;font-size:11px;font-weight:700;line-height:1}
 .pc-coupon-left{flex:1;background:#7c3aed;color:#fff;padding:8px 10px;display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
