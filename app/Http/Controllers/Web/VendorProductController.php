@@ -888,6 +888,8 @@ class VendorProductController extends Controller
                 'regular_price'  => $regularPrice,
                 'sale_price'     => $salePrice,
                 'stock_quantity' => $stock,
+                'stock_status'   => $request->input('stock_status', 'instock'),
+                'status'         => $request->input('variation_status', 'publish'),
             ];
 
             return [$rows, $totalStock];
@@ -936,8 +938,10 @@ class VendorProductController extends Controller
                 }
 
                 $price        = $salePriceForSize < $regularPriceForSize ? $salePriceForSize : $regularPriceForSize;
-                $stockForSize = isset($stockMap[$size]) ? max(0, (int) $stockMap[$size]) : 0;
-                $totalStock  += $stockForSize;
+                $stockForSize    = isset($stockMap[$size]) ? max(0, (int) $stockMap[$size]) : 0;
+                $totalStock     += $stockForSize;
+                $stockStatusMap  = (array) ($colorData['stock_status_map'] ?? []);
+                $statusMap       = (array) ($colorData['status_map'] ?? []);
 
                 $rows[] = [
                     '_color'         => $colorName,
@@ -946,6 +950,8 @@ class VendorProductController extends Controller
                     'regular_price'  => $regularPriceForSize,
                     'sale_price'     => $salePriceForSize,
                     'stock_quantity' => $stockForSize,
+                    'stock_status'   => $stockStatusMap[$size] ?? 'instock',
+                    'status'         => $statusMap[$size] ?? 'publish',
                 ];
             }
         }

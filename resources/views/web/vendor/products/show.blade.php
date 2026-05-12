@@ -470,22 +470,24 @@
     $color = $attrs['Color'] ?? 'Default';
     $size  = $attrs['Size'] ?? (implode(' / ', array_filter($attrs, fn($k) => strtolower($k) !== 'color', ARRAY_FILTER_USE_KEY)) ?: 'Default');
     if (!isset($colorGroups[$color])) $colorGroups[$color] = [];
-    $colorGroups[$color][] = ['size' => $size, 'price' => $dv->price, 'reg' => $dv->regular_price, 'sale' => $dv->sale_price, 'stock' => $dv->stock_quantity, 'main' => $dv->main_variation];
+    $colorGroups[$color][] = ['size' => $size, 'price' => $dv->price, 'reg' => $dv->regular_price, 'sale' => $dv->sale_price, 'stock' => $dv->stock_quantity, 'main' => $dv->main_variation, 'stock_status' => $dv->stock_status ?? 'instock', 'status' => $dv->status ?? 'publish'];
   }
   $editColorRows4 = [];
   foreach ($colorGroups as $colorName => $rows) {
     $sizes = array_column($rows, 'size');
-    $priceMap = []; $stockMap = []; $salePriceMap4 = [];
+    $priceMap = []; $stockMap = []; $salePriceMap4 = []; $stockStatusMap4 = []; $statusMap4 = [];
     foreach ($rows as $r) {
-      $priceMap[$r['size']] = $r['reg'];
-      $stockMap[$r['size']] = $r['stock'];
+      $priceMap[$r['size']]        = $r['reg'];
+      $stockMap[$r['size']]        = $r['stock'];
+      $stockStatusMap4[$r['size']] = $r['stock_status'];
+      $statusMap4[$r['size']]      = $r['status'];
       $dvSale4 = (float)($r['sale'] ?? 0);
       $dvReg4  = (float)($r['reg']  ?? 0);
       if ($dvSale4 > 0 && $dvReg4 > 0 && $dvSale4 < $dvReg4) {
         $salePriceMap4[$r['size']] = $dvSale4;
       }
     }
-    $editColorRows4[] = ['name' => $colorName, 'sizes' => $sizes, 'price_map' => $priceMap, 'sale_price_map' => $salePriceMap4, 'stock' => $stockMap, 'sale_price' => '', 'images' => []];
+    $editColorRows4[] = ['name' => $colorName, 'sizes' => $sizes, 'price_map' => $priceMap, 'sale_price_map' => $salePriceMap4, 'stock' => $stockMap, 'stock_status_map' => $stockStatusMap4, 'status_map' => $statusMap4, 'sale_price' => '', 'images' => []];
   }
 @endphp
 <div class="dc" id="dc-variations">
@@ -514,6 +516,7 @@
             <tr>
               <th>Color</th><th>Size / Option</th>
               <th>Regular</th><th>Sale / Price</th><th>Stock</th>
+              <th>Stock Status</th><th>Availability</th>
             </tr>
           </thead>
           <tbody>
@@ -522,6 +525,8 @@
                 $dvAttrs = $dv->attributes ?? [];
                 $dvColor = $dvAttrs['Color'] ?? '—';
                 $dvSize  = $dvAttrs['Size']  ?? implode(' / ', array_filter($dvAttrs, fn($k) => strtolower($k) !== 'color', ARRAY_FILTER_USE_KEY)) ?: '—';
+                $dvStockStatus = $dv->stock_status ?? 'instock';
+                $dvStatus      = $dv->status ?? 'publish';
               @endphp
               <tr>
                 <td>
@@ -535,6 +540,22 @@
                 </td>
                 <td style="color:{{ $dv->stock_quantity > 10 ? 'var(--green)' : ($dv->stock_quantity > 0 ? 'var(--yellow)' : 'var(--red)') }};font-weight:600">
                   {{ $dv->stock_quantity }}
+                </td>
+                <td>
+                  @if($dvStockStatus === 'instock')
+                    <span class="badge" style="background:#dcfce7;color:#166534">In Stock</span>
+                  @elseif($dvStockStatus === 'outofstock')
+                    <span class="badge" style="background:#fee2e2;color:#991b1b">Out of Stock</span>
+                  @else
+                    <span class="badge" style="background:#fef9c3;color:#854d0e">On Backorder</span>
+                  @endif
+                </td>
+                <td>
+                  @if($dvStatus === 'publish')
+                    <span class="badge" style="background:#dcfce7;color:#166534">Active</span>
+                  @else
+                    <span class="badge" style="background:#f3f4f6;color:#6b7280">Disabled</span>
+                  @endif
                 </td>
               </tr>
             @endforeach
@@ -1352,10 +1373,12 @@ function addColorRowShow(colorData) {
   const idx          = showColorIdx++;
   const colorName    = colorData?.name || '';
   const sizes        = colorData?.sizes || [];
-  const priceMap     = colorData?.price_map || {};
-  const salePriceMap = colorData?.sale_price_map || {};
-  const stockMap     = colorData?.stock || {};
-  const salePriceVal = colorData?.sale_price || '';
+  const priceMap       = colorData?.price_map || {};
+  const salePriceMap   = colorData?.sale_price_map || {};
+  const stockMap       = colorData?.stock || {};
+  const stockStatusMap = colorData?.stock_status_map || {};
+  const statusMap      = colorData?.status_map || {};
+  const salePriceVal   = colorData?.sale_price || '';
   const isFirst      = document.getElementById('color-rows-show').children.length === 0;
 
   const row = document.createElement('div');
@@ -1396,7 +1419,7 @@ function addColorRowShow(colorData) {
     <div id="csprice-${idx}"></div>`;
 
   document.getElementById('color-rows-show').appendChild(row);
-  sizes.forEach(s => addSizeShow(idx, s, priceMap[s] || '', salePriceMap[s] || '', stockMap[s] || 0));
+  sizes.forEach(s => addSizeShow(idx, s, priceMap[s] || '', salePriceMap[s] || '', stockMap[s] || 0, stockStatusMap[s] || 'instock', statusMap[s] || 'publish'));
 }
 
 function handleSizeInputShow(e, idx) {
@@ -1407,11 +1430,11 @@ function handleSizeInputShow(e, idx) {
   }
 }
 const showSizeData = {};
-function addSizeShow(idx, size, price, salePrice, stock) {
+function addSizeShow(idx, size, price, salePrice, stock, stockStatus, status) {
   if (!size) return;
   if (!showSizeData[idx]) showSizeData[idx] = {};
   if (showSizeData[idx][size]) return;
-  showSizeData[idx][size] = { price: price||'', salePrice: salePrice||'', stock: stock||0 };
+  showSizeData[idx][size] = { price: price||'', salePrice: salePrice||'', stock: stock||0, stockStatus: stockStatus||'instock', status: status||'publish' };
 
   const wrap  = document.getElementById('csstags-' + idx);
   const input = document.getElementById('cssize-' + idx);
@@ -1440,12 +1463,16 @@ function refreshPriceTableShow(idx) {
         <th>Regular Price (EGP)</th>
         <th>Sale Price (EGP) <span style="font-weight:400;font-size:10px;color:var(--mid)">optional</span></th>
         <th>Stock Qty</th>
+        <th>Stock Status</th>
+        <th>Availability</th>
         <th style="background:#fff8f5;color:var(--orange)">Effective Price</th>
       </tr></thead>
       <tbody>`;
   tags.forEach(tag => {
-    const s = tag.dataset.size;
-    const d = (showSizeData[idx]||{})[s] || {};
+    const s  = tag.dataset.size;
+    const d  = (showSizeData[idx]||{})[s] || {};
+    const ss = d.stockStatus || 'instock';
+    const st = d.status || 'publish';
     html += `<tr>
       <td><strong>${s}</strong><input type="hidden" name="colors[${idx}][sizes][]" value="${s}"></td>
       <td><input type="number" name="colors[${idx}][price_map][${s}]"
@@ -1461,6 +1488,19 @@ function refreshPriceTableShow(idx) {
       <td><input type="number" name="colors[${idx}][stock][${s}]"
                  value="${d.stock||0}" min="0" placeholder="0"
                  class="price-table" style="width:75px"></td>
+      <td>
+        <select name="colors[${idx}][stock_status_map][${s}]" class="price-table" style="font-size:12px">
+          <option value="instock"     ${ss==='instock'     ? 'selected' : ''}>In Stock</option>
+          <option value="outofstock"  ${ss==='outofstock'  ? 'selected' : ''}>Out of Stock</option>
+          <option value="onbackorder" ${ss==='onbackorder' ? 'selected' : ''}>On Backorder</option>
+        </select>
+      </td>
+      <td>
+        <select name="colors[${idx}][status_map][${s}]" class="price-table" style="font-size:12px">
+          <option value="publish" ${st==='publish' ? 'selected' : ''}>Active</option>
+          <option value="draft"   ${st==='draft'   ? 'selected' : ''}>Disabled</option>
+        </select>
+      </td>
       <td class="eff-price-cell" data-size-key="${s}" style="font-weight:600;font-size:13px">—</td>
     </tr>`;
   });

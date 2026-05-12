@@ -727,19 +727,23 @@ textarea.vs-input{resize:vertical;min-height:100px}
 
           if (! isset($editColorRows[$color])) {
               $editColorRows[$color] = [
-                  'name'           => $color,
-                  'sizes'          => [],
-                  'price_map'      => [],
-                  'sale_price_map' => [],
-                  'stock'          => [],
-                  'sale_price'     => '',
-                  'images'         => $dv->images ?? [],
+                  'name'             => $color,
+                  'sizes'            => [],
+                  'price_map'        => [],
+                  'sale_price_map'   => [],
+                  'stock'            => [],
+                  'stock_status_map' => [],
+                  'status_map'       => [],
+                  'sale_price'       => '',
+                  'images'           => $dv->images ?? [],
               ];
           }
 
-          $editColorRows[$color]['sizes'][]          = $size;
-          $editColorRows[$color]['price_map'][$size] = $dv->regular_price ?? 0;
-          $editColorRows[$color]['stock'][$size]     = $dv->stock_quantity ?? 0;
+          $editColorRows[$color]['sizes'][]                      = $size;
+          $editColorRows[$color]['price_map'][$size]             = $dv->regular_price ?? 0;
+          $editColorRows[$color]['stock'][$size]                 = $dv->stock_quantity ?? 0;
+          $editColorRows[$color]['stock_status_map'][$size]      = $dv->stock_status ?? 'instock';
+          $editColorRows[$color]['status_map'][$size]            = $dv->status ?? 'publish';
           // Restore per-size sale price only when it's genuinely discounted
           $dvSale = (float)($dv->sale_price ?? 0);
           $dvReg  = (float)($dv->regular_price ?? 0);
@@ -936,11 +940,13 @@ function addColorRow(colorData) {
   const idx     = colorSeq++;
   const isFirst = document.getElementById('color-rows').children.length === 0;
   const sizes        = colorData.sizes || [];
-  const priceMap     = colorData.price_map || {};
-  const salePriceMap = colorData.sale_price_map || {};
-  const stockMap     = colorData.stock || {};
-  const colorName    = colorData.name || '';
-  const salePriceVal = colorData.sale_price || '';
+  const priceMap        = colorData.price_map || {};
+  const salePriceMap    = colorData.sale_price_map || {};
+  const stockMap        = colorData.stock || {};
+  const stockStatusMap  = colorData.stock_status_map || {};
+  const statusMap       = colorData.status_map || {};
+  const colorName       = colorData.name || '';
+  const salePriceVal    = colorData.sale_price || '';
 
   const row = document.createElement('div');
   row.className = 'color-row' + (isFirst ? ' is-main' : '');
@@ -1000,7 +1006,7 @@ function addColorRow(colorData) {
   document.getElementById('color-rows').appendChild(row);
 
   // Restore sizes from edit data (including per-size sale prices)
-  sizes.forEach(s => addSize(idx, s, priceMap[s] || '', salePriceMap[s] || '', stockMap[s] || 0));
+  sizes.forEach(s => addSize(idx, s, priceMap[s] || '', salePriceMap[s] || '', stockMap[s] || 0, stockStatusMap[s] || 'instock', statusMap[s] || 'publish'));
 }
 
 function removeColorRow(idx) {
@@ -1026,13 +1032,13 @@ function handleSizeInput(e, idx) {
   }
 }
 
-function addSize(idx, size, price, salePrice, stock) {
+function addSize(idx, size, price, salePrice, stock, stockStatus, status) {
   size = size.trim();
   if (!size) return;
   if (!colorSizes[idx]) colorSizes[idx] = [];
   if (colorSizes[idx].find(s => s.size === size)) return; // no duplicates
 
-  colorSizes[idx].push({ size, price: price || '', salePrice: salePrice || '', stock: stock || 0 });
+  colorSizes[idx].push({ size, price: price || '', salePrice: salePrice || '', stock: stock || 0, stockStatus: stockStatus || 'instock', status: status || 'publish' });
 
   // Add visual tag
   const wrap = document.getElementById(`size-tags-${idx}`);
@@ -1073,11 +1079,15 @@ function refreshSizePricingTable(idx) {
         <th>Regular Price (EGP) <span style="color:var(--red)">*</span></th>
         <th>Sale Price (EGP) <span style="font-weight:400;font-size:10px;color:var(--mid)">optional — overrides % discount</span></th>
         <th>Stock Qty</th>
+        <th>Stock Status</th>
+        <th>Availability</th>
         <th style="background:#fff8f5;color:var(--orange);min-width:100px">Effective Price</th>
       </tr></thead>
       <tbody>`;
 
-  sizes.forEach(({ size, price, salePrice, stock }) => {
+  sizes.forEach(({ size, price, salePrice, stock, stockStatus, status }) => {
+    const ss = stockStatus || 'instock';
+    const st = status || 'publish';
     html += `<tr>
       <td><strong>${escHtml(size)}</strong></td>
       <td><input type="number" name="colors[${idx}][price_map][${escHtml(size)}]"
@@ -1093,6 +1103,19 @@ function refreshSizePricingTable(idx) {
       <td><input type="number" name="colors[${idx}][stock][${escHtml(size)}]"
                  value="${escHtml(String(stock || 0))}" min="0" placeholder="0"
                  class="vs-input" style="border:none;padding:2px 4px;width:80px"></td>
+      <td>
+        <select name="colors[${idx}][stock_status_map][${escHtml(size)}]" class="vs-input" style="border:none;padding:2px 4px;font-size:12px">
+          <option value="instock"     ${ss==='instock'     ? 'selected' : ''}>In Stock</option>
+          <option value="outofstock"  ${ss==='outofstock'  ? 'selected' : ''}>Out of Stock</option>
+          <option value="onbackorder" ${ss==='onbackorder' ? 'selected' : ''}>On Backorder</option>
+        </select>
+      </td>
+      <td>
+        <select name="colors[${idx}][status_map][${escHtml(size)}]" class="vs-input" style="border:none;padding:2px 4px;font-size:12px">
+          <option value="publish" ${st==='publish' ? 'selected' : ''}>Active</option>
+          <option value="draft"   ${st==='draft'   ? 'selected' : ''}>Disabled</option>
+        </select>
+      </td>
       <td class="eff-price-cell" data-size-key="${escHtml(size)}" style="font-weight:600;font-size:13px">—</td>
     </tr>`;
   });
