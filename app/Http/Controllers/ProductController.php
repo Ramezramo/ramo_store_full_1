@@ -874,9 +874,9 @@ class ProductController extends Controller
                 // 'main_variation' => $mainVariation,
                 'stock_quantity' => $sanitized['stock_quantity'] ?? $product->stock_quantity,
                 'discount_percentage' => $discountPercentage,
-                // 'regular_price' => $regularPrice,
-                // 'sale_price' => $salePrice,
-                // 'price' => $displayPrice,
+                'regular_price' => $regularPrice,
+                'sale_price' => $salePrice,
+                'price' => $displayPrice,
                 'unit' => [
                     $sanitized['unit'] ?? $currentUnitType => $sanitized['unit_amount'] ?? $currentUnitAmount,
                 ],

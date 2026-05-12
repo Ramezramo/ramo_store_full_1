@@ -84,10 +84,13 @@ class ProductVariation extends Model
         // or: $this->attributes['attributes'][$key] ?? $default;
     }
 
-    // Add to ProductVariation model
-    public function getRawImagePaths()
+    public function getRawImagePaths(): array
     {
-        return $this->getOriginal('images') ?? [];
+        $raw = $this->getOriginal('images');
+        if (is_string($raw)) {
+            return json_decode($raw, true) ?? [];
+        }
+        return (array) ($raw ?? []);
     }
     
 }
