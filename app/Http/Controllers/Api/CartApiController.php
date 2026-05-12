@@ -93,8 +93,24 @@ class CartApiController extends Controller
     public function update(Request $r, $id)
     {
         $r->validate(['qty' => 'required|integer|min:1|max:999']);
-        $item = DB::table('cart_items')->where('id', $id)->where('user_id', Auth::id())->first();
+
+        $userId = Auth::id();
+        $item   = DB::table('cart_items')->where('id', $id)->where('user_id', $userId)->first();
         if (! $item) return response()->json(['success' => false, 'message' => 'Item not found'], 404);
+
+        // Sum qty of every OTHER row for this product (the current row is being replaced, not added to)
+        $otherQty = DB::table('cart_items')
+            ->where('user_id', $userId)
+            ->where('product_id', $item->product_id)
+            ->where('id', '!=', $id)
+            ->sum('qty');
+
+        if ($otherQty + $r->qty > 100) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You cannot have more than 100 units of the same product in your cart.',
+            ], 422);
+        }
 
         DB::table('cart_items')->where('id', $id)->update(['qty' => $r->qty, 'updated_at' => now()]);
         return response()->json(['success' => true, 'message' => 'Cart updated']);
