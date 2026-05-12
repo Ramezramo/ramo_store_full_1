@@ -82,6 +82,48 @@ class CheckoutController extends Controller
             'credit_card'    => 'Credit Card',
         ];
 
+        // ── RE-VERIFY PRICES FROM DATABASE (never trust cart-stored prices) ──────
+        $cartProductIds   = collect($cart)->pluck('product_id')->unique()->values()->all();
+        $cartVariationIds = collect($cart)->pluck('variation_id')->filter()->unique()->values()->all();
+
+        $dbProducts   = DB::table('products_data')
+            ->whereIn('id', $cartProductIds)
+            ->get()->keyBy('id');
+
+        $dbVariations = DB::table('product_variations')
+            ->whereIn('product_id', $cartProductIds)
+            ->when(!empty($cartVariationIds), fn($q) => $q->orWhereIn('id', $cartVariationIds))
+            ->get()->keyBy('id');
+
+        $verifiedCart = [];
+        foreach ($cart as $rowId => $item) {
+            $product = $dbProducts->get($item['product_id']);
+            if (!$product) {
+                return redirect()->route('cart')
+                    ->with('error', "Product \"{$item['name']}\" is no longer available.");
+            }
+
+            $variation = $item['variation_id']
+                ? $dbVariations->get($item['variation_id'])
+                : $dbVariations->first(fn($v) => $v->product_id == $item['product_id'] && $v->main_variation);
+
+            if (!$variation) {
+                return redirect()->route('cart')
+                    ->with('error', "A variation for \"{$item['name']}\" could not be found.");
+            }
+
+            $regularPrice = (float) ($variation->regular_price ?? 0);
+            $livePrice    = (float) ($variation->price ?? $regularPrice);
+            $discPct      = (float) ($product->discount_percentage ?? 0);
+            if ($discPct > 0 && $regularPrice > 0 && $livePrice >= $regularPrice) {
+                $livePrice = round($regularPrice * (1 - $discPct / 100), 2);
+            }
+
+            $verifiedCart[$rowId] = array_merge($item, ['price' => $livePrice]);
+        }
+        $cart = $verifiedCart;
+        // ─────────────────────────────────────────────────────────────────────────
+
         $coupon   = session('ramo_coupon');
         $subtotal = collect($cart)->sum(fn($i) => $i['price'] * $i['qty']);
         $discount = $this->calcDiscount($subtotal, $coupon);
