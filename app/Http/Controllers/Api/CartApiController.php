@@ -47,6 +47,28 @@ class CartApiController extends Controller
             ->where('variation_id', $variationId)
             ->first();
 
+        // Cap: total units of this product across all its rows must not exceed 100
+        $totalQty = DB::table('cart_items')
+            ->where('user_id', $userId)
+            ->where('product_id', $productId)
+            ->sum('qty');
+
+        if ($totalQty + $qty > 100) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You cannot add more than 100 units of the same product to your cart.',
+            ], 422);
+        }
+
+        // Cap: no more than 50 distinct items (rows) in the cart
+        $cartCount = DB::table('cart_items')->where('user_id', $userId)->count();
+        if ($cartCount >= 50) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cart limit reached. Maximum 50 different items allowed.',
+            ], 422);
+        }
+
         if ($existing) {
             DB::table('cart_items')->where('id', $existing->id)->update([
                 'qty'        => $existing->qty + $qty,
