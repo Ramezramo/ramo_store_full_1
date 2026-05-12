@@ -67,7 +67,7 @@ class Order extends Model
         '_links',
     ];
 
-    protected $hidden = ['bacs_info', 'id', 'payment_url'];
+    protected $hidden = ['bacs_info', 'payment_url'];
 
     // ✅ THIS IS THE KEY FIX - CAST ALL JSON FIELDS TO ARRAYS
     protected $casts = [
