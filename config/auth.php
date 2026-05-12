@@ -40,13 +40,13 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
-        'vendor' => [
-            'driver' => 'sanctum',
-            'provider' => 'vendors',
-        ],
         'vendor_web' => [
             'driver' => 'session',
-            'provider' => 'vendors',
+            'provider' => 'vendor_users',
+        ],
+        'vendor_sanctum' => [
+            'driver' => 'sanctum',
+            'provider' => 'vendor_users',
         ],
     ],
 
@@ -72,14 +72,10 @@ return [
             'driver' => 'eloquent',
             'model' => App\Models\User::class,
         ],
-        'vendors' => [
+        'vendor_users' => [
             'driver' => 'eloquent',
             'model' => App\Models\VendorUser::class,
         ],
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
     ],
 
     /*
