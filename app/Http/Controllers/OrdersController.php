@@ -576,6 +576,9 @@ class OrdersController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
+                // ──────── IDEMPOTENCY ────────
+                'idempotency_key' => 'required|uuid',
+
                 // ──────── ORDER BASICS ────────
                 'coupon' => 'nullable|string|max:30|exists:coupons,code',
                 'currency' => 'required|string|size:3|in:EGP,USD,EUR',
@@ -630,7 +633,29 @@ class OrdersController extends Controller
             }
 
             $validatedData = $validator->validated();
-            $userId = Auth::id();
+            $userId        = Auth::id();
+            $idempotencyKey = $validatedData['idempotency_key'];
+
+            // ──────── Idempotency pre-check ────────
+            // If the same key was already successfully processed within the last 24 hours,
+            // return the original order without touching stock or creating a new record.
+            $existingKey = DB::table('idempotency_keys')
+                ->where('key', $idempotencyKey)
+                ->where('user_id', $userId)
+                ->where('created_at', '>', now()->subHours(24))
+                ->first();
+
+            if ($existingKey) {
+                if ($existingKey->order_id) {
+                    // Completed request — replay the stored order
+                    $cachedOrder = Order::find($existingKey->order_id);
+                    if ($cachedOrder) {
+                        return $this->successResponse($cachedOrder, 'Order already created (idempotent replay).');
+                    }
+                }
+                // order_id is null → another request with this key is still in-flight
+                return $this->failureResponse('A request with this idempotency key is already being processed. Please try again shortly.', 409);
+            }
 
             // ──────── Load cart from DB (server-side source of truth) ────────
             $cartItems = DB::table('cart_items')->where('user_id', $userId)->get();
@@ -672,7 +697,37 @@ class OrdersController extends Controller
                 ->keyBy('id'); // Critical: fast lookup by ID
 
             // ──────── STEP 4 → Order Creation (transaction with pessimistic locking) ────────
-            $order = DB::transaction(function () use ($validatedData, $userId, $request, $products, $variations) {
+            $order = DB::transaction(function () use ($validatedData, $userId, $request, $products, $variations, $idempotencyKey) {
+                // ── Claim the idempotency key atomically ──
+                // insertOrIgnore returns the number of rows inserted (1 = claimed, 0 = conflict).
+                $claimed = DB::table('idempotency_keys')->insertOrIgnore([
+                    'key'        => $idempotencyKey,
+                    'user_id'    => $userId,
+                    'order_id'   => null,
+                    'created_at' => now(),
+                ]);
+
+                if (! $claimed) {
+                    // Another concurrent request beat us to this key.
+                    // Lock the row and inspect it to decide how to respond.
+                    $keyRecord = DB::table('idempotency_keys')
+                        ->where('key', $idempotencyKey)
+                        ->where('user_id', $userId)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if ($keyRecord && $keyRecord->order_id) {
+                        // The other request already finished — replay its order.
+                        return Order::find($keyRecord->order_id);
+                    }
+
+                    // The other request is still in-flight inside its own transaction.
+                    throw new \InvalidArgumentException(
+                        'A request with this idempotency key is already being processed. Please try again shortly.',
+                        409
+                    );
+                }
+
                 $calculatedTotal = 0;
                 $enrichedLineItems = [];
 
@@ -908,6 +963,13 @@ class OrdersController extends Controller
                 // ──────── Create Order ────────
                 $order = Order::create($orderDbData);
                 $order->update(['number' => $order->id + 2000]);
+
+                // ──────── Seal the idempotency key with the new order ID ────────
+                // Any future request with the same key will get this order replayed to them.
+                DB::table('idempotency_keys')
+                    ->where('key', $idempotencyKey)
+                    ->where('user_id', $userId)
+                    ->update(['order_id' => $order->id]);
 
                 // ──────── Clear the user's cart after successful order ────────
                 DB::table('cart_items')->where('user_id', $userId)->delete();
