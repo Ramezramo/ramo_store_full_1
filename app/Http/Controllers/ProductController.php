@@ -1229,7 +1229,7 @@ class ProductController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return $this->validationErrorResponse($validator->errors());
+            return $this->validatrionErrorResponse($validator->errors());
         }
 
         // Capture old image paths BEFORE we update the variation
@@ -1534,6 +1534,7 @@ class ProductController extends Controller
             }
 
             // // === Handle Variation Images (by color) ===
+            $variationImageMap = [];
             // $variationImageMap = [];
             // $allFiles = $request->allFiles();
 
