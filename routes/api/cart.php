@@ -11,7 +11,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('cart')->group(function () {
         Route::get('/',        [CartApiController::class, 'index']);   // GET  /api/cart
         Route::post('/add',    [CartApiController::class, 'add'])->middleware('throttle:20,1');     // POST /api/cart/add
-        Route::put('/{id}',    [CartApiController::class, 'update']);  // PUT  /api/cart/{id}
+        Route::put('/{id}',    [CartApiController::class, 'update'])->middleware('throttle:20,1');  // PUT  /api/cart/{id}
         Route::delete('/{id}', [CartApiController::class, 'remove']);  // DELETE /api/cart/{id}
         Route::delete('/',     [CartApiController::class, 'clear']);   // DELETE /api/cart
     });
