@@ -12,7 +12,7 @@ Route::middleware('auth:sanctum')->prefix('user')->group(function () {
     Route::get('me', [AuthController::class, 'me']);// ✅️
     Route::get('logout', [AuthController::class, 'logout']);// ✅️
     Route::get('refresh', [AuthController::class, 'refresh']);// ✅️
-    Route::delete('delete-account', [AuthController::class, 'deleteAccount']);// ✅️
+    Route::delete('delete-account', [AuthController::class, 'deleteAccount'])->middleware('throttle:3,1');// ✅️
 
     // Shipping & Payment
     Route::get('shipping-methods', [SippingController::class, 'shippingMethods']);// ✅️
@@ -23,6 +23,6 @@ Route::middleware('auth:sanctum')->prefix('user')->group(function () {
     Route::get('get-all-user-orders', [OrdersController::class, 'getAllUserOrders']);// ✅️
 
     // Notes
-    Route::post('create-user-note', [UserNoteController::class, 'store']);// ✅️
+    Route::post('create-user-note', [UserNoteController::class, 'store'])->middleware('throttle:10,1');// ✅️
     Route::get('get-order-notes', [UserNoteController::class, 'getAll']);// ✅️
 });

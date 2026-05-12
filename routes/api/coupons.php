@@ -12,6 +12,6 @@ Route::middleware(['auth:sanctum', 'vendor.auth'])->prefix('ramo/coupons')->grou
 });
 
 Route::middleware('auth:sanctum')->prefix('ramo/coupons')->group(function () {
-    Route::post('/validate', [CouponController::class, 'validateCoupon']);
-    Route::post('/apply', [CouponController::class, 'applyCoupon']);
+    Route::post('/validate', [CouponController::class, 'validateCoupon'])->middleware('throttle:10,1');
+    Route::post('/apply',    [CouponController::class, 'applyCoupon'])->middleware('throttle:10,1');
 });

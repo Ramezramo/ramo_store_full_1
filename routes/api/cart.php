@@ -18,12 +18,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ── Wishlist ──
     Route::prefix('wishlist')->group(function () {
-        Route::get('/',         [WishlistApiController::class, 'index']);   // GET  /api/wishlist
-        Route::post('/toggle',  [WishlistApiController::class, 'toggle']); // POST /api/wishlist/toggle
+        Route::get('/',         [WishlistApiController::class, 'index']);                                    // GET  /api/wishlist
+        Route::post('/toggle',  [WishlistApiController::class, 'toggle'])->middleware('throttle:20,1');    // POST /api/wishlist/toggle
     });
 
     // ── Reviews (write) ──
-    Route::post('reviews', [ReviewController::class, 'store']); // POST /api/reviews
+    Route::post('reviews', [ReviewController::class, 'store'])->middleware('throttle:5,1'); // POST /api/reviews
 });
 
 // ── Reviews (read — public) ──

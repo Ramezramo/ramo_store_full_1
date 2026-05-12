@@ -11,20 +11,21 @@ Route::middleware(['auth:sanctum', 'vendor.auth'])->group(function () {
     // Products CRUD
     Route::prefix('vendor')->group(function () {
         // Vendor Profile
-        Route::get('get-profile', [ShopRegistrationController::class, 'getVendor']); // ✅️
-        Route::post('update-profile', [ShopRegistrationController::class, 'updateShop']); // ✅️
+        Route::get('get-profile',     [ShopRegistrationController::class, 'getVendor']);                                  // ✅️
+        Route::post('update-profile', [ShopRegistrationController::class, 'updateShop'])->middleware('throttle:10,1');   // ✅️
 
-        // Update Order State (Vendor)
-        Route::post('update-order-state', [OrdersController::class, 'updateOrderState'])
-            ->middleware('throttle:3,1');
-        Route::post('add-product', [ProductController::class, 'addNewProduct']); // ✅️
-        Route::get('products', [ProductController::class, 'getproductsvendor']); // ✅️
-        Route::get('view-product/{id}', [ProductController::class, 'viewOneProduct']); // ✅️
-        Route::post('product-update/{id}', [ProductController::class, 'updateProduct']); // ✅️
-        Route::post('product-images-update/{id}', [ProductController::class, 'updateProductImages']); // ✅️
-        Route::post('product-image-oldimg-link-update/{id}', [ProductController::class, 'updateProductImageByOldLink']); // ✅️
-        Route::delete('product-delete/{id}', [ProductController::class, 'deleteProduct']); // ✅️
-        Route::post('product-variation-upd/{id}', [ProductController::class, 'updateVariation']); // ✅️
+        // Update Order State (Vendor) — tightest limit; state changes are high-value writes
+        Route::post('update-order-state', [OrdersController::class, 'updateOrderState'])->middleware('throttle:3,1');
+
+        // Product writes — 10/min each; enough for normal use, blocks bulk automation
+        Route::post('add-product',                        [ProductController::class, 'addNewProduct'])->middleware('throttle:10,1');              // ✅️
+        Route::get('products',                            [ProductController::class, 'getproductsvendor']);                                        // ✅️
+        Route::get('view-product/{id}',                   [ProductController::class, 'viewOneProduct']);                                           // ✅️
+        Route::post('product-update/{id}',                [ProductController::class, 'updateProduct'])->middleware('throttle:10,1');              // ✅️
+        Route::post('product-images-update/{id}',         [ProductController::class, 'updateProductImages'])->middleware('throttle:10,1');        // ✅️
+        Route::post('product-image-oldimg-link-update/{id}', [ProductController::class, 'updateProductImageByOldLink'])->middleware('throttle:10,1'); // ✅️
+        Route::delete('product-delete/{id}',              [ProductController::class, 'deleteProduct'])->middleware('throttle:5,1');               // ✅️
+        Route::post('product-variation-upd/{id}',         [ProductController::class, 'updateVariation'])->middleware('throttle:10,1');            // ✅️
         // Route::post('product-images-colors-up/{id}', [ProductController::class, 'updateProductColorImages']);
 
         Route::get('popular-two-product', [ProductController::class, 'getPopularTwoProducts']); // ✅️
