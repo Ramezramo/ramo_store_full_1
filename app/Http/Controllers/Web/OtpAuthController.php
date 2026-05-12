@@ -246,7 +246,7 @@ class OtpAuthController extends Controller
             'email'               => $resolvedEmail,
             'password'            => $unusablePassword,
             'phone'               => $phone,
-            'role'                => 'normal_user',
+            'role'                => json_encode(['customer']),
             'nicename'            => Str::slug($name . '-' . substr($phone, -4)),
             'registered'          => now()->toDateTimeString(),
             'description'         => '',

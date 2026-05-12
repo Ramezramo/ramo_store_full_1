@@ -98,7 +98,7 @@ class GoogleAuthController extends Controller
                 'lastname'            => $last,
                 'email'               => $email,
                 'password'            => null,
-                'role'                => 'normal_user',
+                'role'                => json_encode(['customer']),
                 'nicename'            => Str::slug($name ?: $email),
                 'registered'          => now()->toDateTimeString(),
                 'description'         => '',
