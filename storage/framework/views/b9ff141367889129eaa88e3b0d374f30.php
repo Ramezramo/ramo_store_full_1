@@ -311,11 +311,18 @@
           'showRating'    => $sec['showRating']    ?? false,
         ];
       ?>
+      <?php $uniformHeight = !empty($sec['uniformHeight']); ?>
       <?php if($products->count()): ?>
       <style>
         #<?php echo e($secId); ?> .product-card { border-radius: var(--tl-card-r,<?php echo e($cardRadius); ?>px) }
         <?php if($imgHeight): ?>
         #<?php echo e($secId); ?> .product-card-img { aspect-ratio: unset; height: var(--tl-img-h,<?php echo e($imgHeight); ?>px) }
+        <?php endif; ?>
+        <?php if($uniformHeight): ?>
+        #<?php echo e($secId); ?>.product-grid { align-items: stretch }
+        #<?php echo e($secId); ?> .product-card { height: 100% }
+        #<?php echo e($secId); ?> .product-card-body { flex: 1 }
+        #<?php echo e($secId); ?> .product-card-price { margin-top: auto }
         <?php endif; ?>
       </style>
       <div class="sec-head">
@@ -390,11 +397,18 @@
           'showRating'    => $sec['showRating']    ?? false,
         ];
       ?>
+      <?php $uniformHeight = !empty($sec['uniformHeight']); ?>
       <?php if($products->count()): ?>
       <style>
         #<?php echo e($secId); ?> .product-card { border-radius: var(--tl-card-r,<?php echo e($cardRadius); ?>px) }
         <?php if($imgHeight): ?>
         #<?php echo e($secId); ?> .product-card-img { aspect-ratio: unset; height: var(--tl-img-h,<?php echo e($imgHeight); ?>px) }
+        <?php endif; ?>
+        <?php if($uniformHeight): ?>
+        #<?php echo e($secId); ?>.product-grid { align-items: stretch }
+        #<?php echo e($secId); ?> .product-card { height: 100% }
+        #<?php echo e($secId); ?> .product-card-body { flex: 1 }
+        #<?php echo e($secId); ?> .product-card-price { margin-top: auto }
         <?php endif; ?>
       </style>
       <div class="sec-head">

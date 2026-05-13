@@ -311,11 +311,18 @@
           'showRating'    => $sec['showRating']    ?? false,
         ];
       @endphp
+      @php $uniformHeight = !empty($sec['uniformHeight']); @endphp
       @if($products->count())
       <style>
         #{{ $secId }} .product-card { border-radius: var(--tl-card-r,{{ $cardRadius }}px) }
         @if($imgHeight)
         #{{ $secId }} .product-card-img { aspect-ratio: unset; height: var(--tl-img-h,{{ $imgHeight }}px) }
+        @endif
+        @if($uniformHeight)
+        #{{ $secId }}.product-grid { align-items: stretch }
+        #{{ $secId }} .product-card { height: 100% }
+        #{{ $secId }} .product-card-body { flex: 1 }
+        #{{ $secId }} .product-card-price { margin-top: auto }
         @endif
       </style>
       <div class="sec-head">
@@ -390,11 +397,18 @@
           'showRating'    => $sec['showRating']    ?? false,
         ];
       @endphp
+      @php $uniformHeight = !empty($sec['uniformHeight']); @endphp
       @if($products->count())
       <style>
         #{{ $secId }} .product-card { border-radius: var(--tl-card-r,{{ $cardRadius }}px) }
         @if($imgHeight)
         #{{ $secId }} .product-card-img { aspect-ratio: unset; height: var(--tl-img-h,{{ $imgHeight }}px) }
+        @endif
+        @if($uniformHeight)
+        #{{ $secId }}.product-grid { align-items: stretch }
+        #{{ $secId }} .product-card { height: 100% }
+        #{{ $secId }} .product-card-body { flex: 1 }
+        #{{ $secId }} .product-card-price { margin-top: auto }
         @endif
       </style>
       <div class="sec-head">

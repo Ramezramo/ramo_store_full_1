@@ -377,6 +377,12 @@ function buildEditor(sec, idx) {
       <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" ${sec.showAddToCart!==false?'checked':''} onchange="updateField(${idx},'showAddToCart',this.checked)" style="width:14px;height:14px"> Add to Cart</label>
       <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" ${sec.showCoupon!==false?'checked':''} onchange="updateField(${idx},'showCoupon',this.checked)" style="width:14px;height:14px"> Coupon Bar</label>
       <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" ${sec.showRating?'checked':''} onchange="updateField(${idx},'showRating',this.checked)" style="width:14px;height:14px"> Star Rating</label>
+    </div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.07)">
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;user-select:none">
+        <input type="checkbox" ${sec.uniformHeight?'checked':''} onchange="updateField(${idx},'uniformHeight',this.checked)" style="width:14px;height:14px">
+        <span><strong>Uniform card height</strong> — align all "Add to Cart" buttons in the same row</span>
+      </label>
     </div>`;
   }
   else if (type === 'topVendors') {
