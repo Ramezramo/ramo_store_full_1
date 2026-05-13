@@ -126,19 +126,19 @@ body{display:flex;height:100vh;overflow:hidden;background:var(--bg);font-family:
 </head>
 <body>
 
-{{-- ────────────────────────────── LEFT PANEL ────────────────────────────── --}}
+
 <div id="lp-left">
   <div id="lp-head">
     <div id="lp-title">
       <span style="font-size:18px">✏️</span>
       <span>Live Section Editor</span>
-      @if($langs->count() > 1)
+      <?php if($langs->count() > 1): ?>
       <select id="langSwitch" style="margin-left:auto" onchange="switchLang(this.value)">
-        @foreach($langs as $l)
-          <option value="{{ $l }}" {{ $lang === $l ? 'selected' : '' }}>{{ strtoupper($l) }}</option>
-        @endforeach
+        <?php $__currentLoopData = $langs; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $l): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+          <option value="<?php echo e($l); ?>" <?php echo e($lang === $l ? 'selected' : ''); ?>><?php echo e(strtoupper($l)); ?></option>
+        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
       </select>
-      @endif
+      <?php endif; ?>
     </div>
     <div id="lp-btns">
       <button class="btn btn-sm" style="flex:1" onclick="openPicker()">＋ Add Widget</button>
@@ -158,29 +158,29 @@ body{display:flex;height:100vh;overflow:hidden;background:var(--bg);font-family:
   </div>
 
   <div id="lp-foot">
-    <a href="{{ route('admin.timeline') }}" style="color:var(--accent);text-decoration:none;font-weight:700">← Full Timeline Editor</a>
+    <a href="<?php echo e(route('admin.timeline')); ?>" style="color:var(--accent);text-decoration:none;font-weight:700">← Full Timeline Editor</a>
     <span style="margin:0 8px;opacity:.4">·</span>
     <span>Click any section in the preview to open its editor</span>
   </div>
 </div>
 
-{{-- ────────────────────────────── RIGHT PANEL ────────────────────────────── --}}
+
 <div id="lp-right">
   <div id="lp-bar">
     <span class="lp-dot"></span>
-    <span id="lp-url" class="lp-url">{{ url('/') }}?tl_preview=1</span>
+    <span id="lp-url" class="lp-url"><?php echo e(url('/')); ?>?tl_preview=1</span>
     <button class="btn btn-sm btn-ghost" onclick="reloadIframe()" title="Reload preview">↺ Reload</button>
-    <a id="lp-open-btn" href="{{ url('/') }}?tl_preview=1" target="_blank" class="btn btn-sm btn-ghost" title="Open in new tab">⬡ Open</a>
+    <a id="lp-open-btn" href="<?php echo e(url('/')); ?>?tl_preview=1" target="_blank" class="btn btn-sm btn-ghost" title="Open in new tab">⬡ Open</a>
   </div>
   <div id="lp-solo-bar">
     <span style="font-size:13px">👁</span>
     <span id="lp-solo-label" style="flex:1;font-weight:600">Viewing widget</span>
     <button class="btn btn-sm" onclick="viewFull()" style="background:rgba(99,102,241,.25);border-color:rgba(99,102,241,.5);color:#c7d2fe;font-size:11px">← Full Page View</button>
   </div>
-  <iframe id="lpIframe" src="{{ url('/') }}?tl_preview=1" sandbox="allow-same-origin allow-scripts allow-forms allow-popups"></iframe>
+  <iframe id="lpIframe" src="<?php echo e(url('/')); ?>?tl_preview=1" sandbox="allow-same-origin allow-scripts allow-forms allow-popups"></iframe>
 </div>
 
-{{-- ────────────────────────────── WIDGET PICKER ────────────────────────────── --}}
+
 <div id="typePicker">
   <div id="wp-panel">
     <div id="wp-head">
@@ -241,11 +241,11 @@ body{display:flex;height:100vh;overflow:hidden;background:var(--bg);font-family:
 
 <script>
 // ── DATA ──────────────────────────────────────────────────────────
-const CATEGORIES = @json($categories);
-const LANG       = '{{ $lang }}';
-const SAVE_URL   = '{{ route('admin.timeline.save') }}';
-const CSRF       = '{{ csrf_token() }}';
-let sections     = @json($sections ?? []);
+const CATEGORIES = <?php echo json_encode($categories, 15, 512) ?>;
+const LANG       = '<?php echo e($lang); ?>';
+const SAVE_URL   = '<?php echo e(route('admin.timeline.save')); ?>';
+const CSRF       = '<?php echo e(csrf_token()); ?>';
+let sections     = <?php echo json_encode($sections ?? [], 15, 512) ?>;
 let _lpCurrentPreview = null;
 
 // ── TYPE META ──────────────────────────────────────────────────────
@@ -989,7 +989,7 @@ async function lpSave(){
 
 // ── IFRAME CONTROL ────────────────────────────────────────────────
 let _soloIdx = null;
-const BASE_PREVIEW_URL = '{{ url('/') }}?tl_preview=1';
+const BASE_PREVIEW_URL = '<?php echo e(url('/')); ?>?tl_preview=1';
 
 function reloadIframe(){
   const fr = document.getElementById('lpIframe');
@@ -1180,3 +1180,4 @@ renderAll();
 </script>
 </body>
 </html>
+<?php /**PATH /home/runner/workspace/resources/views/admin/live_preview.blade.php ENDPATH**/ ?>

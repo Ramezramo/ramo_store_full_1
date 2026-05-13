@@ -289,7 +289,11 @@ Adds a top toolbar, hover overlays on each section with type label, and click-to
 | Function | Description |
 |---------|-------------|
 | `buildCard(sec, idx)` | Renders one widget card in the left panel |
-| `buildEditor(sec, idx)` | Renders the expanded editor form for a widget type |
+| `buildEditor(sec, idx)` | Renders the expanded editor form for a widget type, appends responsive dim editor |
+| `buildDimEditor(sec, idx)` | Appended to every widget — renders 🖥️ Windows / 📱 Android dimension tabs |
+| `switchDimTab(idx, platform)` | Switches the active dimension tab for a widget (`'desktop'` or `'mobile'`) |
+| `updateDimField(idx, platform, key, val)` | Writes to `sections[idx].responsive[platform][key]` |
+| `getDim(sec, platform, key, fallback)` | Reads a responsive override or returns fallback |
 | `updateField(idx, key, val)` | Updates `sections[idx][key]` in memory |
 | `saveLayout()` | POSTs current `sections` JSON to `/admin/timeline/save` |
 | `reloadIframe()` | Reloads the preview iframe |
@@ -359,7 +363,76 @@ Initialized on `#lpSectionList`. On `onEnd`, it reads the new card order from `d
 
 ---
 
-## 9. Gotchas
+## 9. Responsive Dimensions (Windows 🖥️ / Android 📱)
+
+Every widget editor now has a **Responsive Dimensions** section at the bottom, with two tabs:
+- **🖥️ Windows** — dimension overrides applied to desktop/laptop browsers
+- **📱 Android** — dimension overrides applied when a mobile/Android device is detected
+
+### Data structure
+
+Responsive overrides live in `section.responsive`:
+
+```json
+{
+  "layout": "bannerImage",
+  "bannerHeight": 420,
+  "responsive": {
+    "desktop": { "bannerHeight": 480, "radius": 4 },
+    "mobile":  { "bannerHeight": 220, "radius": 0 }
+  }
+}
+```
+
+If a `responsive` override exists for the visitor's platform, it is **merged over** the base section values before rendering. The base values (without `responsive`) act as the fallback.
+
+### Dimension fields per widget type
+
+| Widget | Desktop / Mobile fields |
+|--------|------------------------|
+| `bannerImage` | Banner Height (px), Corner Radius |
+| `category` | Icon Scale, Icon Radius |
+| `categoryCards` | Columns, Card Height (px), Corner Radius, Max Items |
+| `twoColumn`, `saleImages`, `seupermarketstars` | Card Width (px), Image Height (px), Corner Radius, Max Items |
+| `spacer` | Height (px) |
+| `topVendors` | Max Vendors |
+| `trending`, `arrivals`, `recent`, `recommended` | Items to Show, Card Width (px) |
+| All others | Padding Top (px), Padding Bottom (px) |
+
+Structural widgets (`logo`, `announcement`, `flash`, `spacer`, `divider`) skip the generic padding fields.
+
+### How rendering works
+
+In `home.blade.php`, before rendering each section:
+
+```php
+$ua = request()->userAgent() ?? '';
+$isMobile = preg_match('/Mobile|Android|iPhone|iPad.../i', $ua);
+$tlPlatform = $isMobile ? 'mobile' : 'desktop';
+
+// merge overrides
+if (!empty($sec['responsive'][$tlPlatform])) {
+    $sec = array_merge($sec, $sec['responsive'][$tlPlatform]);
+}
+```
+
+This means any field set in `responsive.desktop` or `responsive.mobile` transparently overrides the section's base value for that device type.
+
+### Adding responsive fields to a new widget
+
+In `buildDimEditor()`, add a new `else if (type === 'myNewWidget')` branch with the fields array:
+
+```js
+} else if (type === 'myNewWidget') {
+  fields = [
+    { key:'myHeight', label:'Height (px)', type:'number', min:50, max:500, step:10, def:200 },
+  ];
+}
+```
+
+---
+
+## 10. Gotchas
 
 - The JSON array index is the render order. Reordering in the editor reshuffles indexes — always reference sections by `layout` + `name`, not by index in documentation.
 - `bannerHeight` defaults to `420` if absent — existing rows without this key render at 420px.

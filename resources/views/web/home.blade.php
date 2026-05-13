@@ -38,16 +38,35 @@
   @php
     $inPreview = request()->has('tl_preview');
     $tlSolo    = request()->has('tl_solo') ? (int) request('tl_solo') : null;
+    // Detect mobile/Android device for responsive dimension overrides
+    $ua = request()->userAgent() ?? '';
+    $isMobile = (bool) preg_match('/Mobile|Android|iPhone|iPad|iPod|BlackBerry|Windows Phone/i', $ua);
+    $tlPlatform = $isMobile ? 'mobile' : 'desktop';
   @endphp
   @forelse($sections as $si => $sec)
     @php
+      // Apply responsive dimension overrides for this platform
+      if (!empty($sec['responsive'][$tlPlatform])) {
+          $sec = array_merge($sec, $sec['responsive'][$tlPlatform]);
+      }
+      // Apply padding from responsive dimensions
+      $tlPadTop    = isset($sec['paddingTop'])    ? (int)$sec['paddingTop']    : 0;
+      $tlPadBottom = isset($sec['paddingBottom']) ? (int)$sec['paddingBottom'] : 0;
+      $tlPadStyle  = ($tlPadTop || $tlPadBottom) ? "padding-top:{$tlPadTop}px;padding-bottom:{$tlPadBottom}px;" : '';
+
       $layout    = $sec['layout'] ?? '';
       $tlNoWrap  = in_array($layout, ['logo', 'announcement']);
       $tlName    = $sec['name'] ?? $sec['headerText'] ?? $sec['title'] ?? ucfirst($layout);
     @endphp
     @if($sec['hidden'] ?? false) @continue @endif
     @if($tlSolo !== null && $si !== $tlSolo) @continue @endif
-    @if($inPreview && !$tlNoWrap)<div class="tl-pw" data-si="{{ $si }}" data-layout="{{ $layout }}" data-name="{{ htmlspecialchars($tlName, ENT_QUOTES) }}">@endif
+    @if(!$tlNoWrap)
+      @if($inPreview)
+        <div class="tl-pw" data-si="{{ $si }}" data-layout="{{ $layout }}" data-name="{{ htmlspecialchars($tlName, ENT_QUOTES) }}" style="{{ $tlPadStyle }}">
+      @elseif($tlPadStyle)
+        <div style="{{ $tlPadStyle }}">
+      @endif
+    @endif
 
     {{-- LOGO — skip (web has its own header) --}}
     @if($layout === 'logo')
@@ -1006,7 +1025,13 @@
       {{-- intentionally skipped — rendered as full-width elements above --}}
 
     @endif
-    @if($inPreview && !$tlNoWrap)</div>@endif
+    @if(!$tlNoWrap)
+      @if($inPreview)
+        </div>
+      @elseif($tlPadStyle)
+        </div>
+      @endif
+    @endif
 
   @empty
     {{-- Fallback when no timeline config --}}
