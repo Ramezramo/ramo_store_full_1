@@ -41,13 +41,70 @@
   ?>
   <?php $__empty_1 = true; $__currentLoopData = $sections; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $si => $sec): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
     <?php
-      $layout    = $sec['layout'] ?? '';
-      $tlNoWrap  = in_array($layout, ['logo', 'announcement']);
-      $tlName    = $sec['name'] ?? $sec['headerText'] ?? $sec['title'] ?? ucfirst($layout);
+      $layout   = $sec['layout'] ?? '';
+      $tlNoWrap = in_array($layout, ['logo', 'announcement']);
+      $tlName   = $sec['name'] ?? $sec['headerText'] ?? $sec['title'] ?? ucfirst($layout);
+      // Responsive dimension config (screen-width based, not device based)
+      $tlResp   = $sec['responsive'] ?? [];
+      $tlBp     = (int)($tlResp['breakpoint'] ?? 768);
+      $tlDesk   = $tlResp['desktop'] ?? [];
+      $tlMob    = $tlResp['mobile']  ?? [];
     ?>
     <?php if($sec['hidden'] ?? false): ?> <?php continue; ?> <?php endif; ?>
     <?php if($tlSolo !== null && $si !== $tlSolo): ?> <?php continue; ?> <?php endif; ?>
-    <?php if($inPreview && !$tlNoWrap): ?><div class="tl-pw" data-si="<?php echo e($si); ?>" data-layout="<?php echo e($layout); ?>" data-name="<?php echo e(htmlspecialchars($tlName, ENT_QUOTES)); ?>"><?php endif; ?>
+    <?php if(!$tlNoWrap): ?>
+      
+      <?php if($tlDesk || $tlMob): ?>
+      <style>
+        #tl-sec-<?php echo e($si); ?> {
+          --tl-pad-top:<?php echo e($tlDesk['paddingTop'] ?? 0); ?>px;
+          --tl-pad-bottom:<?php echo e($tlDesk['paddingBottom'] ?? 0); ?>px;
+          <?php if($layout==='bannerImage'): ?>
+          --tl-banner-h:<?php echo e($tlDesk['bannerHeight'] ?? ($sec['bannerHeight'] ?? 420)); ?>px;
+          --tl-radius:<?php echo e($tlDesk['radius'] ?? ($sec['radius'] ?? 2)); ?>px;
+          <?php elseif($layout==='categoryCards'): ?>
+          --tl-columns:<?php echo e($tlDesk['columns'] ?? ($sec['columns'] ?? 3)); ?>;
+          --tl-card-h:<?php echo e($tlDesk['cardHeight'] ?? ($sec['cardHeight'] ?? 220)); ?>px;
+          --tl-card-r:<?php echo e($tlDesk['cardBorderRadius'] ?? ($sec['cardBorderRadius'] ?? 14)); ?>px;
+          <?php elseif(in_array($layout,['twoColumn','saleImages','seupermarketstars'])): ?>
+          --tl-prod-w:<?php echo e($tlDesk['productWidth'] ?? ($sec['productWidth'] ?? 200)); ?>px;
+          --tl-img-h:<?php echo e($tlDesk['imageHeight'] ?? ($sec['imageHeight'] ?? 200)); ?>px;
+          --tl-card-r:<?php echo e($tlDesk['cardBorderRadius'] ?? ($sec['cardBorderRadius'] ?? 10)); ?>px;
+          <?php elseif($layout==='spacer'): ?>
+          --tl-spacer-h:<?php echo e($tlDesk['height'] ?? ($sec['height'] ?? 24)); ?>px;
+          <?php endif; ?>
+        }
+        <?php if($tlMob): ?>
+        @media(max-width:<?php echo e($tlBp); ?>px) {
+          #tl-sec-<?php echo e($si); ?> {
+            --tl-pad-top:<?php echo e($tlMob['paddingTop'] ?? 0); ?>px;
+            --tl-pad-bottom:<?php echo e($tlMob['paddingBottom'] ?? 0); ?>px;
+            <?php if($layout==='bannerImage'): ?>
+            --tl-banner-h:<?php echo e($tlMob['bannerHeight'] ?? ($sec['bannerHeight'] ?? 420)); ?>px;
+            --tl-radius:<?php echo e($tlMob['radius'] ?? ($sec['radius'] ?? 2)); ?>px;
+            <?php elseif($layout==='categoryCards'): ?>
+            --tl-columns:<?php echo e($tlMob['columns'] ?? ($sec['columns'] ?? 3)); ?>;
+            --tl-card-h:<?php echo e($tlMob['cardHeight'] ?? ($sec['cardHeight'] ?? 220)); ?>px;
+            --tl-card-r:<?php echo e($tlMob['cardBorderRadius'] ?? ($sec['cardBorderRadius'] ?? 14)); ?>px;
+            <?php elseif(in_array($layout,['twoColumn','saleImages','seupermarketstars'])): ?>
+            --tl-prod-w:<?php echo e($tlMob['productWidth'] ?? ($sec['productWidth'] ?? 200)); ?>px;
+            --tl-img-h:<?php echo e($tlMob['imageHeight'] ?? ($sec['imageHeight'] ?? 200)); ?>px;
+            --tl-card-r:<?php echo e($tlMob['cardBorderRadius'] ?? ($sec['cardBorderRadius'] ?? 10)); ?>px;
+            <?php elseif($layout==='spacer'): ?>
+            --tl-spacer-h:<?php echo e($tlMob['height'] ?? ($sec['height'] ?? 24)); ?>px;
+            <?php endif; ?>
+          }
+        }
+        <?php endif; ?>
+      </style>
+      <?php endif; ?>
+      
+      <?php if($inPreview): ?>
+        <div id="tl-sec-<?php echo e($si); ?>" class="tl-pw" data-si="<?php echo e($si); ?>" data-layout="<?php echo e($layout); ?>" data-name="<?php echo e(htmlspecialchars($tlName, ENT_QUOTES)); ?>" style="padding-top:var(--tl-pad-top,0px);padding-bottom:var(--tl-pad-bottom,0px)">
+      <?php else: ?>
+        <div id="tl-sec-<?php echo e($si); ?>" style="padding-top:var(--tl-pad-top,0px);padding-bottom:var(--tl-pad-bottom,0px)">
+      <?php endif; ?>
+    <?php endif; ?>
 
     
     <?php if($layout === 'logo'): ?>
@@ -107,7 +164,7 @@
 
     
     <?php elseif($layout === 'spacer'): ?>
-      <div class="tl-spacer" style="height:<?php echo e($sec['height'] ?? 24); ?>px"></div>
+      <div class="tl-spacer" style="height:var(--tl-spacer-h,<?php echo e($sec['height'] ?? 24); ?>px)"></div>
 
     
     <?php elseif($layout === 'divider'): ?>
@@ -124,7 +181,7 @@
       ?>
       <?php if(count($items)): ?>
         <?php if($isSlider): ?>
-        <div class="tl-banner-slider" id="<?php echo e($sliderId); ?>" style="border-radius:<?php echo e($radius); ?>px;margin-bottom:28px;max-height:<?php echo e($bannerHeight); ?>px">
+        <div class="tl-banner-slider" id="<?php echo e($sliderId); ?>" style="border-radius:var(--tl-radius,<?php echo e($radius); ?>px);margin-bottom:28px;max-height:var(--tl-banner-h,<?php echo e($bannerHeight); ?>px)">
           <div class="tl-slides" id="<?php echo e($sliderId); ?>-track">
             <?php $__currentLoopData = $items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $bi => $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
               <?php
@@ -134,7 +191,7 @@
               ?>
               <div class="tl-slide">
                 <a href="<?php echo e($href); ?>" class="tl-slide-link">
-                  <img src="<?php echo e($url); ?>" alt="Banner <?php echo e($bi+1); ?>" loading="<?php echo e($bi===0?'eager':'lazy'); ?>" style="height:<?php echo e($bannerHeight); ?>px;max-height:<?php echo e($bannerHeight); ?>px">
+                  <img src="<?php echo e($url); ?>" alt="Banner <?php echo e($bi+1); ?>" loading="<?php echo e($bi===0?'eager':'lazy'); ?>" style="height:var(--tl-banner-h,<?php echo e($bannerHeight); ?>px);max-height:var(--tl-banner-h,<?php echo e($bannerHeight); ?>px)">
                 </a>
               </div>
             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
@@ -157,7 +214,7 @@
               $href  = $catId ? route('shop', ['category' => $catId]) : '#';
             ?>
             <a href="<?php echo e($href); ?>" class="tl-static-banner" style="border-radius:<?php echo e($radius); ?>px;overflow:hidden;display:block;margin-bottom:20px">
-              <img src="<?php echo e($url); ?>" alt="Banner" style="width:100%;object-fit:cover;height:<?php echo e($bannerHeight); ?>px;max-height:<?php echo e($bannerHeight); ?>px;display:block">
+              <img src="<?php echo e($url); ?>" alt="Banner" style="width:100%;object-fit:cover;height:var(--tl-banner-h,<?php echo e($bannerHeight); ?>px);max-height:var(--tl-banner-h,<?php echo e($bannerHeight); ?>px);display:block">
             </a>
           <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
         <?php endif; ?>
@@ -206,7 +263,7 @@
         <h2 class="sec-title"><?php echo e($title); ?></h2>
         <a href="<?php echo e(route('shop')); ?>" class="sec-link">See all →</a>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(<?php echo e($columns); ?>,1fr);gap:16px;margin-bottom:44px">
+      <div style="display:grid;grid-template-columns:repeat(var(--tl-columns,<?php echo e($columns); ?>),1fr);gap:16px;margin-bottom:44px">
         <?php $__currentLoopData = $cats; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $ci => $cat): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
           <?php
             $href      = route('shop', ['category' => $cat->id]);
@@ -215,7 +272,7 @@
           ?>
           <a href="<?php echo e($href); ?>"
              class="cc-card"
-             style="border-radius:<?php echo e($radius); ?>px;height:<?php echo e($cardHeight); ?>px;background:<?php echo e($bg ? '#111' : $fallColor); ?>">
+             style="border-radius:var(--tl-card-r,<?php echo e($radius); ?>px);height:var(--tl-card-h,<?php echo e($cardHeight); ?>px);background:<?php echo e($bg ? '#111' : $fallColor); ?>">
             <?php if($bg): ?>
               <img src="<?php echo e($bg); ?>" alt="<?php echo e($cat->name); ?>" loading="lazy" class="cc-img">
             <?php else: ?>
@@ -256,16 +313,16 @@
       ?>
       <?php if($products->count()): ?>
       <style>
-        #<?php echo e($secId); ?> .product-card { border-radius: <?php echo e($cardRadius); ?>px }
+        #<?php echo e($secId); ?> .product-card { border-radius: var(--tl-card-r,<?php echo e($cardRadius); ?>px) }
         <?php if($imgHeight): ?>
-        #<?php echo e($secId); ?> .product-card-img { aspect-ratio: unset; height: <?php echo e($imgHeight); ?>px }
+        #<?php echo e($secId); ?> .product-card-img { aspect-ratio: unset; height: var(--tl-img-h,<?php echo e($imgHeight); ?>px) }
         <?php endif; ?>
       </style>
       <div class="sec-head">
         <h2 class="sec-title"><?php echo e($title); ?></h2>
         <a href="<?php echo e(route('shop', array_filter(['category' => $catId]))); ?>" class="sec-link">View all →</a>
       </div>
-      <div class="product-grid" id="<?php echo e($secId); ?>" style="grid-template-columns:repeat(auto-fill,minmax(<?php echo e($prodWidth); ?>px,1fr));margin-bottom:40px">
+      <div class="product-grid" id="<?php echo e($secId); ?>" style="grid-template-columns:repeat(auto-fill,minmax(var(--tl-prod-w,<?php echo e($prodWidth); ?>px),1fr));margin-bottom:40px">
         <?php $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $p): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
         <?php echo $__env->make('web.partials.product-card', ['p' => $p, 'cardVariations' => $sectionVariations[$p->id] ?? [], 'cardOptions' => $cardOptions], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
@@ -300,7 +357,7 @@
       <div class="tl-scroll-section" style="margin-bottom:36px">
         <div class="tl-scroll-track">
           <?php $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $p): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-          <div class="tl-scroll-card" style="width:<?php echo e($prodWidth); ?>px">
+          <div class="tl-scroll-card" style="width:var(--tl-prod-w,<?php echo e($prodWidth); ?>px)">
             <?php echo $__env->make('web.partials.product-card', [
               'p'            => $p,
               'cardVariations' => $sectionVariations[$p->id] ?? [],
@@ -335,16 +392,16 @@
       ?>
       <?php if($products->count()): ?>
       <style>
-        #<?php echo e($secId); ?> .product-card { border-radius: <?php echo e($cardRadius); ?>px }
+        #<?php echo e($secId); ?> .product-card { border-radius: var(--tl-card-r,<?php echo e($cardRadius); ?>px) }
         <?php if($imgHeight): ?>
-        #<?php echo e($secId); ?> .product-card-img { aspect-ratio: unset; height: <?php echo e($imgHeight); ?>px }
+        #<?php echo e($secId); ?> .product-card-img { aspect-ratio: unset; height: var(--tl-img-h,<?php echo e($imgHeight); ?>px) }
         <?php endif; ?>
       </style>
       <div class="sec-head">
         <h2 class="sec-title"><?php echo e($title); ?></h2>
         <a href="<?php echo e(route('shop', array_filter(['category' => $catId]))); ?>" class="sec-link">View all →</a>
       </div>
-      <div class="product-grid" id="<?php echo e($secId); ?>" style="grid-template-columns:repeat(auto-fill,minmax(<?php echo e($prodWidth); ?>px,1fr));margin-bottom:40px">
+      <div class="product-grid" id="<?php echo e($secId); ?>" style="grid-template-columns:repeat(auto-fill,minmax(var(--tl-prod-w,<?php echo e($prodWidth); ?>px),1fr));margin-bottom:40px">
         <?php $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $p): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
         <?php echo $__env->make('web.partials.product-card', ['p' => $p, 'cardVariations' => $sectionVariations[$p->id] ?? [], 'cardOptions' => $cardOptions], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
@@ -1008,7 +1065,9 @@
       
 
     <?php endif; ?>
-    <?php if($inPreview && !$tlNoWrap): ?></div><?php endif; ?>
+    <?php if(!$tlNoWrap): ?>
+      </div>
+    <?php endif; ?>
 
   <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
     

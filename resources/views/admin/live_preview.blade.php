@@ -702,12 +702,19 @@ function buildDimEditor(sec, idx) {
     }).join('');
   }
 
+  const bp = (sec.responsive && sec.responsive.breakpoint) ? sec.responsive.breakpoint : 768;
+
   return `
 <div class="dim-section">
-  <div class="dim-section-label">📐 Responsive Dimensions</div>
+  <div class="dim-section-label">📐 Responsive Dimensions <span style="font-weight:400;opacity:.55;font-size:10px">(adapts to browser width)</span></div>
+  <div class="form-group" style="margin-bottom:8px">
+    <label style="font-size:10px;opacity:.7">Mobile breakpoint — switch below this width (px)</label>
+    <input type="number" value="${bp}" min="320" max="1920" step:10 style="max-width:100px"
+      onchange="if(!sections[${idx}].responsive) sections[${idx}].responsive={};sections[${idx}].responsive.breakpoint=parseInt(this.value)||768;">
+  </div>
   <div class="dim-tab-bar">
-    <button class="dim-tab dim-tab-win active" data-plat="desktop" onclick="switchDimTab(${idx},'desktop')">🖥️ Windows</button>
-    <button class="dim-tab dim-tab-and" data-plat="mobile" onclick="switchDimTab(${idx},'mobile')">📱 Android</button>
+    <button class="dim-tab dim-tab-win active" data-plat="desktop" onclick="switchDimTab(${idx},'desktop')">🖥️ Wide screen</button>
+    <button class="dim-tab dim-tab-and" data-plat="mobile" onclick="switchDimTab(${idx},'mobile')">📱 Narrow screen</button>
   </div>
   <div class="dim-panel active" data-plat="desktop">
     <div class="form-grid">${buildPanelFields('desktop')}</div>

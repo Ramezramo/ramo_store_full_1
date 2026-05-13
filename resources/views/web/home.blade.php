@@ -38,33 +38,71 @@
   @php
     $inPreview = request()->has('tl_preview');
     $tlSolo    = request()->has('tl_solo') ? (int) request('tl_solo') : null;
-    // Detect mobile/Android device for responsive dimension overrides
-    $ua = request()->userAgent() ?? '';
-    $isMobile = (bool) preg_match('/Mobile|Android|iPhone|iPad|iPod|BlackBerry|Windows Phone/i', $ua);
-    $tlPlatform = $isMobile ? 'mobile' : 'desktop';
   @endphp
   @forelse($sections as $si => $sec)
     @php
-      // Apply responsive dimension overrides for this platform
-      if (!empty($sec['responsive'][$tlPlatform])) {
-          $sec = array_merge($sec, $sec['responsive'][$tlPlatform]);
-      }
-      // Apply padding from responsive dimensions
-      $tlPadTop    = isset($sec['paddingTop'])    ? (int)$sec['paddingTop']    : 0;
-      $tlPadBottom = isset($sec['paddingBottom']) ? (int)$sec['paddingBottom'] : 0;
-      $tlPadStyle  = ($tlPadTop || $tlPadBottom) ? "padding-top:{$tlPadTop}px;padding-bottom:{$tlPadBottom}px;" : '';
-
-      $layout    = $sec['layout'] ?? '';
-      $tlNoWrap  = in_array($layout, ['logo', 'announcement']);
-      $tlName    = $sec['name'] ?? $sec['headerText'] ?? $sec['title'] ?? ucfirst($layout);
+      $layout   = $sec['layout'] ?? '';
+      $tlNoWrap = in_array($layout, ['logo', 'announcement']);
+      $tlName   = $sec['name'] ?? $sec['headerText'] ?? $sec['title'] ?? ucfirst($layout);
+      // Responsive dimension config (screen-width based, not device based)
+      $tlResp   = $sec['responsive'] ?? [];
+      $tlBp     = (int)($tlResp['breakpoint'] ?? 768);
+      $tlDesk   = $tlResp['desktop'] ?? [];
+      $tlMob    = $tlResp['mobile']  ?? [];
     @endphp
     @if($sec['hidden'] ?? false) @continue @endif
     @if($tlSolo !== null && $si !== $tlSolo) @continue @endif
     @if(!$tlNoWrap)
+      {{-- Emit per-section CSS custom properties with media-query breakpoint --}}
+      @if($tlDesk || $tlMob)
+      <style>
+        #tl-sec-{{ $si }} {
+          --tl-pad-top:{{ $tlDesk['paddingTop'] ?? 0 }}px;
+          --tl-pad-bottom:{{ $tlDesk['paddingBottom'] ?? 0 }}px;
+          @if($layout==='bannerImage')
+          --tl-banner-h:{{ $tlDesk['bannerHeight'] ?? ($sec['bannerHeight'] ?? 420) }}px;
+          --tl-radius:{{ $tlDesk['radius'] ?? ($sec['radius'] ?? 2) }}px;
+          @elseif($layout==='categoryCards')
+          --tl-columns:{{ $tlDesk['columns'] ?? ($sec['columns'] ?? 3) }};
+          --tl-card-h:{{ $tlDesk['cardHeight'] ?? ($sec['cardHeight'] ?? 220) }}px;
+          --tl-card-r:{{ $tlDesk['cardBorderRadius'] ?? ($sec['cardBorderRadius'] ?? 14) }}px;
+          @elseif(in_array($layout,['twoColumn','saleImages','seupermarketstars']))
+          --tl-prod-w:{{ $tlDesk['productWidth'] ?? ($sec['productWidth'] ?? 200) }}px;
+          --tl-img-h:{{ $tlDesk['imageHeight'] ?? ($sec['imageHeight'] ?? 200) }}px;
+          --tl-card-r:{{ $tlDesk['cardBorderRadius'] ?? ($sec['cardBorderRadius'] ?? 10) }}px;
+          @elseif($layout==='spacer')
+          --tl-spacer-h:{{ $tlDesk['height'] ?? ($sec['height'] ?? 24) }}px;
+          @endif
+        }
+        @if($tlMob)
+        @@media (max-width:{{ $tlBp }}px) {
+          #tl-sec-{{ $si }} {
+            --tl-pad-top:{{ $tlMob['paddingTop'] ?? 0 }}px;
+            --tl-pad-bottom:{{ $tlMob['paddingBottom'] ?? 0 }}px;
+            @if($layout==='bannerImage')
+            --tl-banner-h:{{ $tlMob['bannerHeight'] ?? ($sec['bannerHeight'] ?? 420) }}px;
+            --tl-radius:{{ $tlMob['radius'] ?? ($sec['radius'] ?? 2) }}px;
+            @elseif($layout==='categoryCards')
+            --tl-columns:{{ $tlMob['columns'] ?? ($sec['columns'] ?? 3) }};
+            --tl-card-h:{{ $tlMob['cardHeight'] ?? ($sec['cardHeight'] ?? 220) }}px;
+            --tl-card-r:{{ $tlMob['cardBorderRadius'] ?? ($sec['cardBorderRadius'] ?? 14) }}px;
+            @elseif(in_array($layout,['twoColumn','saleImages','seupermarketstars']))
+            --tl-prod-w:{{ $tlMob['productWidth'] ?? ($sec['productWidth'] ?? 200) }}px;
+            --tl-img-h:{{ $tlMob['imageHeight'] ?? ($sec['imageHeight'] ?? 200) }}px;
+            --tl-card-r:{{ $tlMob['cardBorderRadius'] ?? ($sec['cardBorderRadius'] ?? 10) }}px;
+            @elseif($layout==='spacer')
+            --tl-spacer-h:{{ $tlMob['height'] ?? ($sec['height'] ?? 24) }}px;
+            @endif
+          }
+        }
+        @endif
+      </style>
+      @endif
+      {{-- Section wrapper — always present so CSS vars cascade to children --}}
       @if($inPreview)
-        <div class="tl-pw" data-si="{{ $si }}" data-layout="{{ $layout }}" data-name="{{ htmlspecialchars($tlName, ENT_QUOTES) }}" style="{{ $tlPadStyle }}">
-      @elseif($tlPadStyle)
-        <div style="{{ $tlPadStyle }}">
+        <div id="tl-sec-{{ $si }}" class="tl-pw" data-si="{{ $si }}" data-layout="{{ $layout }}" data-name="{{ htmlspecialchars($tlName, ENT_QUOTES) }}" style="padding-top:var(--tl-pad-top,0px);padding-bottom:var(--tl-pad-bottom,0px)">
+      @else
+        <div id="tl-sec-{{ $si }}" style="padding-top:var(--tl-pad-top,0px);padding-bottom:var(--tl-pad-bottom,0px)">
       @endif
     @endif
 
@@ -126,7 +164,7 @@
 
     {{-- SPACER --}}
     @elseif($layout === 'spacer')
-      <div class="tl-spacer" style="height:{{ $sec['height'] ?? 24 }}px"></div>
+      <div class="tl-spacer" style="height:var(--tl-spacer-h,{{ $sec['height'] ?? 24 }}px)"></div>
 
     {{-- DIVIDER --}}
     @elseif($layout === 'divider')
@@ -143,7 +181,7 @@
       @endphp
       @if(count($items))
         @if($isSlider)
-        <div class="tl-banner-slider" id="{{ $sliderId }}" style="border-radius:{{ $radius }}px;margin-bottom:28px;max-height:{{ $bannerHeight }}px">
+        <div class="tl-banner-slider" id="{{ $sliderId }}" style="border-radius:var(--tl-radius,{{ $radius }}px);margin-bottom:28px;max-height:var(--tl-banner-h,{{ $bannerHeight }}px)">
           <div class="tl-slides" id="{{ $sliderId }}-track">
             @foreach($items as $bi => $item)
               @php
@@ -153,7 +191,7 @@
               @endphp
               <div class="tl-slide">
                 <a href="{{ $href }}" class="tl-slide-link">
-                  <img src="{{ $url }}" alt="Banner {{ $bi+1 }}" loading="{{ $bi===0?'eager':'lazy' }}" style="height:{{ $bannerHeight }}px;max-height:{{ $bannerHeight }}px">
+                  <img src="{{ $url }}" alt="Banner {{ $bi+1 }}" loading="{{ $bi===0?'eager':'lazy' }}" style="height:var(--tl-banner-h,{{ $bannerHeight }}px);max-height:var(--tl-banner-h,{{ $bannerHeight }}px)">
                 </a>
               </div>
             @endforeach
@@ -176,7 +214,7 @@
               $href  = $catId ? route('shop', ['category' => $catId]) : '#';
             @endphp
             <a href="{{ $href }}" class="tl-static-banner" style="border-radius:{{ $radius }}px;overflow:hidden;display:block;margin-bottom:20px">
-              <img src="{{ $url }}" alt="Banner" style="width:100%;object-fit:cover;height:{{ $bannerHeight }}px;max-height:{{ $bannerHeight }}px;display:block">
+              <img src="{{ $url }}" alt="Banner" style="width:100%;object-fit:cover;height:var(--tl-banner-h,{{ $bannerHeight }}px);max-height:var(--tl-banner-h,{{ $bannerHeight }}px);display:block">
             </a>
           @endforeach
         @endif
@@ -225,7 +263,7 @@
         <h2 class="sec-title">{{ $title }}</h2>
         <a href="{{ route('shop') }}" class="sec-link">See all →</a>
       </div>
-      <div style="display:grid;grid-template-columns:repeat({{ $columns }},1fr);gap:16px;margin-bottom:44px">
+      <div style="display:grid;grid-template-columns:repeat(var(--tl-columns,{{ $columns }}),1fr);gap:16px;margin-bottom:44px">
         @foreach($cats as $ci => $cat)
           @php
             $href      = route('shop', ['category' => $cat->id]);
@@ -234,7 +272,7 @@
           @endphp
           <a href="{{ $href }}"
              class="cc-card"
-             style="border-radius:{{ $radius }}px;height:{{ $cardHeight }}px;background:{{ $bg ? '#111' : $fallColor }}">
+             style="border-radius:var(--tl-card-r,{{ $radius }}px);height:var(--tl-card-h,{{ $cardHeight }}px);background:{{ $bg ? '#111' : $fallColor }}">
             @if($bg)
               <img src="{{ $bg }}" alt="{{ $cat->name }}" loading="lazy" class="cc-img">
             @else
@@ -275,16 +313,16 @@
       @endphp
       @if($products->count())
       <style>
-        #{{ $secId }} .product-card { border-radius: {{ $cardRadius }}px }
+        #{{ $secId }} .product-card { border-radius: var(--tl-card-r,{{ $cardRadius }}px) }
         @if($imgHeight)
-        #{{ $secId }} .product-card-img { aspect-ratio: unset; height: {{ $imgHeight }}px }
+        #{{ $secId }} .product-card-img { aspect-ratio: unset; height: var(--tl-img-h,{{ $imgHeight }}px) }
         @endif
       </style>
       <div class="sec-head">
         <h2 class="sec-title">{{ $title }}</h2>
         <a href="{{ route('shop', array_filter(['category' => $catId])) }}" class="sec-link">View all →</a>
       </div>
-      <div class="product-grid" id="{{ $secId }}" style="grid-template-columns:repeat(auto-fill,minmax({{ $prodWidth }}px,1fr));margin-bottom:40px">
+      <div class="product-grid" id="{{ $secId }}" style="grid-template-columns:repeat(auto-fill,minmax(var(--tl-prod-w,{{ $prodWidth }}px),1fr));margin-bottom:40px">
         @foreach($products as $p)
         @include('web.partials.product-card', ['p' => $p, 'cardVariations' => $sectionVariations[$p->id] ?? [], 'cardOptions' => $cardOptions])
         @endforeach
@@ -319,7 +357,7 @@
       <div class="tl-scroll-section" style="margin-bottom:36px">
         <div class="tl-scroll-track">
           @foreach($products as $p)
-          <div class="tl-scroll-card" style="width:{{ $prodWidth }}px">
+          <div class="tl-scroll-card" style="width:var(--tl-prod-w,{{ $prodWidth }}px)">
             @include('web.partials.product-card', [
               'p'            => $p,
               'cardVariations' => $sectionVariations[$p->id] ?? [],
@@ -354,16 +392,16 @@
       @endphp
       @if($products->count())
       <style>
-        #{{ $secId }} .product-card { border-radius: {{ $cardRadius }}px }
+        #{{ $secId }} .product-card { border-radius: var(--tl-card-r,{{ $cardRadius }}px) }
         @if($imgHeight)
-        #{{ $secId }} .product-card-img { aspect-ratio: unset; height: {{ $imgHeight }}px }
+        #{{ $secId }} .product-card-img { aspect-ratio: unset; height: var(--tl-img-h,{{ $imgHeight }}px) }
         @endif
       </style>
       <div class="sec-head">
         <h2 class="sec-title">{{ $title }}</h2>
         <a href="{{ route('shop', array_filter(['category' => $catId])) }}" class="sec-link">View all →</a>
       </div>
-      <div class="product-grid" id="{{ $secId }}" style="grid-template-columns:repeat(auto-fill,minmax({{ $prodWidth }}px,1fr));margin-bottom:40px">
+      <div class="product-grid" id="{{ $secId }}" style="grid-template-columns:repeat(auto-fill,minmax(var(--tl-prod-w,{{ $prodWidth }}px),1fr));margin-bottom:40px">
         @foreach($products as $p)
         @include('web.partials.product-card', ['p' => $p, 'cardVariations' => $sectionVariations[$p->id] ?? [], 'cardOptions' => $cardOptions])
         @endforeach
@@ -1026,11 +1064,7 @@
 
     @endif
     @if(!$tlNoWrap)
-      @if($inPreview)
-        </div>
-      @elseif($tlPadStyle)
-        </div>
-      @endif
+      </div>
     @endif
 
   @empty
