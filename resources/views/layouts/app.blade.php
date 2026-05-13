@@ -83,7 +83,7 @@ button{cursor:pointer;font-family:inherit}
 .cat-chip:hover{border-color:#999;background:var(--c-tag);transform:translateY(-2px);box-shadow:var(--shadow)}
 
 /* ── PRODUCT GRID ── */
-.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:20px}
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:20px;align-items:start}
 .product-grid.cols-4{grid-template-columns:repeat(4,1fr)}
 .product-card{background:var(--c-white);border-radius:var(--radius-lg);overflow:hidden;border:1.5px solid var(--c-light);transition:all .2s;display:flex;flex-direction:column}
 .product-card:hover{box-shadow:var(--shadow-md);border-color:#d0d0d0;transform:translateY(-3px)}
@@ -97,9 +97,9 @@ button{cursor:pointer;font-family:inherit}
 .wish-btn:hover{background:#fff;transform:scale(1.1)}
 .wish-btn.wished{color:var(--c-orange)}
 .placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:48px;color:var(--c-light)}
-.product-card-body{padding:16px;flex:1;display:flex;flex-direction:column;gap:6px}
+.product-card-body{padding:16px;display:flex;flex-direction:column;gap:6px}
 .product-card-name{font-size:13.5px;font-weight:600;color:var(--c-dark);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.product-card-price{display:flex;align-items:center;gap:8px;margin-top:auto;padding-top:8px}
+.product-card-price{display:flex;align-items:center;gap:8px;padding-top:8px}
 .price-main{font-size:16px;font-weight:800;color:var(--c-dark)}
 .price-old{font-size:13px;color:#aaa;text-decoration:line-through}
 .price-main.sale{color:var(--c-orange)}
