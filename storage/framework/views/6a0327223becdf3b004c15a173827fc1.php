@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>@yield('title', 'Ramo Store') — Fashion & More</title>
+<title><?php echo $__env->yieldContent('title', 'Ramo Store'); ?> — Fashion & More</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
 <style>
@@ -721,52 +721,52 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 }
 .vendor-banner-btn:hover{background:#d44f1a}
 </style>
-@stack('styles')
+<?php echo $__env->yieldPushContent('styles'); ?>
 </head>
 <body>
 
 <!-- NAV -->
 <nav class="nav">
   <div class="nav-inner">
-    <a href="{{ route('home') }}" class="nav-logo">Ramo<span>Store</span></a>
+    <a href="<?php echo e(route('home')); ?>" class="nav-logo">Ramo<span>Store</span></a>
     <button class="nav-hamburger" id="nav-hamburger" onclick="toggleMobileMenu()" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
     <div class="nav-links">
-      <a href="{{ route('home') }}"  class="{{ request()->routeIs('home') ? 'active' : '' }}">Home</a>
-      <a href="{{ route('shop') }}"  class="{{ request()->routeIs('shop') ? 'active' : '' }}">Shop</a>
-      <a href="{{ route('order.track') }}" class="{{ request()->routeIs('order.track*') ? 'active' : '' }}">Track Order</a>
+      <a href="<?php echo e(route('home')); ?>"  class="<?php echo e(request()->routeIs('home') ? 'active' : ''); ?>">Home</a>
+      <a href="<?php echo e(route('shop')); ?>"  class="<?php echo e(request()->routeIs('shop') ? 'active' : ''); ?>">Shop</a>
+      <a href="<?php echo e(route('order.track')); ?>" class="<?php echo e(request()->routeIs('order.track*') ? 'active' : ''); ?>">Track Order</a>
       <a href="/api-guide.html" target="_blank">API Docs</a>
     </div>
     <div class="nav-search">
-      <form action="{{ route('search') }}" method="GET">
-        <input type="text" name="q" placeholder="Search products…" value="{{ request('q', request('search')) }}" autocomplete="off">
+      <form action="<?php echo e(route('search')); ?>" method="GET">
+        <input type="text" name="q" placeholder="Search products…" value="<?php echo e(request('q', request('search'))); ?>" autocomplete="off">
         <button type="submit">🔍</button>
       </form>
     </div>
     <div class="nav-actions">
-      {{-- Wishlist --}}
-      <a href="{{ route('wishlist') }}" class="nav-icon-btn" title="Wishlist">
+      
+      <a href="<?php echo e(route('wishlist')); ?>" class="nav-icon-btn" title="Wishlist">
         ♡
-        @php $wCount = count(session('ramo_wishlist',[])); @endphp
-        @if($wCount)<span class="nav-badge">{{ $wCount }}</span>@endif
+        <?php $wCount = count(session('ramo_wishlist',[])); ?>
+        <?php if($wCount): ?><span class="nav-badge"><?php echo e($wCount); ?></span><?php endif; ?>
       </a>
 
-      {{-- Cart --}}
-      <a href="{{ route('cart') }}" class="nav-icon-btn" title="Cart">
+      
+      <a href="<?php echo e(route('cart')); ?>" class="nav-icon-btn" title="Cart">
         🛒
-        @php $cCount = count(session('ramo_cart',[])); @endphp
-        @if($cCount)<span class="nav-badge" id="cart-badge">{{ $cCount }}</span>@endif
+        <?php $cCount = count(session('ramo_cart',[])); ?>
+        <?php if($cCount): ?><span class="nav-badge" id="cart-badge"><?php echo e($cCount); ?></span><?php endif; ?>
       </a>
 
-      {{-- Admin dropdown --}}
-      @auth
-        @php
+      
+      <?php if(auth()->guard()->check()): ?>
+        <?php
           $__u = Auth::user();
           $__isAdmin = $__u->email === 'adminramoui@gmail.com'
             || str_contains((string)$__u->role, 'admin');
-        @endphp
-        @if($__isAdmin)
+        ?>
+        <?php if($__isAdmin): ?>
           <div class="nav-portal" id="admin-portal">
             <button class="nav-dashboard-btn" onclick="togglePortal('admin-portal',event)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -774,13 +774,13 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
               <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             <div class="nav-portal-dropdown">
-              <a href="{{ route('admin.dashboard') }}" class="nav-portal-item">
+              <a href="<?php echo e(route('admin.dashboard')); ?>" class="nav-portal-item">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
                 Dashboard
               </a>
               <hr class="nav-portal-divider">
-              <form method="POST" action="{{ route('logout') }}">
-                @csrf
+              <form method="POST" action="<?php echo e(route('logout')); ?>">
+                <?php echo csrf_field(); ?>
                 <button type="submit" class="nav-portal-item danger">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                   Sign Out
@@ -788,30 +788,31 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
               </form>
             </div>
           </div>
-        @endif
-      @endauth
+        <?php endif; ?>
+      <?php endif; ?>
 
-      {{-- Vendor dropdown --}}
-      @if(auth()->guard('vendor_web')->check())
-        @php $__vw = auth()->guard('vendor_web')->user(); @endphp
+      
+      <?php if(auth()->guard('vendor_web')->check()): ?>
+        <?php $__vw = auth()->guard('vendor_web')->user(); ?>
         <div class="nav-portal" id="vendor-portal">
           <button class="nav-dashboard-btn nav-dashboard-vendor" onclick="togglePortal('vendor-portal',event)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-            {{ Str::limit($__vw->shop_name, 14) }}
+            <?php echo e(Str::limit($__vw->shop_name, 14)); ?>
+
             <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="nav-portal-dropdown">
-            <a href="{{ route('vendor.dashboard') }}" class="nav-portal-item">
+            <a href="<?php echo e(route('vendor.dashboard')); ?>" class="nav-portal-item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
               My Dashboard
             </a>
-            <a href="{{ route('vendor.store', $__vw->id) }}" target="_blank" class="nav-portal-item">
+            <a href="<?php echo e(route('vendor.store', $__vw->id)); ?>" target="_blank" class="nav-portal-item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
               My Store
             </a>
             <hr class="nav-portal-divider">
-            <form method="POST" action="{{ route('vendor.logout') }}">
-              @csrf
+            <form method="POST" action="<?php echo e(route('vendor.logout')); ?>">
+              <?php echo csrf_field(); ?>
               <button type="submit" class="nav-portal-item danger">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                 Sign Out
@@ -819,33 +820,34 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
             </form>
           </div>
         </div>
-      @endif
+      <?php endif; ?>
 
-      {{-- Account --}}
-      @auth
-        @php $__au = Auth::user(); @endphp
+      
+      <?php if(auth()->guard()->check()): ?>
+        <?php $__au = Auth::user(); ?>
         <div class="nav-portal" id="account-portal">
           <button class="nav-user-btn" onclick="togglePortal('account-portal',event)" style="padding:7px 12px">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            {{ Str::limit($__au->first_name ?: $__au->name, 12) }}
+            <?php echo e(Str::limit($__au->first_name ?: $__au->name, 12)); ?>
+
             <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="nav-portal-dropdown" style="right:0;left:auto">
-            <a href="{{ route('account.profile') }}" class="nav-portal-item">
+            <a href="<?php echo e(route('account.profile')); ?>" class="nav-portal-item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               Profile
             </a>
-            <a href="{{ route('account.orders') }}" class="nav-portal-item">
+            <a href="<?php echo e(route('account.orders')); ?>" class="nav-portal-item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
               My Orders
             </a>
-            <a href="{{ route('wishlist') }}" class="nav-portal-item">
+            <a href="<?php echo e(route('wishlist')); ?>" class="nav-portal-item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
               Wishlist
             </a>
             <hr class="nav-portal-divider">
-            <form method="POST" action="{{ route('logout') }}">
-              @csrf
+            <form method="POST" action="<?php echo e(route('logout')); ?>">
+              <?php echo csrf_field(); ?>
               <button type="submit" class="nav-portal-item danger">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                 Sign Out
@@ -853,9 +855,9 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
             </form>
           </div>
         </div>
-      @else
-        <a href="{{ route('login') }}" class="nav-user-btn">Sign In</a>
-      @endauth
+      <?php else: ?>
+        <a href="<?php echo e(route('login')); ?>" class="nav-user-btn">Sign In</a>
+      <?php endif; ?>
     </div>
   </div>
 </nav>
@@ -864,64 +866,64 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 <div class="nav-mobile-menu" id="nav-mobile-menu">
   <div class="nav-mobile-backdrop" onclick="closeMobileMenu()"></div>
   <div class="nav-mobile-panel">
-    <form action="{{ route('search') }}" method="GET" class="nav-mobile-search">
-      <input type="text" name="q" placeholder="Search products…" value="{{ request('q', request('search')) }}" autocomplete="off">
+    <form action="<?php echo e(route('search')); ?>" method="GET" class="nav-mobile-search">
+      <input type="text" name="q" placeholder="Search products…" value="<?php echo e(request('q', request('search'))); ?>" autocomplete="off">
       <button type="submit">🔍</button>
     </form>
     <div class="nav-mobile-links">
-      <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}">🏠 Home</a>
-      <a href="{{ route('shop') }}" class="{{ request()->routeIs('shop') ? 'active' : '' }}">🛍️ Shop</a>
-      <a href="{{ route('cart') }}" class="{{ request()->routeIs('cart') ? 'active' : '' }}">
+      <a href="<?php echo e(route('home')); ?>" class="<?php echo e(request()->routeIs('home') ? 'active' : ''); ?>">🏠 Home</a>
+      <a href="<?php echo e(route('shop')); ?>" class="<?php echo e(request()->routeIs('shop') ? 'active' : ''); ?>">🛍️ Shop</a>
+      <a href="<?php echo e(route('cart')); ?>" class="<?php echo e(request()->routeIs('cart') ? 'active' : ''); ?>">
         🛒 Cart
-        @php $__mc = count(session('ramo_cart',[])); @endphp
-        @if($__mc) <span style="background:var(--c-orange);color:#fff;font-size:11px;font-weight:800;padding:1px 7px;border-radius:50px;margin-left:4px">{{ $__mc }}</span> @endif
+        <?php $__mc = count(session('ramo_cart',[])); ?>
+        <?php if($__mc): ?> <span style="background:var(--c-orange);color:#fff;font-size:11px;font-weight:800;padding:1px 7px;border-radius:50px;margin-left:4px"><?php echo e($__mc); ?></span> <?php endif; ?>
       </a>
-      <a href="{{ route('wishlist') }}" class="{{ request()->routeIs('wishlist') ? 'active' : '' }}">♡ Wishlist</a>
-      <a href="{{ route('order.track') }}" class="{{ request()->routeIs('order.track*') ? 'active' : '' }}">📦 Track Order</a>
+      <a href="<?php echo e(route('wishlist')); ?>" class="<?php echo e(request()->routeIs('wishlist') ? 'active' : ''); ?>">♡ Wishlist</a>
+      <a href="<?php echo e(route('order.track')); ?>" class="<?php echo e(request()->routeIs('order.track*') ? 'active' : ''); ?>">📦 Track Order</a>
       <hr class="nav-mobile-divider">
-      @auth
-        @php $__mu = Auth::user(); @endphp
-        <a href="{{ route('account.profile') }}">👤 {{ $__mu->first_name ?: $__mu->name }}</a>
-        <a href="{{ route('account.orders') }}">📋 My Orders</a>
-        @php $__isAdm = $__mu->email === 'adminramoui@gmail.com' || str_contains((string)$__mu->role,'admin'); @endphp
-        @if($__isAdm)<a href="{{ route('admin.dashboard') }}">⚙️ Admin Panel</a>@endif
-        <form method="POST" action="{{ route('logout') }}">
-          @csrf
+      <?php if(auth()->guard()->check()): ?>
+        <?php $__mu = Auth::user(); ?>
+        <a href="<?php echo e(route('account.profile')); ?>">👤 <?php echo e($__mu->first_name ?: $__mu->name); ?></a>
+        <a href="<?php echo e(route('account.orders')); ?>">📋 My Orders</a>
+        <?php $__isAdm = $__mu->email === 'adminramoui@gmail.com' || str_contains((string)$__mu->role,'admin'); ?>
+        <?php if($__isAdm): ?><a href="<?php echo e(route('admin.dashboard')); ?>">⚙️ Admin Panel</a><?php endif; ?>
+        <form method="POST" action="<?php echo e(route('logout')); ?>">
+          <?php echo csrf_field(); ?>
           <button type="submit" class="nav-mobile-signout">🚪 Sign Out</button>
         </form>
-      @else
-        <a href="{{ route('login') }}">👤 Sign In</a>
-        <a href="{{ route('register') }}" style="color:var(--c-orange)">✨ Register</a>
-      @endauth
-      @if(auth()->guard('vendor_web')->check())
-        @php $__vmu = auth()->guard('vendor_web')->user(); @endphp
+      <?php else: ?>
+        <a href="<?php echo e(route('login')); ?>">👤 Sign In</a>
+        <a href="<?php echo e(route('register')); ?>" style="color:var(--c-orange)">✨ Register</a>
+      <?php endif; ?>
+      <?php if(auth()->guard('vendor_web')->check()): ?>
+        <?php $__vmu = auth()->guard('vendor_web')->user(); ?>
         <hr class="nav-mobile-divider">
-        <a href="{{ route('vendor.dashboard') }}" style="color:var(--c-orange)">🏪 {{ Str::limit($__vmu->shop_name, 20) }}</a>
-        <form method="POST" action="{{ route('vendor.logout') }}">
-          @csrf
+        <a href="<?php echo e(route('vendor.dashboard')); ?>" style="color:var(--c-orange)">🏪 <?php echo e(Str::limit($__vmu->shop_name, 20)); ?></a>
+        <form method="POST" action="<?php echo e(route('vendor.logout')); ?>">
+          <?php echo csrf_field(); ?>
           <button type="submit" class="nav-mobile-signout">🚪 Sign Out (Vendor)</button>
         </form>
-      @endif
+      <?php endif; ?>
     </div>
   </div>
 </div>
 
-@yield('content')
+<?php echo $__env->yieldContent('content'); ?>
 
 <!-- FOOTER -->
 <footer>
   <div class="footer-inner">
     <div class="footer-logo">Ramo<span>Store</span></div>
     <div class="footer-links">
-      <a href="{{ route('home') }}">Home</a>
-      <a href="{{ route('shop') }}">Shop</a>
-      <a href="{{ route('wishlist') }}">Wishlist</a>
-      <a href="{{ route('cart') }}">Cart</a>
-      @auth<a href="{{ route('account.orders') }}">My Orders</a>@endauth
-      <a href="{{ route('vendor.register') }}" style="color:var(--c-orange);font-weight:600">Sell on Ramo</a>
+      <a href="<?php echo e(route('home')); ?>">Home</a>
+      <a href="<?php echo e(route('shop')); ?>">Shop</a>
+      <a href="<?php echo e(route('wishlist')); ?>">Wishlist</a>
+      <a href="<?php echo e(route('cart')); ?>">Cart</a>
+      <?php if(auth()->guard()->check()): ?><a href="<?php echo e(route('account.orders')); ?>">My Orders</a><?php endif; ?>
+      <a href="<?php echo e(route('vendor.register')); ?>" style="color:var(--c-orange);font-weight:600">Sell on Ramo</a>
       <a href="/api-guide.html" target="_blank">API Guide</a>
     </div>
-    <div class="footer-note">© {{ date('Y') }} RamoStore. All rights reserved.</div>
+    <div class="footer-note">© <?php echo e(date('Y')); ?> RamoStore. All rights reserved.</div>
   </div>
 </footer>
 
@@ -944,45 +946,45 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
       <span>Subtotal</span>
       <span id="atc-subtotal">EGP 0.00</span>
     </div>
-    <a href="{{ route('cart') }}" class="atc-btn-primary" id="atc-go-cart">Go to Cart</a>
+    <a href="<?php echo e(route('cart')); ?>" class="atc-btn-primary" id="atc-go-cart">Go to Cart</a>
     <button class="atc-btn-secondary" onclick="closeAtcDrawer()">Continue Shopping</button>
   </div>
 </div>
 
 <!-- MOBILE BOTTOM NAV -->
 <nav id="mob-nav" style="display:none">
-  <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'on' : '' }}">
+  <a href="<?php echo e(route('home')); ?>" class="<?php echo e(request()->routeIs('home') ? 'on' : ''); ?>">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
     <span>Home</span>
   </a>
-  <a href="{{ route('shop') }}" class="{{ request()->routeIs('shop') ? 'on' : '' }}">
+  <a href="<?php echo e(route('shop')); ?>" class="<?php echo e(request()->routeIs('shop') ? 'on' : ''); ?>">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
     <span>Shop</span>
   </a>
-  <a href="{{ route('cart') }}" class="{{ request()->routeIs('cart') ? 'on' : '' }}">
+  <a href="<?php echo e(route('cart')); ?>" class="<?php echo e(request()->routeIs('cart') ? 'on' : ''); ?>">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 001.95-1.57l1.65-8.42H6"/></svg>
-    @if($cCount ?? 0)<span class="mn-badge" id="mn-cart-badge">{{ $cCount }}</span>@endif
+    <?php if($cCount ?? 0): ?><span class="mn-badge" id="mn-cart-badge"><?php echo e($cCount); ?></span><?php endif; ?>
     <span>Cart</span>
   </a>
-  <a href="{{ route('wishlist') }}" class="{{ request()->routeIs('wishlist') ? 'on' : '' }}">
+  <a href="<?php echo e(route('wishlist')); ?>" class="<?php echo e(request()->routeIs('wishlist') ? 'on' : ''); ?>">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
     <span>Wishlist</span>
   </a>
-  @auth
-  <a href="{{ route('account.profile') }}" class="{{ request()->routeIs('account.*') ? 'on' : '' }}">
+  <?php if(auth()->guard()->check()): ?>
+  <a href="<?php echo e(route('account.profile')); ?>" class="<?php echo e(request()->routeIs('account.*') ? 'on' : ''); ?>">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
     <span>Account</span>
   </a>
-  @else
-  <a href="{{ route('login') }}" class="{{ request()->routeIs('login') ? 'on' : '' }}">
+  <?php else: ?>
+  <a href="<?php echo e(route('login')); ?>" class="<?php echo e(request()->routeIs('login') ? 'on' : ''); ?>">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
     <span>Sign In</span>
   </a>
-  @endauth
+  <?php endif; ?>
 </nav>
 
 <script>
-const CSRF_TOKEN = '{{ csrf_token() }}';
+const CSRF_TOKEN = '<?php echo e(csrf_token()); ?>';
 
 function toggleMobileMenu() {
   const menu = document.getElementById('nav-mobile-menu');
@@ -1029,7 +1031,7 @@ function updateCartBadge(count) {
   // Top nav badge
   let badge = document.getElementById('cart-badge');
   if (!badge && count > 0) {
-    const btn = document.querySelector('a[href="{{ route("cart") }}"].nav-icon-btn');
+    const btn = document.querySelector('a[href="<?php echo e(route("cart")); ?>"].nav-icon-btn');
     if (btn) { badge = document.createElement('span'); badge.id='cart-badge'; badge.className='nav-badge'; btn.appendChild(badge); }
   }
   if (badge) { badge.textContent = count; badge.style.display = count > 0 ? 'flex' : 'none'; }
@@ -1282,7 +1284,7 @@ async function toggleWishlist(btn, productId) {
   setTimeout(check, 800);
 })();
 </script>
-@stack('scripts')
+<?php echo $__env->yieldPushContent('scripts'); ?>
 <script>
 function saveCouponAndGo(code, cartUrl) {
   try { localStorage.setItem('pending_coupon', code); } catch(e) {}
@@ -1291,3 +1293,4 @@ function saveCouponAndGo(code, cartUrl) {
 </script>
 </body>
 </html>
+<?php /**PATH /home/runner/workspace/resources/views/layouts/app.blade.php ENDPATH**/ ?>

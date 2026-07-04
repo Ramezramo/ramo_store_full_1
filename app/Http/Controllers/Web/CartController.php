@@ -17,39 +17,12 @@ class CartController extends Controller
         $cart = $this->getCart();
 
         if (!empty($cart)) {
-            $productIds   = array_unique(array_column($cart, 'product_id'));
-            $variationIds = array_filter(array_unique(array_column($cart, 'variation_id')));
-
-            $products = DB::table('products_data')
-                ->whereIn('id', $productIds)
-                ->get(['id', 'discount_percentage'])
-                ->keyBy('id');
-
-            $variations = DB::table('product_variations')
-                ->whereIn('id', $variationIds)
-                ->get(['id', 'regular_price', 'price'])
-                ->keyBy('id');
-
+            $cart    = $this->refreshCartPricing($cart);
             $changed = false;
-            foreach ($cart as $rowId => &$item) {
-                $discPct = (float) ($products[$item['product_id']]->discount_percentage ?? 0);
-                $varId   = $item['variation_id'] ?? null;
-                $varRow  = $varId ? ($variations[$varId] ?? null) : null;
-
-                if ($varRow) {
-                    $reg = (float) $varRow->regular_price;
-                    $eff = $reg > 0 ? $reg : (float) $varRow->price;
-                    if ($discPct > 0 && $reg > 0) {
-                        $eff = round($reg * (1 - $discPct / 100), 2);
-                    }
-                    if (abs($item['price'] - $eff) > 0.001) {
-                        $item['price'] = $eff;
-                        $changed = true;
-                    }
-                }
+            foreach ($cart as $rowId => $item) {
+                $changed = $changed || ($item['_priceChanged'] ?? false);
+                unset($cart[$rowId]['_priceChanged']);
             }
-            unset($item);
-
             if ($changed) {
                 $this->saveCart($cart);
             }
@@ -69,6 +42,58 @@ class CartController extends Controller
 
         $total = max(0, $subtotal - $discount);
         return view('web.cart', compact('cart', 'subtotal', 'discount', 'total', 'coupon'));
+    }
+
+    private function refreshCartPricing(array $cart): array
+    {
+        $productIds   = array_unique(array_column($cart, 'product_id'));
+        $variationIds = array_filter(array_unique(array_column($cart, 'variation_id')));
+
+        $products = DB::table('products_data')
+            ->whereIn('id', $productIds)
+            ->get(['id', 'sku', 'discount_percentage'])
+            ->keyBy('id');
+
+        $variations = DB::table('product_variations')
+            ->whereIn('id', $variationIds)
+            ->get(['id', 'regular_price', 'price'])
+            ->keyBy('id');
+
+        $mainVariations = DB::table('product_variations')
+            ->whereIn('product_id', $productIds)
+            ->where('main_variation', true)
+            ->get(['id', 'product_id', 'regular_price', 'price'])
+            ->keyBy('product_id');
+
+        foreach ($cart as $rowId => &$item) {
+            $product = $products[$item['product_id']] ?? null;
+            if (!$product) {
+                // Product no longer exists — drop it from the cart entirely.
+                unset($cart[$rowId]);
+                continue;
+            }
+
+            $discPct = (float) ($product->discount_percentage ?? 0);
+            $varId   = $item['variation_id'] ?? null;
+            $varRow  = $varId ? ($variations[$varId] ?? null) : ($mainVariations[$item['product_id']] ?? null);
+
+            $reg = $varRow ? (float) $varRow->regular_price : 0.0;
+            $eff = $reg > 0 ? $reg : (float) ($varRow->price ?? 0);
+            if ($discPct > 0 && $reg > 0) {
+                $eff = round($reg * (1 - $discPct / 100), 2);
+            }
+
+            $item['_priceChanged'] = false;
+            if (abs(($item['price'] ?? -1) - $eff) > 0.001) {
+                $item['price']         = $eff;
+                $item['_priceChanged'] = true;
+            }
+            $item['regular_price'] = $reg > $eff ? $reg : null;
+            $item['sku']           = $product->sku ?? null;
+        }
+        unset($item);
+
+        return $cart;
     }
 
     public function add(Request $r)
