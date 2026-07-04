@@ -8,6 +8,7 @@
   $coShowSizes     = $co['showSizes']     ?? true;
   $coShowOldPrice  = $co['showOldPrice']  ?? true;
   $coShowAddToCart = $co['showAddToCart'] ?? true;
+  $coShowDetails   = $co['showDetails']   ?? true;
   $coShowCoupon    = $co['showCoupon']    ?? true;
   $coShowRating    = $co['showRating']    ?? false;
 
@@ -155,6 +156,12 @@
     </button>
     <?php endif; ?>
 
+    <?php if($coShowDetails): ?>
+    <a href="<?php echo e(route('product', $pid)); ?>" class="card-details-btn">
+      See details
+    </a>
+    <?php endif; ?>
+
     
     <?php if($coShowCoupon && !empty($p->coupon)): ?>
     <?php
@@ -177,7 +184,7 @@
   </div>
 </div>
 
-<?php if (! $__env->hasRenderedOnce('504273e6-3191-41f4-a8ad-adf374bb771e')): $__env->markAsRenderedOnce('504273e6-3191-41f4-a8ad-adf374bb771e'); ?>
+<?php if (! $__env->hasRenderedOnce('7f7667ca-1715-4fb1-8ef7-228a04462aca')): $__env->markAsRenderedOnce('7f7667ca-1715-4fb1-8ef7-228a04462aca'); ?>
 <style>
 .pc-coupon-bar{display:flex;text-decoration:none;border-radius:0 0 10px 10px;overflow:hidden;margin:10px -14px -14px;font-size:11px;font-weight:700;line-height:1}
 .pc-coupon-left{flex:1;background:#7c3aed;color:#fff;padding:8px 10px;display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

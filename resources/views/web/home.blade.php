@@ -307,6 +307,7 @@
           'showSizes'     => $sec['showSizes']     ?? true,
           'showOldPrice'  => $sec['showOldPrice']  ?? true,
           'showAddToCart' => $sec['showAddToCart'] ?? true,
+          'showDetails'   => $sec['showDetails']   ?? true,
           'showCoupon'    => $sec['showCoupon']    ?? true,
           'showRating'    => $sec['showRating']    ?? false,
         ];
@@ -352,6 +353,7 @@
           'showSizes'     => $sec['showSizes']     ?? true,
           'showOldPrice'  => $sec['showOldPrice']  ?? true,
           'showAddToCart' => $sec['showAddToCart'] ?? true,
+          'showDetails'   => $sec['showDetails']   ?? true,
           'showCoupon'    => $sec['showCoupon']    ?? true,
           'showRating'    => $sec['showRating']    ?? false,
         ];
@@ -393,6 +395,7 @@
           'showSizes'     => $sec['showSizes']     ?? true,
           'showOldPrice'  => $sec['showOldPrice']  ?? true,
           'showAddToCart' => $sec['showAddToCart'] ?? true,
+          'showDetails'   => $sec['showDetails']   ?? true,
           'showCoupon'    => $sec['showCoupon']    ?? true,
           'showRating'    => $sec['showRating']    ?? false,
         ];

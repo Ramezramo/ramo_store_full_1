@@ -8,6 +8,7 @@
   $coShowSizes     = $co['showSizes']     ?? true;
   $coShowOldPrice  = $co['showOldPrice']  ?? true;
   $coShowAddToCart = $co['showAddToCart'] ?? true;
+  $coShowDetails   = $co['showDetails']   ?? true;
   $coShowCoupon    = $co['showCoupon']    ?? true;
   $coShowRating    = $co['showRating']    ?? false;
 
@@ -152,6 +153,12 @@
             onclick="pcAddToCart({{ $pid }})">
       Add to Cart
     </button>
+    @endif
+
+    @if($coShowDetails)
+    <a href="{{ route('product', $pid) }}" class="card-details-btn">
+      See details
+    </a>
     @endif
 
     {{-- Coupon banner --}}

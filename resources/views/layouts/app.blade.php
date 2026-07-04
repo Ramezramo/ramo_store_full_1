@@ -105,6 +105,8 @@ button{cursor:pointer;font-family:inherit}
 .price-main.sale{color:var(--c-orange)}
 .card-add-btn{margin-top:10px;padding:9px 14px;background:var(--c-dark);color:#fff;border:none;border-radius:8px;font-size:12.5px;font-weight:700;width:100%;transition:all .2s}
 .card-add-btn:hover{background:var(--c-accent-h)}
+.card-details-btn{display:block;margin-top:8px;padding:9px 14px;background:#fff;color:var(--c-dark);border:1.5px solid var(--c-light);border-radius:8px;font-size:12.5px;font-weight:700;width:100%;text-align:center;transition:all .2s;box-sizing:border-box}
+.card-details-btn:hover{border-color:var(--c-dark);background:var(--c-bg)}
 .pc-coupon-bar{display:flex;text-decoration:none;border-radius:0 0 10px 10px;overflow:hidden;margin:10px -14px -14px;font-size:11px;font-weight:700;line-height:1}
 .pc-coupon-left{flex:1;background:#7c3aed;color:#fff;padding:8px 10px;display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pc-coupon-code{background:rgba(255,255,255,.2);border-radius:4px;padding:1px 5px;letter-spacing:.03em}
@@ -542,6 +544,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
   .product-card-name{font-size:12.5px}
   .price-main{font-size:14px}
   .card-add-btn{padding:8px 10px;font-size:12px}
+  .card-details-btn{padding:8px 10px;font-size:12px}
   .sec-title{font-size:18px}
   .form-grid-2{grid-template-columns:1fr}
   .acc-sidebar{padding:14px;border-radius:12px}
