@@ -1,111 +1,110 @@
-@extends('layouts.app')
-@section('title', 'Cart — Ramo Store')
+<?php $__env->startSection('title', 'Cart — Ramo Store'); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="page">
 
   <div class="breadcrumb">
-    <a href="{{ route('home') }}">Home</a><span>/</span><strong>Cart</strong>
+    <a href="<?php echo e(route('home')); ?>">Home</a><span>/</span><strong>Cart</strong>
   </div>
 
-  @if(session('error'))
-    <div class="alert-box alert-err">{{ session('error') }}</div>
-  @endif
+  <?php if(session('error')): ?>
+    <div class="alert-box alert-err"><?php echo e(session('error')); ?></div>
+  <?php endif; ?>
 
-  @if(empty($cart))
+  <?php if(empty($cart)): ?>
     <div class="empty" style="padding:100px 20px">
       <div class="empty-icon">🛒</div>
       <h3>Your cart is empty</h3>
       <p>Looks like you haven't added anything yet.</p>
-      <a href="{{ route('shop') }}" class="btn btn-dark" style="margin-top:24px">Start Shopping</a>
+      <a href="<?php echo e(route('shop')); ?>" class="btn btn-dark" style="margin-top:24px">Start Shopping</a>
     </div>
-  @else
+  <?php else: ?>
   <div class="cart-layout">
 
-    {{-- CART ITEMS --}}
+    
     <div id="cart-items-wrap">
       <div class="cart-head-row">
         <span>Product</span><span>Price</span><span>Qty</span><span>Subtotal</span><span></span>
       </div>
 
-      @foreach($cart as $rowId => $item)
-      <div class="cart-row" id="row-{{ $rowId }}">
+      <?php $__currentLoopData = $cart; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $rowId => $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+      <div class="cart-row" id="row-<?php echo e($rowId); ?>">
         <div class="cart-prod">
-          @if($item['image'])
-            <img src="{{ $item['image'] }}" alt="{{ $item['name'] }}">
-          @else
+          <?php if($item['image']): ?>
+            <img src="<?php echo e($item['image']); ?>" alt="<?php echo e($item['name']); ?>">
+          <?php else: ?>
             <div class="cart-img-placeholder">👕</div>
-          @endif
+          <?php endif; ?>
           <div>
-            <a href="{{ route('product', $item['product_id']) }}" class="cart-name">{{ $item['name'] }}</a>
-            @if(!empty($item['sku']))
-              <div class="cart-sku">SKU: {{ $item['sku'] }}</div>
-            @endif
-            @if(!empty($item['attrs']))
+            <a href="<?php echo e(route('product', $item['product_id'])); ?>" class="cart-name"><?php echo e($item['name']); ?></a>
+            <?php if(!empty($item['sku'])): ?>
+              <div class="cart-sku">SKU: <?php echo e($item['sku']); ?></div>
+            <?php endif; ?>
+            <?php if(!empty($item['attrs'])): ?>
               <div class="cart-attrs">
-                @foreach($item['attrs'] as $k => $v)
-                  <span>{{ $k }}: {{ $v }}</span>
-                @endforeach
+                <?php $__currentLoopData = $item['attrs']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $k => $v): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                  <span><?php echo e($k); ?>: <?php echo e($v); ?></span>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
               </div>
-            @endif
+            <?php endif; ?>
           </div>
         </div>
         <div class="cart-row-bottom">
-          <div class="cart-price">{{ number_format($item['price'], 2) }} EGP</div>
+          <div class="cart-price"><?php echo e(number_format($item['price'], 2)); ?> EGP</div>
           <div class="cart-qty">
             <div class="qty-input">
-              <button type="button" onclick="updateQty('{{ $rowId }}', -1)">−</button>
-              <input type="number" id="qty-{{ $rowId }}" value="{{ $item['qty'] }}" min="1" max="{{ $item['stock'] }}" onchange="setQty('{{ $rowId }}', this.value)">
-              <button type="button" onclick="updateQty('{{ $rowId }}', 1)">+</button>
+              <button type="button" onclick="updateQty('<?php echo e($rowId); ?>', -1)">−</button>
+              <input type="number" id="qty-<?php echo e($rowId); ?>" value="<?php echo e($item['qty']); ?>" min="1" max="<?php echo e($item['stock']); ?>" onchange="setQty('<?php echo e($rowId); ?>', this.value)">
+              <button type="button" onclick="updateQty('<?php echo e($rowId); ?>', 1)">+</button>
             </div>
           </div>
-          <div class="cart-sub" id="sub-{{ $rowId }}">{{ number_format($item['price'] * $item['qty'], 2) }} EGP</div>
+          <div class="cart-sub" id="sub-<?php echo e($rowId); ?>"><?php echo e(number_format($item['price'] * $item['qty'], 2)); ?> EGP</div>
           <div class="cart-del">
-            <button onclick="removeItem('{{ $rowId }}')" title="Remove">✕</button>
+            <button onclick="removeItem('<?php echo e($rowId); ?>')" title="Remove">✕</button>
           </div>
         </div>
       </div>
-      @endforeach
+      <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 
       <div class="cart-actions">
-        <a href="{{ route('shop') }}" class="btn btn-outline">← Continue Shopping</a>
-        <form action="{{ route('cart.clear') }}" method="POST" style="display:inline">
-          @csrf @method('DELETE')
+        <a href="<?php echo e(route('shop')); ?>" class="btn btn-outline">← Continue Shopping</a>
+        <form action="<?php echo e(route('cart.clear')); ?>" method="POST" style="display:inline">
+          <?php echo csrf_field(); ?> <?php echo method_field('DELETE'); ?>
           <button class="btn btn-outline" style="color:#e02020;border-color:#e02020" onclick="return confirm('Clear entire cart?')">Clear Cart</button>
         </form>
       </div>
     </div>
 
-    {{-- SUMMARY --}}
+    
     <div class="cart-summary">
       <h3>Order Summary</h3>
 
-      <div class="summary-row"><span>Subtotal</span><span id="cart-subtotal">{{ number_format($subtotal, 2) }} EGP</span></div>
+      <div class="summary-row"><span>Subtotal</span><span id="cart-subtotal"><?php echo e(number_format($subtotal, 2)); ?> EGP</span></div>
 
-      @if($coupon)
+      <?php if($coupon): ?>
         <div class="summary-row discount-row">
-          <span>Coupon ({{ $coupon['code'] }})</span>
-          <span>−{{ number_format($discount, 2) }} EGP</span>
+          <span>Coupon (<?php echo e($coupon['code']); ?>)</span>
+          <span>−<?php echo e(number_format($discount, 2)); ?> EGP</span>
         </div>
-        <form action="{{ route('cart.coupon.remove') }}" method="POST">
-          @csrf @method('DELETE')
+        <form action="<?php echo e(route('cart.coupon.remove')); ?>" method="POST">
+          <?php echo csrf_field(); ?> <?php echo method_field('DELETE'); ?>
           <button class="coupon-remove-btn">Remove coupon ✕</button>
         </form>
-      @else
+      <?php else: ?>
         <div class="coupon-box">
           <input type="text" id="coupon-input" placeholder="Coupon code" class="coupon-input">
           <button onclick="applyCoupon()" class="btn btn-outline coupon-btn">Apply</button>
         </div>
         <div id="coupon-msg" style="font-size:13px;margin-top:6px"></div>
-      @endif
+      <?php endif; ?>
 
       <div class="summary-divider"></div>
       <div class="summary-row total-row">
         <span>Total</span>
-        <span id="cart-total">{{ number_format($total, 2) }} EGP</span>
+        <span id="cart-total"><?php echo e(number_format($total, 2)); ?> EGP</span>
       </div>
 
-      <a href="{{ route('checkout') }}" class="btn btn-dark checkout-btn">Proceed to Checkout →</a>
+      <a href="<?php echo e(route('checkout')); ?>" class="btn btn-dark checkout-btn">Proceed to Checkout →</a>
       <div class="payment-icons">
         <span title="Cash on Delivery">💵 COD</span>
         <span title="Vodafone Cash">📱 Vodafone Cash</span>
@@ -114,14 +113,14 @@
     </div>
 
   </div>
-  @endif
+  <?php endif; ?>
 
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script>
-const CSRF = '{{ csrf_token() }}';
+const CSRF = '<?php echo e(csrf_token()); ?>';
 
 async function updateQty(rowId, delta) {
   const input = document.getElementById('qty-' + rowId);
@@ -197,4 +196,6 @@ function updateNavCount(n) {
   if (badge) badge.textContent = n;
 }
 </script>
-@endpush
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH /home/runner/workspace/resources/views/web/cart.blade.php ENDPATH**/ ?>

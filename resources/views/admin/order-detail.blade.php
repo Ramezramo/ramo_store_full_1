@@ -70,6 +70,9 @@
               <tr>
                 <td>
                   <div style="font-weight:600">{{ $item['name'] ?? 'Unknown' }}</div>
+                  @if(!empty($item['sku']))
+                    <div style="font-size:11px;color:var(--muted)">SKU: {{ $item['sku'] }}</div>
+                  @endif
                   @if($item['variation_id'] ?? null)
                     <div style="font-size:11px;color:var(--muted)">Var #{{ $item['variation_id'] }}</div>
                   @endif

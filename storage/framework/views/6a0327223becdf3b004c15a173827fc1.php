@@ -236,6 +236,7 @@ button{cursor:pointer;font-family:inherit}
 .cart-img-placeholder{width:64px;height:64px;border-radius:8px;background:var(--c-bg);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0}
 .cart-name{font-size:14px;font-weight:600;color:var(--c-dark);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:4px}
 .cart-name:hover{color:var(--c-orange)}
+.cart-sku{font-size:12px;color:var(--c-mid);margin-top:4px}
 .cart-attrs{font-size:12px;color:var(--c-mid);display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
 .cart-attrs span{background:var(--c-tag);padding:2px 10px;border-radius:50px;font-weight:500;color:#555;letter-spacing:.01em}
 .cart-price{font-size:14px;font-weight:600;color:var(--c-mid);width:110px;flex-shrink:0}
@@ -287,6 +288,7 @@ button{cursor:pointer;font-family:inherit}
 .ck-item-img img{width:100%;height:100%;object-fit:cover}
 .ck-item-qty{position:absolute;top:-6px;right:-6px;background:var(--c-dark);color:#fff;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center}
 .ck-item-name{flex:1;font-size:13px;font-weight:600;color:var(--c-dark);line-height:1.35}
+.ck-item-sku{font-size:11px;color:var(--c-mid);margin-top:2px}
 .ck-item-attrs{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .ck-item-attrs span{font-size:11px;font-weight:400;color:var(--c-mid);background:var(--c-tag);padding:1px 7px;border-radius:50px}
 .ck-item-attrs span strong{font-weight:700;color:var(--c-dark)}
@@ -1056,6 +1058,7 @@ function openAtcDrawer({ image, oldPrice, varLabel, items, count, cartTotal, row
     const isNew = rowId && item.rowId === rowId;
     const attrs = item.attrs && typeof item.attrs === 'object' ? Object.entries(item.attrs).map(([k,v]) => `${k}: ${v}`).join(', ') : (varLabel && isNew ? varLabel : '');
     const metaParts = [];
+    if (item.sku) metaParts.push('SKU: ' + item.sku);
     if (attrs) metaParts.push(attrs);
     if (item.qty > 1) metaParts.push('Qty: ' + item.qty);
 

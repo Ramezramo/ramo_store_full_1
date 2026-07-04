@@ -140,6 +140,9 @@
           </div>
           <div class="ck-item-name">
             {{ Str::limit($item['name'], 35) }}
+            @if(!empty($item['sku']))
+              <div class="ck-item-sku">SKU: {{ $item['sku'] }}</div>
+            @endif
             @if(!empty($item['attrs']))
               <div class="ck-item-attrs">
                 @foreach($item['attrs'] as $k => $v)

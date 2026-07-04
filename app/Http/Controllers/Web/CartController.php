@@ -122,6 +122,7 @@ class CartController extends Controller
                 'product_id'   => (int) $productId,
                 'variation_id' => $variationId ? (int) $variationId : null,
                 'name'         => $product->name,
+                'sku'          => $product->sku ?? null,
                 'price'        => $price,
                 'qty'          => $qty,
                 'image'        => $imageUrl,
