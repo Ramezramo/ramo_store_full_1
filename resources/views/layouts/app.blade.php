@@ -435,14 +435,19 @@ button{cursor:pointer;font-family:inherit}
 .atc-check{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#22a35c;color:#fff;font-size:12px;font-weight:900}
 .atc-close{background:none;border:none;font-size:24px;line-height:1;color:var(--c-mid);cursor:pointer;padding:2px 6px}
 .atc-close:hover{color:var(--c-dark)}
-.atc-drawer-body{padding:20px 22px;display:flex;flex-direction:column;gap:16px}
-.atc-item{display:flex;gap:14px;padding-bottom:18px;border-bottom:1px solid var(--c-light)}
-.atc-item img{width:76px;height:76px;object-fit:cover;border-radius:10px;background:var(--c-bg);flex-shrink:0}
-.atc-item-info{display:flex;flex-direction:column;gap:4px;min-width:0}
-.atc-item-name{font-size:14px;font-weight:700;color:var(--c-dark);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.atc-item-meta{font-size:12.5px;color:var(--c-mid)}
-.atc-item-price{font-size:14.5px;font-weight:800;color:var(--c-dark);display:flex;align-items:center;gap:8px}
-.atc-item-price-old{font-size:12.5px;font-weight:600;color:#aaa;text-decoration:line-through}
+.atc-items-list{flex:1;overflow-y:auto;padding:16px 22px}
+.atc-item{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--c-light)}
+.atc-item:first-child{padding-top:0}
+.atc-item:last-child{border-bottom:none}
+.atc-item.atc-item-new{background:#f6fbf8;margin:0 -22px;padding:12px 22px;border-radius:8px}
+.atc-item img{width:64px;height:64px;object-fit:cover;border-radius:10px;background:var(--c-bg);flex-shrink:0}
+.atc-item-info{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.atc-item-name{font-size:13.5px;font-weight:700;color:var(--c-dark);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.atc-item-meta{font-size:12px;color:var(--c-mid)}
+.atc-item-price{font-size:14px;font-weight:800;color:var(--c-dark);display:flex;align-items:center;gap:8px}
+.atc-item-price-old{font-size:12px;font-weight:600;color:#aaa;text-decoration:line-through}
+.atc-drawer-footer{padding:16px 22px 20px;border-top:1px solid var(--c-light);display:flex;flex-direction:column;gap:12px;flex-shrink:0}
+.atc-subtotal-row{display:flex;justify-content:space-between;align-items:center;font-size:14.5px;font-weight:700;color:var(--c-dark)}
 .atc-btn-primary{display:block;text-align:center;padding:13px;background:var(--c-dark);color:#fff;border-radius:50px;font-size:14px;font-weight:700;transition:background .2s}
 .atc-btn-primary:hover{background:var(--c-accent-h)}
 .atc-btn-secondary{display:block;width:100%;text-align:center;padding:13px;background:#fff;color:var(--c-dark);border:1.5px solid var(--c-light);border-radius:50px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s}
@@ -916,17 +921,11 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
     <div class="atc-drawer-title"><span class="atc-check">✓</span> Added to cart</div>
     <button class="atc-close" onclick="closeAtcDrawer()" aria-label="Close">&times;</button>
   </div>
-  <div class="atc-drawer-body">
-    <div class="atc-item">
-      <img id="atc-item-img" src="" alt="">
-      <div class="atc-item-info">
-        <div class="atc-item-name" id="atc-item-name"></div>
-        <div class="atc-item-meta" id="atc-item-meta"></div>
-        <div class="atc-item-price">
-          <span id="atc-item-price"></span>
-          <span id="atc-item-price-old" class="atc-item-price-old"></span>
-        </div>
-      </div>
+  <div class="atc-items-list" id="atc-items-list"></div>
+  <div class="atc-drawer-footer">
+    <div class="atc-subtotal-row">
+      <span>Subtotal</span>
+      <span id="atc-subtotal">EGP 0.00</span>
     </div>
     <a href="{{ route('cart') }}" class="atc-btn-primary" id="atc-go-cart">Go to Cart</a>
     <button class="atc-btn-secondary" onclick="closeAtcDrawer()">Continue Shopping</button>
@@ -1037,7 +1036,7 @@ async function addToCart(productId, name, price, image, variationId = null, qty 
     const data = await res.json();
     if (data.success) {
       updateCartBadge(data.count);
-      openAtcDrawer({ name, image, price, oldPrice, varLabel, qty, count: data.count });
+      openAtcDrawer({ image, oldPrice, varLabel, items: data.items, count: data.count, cartTotal: data.cart_total, rowId: data.row_id });
     } else {
       showToast(data.message || 'Could not add to cart.', 'err');
     }
@@ -1047,25 +1046,33 @@ async function addToCart(productId, name, price, image, variationId = null, qty 
 }
 
 // ── Added-to-cart drawer ─────────────────────────────────────────────
-function openAtcDrawer({ name, image, price, oldPrice, varLabel, qty, count }) {
-  document.getElementById('atc-item-img').src = image || '';
-  document.getElementById('atc-item-img').alt = name || '';
-  document.getElementById('atc-item-name').textContent = name || '';
+function openAtcDrawer({ image, oldPrice, varLabel, items, count, cartTotal, rowId }) {
+  const list = document.getElementById('atc-items-list');
+  list.innerHTML = '';
 
-  const metaParts = [];
-  if (varLabel) metaParts.push(varLabel);
-  if (qty && qty > 1) metaParts.push('Qty: ' + qty);
-  document.getElementById('atc-item-meta').textContent = metaParts.join(' • ');
+  (items || []).slice().reverse().forEach(item => {
+    const isNew = rowId && item.rowId === rowId;
+    const attrs = item.attrs && typeof item.attrs === 'object' ? Object.entries(item.attrs).map(([k,v]) => `${k}: ${v}`).join(', ') : (varLabel && isNew ? varLabel : '');
+    const metaParts = [];
+    if (attrs) metaParts.push(attrs);
+    if (item.qty > 1) metaParts.push('Qty: ' + item.qty);
 
-  document.getElementById('atc-item-price').textContent = 'EGP ' + Number(price).toFixed(2);
-  const oldEl = document.getElementById('atc-item-price-old');
-  if (oldPrice && Number(oldPrice) > Number(price)) {
-    oldEl.textContent = 'EGP ' + Number(oldPrice).toFixed(2);
-    oldEl.style.display = '';
-  } else {
-    oldEl.style.display = 'none';
-  }
+    const row = document.createElement('div');
+    row.className = 'atc-item' + (isNew ? ' atc-item-new' : '');
+    row.innerHTML = `
+      <img src="${item.image || ''}" alt="${(item.name||'').replace(/"/g,'&quot;')}">
+      <div class="atc-item-info">
+        <div class="atc-item-name">${item.name || ''}</div>
+        <div class="atc-item-meta">${metaParts.join(' • ')}</div>
+        <div class="atc-item-price">
+          <span>EGP ${Number(item.price).toFixed(2)}</span>
+          ${isNew && oldPrice && Number(oldPrice) > Number(item.price) ? `<span class="atc-item-price-old">EGP ${Number(oldPrice).toFixed(2)}</span>` : ''}
+        </div>
+      </div>`;
+    list.appendChild(row);
+  });
 
+  document.getElementById('atc-subtotal').textContent = 'EGP ' + Number(cartTotal || 0).toFixed(2);
   document.getElementById('atc-go-cart').textContent = 'Go to Cart (' + (count ?? '') + ')';
 
   document.getElementById('atc-overlay').classList.add('show');

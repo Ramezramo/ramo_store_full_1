@@ -137,6 +137,8 @@ class CartController extends Controller
             'message'    => 'Added to cart!',
             'count'      => count($cart),
             'cart_total' => collect($cart)->sum(fn($i) => $i['price'] * $i['qty']),
+            'items'      => array_values($cart),
+            'row_id'     => $rowId,
         ]);
     }
 
