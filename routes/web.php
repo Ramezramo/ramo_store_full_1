@@ -11,6 +11,7 @@ use App\Http\Controllers\Web\SearchController;
 use App\Http\Controllers\Admin\ConfigAdminController;
 use App\Http\Controllers\Admin\AdminTimelineController;
 use App\Http\Controllers\Admin\AuthSettingsController;
+use App\Http\Controllers\Admin\ShippingSettingsController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Web\VendorOrderController;
 use App\Http\Controllers\Web\OrderMessageController;
@@ -179,6 +180,8 @@ Route::prefix('admin')->middleware(['auth', 'admin.auth'])->group(function () {
     Route::delete('/configs/{id}', [ConfigAdminController::class, 'destroy'])->name('admin.configs.destroy');
     Route::get('/auth-settings', [AuthSettingsController::class, 'index'])->name('admin.auth-settings');
     Route::put('/auth-settings', [AuthSettingsController::class, 'update'])->name('admin.auth-settings.update');
+    Route::get('/shipping-settings', [ShippingSettingsController::class, 'index'])->name('admin.shipping-settings');
+    Route::put('/shipping-settings', [ShippingSettingsController::class, 'update'])->name('admin.shipping-settings.update');
     Route::get('/category-brand-requests', [AdminCategoryBrandController::class, 'index'])->name('admin.cbr');
     Route::patch('/category-brand-requests/{id}/approve', [AdminCategoryBrandController::class, 'approve'])->name('admin.cbr.approve');
     Route::patch('/category-brand-requests/{id}/reject', [AdminCategoryBrandController::class, 'reject'])->name('admin.cbr.reject');

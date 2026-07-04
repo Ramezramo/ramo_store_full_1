@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Helpers\ShippingConfig;
 use App\Http\Traits\CartTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -40,8 +41,9 @@ class CartController extends Controller
             }
         }
 
-        $total = max(0, $subtotal - $discount);
-        return view('web.cart', compact('cart', 'subtotal', 'discount', 'total', 'coupon'));
+        $shippingFee = ShippingConfig::feeForSubtotal(max(0, $subtotal - $discount));
+        $total       = max(0, $subtotal - $discount) + $shippingFee;
+        return view('web.cart', compact('cart', 'subtotal', 'discount', 'total', 'coupon', 'shippingFee'));
     }
 
     private function refreshCartPricing(array $cart): array
@@ -179,10 +181,14 @@ class CartController extends Controller
                 ? $subtotal * ($coupon['amount'] / 100)
                 : min((float) $coupon['amount'], $subtotal);
         }
+        $afterDiscount = max(0, $subtotal - $discount);
+        $shippingFee   = ShippingConfig::feeForSubtotal($afterDiscount);
+
         return [
-            'subtotal' => $subtotal,
-            'discount' => $discount,
-            'total'    => max(0, $subtotal - $discount),
+            'subtotal'    => $subtotal,
+            'discount'    => $discount,
+            'shippingFee' => $shippingFee,
+            'total'       => $afterDiscount + $shippingFee,
         ];
     }
 
@@ -207,6 +213,7 @@ class CartController extends Controller
             'item_subtotal'     => $item ? number_format($item['price'] * $item['qty'], 2) : '0.00',
             'item_subtotal_old' => $hasOldPrice ? number_format($item['regular_price'] * $item['qty'], 2) : null,
             'cart_subtotal'     => number_format($totals['subtotal'], 2),
+            'shipping_fee'      => $totals['shippingFee'] > 0 ? number_format($totals['shippingFee'], 2) : null,
             'cart_total'        => number_format($totals['total'], 2),
             'count'             => count($cart),
         ]);
@@ -225,6 +232,7 @@ class CartController extends Controller
             'success'       => true,
             'count'         => count($cart),
             'cart_subtotal' => number_format($totals['subtotal'], 2),
+            'shipping_fee'  => $totals['shippingFee'] > 0 ? number_format($totals['shippingFee'], 2) : null,
             'cart_total'    => number_format($totals['total'], 2),
         ]);
     }

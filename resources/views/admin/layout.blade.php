@@ -180,6 +180,10 @@ select option{background:var(--card)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
       Auth Settings
     </a>
+    <a href="{{ route('admin.shipping-settings') }}" class="nav-item {{ request()->routeIs('admin.shipping-settings') ? 'active' : '' }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+      Shipping Settings
+    </a>
   </nav>
   <div class="sidebar-bottom">
     <div class="sidebar-user">

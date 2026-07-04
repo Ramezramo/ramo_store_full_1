@@ -99,7 +99,7 @@
       <div class="summary-divider"></div>
 
       <div class="summary-row"><span>Subtotal</span><span id="cart-subtotal"><?php echo e(number_format($subtotal, 2)); ?> EGP</span></div>
-      <div class="summary-row"><span>Standard shipping</span><span>Free</span></div>
+      <div class="summary-row"><span>Standard shipping</span><span id="cart-shipping"><?php echo e($shippingFee > 0 ? number_format($shippingFee, 2) . ' EGP' : 'Free'); ?></span></div>
 
       <?php if($coupon): ?>
         <div class="summary-row discount-row">
@@ -160,6 +160,8 @@ async function setQty(rowId, val) {
       }
     }
     document.getElementById('cart-subtotal').textContent = data.cart_subtotal + ' EGP';
+    const shipEl = document.getElementById('cart-shipping');
+    if (shipEl) shipEl.textContent = data.shipping_fee ? (data.shipping_fee + ' EGP') : 'Free';
     document.getElementById('cart-total').textContent = data.cart_total + ' EGP';
     updateNavCount(data.count);
   }
