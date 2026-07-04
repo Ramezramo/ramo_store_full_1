@@ -425,6 +425,32 @@ button{cursor:pointer;font-family:inherit}
 .toast.toast-ok{background:#22a35c}
 .toast.toast-err{background:#e02020}
 
+/* ── ADDED-TO-CART DRAWER ── */
+.atc-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9998;opacity:0;visibility:hidden;transition:opacity .25s}
+.atc-overlay.show{opacity:1;visibility:visible}
+.atc-drawer{position:fixed;top:0;right:0;height:100%;width:380px;max-width:92vw;background:#fff;box-shadow:-8px 0 30px rgba(0,0,0,.15);z-index:9999;transform:translateX(100%);transition:transform .3s cubic-bezier(.2,.9,.3,1);display:flex;flex-direction:column}
+.atc-drawer.show{transform:translateX(0)}
+.atc-drawer-head{display:flex;align-items:center;justify-content:space-between;padding:20px 22px;border-bottom:1px solid var(--c-light)}
+.atc-drawer-title{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:700;color:var(--c-dark)}
+.atc-check{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#22a35c;color:#fff;font-size:12px;font-weight:900}
+.atc-close{background:none;border:none;font-size:24px;line-height:1;color:var(--c-mid);cursor:pointer;padding:2px 6px}
+.atc-close:hover{color:var(--c-dark)}
+.atc-drawer-body{padding:20px 22px;display:flex;flex-direction:column;gap:16px}
+.atc-item{display:flex;gap:14px;padding-bottom:18px;border-bottom:1px solid var(--c-light)}
+.atc-item img{width:76px;height:76px;object-fit:cover;border-radius:10px;background:var(--c-bg);flex-shrink:0}
+.atc-item-info{display:flex;flex-direction:column;gap:4px;min-width:0}
+.atc-item-name{font-size:14px;font-weight:700;color:var(--c-dark);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.atc-item-meta{font-size:12.5px;color:var(--c-mid)}
+.atc-item-price{font-size:14.5px;font-weight:800;color:var(--c-dark);display:flex;align-items:center;gap:8px}
+.atc-item-price-old{font-size:12.5px;font-weight:600;color:#aaa;text-decoration:line-through}
+.atc-btn-primary{display:block;text-align:center;padding:13px;background:var(--c-dark);color:#fff;border-radius:50px;font-size:14px;font-weight:700;transition:background .2s}
+.atc-btn-primary:hover{background:var(--c-accent-h)}
+.atc-btn-secondary{display:block;width:100%;text-align:center;padding:13px;background:#fff;color:var(--c-dark);border:1.5px solid var(--c-light);border-radius:50px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s}
+.atc-btn-secondary:hover{border-color:var(--c-dark)}
+@media(max-width:480px){
+  .atc-drawer{width:100%;max-width:100%}
+}
+
 /* ── BOTTOM NAV ── */
 @media(max-width:768px){
   body{padding-bottom:58px}
@@ -885,6 +911,30 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
   <span id="toast-msg">Done!</span>
 </div>
 
+<!-- ADDED-TO-CART DRAWER -->
+<div class="atc-overlay" id="atc-overlay" onclick="closeAtcDrawer()"></div>
+<div class="atc-drawer" id="atc-drawer">
+  <div class="atc-drawer-head">
+    <div class="atc-drawer-title"><span class="atc-check">✓</span> Added to cart</div>
+    <button class="atc-close" onclick="closeAtcDrawer()" aria-label="Close">&times;</button>
+  </div>
+  <div class="atc-drawer-body">
+    <div class="atc-item">
+      <img id="atc-item-img" src="" alt="">
+      <div class="atc-item-info">
+        <div class="atc-item-name" id="atc-item-name"></div>
+        <div class="atc-item-meta" id="atc-item-meta"></div>
+        <div class="atc-item-price">
+          <span id="atc-item-price"></span>
+          <span id="atc-item-price-old" class="atc-item-price-old"></span>
+        </div>
+      </div>
+    </div>
+    <a href="<?php echo e(route('cart')); ?>" class="atc-btn-primary" id="atc-go-cart">Go to Cart</a>
+    <button class="atc-btn-secondary" onclick="closeAtcDrawer()">Continue Shopping</button>
+  </div>
+</div>
+
 <!-- MOBILE BOTTOM NAV -->
 <nav id="mob-nav" style="display:none">
   <a href="<?php echo e(route('home')); ?>" class="<?php echo e(request()->routeIs('home') ? 'on' : ''); ?>">
@@ -979,7 +1029,7 @@ function updateCartBadge(count) {
 }
 
 // Add to cart (AJAX)
-async function addToCart(productId, name, price, image, variationId = null, qty = 1) {
+async function addToCart(productId, name, price, image, variationId = null, qty = 1, varLabel = null, oldPrice = null) {
   try {
     const res = await fetch('/cart/add', {
       method: 'POST',
@@ -988,8 +1038,8 @@ async function addToCart(productId, name, price, image, variationId = null, qty 
     });
     const data = await res.json();
     if (data.success) {
-      showToast('Added to cart! 🛍️', 'ok');
       updateCartBadge(data.count);
+      openAtcDrawer({ name, image, price, oldPrice, varLabel, qty, count: data.count });
     } else {
       showToast(data.message || 'Could not add to cart.', 'err');
     }
@@ -997,6 +1047,43 @@ async function addToCart(productId, name, price, image, variationId = null, qty 
     showToast('Network error. Try again.', 'err');
   }
 }
+
+// ── Added-to-cart drawer ─────────────────────────────────────────────
+function openAtcDrawer({ name, image, price, oldPrice, varLabel, qty, count }) {
+  document.getElementById('atc-item-img').src = image || '';
+  document.getElementById('atc-item-img').alt = name || '';
+  document.getElementById('atc-item-name').textContent = name || '';
+
+  const metaParts = [];
+  if (varLabel) metaParts.push(varLabel);
+  if (qty && qty > 1) metaParts.push('Qty: ' + qty);
+  document.getElementById('atc-item-meta').textContent = metaParts.join(' • ');
+
+  document.getElementById('atc-item-price').textContent = 'EGP ' + Number(price).toFixed(2);
+  const oldEl = document.getElementById('atc-item-price-old');
+  if (oldPrice && Number(oldPrice) > Number(price)) {
+    oldEl.textContent = 'EGP ' + Number(oldPrice).toFixed(2);
+    oldEl.style.display = '';
+  } else {
+    oldEl.style.display = 'none';
+  }
+
+  document.getElementById('atc-go-cart').textContent = 'Go to Cart (' + (count ?? '') + ')';
+
+  document.getElementById('atc-overlay').classList.add('show');
+  document.getElementById('atc-drawer').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeAtcDrawer() {
+  document.getElementById('atc-overlay').classList.remove('show');
+  document.getElementById('atc-drawer').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeAtcDrawer();
+});
 
 // ── Product card variation helpers ──────────────────────────────────
 function _pcGetCard(pid) { return document.getElementById('pc-'+pid); }
