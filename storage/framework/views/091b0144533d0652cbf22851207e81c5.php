@@ -58,9 +58,9 @@
 
         <div class="cart-row-price">
           <div class="cart-sub" id="sub-<?php echo e($rowId); ?>"><?php echo e(number_format($item['price'] * $item['qty'], 2)); ?> EGP</div>
-          <?php if(!empty($item['regular_price']) && $item['regular_price'] > $item['price']): ?>
-            <div class="cart-sub-old"><?php echo e(number_format($item['regular_price'] * $item['qty'], 2)); ?> EGP</div>
-          <?php endif; ?>
+          <div class="cart-sub-old" id="sub-old-<?php echo e($rowId); ?>" style="<?php echo e((!empty($item['regular_price']) && $item['regular_price'] > $item['price']) ? '' : 'display:none'); ?>">
+            <?php echo e(!empty($item['regular_price']) ? number_format($item['regular_price'] * $item['qty'], 2) : ''); ?> EGP
+          </div>
         </div>
       </div>
       <div class="cart-row-divider"></div>
@@ -150,6 +150,15 @@ async function setQty(rowId, val) {
   const data = await res.json();
   if (data.success) {
     document.getElementById('sub-' + rowId).textContent = data.item_subtotal + ' EGP';
+    const oldEl = document.getElementById('sub-old-' + rowId);
+    if (oldEl) {
+      if (data.item_subtotal_old) {
+        oldEl.textContent = data.item_subtotal_old + ' EGP';
+        oldEl.style.display = '';
+      } else {
+        oldEl.style.display = 'none';
+      }
+    }
     document.getElementById('cart-subtotal').textContent = data.cart_subtotal + ' EGP';
     document.getElementById('cart-total').textContent = data.cart_total + ' EGP';
     updateNavCount(data.count);

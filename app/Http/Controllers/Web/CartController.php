@@ -200,12 +200,15 @@ class CartController extends Controller
         $totals   = $this->calcTotals($subtotal);
         $item     = $cart[$rowId] ?? null;
 
+        $hasOldPrice = $item && !empty($item['regular_price']) && $item['regular_price'] > $item['price'];
+
         return response()->json([
-            'success'       => true,
-            'item_subtotal' => $item ? number_format($item['price'] * $item['qty'], 2) : '0.00',
-            'cart_subtotal' => number_format($totals['subtotal'], 2),
-            'cart_total'    => number_format($totals['total'], 2),
-            'count'         => count($cart),
+            'success'           => true,
+            'item_subtotal'     => $item ? number_format($item['price'] * $item['qty'], 2) : '0.00',
+            'item_subtotal_old' => $hasOldPrice ? number_format($item['regular_price'] * $item['qty'], 2) : null,
+            'cart_subtotal'     => number_format($totals['subtotal'], 2),
+            'cart_total'        => number_format($totals['total'], 2),
+            'count'             => count($cart),
         ]);
     }
 
