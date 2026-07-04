@@ -116,18 +116,20 @@ class CartController extends Controller
 
         if (isset($cart[$rowId])) {
             $cart[$rowId]['qty'] = min($cart[$rowId]['qty'] + $qty, (int) ($product->stock_quantity ?? 999));
+            $cart[$rowId]['regular_price'] = $regularPrice > $price ? $regularPrice : null;
         } else {
             $cart[$rowId] = [
-                'rowId'        => $rowId,
-                'product_id'   => (int) $productId,
-                'variation_id' => $variationId ? (int) $variationId : null,
-                'name'         => $product->name,
-                'sku'          => $product->sku ?? null,
-                'price'        => $price,
-                'qty'          => $qty,
-                'image'        => $imageUrl,
-                'stock'        => (int) ($product->stock_quantity ?? 999),
-                'attrs'        => $attrs,
+                'rowId'         => $rowId,
+                'product_id'    => (int) $productId,
+                'variation_id'  => $variationId ? (int) $variationId : null,
+                'name'          => $product->name,
+                'sku'           => $product->sku ?? null,
+                'price'         => $price,
+                'regular_price' => $regularPrice > $price ? $regularPrice : null,
+                'qty'           => $qty,
+                'image'         => $imageUrl,
+                'stock'         => (int) ($product->stock_quantity ?? 999),
+                'attrs'         => $attrs,
             ];
         }
 

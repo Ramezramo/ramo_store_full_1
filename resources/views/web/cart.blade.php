@@ -4,10 +4,6 @@
 @section('content')
 <div class="page">
 
-  <div class="breadcrumb">
-    <a href="{{ route('home') }}">Home</a><span>/</span><strong>Cart</strong>
-  </div>
-
   @if(session('error'))
     <div class="alert-box alert-err">{{ session('error') }}</div>
   @endif
@@ -20,13 +16,16 @@
       <a href="{{ route('shop') }}" class="btn btn-dark" style="margin-top:24px">Start Shopping</a>
     </div>
   @else
+  <a href="{{ route('shop') }}" class="cart-back-link">← Back</a>
+  <div class="cart-title-row">
+    <h1 class="cart-title">Your Cart</h1>
+    <span class="cart-count-badge">{{ count($cart) }} Item{{ count($cart) === 1 ? '' : 's' }}</span>
+  </div>
+
   <div class="cart-layout">
 
     {{-- CART ITEMS --}}
     <div id="cart-items-wrap">
-      <div class="cart-head-row">
-        <span>Product</span><span>Price</span><span>Qty</span><span>Subtotal</span><span></span>
-      </div>
 
       @foreach($cart as $rowId => $item)
       <div class="cart-row" id="row-{{ $rowId }}">
@@ -36,35 +35,36 @@
           @else
             <div class="cart-img-placeholder">👕</div>
           @endif
-          <div>
+          <div class="cart-prod-info">
             <a href="{{ route('product', $item['product_id']) }}" class="cart-name">{{ $item['name'] }}</a>
             @if(!empty($item['sku']))
-              <div class="cart-sku">SKU: {{ $item['sku'] }}</div>
+              <div class="cart-model">Model: {{ $item['sku'] }}</div>
             @endif
             @if(!empty($item['attrs']))
-              <div class="cart-attrs">
-                @foreach($item['attrs'] as $k => $v)
-                  <span>{{ $k }}: {{ $v }}</span>
-                @endforeach
-              </div>
+              @foreach($item['attrs'] as $k => $v)
+                <div class="cart-attr-line"><span>{{ ucfirst($k) }}:</span> {{ $v }}</div>
+              @endforeach
             @endif
-          </div>
-        </div>
-        <div class="cart-row-bottom">
-          <div class="cart-price">{{ number_format($item['price'], 2) }} EGP</div>
-          <div class="cart-qty">
-            <div class="qty-input">
-              <button type="button" onclick="updateQty('{{ $rowId }}', -1)">−</button>
-              <input type="number" id="qty-{{ $rowId }}" value="{{ $item['qty'] }}" min="1" max="{{ $item['stock'] }}" onchange="setQty('{{ $rowId }}', this.value)">
-              <button type="button" onclick="updateQty('{{ $rowId }}', 1)">+</button>
+
+            <div class="cart-row-actions">
+              <div class="qty-pill">
+                <button type="button" onclick="updateQty('{{ $rowId }}', -1)">−</button>
+                <input type="number" id="qty-{{ $rowId }}" value="{{ $item['qty'] }}" min="1" max="{{ $item['stock'] }}" onchange="setQty('{{ $rowId }}', this.value)">
+                <button type="button" onclick="updateQty('{{ $rowId }}', 1)">+</button>
+              </div>
+              <button class="cart-remove-link" onclick="removeItem('{{ $rowId }}')">Remove</button>
             </div>
           </div>
+        </div>
+
+        <div class="cart-row-price">
           <div class="cart-sub" id="sub-{{ $rowId }}">{{ number_format($item['price'] * $item['qty'], 2) }} EGP</div>
-          <div class="cart-del">
-            <button onclick="removeItem('{{ $rowId }}')" title="Remove">✕</button>
-          </div>
+          @if(!empty($item['regular_price']) && $item['regular_price'] > $item['price'])
+            <div class="cart-sub-old">{{ number_format($item['regular_price'] * $item['qty'], 2) }} EGP</div>
+          @endif
         </div>
       </div>
+      <div class="cart-row-divider"></div>
       @endforeach
 
       <div class="cart-actions">
@@ -78,34 +78,46 @@
 
     {{-- SUMMARY --}}
     <div class="cart-summary">
-      <h3>Order Summary</h3>
+      <h3>Cart Summary</h3>
+
+      @if($coupon)
+        <div class="applied-coupon-row">
+          <span>Coupon: <strong>{{ $coupon['code'] }}</strong></span>
+          <form action="{{ route('cart.coupon.remove') }}" method="POST">
+            @csrf @method('DELETE')
+            <button class="coupon-remove-btn">Remove ✕</button>
+          </form>
+        </div>
+      @else
+        <div class="coupon-box">
+          <span class="coupon-icon">🏷️</span>
+          <input type="text" id="coupon-input" placeholder="Add a promo code" class="coupon-input">
+          <button onclick="applyCoupon()" class="coupon-apply-btn">Apply</button>
+        </div>
+        <div id="coupon-msg" style="font-size:13px;margin-top:6px"></div>
+      @endif
+
+      <div class="summary-divider"></div>
 
       <div class="summary-row"><span>Subtotal</span><span id="cart-subtotal">{{ number_format($subtotal, 2) }} EGP</span></div>
+      <div class="summary-row"><span>Standard shipping</span><span>Free</span></div>
 
       @if($coupon)
         <div class="summary-row discount-row">
           <span>Coupon ({{ $coupon['code'] }})</span>
           <span>−{{ number_format($discount, 2) }} EGP</span>
         </div>
-        <form action="{{ route('cart.coupon.remove') }}" method="POST">
-          @csrf @method('DELETE')
-          <button class="coupon-remove-btn">Remove coupon ✕</button>
-        </form>
-      @else
-        <div class="coupon-box">
-          <input type="text" id="coupon-input" placeholder="Coupon code" class="coupon-input">
-          <button onclick="applyCoupon()" class="btn btn-outline coupon-btn">Apply</button>
-        </div>
-        <div id="coupon-msg" style="font-size:13px;margin-top:6px"></div>
       @endif
+
+      <div class="summary-row"><span>Sales Tax</span><span>TBA</span></div>
 
       <div class="summary-divider"></div>
       <div class="summary-row total-row">
-        <span>Total</span>
+        <span>Estimated Total</span>
         <span id="cart-total">{{ number_format($total, 2) }} EGP</span>
       </div>
 
-      <a href="{{ route('checkout') }}" class="btn btn-dark checkout-btn">Proceed to Checkout →</a>
+      <a href="{{ route('checkout') }}" class="btn checkout-btn">Checkout</a>
       <div class="payment-icons">
         <span title="Cash on Delivery">💵 COD</span>
         <span title="Vodafone Cash">📱 Vodafone Cash</span>
