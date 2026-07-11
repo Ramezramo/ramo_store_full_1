@@ -260,7 +260,7 @@ button{cursor:pointer;font-family:inherit}
 .cart-remove-btn:hover{background:#fff0f0;border-color:#fca5a5;color:#e02020}
 .cart-remove-btn svg{pointer-events:none}
 /* Price column */
-.cart-row-price{flex-shrink:0;text-align:right;padding-top:2px;min-width:110px}
+.cart-row-price{flex-shrink:0;text-align:right;padding-top:40px;min-width:110px}
 .cart-sub{font-size:17px;font-weight:800;color:var(--c-dark)}
 .cart-sub-old{font-size:12.5px;color:var(--c-mid);text-decoration:line-through;margin-top:3px}
 /* Bottom actions */
