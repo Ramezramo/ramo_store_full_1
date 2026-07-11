@@ -562,7 +562,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 @media(max-width:1024px){
   .checkout-layout{grid-template-columns:1fr}
   .cart-layout{grid-template-columns:1fr}
-  .cart-summary{position:static;order:-1;padding:0}
+  .cart-summary{position:static;order:-1;padding:14px 16px}
   .cart-summary h3{font-size:15px;margin-bottom:12px}
   .summary-row{font-size:12px;margin-bottom:8px}
   .summary-divider{margin:8px 0}
