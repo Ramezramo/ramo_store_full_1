@@ -28,34 +28,50 @@
 
       <?php $__currentLoopData = $cart; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $rowId => $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
       <div class="cart-row" id="row-<?php echo e($rowId); ?>">
+
+        
+        <button class="cart-remove-btn" onclick="removeItem('<?php echo e($rowId); ?>')" title="Remove item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </button>
+
         <div class="cart-prod">
-          <?php if($item['image']): ?>
-            <img src="<?php echo e($item['image']); ?>" alt="<?php echo e($item['name']); ?>">
-          <?php else: ?>
-            <div class="cart-img-placeholder">👕</div>
-          <?php endif; ?>
+          
+          <a href="<?php echo e(route('product', $item['product_id'])); ?>" style="flex-shrink:0">
+            <?php if($item['image']): ?>
+              <img src="<?php echo e($item['image']); ?>" alt="<?php echo e($item['name']); ?>">
+            <?php else: ?>
+              <div class="cart-img-placeholder">👕</div>
+            <?php endif; ?>
+          </a>
+
           <div class="cart-prod-info">
             <a href="<?php echo e(route('product', $item['product_id'])); ?>" class="cart-name"><?php echo e($item['name']); ?></a>
-            <?php if(!empty($item['sku'])): ?>
-              <div class="cart-model">Model: <?php echo e($item['sku']); ?></div>
-            <?php endif; ?>
-            <?php if(!empty($item['attrs'])): ?>
-              <?php $__currentLoopData = $item['attrs']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $k => $v): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                <div class="cart-attr-line"><span><?php echo e(ucfirst($k)); ?>:</span> <?php echo e($v); ?></div>
+
+            
+            <?php if(!empty($item['attrs']) || !empty($item['sku'])): ?>
+            <div class="cart-attr-pills">
+              <?php if(!empty($item['sku'])): ?>
+                <span class="cart-attr-pill"><span class="cart-attr-pill-key">SKU</span> <?php echo e($item['sku']); ?></span>
+              <?php endif; ?>
+              <?php $__currentLoopData = $item['attrs'] ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $k => $v): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <span class="cart-attr-pill"><span class="cart-attr-pill-key"><?php echo e(ucfirst($k)); ?></span> <?php echo e($v); ?></span>
               <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </div>
             <?php endif; ?>
 
+            
             <div class="cart-row-actions">
               <div class="qty-pill">
                 <button type="button" onclick="updateQty('<?php echo e($rowId); ?>', -1)">−</button>
                 <input type="number" id="qty-<?php echo e($rowId); ?>" value="<?php echo e($item['qty']); ?>" min="1" max="<?php echo e($item['stock']); ?>" onchange="setQty('<?php echo e($rowId); ?>', this.value)">
                 <button type="button" onclick="updateQty('<?php echo e($rowId); ?>', 1)">+</button>
               </div>
-              <button class="cart-remove-link" onclick="removeItem('<?php echo e($rowId); ?>')">Remove</button>
+              <span class="cart-unit-price"><?php echo e(number_format($item['price'], 2)); ?> EGP each</span>
             </div>
           </div>
         </div>
 
+        
         <div class="cart-row-price">
           <div class="cart-sub" id="sub-<?php echo e($rowId); ?>"><?php echo e(number_format($item['price'] * $item['qty'], 2)); ?> EGP</div>
           <div class="cart-sub-old" id="sub-old-<?php echo e($rowId); ?>" style="<?php echo e((!empty($item['regular_price']) && $item['regular_price'] > $item['price']) ? '' : 'display:none'); ?>">
@@ -63,14 +79,13 @@
           </div>
         </div>
       </div>
-      <div class="cart-row-divider"></div>
       <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 
-      <div class="cart-actions">
+      <div class="cart-actions" style="margin-top:16px">
         <a href="<?php echo e(route('shop')); ?>" class="btn btn-outline">← Continue Shopping</a>
         <form action="<?php echo e(route('cart.clear')); ?>" method="POST" style="display:inline">
           <?php echo csrf_field(); ?> <?php echo method_field('DELETE'); ?>
-          <button class="btn btn-outline" style="color:#e02020;border-color:#e02020" onclick="return confirm('Clear entire cart?')">Clear Cart</button>
+          <button class="cart-clear-btn" onclick="return confirm('Clear entire cart?')">🗑 Clear Cart</button>
         </form>
       </div>
     </div>

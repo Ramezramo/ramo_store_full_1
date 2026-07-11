@@ -29,34 +29,50 @@
 
       @foreach($cart as $rowId => $item)
       <div class="cart-row" id="row-{{ $rowId }}">
+
+        {{-- Trash / remove button — top-right corner --}}
+        <button class="cart-remove-btn" onclick="removeItem('{{ $rowId }}')" title="Remove item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </button>
+
         <div class="cart-prod">
-          @if($item['image'])
-            <img src="{{ $item['image'] }}" alt="{{ $item['name'] }}">
-          @else
-            <div class="cart-img-placeholder">👕</div>
-          @endif
+          {{-- Product image --}}
+          <a href="{{ route('product', $item['product_id']) }}" style="flex-shrink:0">
+            @if($item['image'])
+              <img src="{{ $item['image'] }}" alt="{{ $item['name'] }}">
+            @else
+              <div class="cart-img-placeholder">👕</div>
+            @endif
+          </a>
+
           <div class="cart-prod-info">
             <a href="{{ route('product', $item['product_id']) }}" class="cart-name">{{ $item['name'] }}</a>
-            @if(!empty($item['sku']))
-              <div class="cart-model">Model: {{ $item['sku'] }}</div>
-            @endif
-            @if(!empty($item['attrs']))
-              @foreach($item['attrs'] as $k => $v)
-                <div class="cart-attr-line"><span>{{ ucfirst($k) }}:</span> {{ $v }}</div>
+
+            {{-- Attribute pills --}}
+            @if(!empty($item['attrs']) || !empty($item['sku']))
+            <div class="cart-attr-pills">
+              @if(!empty($item['sku']))
+                <span class="cart-attr-pill"><span class="cart-attr-pill-key">SKU</span> {{ $item['sku'] }}</span>
+              @endif
+              @foreach($item['attrs'] ?? [] as $k => $v)
+                <span class="cart-attr-pill"><span class="cart-attr-pill-key">{{ ucfirst($k) }}</span> {{ $v }}</span>
               @endforeach
+            </div>
             @endif
 
+            {{-- Qty control + unit price --}}
             <div class="cart-row-actions">
               <div class="qty-pill">
                 <button type="button" onclick="updateQty('{{ $rowId }}', -1)">−</button>
                 <input type="number" id="qty-{{ $rowId }}" value="{{ $item['qty'] }}" min="1" max="{{ $item['stock'] }}" onchange="setQty('{{ $rowId }}', this.value)">
                 <button type="button" onclick="updateQty('{{ $rowId }}', 1)">+</button>
               </div>
-              <button class="cart-remove-link" onclick="removeItem('{{ $rowId }}')">Remove</button>
+              <span class="cart-unit-price">{{ number_format($item['price'], 2) }} EGP each</span>
             </div>
           </div>
         </div>
 
+        {{-- Price --}}
         <div class="cart-row-price">
           <div class="cart-sub" id="sub-{{ $rowId }}">{{ number_format($item['price'] * $item['qty'], 2) }} EGP</div>
           <div class="cart-sub-old" id="sub-old-{{ $rowId }}" style="{{ (!empty($item['regular_price']) && $item['regular_price'] > $item['price']) ? '' : 'display:none' }}">
@@ -64,14 +80,13 @@
           </div>
         </div>
       </div>
-      <div class="cart-row-divider"></div>
       @endforeach
 
-      <div class="cart-actions">
+      <div class="cart-actions" style="margin-top:16px">
         <a href="{{ route('shop') }}" class="btn btn-outline">← Continue Shopping</a>
         <form action="{{ route('cart.clear') }}" method="POST" style="display:inline">
           @csrf @method('DELETE')
-          <button class="btn btn-outline" style="color:#e02020;border-color:#e02020" onclick="return confirm('Clear entire cart?')">Clear Cart</button>
+          <button class="cart-clear-btn" onclick="return confirm('Clear entire cart?')">🗑 Clear Cart</button>
         </form>
       </div>
     </div>
