@@ -1048,6 +1048,53 @@ if ('serviceWorker' in navigator) {
     .catch(() => {});
 })();
 
+// ── Remember scroll position per page (stored on-device, in localStorage) ─
+// Every page's scroll offset is saved as the user scrolls, keyed by its
+// path+query, and restored automatically the next time that exact page is
+// opened — whether via Back/Forward, a fresh link click, or the cached
+// Home/Shop pages above.
+(function scrollMemory() {
+  const KEY_PREFIX = 'ramo_scroll::';
+  const key = KEY_PREFIX + location.pathname + location.search;
+
+  if ('scrollRestoration' in history) {
+    history.scrollRestoration = 'manual';
+  }
+
+  function restore() {
+    const saved = sessionStorage.getItem(key) || localStorage.getItem(key);
+    if (!saved) return;
+    const y = parseInt(saved, 10);
+    if (!isNaN(y) && y > 0) window.scrollTo(0, y);
+  }
+
+  // Restore once the page (incl. images) has finished laying out, and again
+  // shortly after in case late-loading content shifted the page height.
+  window.addEventListener('load', function () {
+    restore();
+    setTimeout(restore, 300);
+  });
+  if (document.readyState === 'complete') restore();
+
+  let ticking = false;
+  function saveScroll() {
+    const y = window.scrollY || window.pageYOffset || 0;
+    try {
+      sessionStorage.setItem(key, String(y));
+      localStorage.setItem(key, String(y));
+    } catch (e) { /* storage full/blocked — ignore */ }
+    ticking = false;
+  }
+  window.addEventListener('scroll', function () {
+    if (!ticking) {
+      ticking = true;
+      requestAnimationFrame(saveScroll);
+    }
+  }, { passive: true });
+  window.addEventListener('pagehide', saveScroll);
+  window.addEventListener('beforeunload', saveScroll);
+})();
+
 function toggleMobileMenu() {
   const menu = document.getElementById('nav-mobile-menu');
   const btn  = document.getElementById('nav-hamburger');
