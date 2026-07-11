@@ -271,14 +271,6 @@
             </select>
           </div>
         </div>
-        <div class="if-group" style="margin-bottom:12px">
-          <label class="if-label">Card Buttons — controls which buttons appear on the product card</label>
-          <select name="button_mode" class="if-input">
-            <option value="both"         {{ old('button_mode', $product->button_mode ?? 'both')==='both'         ? 'selected' : '' }}>Both "Add to Cart" and "See Details"</option>
-            <option value="cart_only"    {{ old('button_mode', $product->button_mode ?? 'both')==='cart_only'    ? 'selected' : '' }}>Add to Cart only</option>
-            <option value="details_only" {{ old('button_mode', $product->button_mode ?? 'both')==='details_only' ? 'selected' : '' }}>See Details only</option>
-          </select>
-        </div>
         <div class="if-grid" style="margin-bottom:12px">
           <div class="if-group">
             <label class="if-label">Unit</label>
@@ -307,6 +299,54 @@
             Save Basic Info
           </button>
           <button type="button" class="dc-cancel-btn" onclick="closeSection('basic')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{{-- ═══════════════════════════════════════════════════════
+     SECTION — CARD BUTTONS
+════════════════════════════════════════════════════════════ --}}
+<div class="dc" id="dc-cardbuttons">
+  <div class="dc-head">
+    <div class="dc-title">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12h8M12 8v8"/></svg>
+      Card Buttons
+    </div>
+    <button class="dc-edit-btn" onclick="openSection('cardbuttons')">Edit</button>
+  </div>
+  <div class="dc-body">
+    <div id="view-cardbuttons">
+      @php
+        $btnModeLabels = ['both' => 'Both "Add to Cart" and "See Details"', 'cart_only' => 'Add to Cart only', 'details_only' => 'See Details only'];
+        $currentMode = $product->button_mode ?? 'both';
+      @endphp
+      <div class="dr">
+        <span class="dr-label">Button Mode</span>
+        <span class="dr-value" style="font-weight:600">{{ $btnModeLabels[$currentMode] ?? 'Both buttons' }}</span>
+      </div>
+      <div style="font-size:12px;color:var(--mid);margin-top:6px">Controls which action buttons are shown on this product's card in the storefront.</div>
+    </div>
+
+    <div id="edit-cardbuttons" style="display:none">
+      <form method="POST" action="{{ $sectionUrl }}">
+        @csrf
+        <input type="hidden" name="_section" value="cardbuttons">
+        <div class="if-group" style="margin-bottom:14px">
+          <label class="if-label">Which buttons should appear on the product card?</label>
+          <select name="button_mode" class="if-input">
+            <option value="both"         {{ ($product->button_mode ?? 'both') === 'both'         ? 'selected' : '' }}>Both "Add to Cart" and "See Details"</option>
+            <option value="cart_only"    {{ ($product->button_mode ?? 'both') === 'cart_only'    ? 'selected' : '' }}>Add to Cart only</option>
+            <option value="details_only" {{ ($product->button_mode ?? 'both') === 'details_only' ? 'selected' : '' }}>See Details only</option>
+          </select>
+        </div>
+        <div class="if-actions">
+          <button type="submit" class="dc-save-btn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            Save
+          </button>
+          <button type="button" class="dc-cancel-btn" onclick="closeSection('cardbuttons')">Cancel</button>
         </div>
       </form>
     </div>

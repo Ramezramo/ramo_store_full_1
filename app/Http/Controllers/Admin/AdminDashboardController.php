@@ -451,8 +451,17 @@ class AdminDashboardController extends Controller
                     'description'       => $request->input('description', ''),
                     'shipping_required' => $productType === 'physical',
                     'virtual'           => $productType === 'digital',
-                    'button_mode'       => in_array($request->input('button_mode'), ['both','cart_only','details_only']) ? $request->input('button_mode') : 'both',
                     'updated_at'        => $now,
+                ]);
+                break;
+
+            case 'cardbuttons':
+                $request->validate([
+                    'button_mode' => 'required|in:both,cart_only,details_only',
+                ]);
+                DB::table('products_data')->where('id', $id)->update([
+                    'button_mode' => $request->input('button_mode'),
+                    'updated_at'  => $now,
                 ]);
                 break;
 
