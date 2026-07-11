@@ -96,6 +96,11 @@ button{cursor:pointer;font-family:inherit}
 .product-card-img .badge-sale{position:absolute;top:10px;left:10px;background:var(--c-orange);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:50px;z-index:1}
 .product-card-img .badge-flash{background:linear-gradient(135deg,#e85d26,#f59e0b);animation:flash-pulse 1.8s ease-in-out infinite}
 @keyframes flash-pulse{0%,100%{box-shadow:0 0 0 0 rgba(232,93,38,.5)}50%{box-shadow:0 0 0 5px rgba(232,93,38,0)}}
+/* Cart loading overlay */
+.cart-loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.55);display:none;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(1px)}
+.cart-loading-overlay.active{display:flex}
+.cart-spinner{width:38px;height:38px;border:3.5px solid rgba(0,0,0,.12);border-top-color:var(--c-dark,#111);border-radius:50%;animation:cart-spin .7s linear infinite}
+@keyframes cart-spin{to{transform:rotate(360deg)}}
 .wish-btn{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.9);border:none;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;z-index:1}
 .wish-btn:hover{background:#fff;transform:scale(1.1)}
 .wish-btn.wished{color:var(--c-orange)}

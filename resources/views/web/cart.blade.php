@@ -2,6 +2,7 @@
 @section('title', 'Cart — Ramo Store')
 
 @section('content')
+<div id="cart-loading-overlay" class="cart-loading-overlay"><div class="cart-spinner"></div></div>
 <div class="page">
 
   @if(session('error'))
@@ -161,6 +162,16 @@
 <script>
 const CSRF = '{{ csrf_token() }}';
 
+function showCartLoading() {
+  const overlay = document.getElementById('cart-loading-overlay');
+  if (overlay) overlay.classList.add('active');
+}
+
+function hideCartLoading() {
+  const overlay = document.getElementById('cart-loading-overlay');
+  if (overlay) overlay.classList.remove('active');
+}
+
 async function updateQty(rowId, delta) {
   const input = document.getElementById('qty-' + rowId);
   const newVal = Math.max(1, parseInt(input.value) + delta);
@@ -169,43 +180,53 @@ async function updateQty(rowId, delta) {
 }
 
 async function setQty(rowId, val) {
-  const res = await fetch(`/cart/update/${rowId}`, {
-    method: 'POST',
-    headers: {'Content-Type':'application/json','X-CSRF-TOKEN': CSRF},
-    body: JSON.stringify({ qty: parseInt(val) })
-  });
-  const data = await res.json();
-  if (data.success) {
-    document.getElementById('sub-' + rowId).textContent = data.item_subtotal + ' EGP';
-    const oldEl = document.getElementById('sub-old-' + rowId);
-    if (oldEl) {
-      if (data.item_subtotal_old) {
-        oldEl.textContent = data.item_subtotal_old + ' EGP';
-        oldEl.style.display = '';
-      } else {
-        oldEl.style.display = 'none';
+  showCartLoading();
+  try {
+    const res = await fetch(`/cart/update/${rowId}`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-CSRF-TOKEN': CSRF},
+      body: JSON.stringify({ qty: parseInt(val) })
+    });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('sub-' + rowId).textContent = data.item_subtotal + ' EGP';
+      const oldEl = document.getElementById('sub-old-' + rowId);
+      if (oldEl) {
+        if (data.item_subtotal_old) {
+          oldEl.textContent = data.item_subtotal_old + ' EGP';
+          oldEl.style.display = '';
+        } else {
+          oldEl.style.display = 'none';
+        }
       }
+      document.getElementById('cart-subtotal').textContent = data.cart_subtotal + ' EGP';
+      const shipEl = document.getElementById('cart-shipping');
+      if (shipEl) shipEl.textContent = data.shipping_fee ? (data.shipping_fee + ' EGP') : 'Free';
+      document.getElementById('cart-total').textContent = data.cart_total + ' EGP';
+      updateNavCount(data.count);
     }
-    document.getElementById('cart-subtotal').textContent = data.cart_subtotal + ' EGP';
-    const shipEl = document.getElementById('cart-shipping');
-    if (shipEl) shipEl.textContent = data.shipping_fee ? (data.shipping_fee + ' EGP') : 'Free';
-    document.getElementById('cart-total').textContent = data.cart_total + ' EGP';
-    updateNavCount(data.count);
+  } finally {
+    hideCartLoading();
   }
 }
 
 async function removeItem(rowId) {
-  const res = await fetch(`/cart/remove/${rowId}`, {
-    method: 'DELETE',
-    headers: {'X-CSRF-TOKEN': CSRF}
-  });
-  const data = await res.json();
-  if (data.success) {
-    document.getElementById('row-' + rowId).remove();
-    document.getElementById('cart-subtotal').textContent = data.cart_subtotal + ' EGP';
-    document.getElementById('cart-total').textContent = data.cart_total + ' EGP';
-    updateNavCount(data.count);
-    if (data.count === 0) location.reload();
+  showCartLoading();
+  try {
+    const res = await fetch(`/cart/remove/${rowId}`, {
+      method: 'DELETE',
+      headers: {'X-CSRF-TOKEN': CSRF}
+    });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('row-' + rowId).remove();
+      document.getElementById('cart-subtotal').textContent = data.cart_subtotal + ' EGP';
+      document.getElementById('cart-total').textContent = data.cart_total + ' EGP';
+      updateNavCount(data.count);
+      if (data.count === 0) location.reload();
+    }
+  } finally {
+    hideCartLoading();
   }
 }
 
