@@ -202,6 +202,8 @@
       <div class="dr"><span class="dr-label">Status</span><span class="dr-value"><span class="badge badge-{{ $product->status }}">{{ ucfirst($product->status) }}</span></span></div>
       <div class="dr"><span class="dr-label">Acceptance</span><span class="dr-value"><span class="badge badge-{{ $product->acceptance_status ?? 'pending' }}">{{ ucfirst($product->acceptance_status ?? 'pending') }}</span></span></div>
       <div class="dr"><span class="dr-label">Product Type</span><span class="dr-value">{{ ucfirst($product->product_type ?? 'physical') }}</span></div>
+      @php $buttonModeLabels = ['both'=>'Both buttons','cart_only'=>'Add to Cart only','details_only'=>'See Details only']; @endphp
+      <div class="dr"><span class="dr-label">Card Buttons</span><span class="dr-value">{{ $buttonModeLabels[$product->button_mode ?? 'both'] ?? 'Both buttons' }}</span></div>
       <div class="dr"><span class="dr-label">SKU</span><span class="dr-value">@if($product->sku)<span class="mono">{{ $product->sku }}</span>@else<span style="color:var(--mid)">—</span>@endif</span></div>
       <div class="dr"><span class="dr-label">Brand</span>
         @php $brandName = $brands->firstWhere('id', $product->brand_id)?->name ?? null; @endphp
@@ -259,6 +261,16 @@
               <option value="digital"  {{ old('product_type',$product->product_type)==='digital'  ? 'selected' : '' }}>Digital (download)</option>
             </select>
           </div>
+          <div class="if-group">
+            <label class="if-label">Card Buttons</label>
+            <select name="button_mode" class="if-input">
+              <option value="both"         {{ old('button_mode', $product->button_mode ?? 'both')==='both'         ? 'selected' : '' }}>Both "Add to Cart" &amp; "See Details"</option>
+              <option value="cart_only"    {{ old('button_mode', $product->button_mode ?? 'both')==='cart_only'    ? 'selected' : '' }}>Add to Cart only</option>
+              <option value="details_only" {{ old('button_mode', $product->button_mode ?? 'both')==='details_only' ? 'selected' : '' }}>See Details only</option>
+            </select>
+          </div>
+        </div>
+        <div class="if-grid" style="margin-bottom:12px">
           <div class="if-group">
             <label class="if-label">Brand</label>
             <select name="brand_id" class="if-input">

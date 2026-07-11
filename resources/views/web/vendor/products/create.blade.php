@@ -252,6 +252,18 @@ textarea.vs-input{resize:vertical;min-height:100px}
   </div>
 
   <div class="vs-form-grid">
+    <div class="vs-form-group" style="grid-column:span 2">
+      <label class="vs-label">Product Card Buttons</label>
+      <select name="button_mode" class="vs-input">
+        <option value="both"         {{ old('button_mode', $product->button_mode ?? 'both') === 'both'         ? 'selected' : '' }}>Show both "Add to Cart" and "See Details"</option>
+        <option value="cart_only"    {{ old('button_mode', $product->button_mode ?? 'both') === 'cart_only'    ? 'selected' : '' }}>Show "Add to Cart" only</option>
+        <option value="details_only" {{ old('button_mode', $product->button_mode ?? 'both') === 'details_only' ? 'selected' : '' }}>Show "See Details" only</option>
+      </select>
+      <div style="font-size:11px;color:var(--mid);margin-top:4px">Controls which action buttons appear on the product listing card.</div>
+    </div>
+  </div>
+
+  <div class="vs-form-grid">
     <div class="vs-form-group">
       <label class="vs-label">Unit Type <span style="color:var(--mid);font-weight:400;text-transform:none">e.g. piece, kg, box</span></label>
       <select name="unit" class="vs-input">

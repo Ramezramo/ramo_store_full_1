@@ -9,6 +9,11 @@
   $coShowOldPrice  = $co['showOldPrice']  ?? true;
   $coShowAddToCart = $co['showAddToCart'] ?? true;
   $coShowDetails   = $co['showDetails']   ?? true;
+
+  // Per-product button_mode overrides the section-level defaults
+  $buttonMode = $p->button_mode ?? 'both';
+  if ($buttonMode === 'cart_only')    { $coShowDetails   = false; }
+  if ($buttonMode === 'details_only') { $coShowAddToCart = false; }
   $coShowCoupon    = $co['showCoupon']    ?? true;
   $coShowRating    = $co['showRating']    ?? false;
 

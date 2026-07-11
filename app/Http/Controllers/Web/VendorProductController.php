@@ -254,6 +254,7 @@ class VendorProductController extends Controller
             'vendor_id'            => $vendor->id,
             'images'               => $imagesJson,
             'related_ids'          => $relatedJson,
+            'button_mode'          => in_array($request->input('button_mode'), ['both','cart_only','details_only']) ? $request->input('button_mode') : 'both',
             'acceptance_status'    => 'pending',
             'stock_quantity'       => $totalStock,
             'stock_status'         => $totalStock > 0 ? 'instock' : 'outofstock',
@@ -732,6 +733,7 @@ class VendorProductController extends Controller
             'shipping_required'    => $productType === 'physical',
             'virtual'              => $productType === 'digital',
             'on_sale'              => $discountPct > 0,
+            'button_mode'          => in_array($request->input('button_mode'), ['both','cart_only','details_only']) ? $request->input('button_mode') : 'both',
             'updated_at'           => $now,
         ]);
 

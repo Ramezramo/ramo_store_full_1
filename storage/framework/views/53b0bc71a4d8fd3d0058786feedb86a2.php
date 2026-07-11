@@ -9,6 +9,11 @@
   $coShowOldPrice  = $co['showOldPrice']  ?? true;
   $coShowAddToCart = $co['showAddToCart'] ?? true;
   $coShowDetails   = $co['showDetails']   ?? true;
+
+  // Per-product button_mode overrides the section-level defaults
+  $buttonMode = $p->button_mode ?? 'both';
+  if ($buttonMode === 'cart_only')    { $coShowDetails   = false; }
+  if ($buttonMode === 'details_only') { $coShowAddToCart = false; }
   $coShowCoupon    = $co['showCoupon']    ?? true;
   $coShowRating    = $co['showRating']    ?? false;
 
@@ -184,7 +189,7 @@
   </div>
 </div>
 
-<?php if (! $__env->hasRenderedOnce('8ce642cb-70ba-4fd0-985b-376e4729f5ca')): $__env->markAsRenderedOnce('8ce642cb-70ba-4fd0-985b-376e4729f5ca'); ?>
+<?php if (! $__env->hasRenderedOnce('28bf52a1-4dbf-4c60-adb5-1bfc8ed313ac')): $__env->markAsRenderedOnce('28bf52a1-4dbf-4c60-adb5-1bfc8ed313ac'); ?>
 <style>
 .pc-coupon-bar{display:flex;text-decoration:none;border-radius:0 0 10px 10px;overflow:hidden;margin:10px -14px -14px;font-size:11px;font-weight:700;line-height:1}
 .pc-coupon-left{flex:1;background:#7c3aed;color:#fff;padding:8px 10px;display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

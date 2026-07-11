@@ -119,6 +119,7 @@ class Product extends Model
         'whatsapp',
         'global_unique_id',
         'better_featured_image',
+        'button_mode',
     ];
 
     /** --------------------------------------------------------------

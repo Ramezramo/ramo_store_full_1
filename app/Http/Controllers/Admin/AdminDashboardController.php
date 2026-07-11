@@ -433,6 +433,7 @@ class AdminDashboardController extends Controller
                     'unit_amount'       => 'nullable|numeric|min:0.01',
                     'short_description' => 'nullable|string|max:1000',
                     'description'       => 'nullable|string',
+                    'button_mode'       => 'nullable|in:both,cart_only,details_only',
                 ]);
                 $productType = $request->input('product_type', 'physical');
                 $unitType    = $request->input('unit', 'piece');
@@ -450,6 +451,7 @@ class AdminDashboardController extends Controller
                     'description'       => $request->input('description', ''),
                     'shipping_required' => $productType === 'physical',
                     'virtual'           => $productType === 'digital',
+                    'button_mode'       => in_array($request->input('button_mode'), ['both','cart_only','details_only']) ? $request->input('button_mode') : 'both',
                     'updated_at'        => $now,
                 ]);
                 break;
