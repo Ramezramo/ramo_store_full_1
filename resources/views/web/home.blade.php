@@ -320,10 +320,10 @@
         #{{ $secId }} .product-card-img { aspect-ratio: unset; height: var(--tl-img-h,{{ $imgHeight }}px) }
         @endif
         @if($uniformHeight)
-        #{{ $secId }}.product-grid { align-items: stretch }
-        #{{ $secId }} .product-card { height: 100% }
-        #{{ $secId }} .product-card-body { flex: 1 }
-        #{{ $secId }} .product-card-price { margin-top: auto }
+        #{{ $secId }} { align-items: stretch }
+        #{{ $secId }} .product-card { height: 100%; display: flex; flex-direction: column }
+        #{{ $secId }} .product-card-body { flex: 1; display: flex; flex-direction: column }
+        #{{ $secId }} .card-add-btn { margin-top: auto }
         @endif
       </style>
       <div class="sec-head">
@@ -408,10 +408,10 @@
         #{{ $secId }} .product-card-img { aspect-ratio: unset; height: var(--tl-img-h,{{ $imgHeight }}px) }
         @endif
         @if($uniformHeight)
-        #{{ $secId }}.product-grid { align-items: stretch }
-        #{{ $secId }} .product-card { height: 100% }
-        #{{ $secId }} .product-card-body { flex: 1 }
-        #{{ $secId }} .product-card-price { margin-top: auto }
+        #{{ $secId }} { align-items: stretch }
+        #{{ $secId }} .product-card { height: 100%; display: flex; flex-direction: column }
+        #{{ $secId }} .product-card-body { flex: 1; display: flex; flex-direction: column }
+        #{{ $secId }} .card-add-btn { margin-top: auto }
         @endif
       </style>
       <div class="sec-head">

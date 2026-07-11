@@ -320,10 +320,10 @@
         #<?php echo e($secId); ?> .product-card-img { aspect-ratio: unset; height: var(--tl-img-h,<?php echo e($imgHeight); ?>px) }
         <?php endif; ?>
         <?php if($uniformHeight): ?>
-        #<?php echo e($secId); ?>.product-grid { align-items: stretch }
-        #<?php echo e($secId); ?> .product-card { height: 100% }
-        #<?php echo e($secId); ?> .product-card-body { flex: 1 }
-        #<?php echo e($secId); ?> .product-card-price { margin-top: auto }
+        #<?php echo e($secId); ?> { align-items: stretch }
+        #<?php echo e($secId); ?> .product-card { height: 100%; display: flex; flex-direction: column }
+        #<?php echo e($secId); ?> .product-card-body { flex: 1; display: flex; flex-direction: column }
+        #<?php echo e($secId); ?> .card-add-btn { margin-top: auto }
         <?php endif; ?>
       </style>
       <div class="sec-head">
@@ -408,10 +408,10 @@
         #<?php echo e($secId); ?> .product-card-img { aspect-ratio: unset; height: var(--tl-img-h,<?php echo e($imgHeight); ?>px) }
         <?php endif; ?>
         <?php if($uniformHeight): ?>
-        #<?php echo e($secId); ?>.product-grid { align-items: stretch }
-        #<?php echo e($secId); ?> .product-card { height: 100% }
-        #<?php echo e($secId); ?> .product-card-body { flex: 1 }
-        #<?php echo e($secId); ?> .product-card-price { margin-top: auto }
+        #<?php echo e($secId); ?> { align-items: stretch }
+        #<?php echo e($secId); ?> .product-card { height: 100%; display: flex; flex-direction: column }
+        #<?php echo e($secId); ?> .product-card-body { flex: 1; display: flex; flex-direction: column }
+        #<?php echo e($secId); ?> .card-add-btn { margin-top: auto }
         <?php endif; ?>
       </style>
       <div class="sec-head">
