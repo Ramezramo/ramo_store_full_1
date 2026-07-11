@@ -27,11 +27,14 @@ button{cursor:pointer;font-family:inherit}
 .nav-links{display:flex;gap:2px}
 .nav-links a{padding:7px 13px;border-radius:8px;font-size:13.5px;font-weight:500;color:var(--c-mid);transition:all .15s;white-space:nowrap}
 .nav-links a:hover,.nav-links a.active{background:var(--c-tag);color:var(--c-dark)}
-.nav-search{flex:1;min-width:0}
-.nav-search form{display:flex;background:var(--c-bg);border:1.5px solid var(--c-light);border-radius:50px;overflow:hidden;transition:border-color .15s}
-.nav-search form:focus-within{border-color:#bbb}
-.nav-search input{flex:1;min-width:0;padding:8px 16px;background:none;border:none;outline:none;font-size:13.5px;color:var(--c-dark)}
-.nav-search button{padding:8px 14px;background:none;border:none;color:var(--c-mid)}
+.nav-search{flex:1;min-width:0;max-width:480px}
+.nav-search form{display:flex;align-items:center;background:var(--c-bg);border:1.5px solid var(--c-light);border-radius:50px;overflow:hidden;transition:border-color .18s,box-shadow .18s;padding-left:14px;gap:4px}
+.nav-search form:focus-within{border-color:#999;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.07)}
+.nav-search-icon{color:var(--c-mid);flex-shrink:0;pointer-events:none}
+.nav-search input{flex:1;min-width:0;padding:9px 4px;background:none;border:none;outline:none;font-size:13.5px;color:var(--c-dark)}
+.nav-search input::placeholder{color:var(--c-mid)}
+.nav-search button{display:flex;align-items:center;justify-content:center;width:36px;height:36px;margin:3px;border-radius:50px;background:var(--c-dark);border:none;color:#fff;cursor:pointer;flex-shrink:0;transition:background .15s}
+.nav-search button:hover{background:#333}
 .nav-actions{display:flex;align-items:center;gap:4px;flex-shrink:0}
 .nav-icon-btn{position:relative;width:40px;height:40px;border-radius:10px;border:none;background:none;display:flex;align-items:center;justify-content:center;font-size:19px;color:var(--c-mid);cursor:pointer;text-decoration:none;transition:background .15s}
 .nav-icon-btn:hover{background:var(--c-tag);color:var(--c-dark)}
@@ -762,12 +765,14 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
       <a href="{{ route('home') }}"  class="{{ request()->routeIs('home') ? 'active' : '' }}">Home</a>
       <a href="{{ route('shop') }}"  class="{{ request()->routeIs('shop') ? 'active' : '' }}">Shop</a>
       <a href="{{ route('order.track') }}" class="{{ request()->routeIs('order.track*') ? 'active' : '' }}">Track Order</a>
-      <a href="/api-guide.html" target="_blank">API Docs</a>
     </div>
     <div class="nav-search">
       <form action="{{ route('search') }}" method="GET">
+        <svg class="nav-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="15" height="15"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" name="q" placeholder="Search products…" value="{{ request('q', request('search')) }}" autocomplete="off">
-        <button type="submit">🔍</button>
+        <button type="submit" aria-label="Search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
       </form>
     </div>
     <div class="nav-actions">
@@ -803,6 +808,10 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
               <a href="{{ route('admin.dashboard') }}" class="nav-portal-item">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
                 Dashboard
+              </a>
+              <a href="/api-guide.html" target="_blank" class="nav-portal-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                API Docs
               </a>
               <hr class="nav-portal-divider">
               <form method="POST" action="{{ route('logout') }}">
@@ -891,8 +900,11 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
   <div class="nav-mobile-backdrop" onclick="closeMobileMenu()"></div>
   <div class="nav-mobile-panel">
     <form action="{{ route('search') }}" method="GET" class="nav-mobile-search">
+      <svg style="margin-left:14px;flex-shrink:0;color:var(--c-mid)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="15" height="15"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="text" name="q" placeholder="Search products…" value="{{ request('q', request('search')) }}" autocomplete="off">
-      <button type="submit">🔍</button>
+      <button type="submit" aria-label="Search" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;margin:3px;border-radius:50px;background:var(--c-dark);border:none;color:#fff;cursor:pointer;flex-shrink:0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
     </form>
     <div class="nav-mobile-links">
       <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}">🏠 Home</a>
@@ -945,7 +957,6 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
       <a href="{{ route('cart') }}">Cart</a>
       @auth<a href="{{ route('account.orders') }}">My Orders</a>@endauth
       <a href="{{ route('vendor.register') }}" style="color:var(--c-orange);font-weight:600">Sell on Ramo</a>
-      <a href="/api-guide.html" target="_blank">API Guide</a>
     </div>
     <div class="footer-note">© {{ date('Y') }} RamoStore. All rights reserved.</div>
   </div>
