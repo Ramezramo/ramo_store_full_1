@@ -262,16 +262,6 @@
             </select>
           </div>
           <div class="if-group">
-            <label class="if-label">Card Buttons</label>
-            <select name="button_mode" class="if-input">
-              <option value="both"         {{ old('button_mode', $product->button_mode ?? 'both')==='both'         ? 'selected' : '' }}>Both "Add to Cart" &amp; "See Details"</option>
-              <option value="cart_only"    {{ old('button_mode', $product->button_mode ?? 'both')==='cart_only'    ? 'selected' : '' }}>Add to Cart only</option>
-              <option value="details_only" {{ old('button_mode', $product->button_mode ?? 'both')==='details_only' ? 'selected' : '' }}>See Details only</option>
-            </select>
-          </div>
-        </div>
-        <div class="if-grid" style="margin-bottom:12px">
-          <div class="if-group">
             <label class="if-label">Brand</label>
             <select name="brand_id" class="if-input">
               <option value="">— No brand —</option>
@@ -280,6 +270,14 @@
               @endforeach
             </select>
           </div>
+        </div>
+        <div class="if-group" style="margin-bottom:12px">
+          <label class="if-label">Card Buttons — controls which buttons appear on the product card</label>
+          <select name="button_mode" class="if-input">
+            <option value="both"         {{ old('button_mode', $product->button_mode ?? 'both')==='both'         ? 'selected' : '' }}>Both "Add to Cart" and "See Details"</option>
+            <option value="cart_only"    {{ old('button_mode', $product->button_mode ?? 'both')==='cart_only'    ? 'selected' : '' }}>Add to Cart only</option>
+            <option value="details_only" {{ old('button_mode', $product->button_mode ?? 'both')==='details_only' ? 'selected' : '' }}>See Details only</option>
+          </select>
         </div>
         <div class="if-grid" style="margin-bottom:12px">
           <div class="if-group">
