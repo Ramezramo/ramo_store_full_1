@@ -644,17 +644,11 @@
         @foreach($products as $idx => $p)
         <div class="tl-scroll-card" style="position:relative">
           @if($sec['showRankBadge'] ?? true)<span class="tl-rank-badge">#{{ $loop->iteration }}</span>@endif
-          <div class="product-card">
-            <a href="{{ route('product', $p->id) }}" class="product-card-img" style="height:180px">
-              @if($p->thumbnail_url)<img src="{{ $p->thumbnail_url }}" alt="{{ $p->name }}" loading="lazy">@else<div class="placeholder">🛍️</div>@endif
-              @if($p->on_sale)<span class="badge-sale">SALE</span>@endif
-            </a>
-            <div class="product-card-body" style="padding:8px">
-              <a href="{{ route('product', $p->id) }}" class="product-card-name" style="font-size:12px">{{ Str::limit($p->name, 28) }}</a>
-              @if(($sec['showSoldToday'] ?? false) && $p->total_sales > 0)<div style="font-size:11px;color:#e85d26;font-weight:600">{{ $p->total_sales }}+ sold</div>@endif
-              <div class="product-card-price"><span class="price-main {{ $p->on_sale ? 'sale' : '' }}" style="font-size:12px">{{ number_format($p->on_sale ? $p->sale_price : $p->price, 0) }} EGP</span></div>
-            </div>
-          </div>
+          @include('web.partials.product-card', [
+            'p'              => $p,
+            'cardVariations' => [],
+            'cardOptions'    => ['compact' => true, 'nameLimit' => 28, 'showWishlist' => false, 'showAddToCart' => false, 'showDetails' => false, 'showCoupon' => false, 'showOldPrice' => false],
+          ])
         </div>
         @endforeach
       </div></div>
@@ -935,16 +929,13 @@
       <div class="sec-head"><h2 class="sec-title">{{ $title }}</h2><a href="{{ route('shop') }}" class="sec-link">See all →</a></div>
       <div class="tl-scroll-section" style="margin-bottom:36px"><div class="tl-scroll-track">
         @foreach($products as $p)
-        <div class="tl-scroll-card"><div class="product-card">
-          <a href="{{ route('product', $p->id) }}" class="product-card-img" style="height:180px">
-            @if($p->thumbnail_url)<img src="{{ $p->thumbnail_url }}" alt="{{ $p->name }}" loading="lazy">@else<div class="placeholder">🛍️</div>@endif
-            @if($p->on_sale)<span class="badge-sale">SALE</span>@endif
-          </a>
-          <div class="product-card-body" style="padding:8px">
-            <a href="{{ route('product', $p->id) }}" class="product-card-name" style="font-size:12px">{{ Str::limit($p->name, 28) }}</a>
-            <div class="product-card-price"><span class="price-main {{ $p->on_sale ? 'sale' : '' }}" style="font-size:12px">{{ number_format($p->on_sale ? $p->sale_price : $p->price, 0) }} EGP</span></div>
-          </div>
-        </div></div>
+        <div class="tl-scroll-card">
+          @include('web.partials.product-card', [
+            'p'              => $p,
+            'cardVariations' => [],
+            'cardOptions'    => ['compact' => true, 'nameLimit' => 28, 'showWishlist' => false, 'showAddToCart' => false, 'showDetails' => false, 'showCoupon' => false, 'showOldPrice' => false],
+          ])
+        </div>
         @endforeach
       </div></div>
       @endif

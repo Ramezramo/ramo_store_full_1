@@ -1,7 +1,6 @@
-@extends('layouts.app')
-@section('title', 'Shop — Ramo Store')
+<?php $__env->startSection('title', 'Shop — Ramo Store'); ?>
 
-@push('styles')
+<?php $__env->startPush('styles'); ?>
 <style>
 /* ══════════════════════════════════════════════
    FOLDABLE WIDGET SECTIONS
@@ -152,30 +151,30 @@
   .sidebar.mobile-open { display: block; }
 }
 </style>
-@endpush
+<?php $__env->stopPush(); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="page">
 
-  {{-- Breadcrumb --}}
+  
   <div class="breadcrumb">
-    <a href="{{ route('home') }}">Home</a><span>/</span>
-    <a href="{{ route('shop') }}">Shop</a>
-    @if($activeCategoryId)
-      @php
+    <a href="<?php echo e(route('home')); ?>">Home</a><span>/</span>
+    <a href="<?php echo e(route('shop')); ?>">Shop</a>
+    <?php if($activeCategoryId): ?>
+      <?php
         $allCatsFlat  = $parentCats->merge($childCats->flatten());
         $activeCatObj = $allCatsFlat->firstWhere('id', $activeCategoryId);
         $activeCatName = $activeCatObj->name ?? '';
         $isChildActive = $activeCatObj && $activeCatObj->parent > 0;
         if ($isChildActive) { $parentCatObj = $parentCats->firstWhere('id', $activeCatObj->parent); }
-      @endphp
-      @if($isChildActive && isset($parentCatObj))
+      ?>
+      <?php if($isChildActive && isset($parentCatObj)): ?>
         <span>/</span>
-        <a href="{{ route('shop', ['category' => $parentCatObj->id]) }}">{{ $parentCatObj->name }}</a>
-      @endif
-      <span>/</span><strong>{{ $activeCatName }}</strong>
-    @endif
-    @if(request('search'))<span>/</span><span>"{{ request('search') }}"</span>@endif
+        <a href="<?php echo e(route('shop', ['category' => $parentCatObj->id])); ?>"><?php echo e($parentCatObj->name); ?></a>
+      <?php endif; ?>
+      <span>/</span><strong><?php echo e($activeCatName); ?></strong>
+    <?php endif; ?>
+    <?php if(request('search')): ?><span>/</span><span>"<?php echo e(request('search')); ?>"</span><?php endif; ?>
   </div>
 
   <button class="shop-filter-toggle" id="shop-filter-btn" onclick="toggleShopFilter()">
@@ -185,10 +184,10 @@
 
   <div class="shop-layout">
 
-    {{-- ══ SIDEBAR ══════════════════════════════════════════════ --}}
+    
     <aside class="sidebar" id="shop-sidebar">
 
-      {{-- ── Widget: Categories ───────────────────────────────── --}}
+      
       <div class="widget" id="widget-categories">
 
         <div class="widget-header" onclick="toggleWidget('widget-categories')" title="Click to collapse">
@@ -202,18 +201,18 @@
         </div>
 
         <div class="widget-body">
-          {{-- All Products --}}
-          <a href="{{ route('shop', array_filter(request()->except('category','page'))) }}"
-             class="cat-all-pill {{ !$activeCategoryId ? 'active' : '' }}">
+          
+          <a href="<?php echo e(route('shop', array_filter(request()->except('category','page')))); ?>"
+             class="cat-all-pill <?php echo e(!$activeCategoryId ? 'active' : ''); ?>">
             <span>All Products</span>
-            <span class="cat-count-badge">{{ $products->total() }}</span>
+            <span class="cat-count-badge"><?php echo e($products->total()); ?></span>
           </a>
 
           <hr class="widget-divider" style="margin:8px 0">
 
-          {{-- Parent → Children --}}
-          @foreach($parentCats as $parent)
-            @php
+          
+          <?php $__currentLoopData = $parentCats; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $parent): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <?php
               $hasChildren   = isset($childCats[$parent->id]) && $childCats[$parent->id]->count() > 0;
               $isActive      = $activeCategoryId == $parent->id;
               $isOpen        = $activeParentId == $parent->id;
@@ -222,60 +221,60 @@
               $childrenCount = 0;
               if ($hasChildren) foreach ($childCats[$parent->id] as $ch) $childrenCount += ($catCounts[$ch->id] ?? 0);
               $totalCount    = $ownCount + $childrenCount;
-            @endphp
+            ?>
 
             <div class="cat-parent-item">
-              @if($hasChildren)
-                <div style="display:flex;align-items:center;border-radius:9px;{{ $isActive ? 'background:var(--c-orange);' : ($isOpen ? 'background:var(--c-tag);' : '') }}">
-                  <a href="{{ $parentUrl }}"
-                     style="flex:1;display:flex;align-items:center;gap:8px;padding:9px 0 9px 13px;color:{{ $isActive ? '#fff' : 'var(--c-dark)' }};text-decoration:none;min-width:0;font-size:13.5px;font-weight:600;">
-                    <span class="cat-parent-name">{{ $parent->name }}</span>
-                    @if($totalCount > 0)
-                      <span class="cat-count-badge" style="{{ $isActive ? 'background:rgba(255,255,255,.25);color:#fff;border-color:transparent;' : '' }}">{{ $totalCount }}</span>
-                    @endif
+              <?php if($hasChildren): ?>
+                <div style="display:flex;align-items:center;border-radius:9px;<?php echo e($isActive ? 'background:var(--c-orange);' : ($isOpen ? 'background:var(--c-tag);' : '')); ?>">
+                  <a href="<?php echo e($parentUrl); ?>"
+                     style="flex:1;display:flex;align-items:center;gap:8px;padding:9px 0 9px 13px;color:<?php echo e($isActive ? '#fff' : 'var(--c-dark)'); ?>;text-decoration:none;min-width:0;font-size:13.5px;font-weight:600;">
+                    <span class="cat-parent-name"><?php echo e($parent->name); ?></span>
+                    <?php if($totalCount > 0): ?>
+                      <span class="cat-count-badge" style="<?php echo e($isActive ? 'background:rgba(255,255,255,.25);color:#fff;border-color:transparent;' : ''); ?>"><?php echo e($totalCount); ?></span>
+                    <?php endif; ?>
                   </a>
-                  <button onclick="toggleCatChildren('cc-{{ $parent->id }}', this)"
-                          style="background:none;border:none;cursor:pointer;padding:9px 13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:{{ $isActive ? 'rgba(255,255,255,.7)' : 'var(--c-mid)' }};"
+                  <button onclick="toggleCatChildren('cc-<?php echo e($parent->id); ?>', this)"
+                          style="background:none;border:none;cursor:pointer;padding:9px 13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:<?php echo e($isActive ? 'rgba(255,255,255,.7)' : 'var(--c-mid)'); ?>;"
                           aria-label="Toggle sub-categories">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"
                          class="cat-chevron-svg"
-                         style="transition:transform .25s;{{ $isOpen ? 'transform:rotate(180deg)' : '' }}">
+                         style="transition:transform .25s;<?php echo e($isOpen ? 'transform:rotate(180deg)' : ''); ?>">
                       <polyline points="6 9 12 15 18 9"/>
                     </svg>
                   </button>
                 </div>
-              @else
-                <a href="{{ $parentUrl }}" class="cat-parent-btn {{ $isActive ? 'active' : '' }}">
-                  <span class="cat-parent-name">{{ $parent->name }}</span>
-                  @if($totalCount > 0)<span class="cat-count-badge">{{ $totalCount }}</span>@endif
+              <?php else: ?>
+                <a href="<?php echo e($parentUrl); ?>" class="cat-parent-btn <?php echo e($isActive ? 'active' : ''); ?>">
+                  <span class="cat-parent-name"><?php echo e($parent->name); ?></span>
+                  <?php if($totalCount > 0): ?><span class="cat-count-badge"><?php echo e($totalCount); ?></span><?php endif; ?>
                 </a>
-              @endif
+              <?php endif; ?>
 
-              @if($hasChildren)
-                <div class="cat-children-wrap {{ $isOpen ? 'open' : '' }}" id="cc-{{ $parent->id }}">
+              <?php if($hasChildren): ?>
+                <div class="cat-children-wrap <?php echo e($isOpen ? 'open' : ''); ?>" id="cc-<?php echo e($parent->id); ?>">
                   <div class="cat-children-inner">
-                    @foreach($childCats[$parent->id] as $child)
-                      @php
+                    <?php $__currentLoopData = $childCats[$parent->id]; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $child): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                      <?php
                         $childActive = $activeCategoryId == $child->id;
                         $childCount  = $catCounts[$child->id] ?? 0;
                         $childUrl    = route('shop', array_merge(request()->except('category','page'), ['category' => $child->id]));
-                      @endphp
-                      <a href="{{ $childUrl }}" class="cat-child-link {{ $childActive ? 'active' : '' }}">
-                        <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $child->name }}</span>
-                        @if($childCount > 0)<span class="cat-count-badge">{{ $childCount }}</span>@endif
+                      ?>
+                      <a href="<?php echo e($childUrl); ?>" class="cat-child-link <?php echo e($childActive ? 'active' : ''); ?>">
+                        <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?php echo e($child->name); ?></span>
+                        <?php if($childCount > 0): ?><span class="cat-count-badge"><?php echo e($childCount); ?></span><?php endif; ?>
                       </a>
-                    @endforeach
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                   </div>
                 </div>
-              @endif
+              <?php endif; ?>
             </div>
-          @endforeach
-        </div>{{-- /widget-body --}}
-      </div>{{-- /widget-categories --}}
+          <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+        </div>
+      </div>
 
       <hr class="widget-divider">
 
-      {{-- ── Widget: Sort By ──────────────────────────────────── --}}
+      
       <div class="widget" id="widget-sort">
 
         <div class="widget-header" onclick="toggleWidget('widget-sort')" title="Click to collapse">
@@ -289,43 +288,44 @@
         </div>
 
         <div class="widget-body">
-          <form method="GET" action="{{ route('shop') }}" id="sort-form" style="padding-bottom:4px">
-            @foreach(request()->except('sort','page') as $k => $v)
-              <input type="hidden" name="{{ $k }}" value="{{ $v }}">
-            @endforeach
+          <form method="GET" action="<?php echo e(route('shop')); ?>" id="sort-form" style="padding-bottom:4px">
+            <?php $__currentLoopData = request()->except('sort','page'); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $k => $v): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+              <input type="hidden" name="<?php echo e($k); ?>" value="<?php echo e($v); ?>">
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             <select class="sort-select" name="sort" onchange="document.getElementById('sort-form').submit()">
-              <option value=""          {{ !request('sort') ? 'selected' : '' }}>Latest</option>
-              <option value="price_asc" {{ request('sort')==='price_asc'  ? 'selected' : '' }}>Price: Low → High</option>
-              <option value="price_desc"{{ request('sort')==='price_desc' ? 'selected' : '' }}>Price: High → Low</option>
+              <option value=""          <?php echo e(!request('sort') ? 'selected' : ''); ?>>Latest</option>
+              <option value="price_asc" <?php echo e(request('sort')==='price_asc'  ? 'selected' : ''); ?>>Price: Low → High</option>
+              <option value="price_desc"<?php echo e(request('sort')==='price_desc' ? 'selected' : ''); ?>>Price: High → Low</option>
             </select>
           </form>
         </div>
 
-      </div>{{-- /widget-sort --}}
+      </div>
 
     </aside>
 
-    {{-- ══ MAIN ════════════════════════════════════════════════ --}}
+    
     <div>
       <div class="shop-toolbar">
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <span class="result-count">{{ $products->total() }} product{{ $products->total()!=1?'s':'' }}</span>
-          @if($activeCategoryId && isset($activeCatName) && $activeCatName)
+          <span class="result-count"><?php echo e($products->total()); ?> product<?php echo e($products->total()!=1?'s':''); ?></span>
+          <?php if($activeCategoryId && isset($activeCatName) && $activeCatName): ?>
             <span class="active-cat-strip">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-              {{ $activeCatName }}
-              @php $isParentFilter = $parentCats->firstWhere('id', $activeCategoryId) && isset($childCats[$activeCategoryId]) && $childCats[$activeCategoryId]->count() > 0; @endphp
-              @if($isParentFilter)<span style="opacity:.6;font-weight:500">+ sub-categories</span>@endif
-              <a href="{{ route('shop', array_filter(request()->except('category','page'))) }}" title="Clear category">
+              <?php echo e($activeCatName); ?>
+
+              <?php $isParentFilter = $parentCats->firstWhere('id', $activeCategoryId) && isset($childCats[$activeCategoryId]) && $childCats[$activeCategoryId]->count() > 0; ?>
+              <?php if($isParentFilter): ?><span style="opacity:.6;font-weight:500">+ sub-categories</span><?php endif; ?>
+              <a href="<?php echo e(route('shop', array_filter(request()->except('category','page')))); ?>" title="Clear category">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </a>
             </span>
-          @endif
+          <?php endif; ?>
         </div>
         <div class="search-bar">
-          <form method="GET" action="{{ route('shop') }}" style="display:contents">
-            @if($activeCategoryId)<input type="hidden" name="category" value="{{ $activeCategoryId }}">@endif
-            <input type="text" name="search" placeholder="Search products…" value="{{ request('search') }}">
+          <form method="GET" action="<?php echo e(route('shop')); ?>" style="display:contents">
+            <?php if($activeCategoryId): ?><input type="hidden" name="category" value="<?php echo e($activeCategoryId); ?>"><?php endif; ?>
+            <input type="text" name="search" placeholder="Search products…" value="<?php echo e(request('search')); ?>">
             <button type="submit">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             </button>
@@ -333,38 +333,38 @@
         </div>
       </div>
 
-      @if($products->count())
+      <?php if($products->count()): ?>
         <div class="product-grid">
-          @foreach($products as $p)
-            @include('web.partials.product-card', ['p' => $p, 'cardVariations' => []])
-          @endforeach
+          <?php $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $p): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <?php echo $__env->make('web.partials.product-card', ['p' => $p, 'cardVariations' => []], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+          <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
         </div>
 
-        @if($products->hasPages())
+        <?php if($products->hasPages()): ?>
         <div class="pagination-wrap">
-          @if($products->onFirstPage())<span>‹</span>@else<a href="{{ $products->previousPageUrl() }}">‹</a>@endif
-          @foreach($products->getUrlRange(max(1,$products->currentPage()-2), min($products->lastPage(),$products->currentPage()+2)) as $page => $url)
-            @if($page == $products->currentPage())<span class="active-page">{{ $page }}</span>@else<a href="{{ $url }}">{{ $page }}</a>@endif
-          @endforeach
-          @if($products->hasMorePages())<a href="{{ $products->nextPageUrl() }}">›</a>@else<span>›</span>@endif
+          <?php if($products->onFirstPage()): ?><span>‹</span><?php else: ?><a href="<?php echo e($products->previousPageUrl()); ?>">‹</a><?php endif; ?>
+          <?php $__currentLoopData = $products->getUrlRange(max(1,$products->currentPage()-2), min($products->lastPage(),$products->currentPage()+2)); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $page => $url): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <?php if($page == $products->currentPage()): ?><span class="active-page"><?php echo e($page); ?></span><?php else: ?><a href="<?php echo e($url); ?>"><?php echo e($page); ?></a><?php endif; ?>
+          <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+          <?php if($products->hasMorePages()): ?><a href="<?php echo e($products->nextPageUrl()); ?>">›</a><?php else: ?><span>›</span><?php endif; ?>
         </div>
-        @endif
+        <?php endif; ?>
 
-      @else
+      <?php else: ?>
         <div class="empty">
           <div class="empty-icon">🔍</div>
           <h3>No products found</h3>
           <p>Try a different search term or browse all categories.</p>
-          <a href="{{ route('shop') }}" class="btn btn-dark" style="margin-top:20px">Clear filters</a>
+          <a href="<?php echo e(route('shop')); ?>" class="btn btn-dark" style="margin-top:20px">Clear filters</a>
         </div>
-      @endif
+      <?php endif; ?>
     </div>
 
   </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script>
 /* ── Widget fold/unfold ────────────────────────────────────── */
 const STORAGE_KEY = 'ramo_shop_widgets';
@@ -413,4 +413,6 @@ function toggleShopFilter() {
     : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg> Filters & Categories';
 }
 </script>
-@endpush
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('layouts.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH /home/runner/workspace/resources/views/web/shop.blade.php ENDPATH**/ ?>

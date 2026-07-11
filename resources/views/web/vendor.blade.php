@@ -57,32 +57,7 @@
   @if($products->count())
     <div class="product-grid" style="margin-bottom:40px">
       @foreach($products as $p)
-      <div class="product-card">
-        <a href="{{ route('product', $p->id) }}" class="product-card-img">
-          @if($p->thumbnail_url)
-            <img src="{{ $p->thumbnail_url }}" alt="{{ $p->name }}" loading="lazy">
-          @else
-            <div class="placeholder">🛍️</div>
-          @endif
-          @if($p->on_sale)<span class="badge-sale">SALE</span>@endif
-          <button class="wish-btn" onclick="event.preventDefault();toggleWishlist(this,{{ $p->id }})" title="Wishlist">♡</button>
-        </a>
-        <div class="product-card-body">
-          <a href="{{ route('product', $p->id) }}" class="product-card-name">{{ $p->name }}</a>
-          <div class="product-card-price">
-            @if($p->on_sale)
-              <span class="price-main sale">{{ number_format($p->sale_price, 2) }} EGP</span>
-              <span class="price-old">{{ number_format($p->price, 2) }}</span>
-            @else
-              <span class="price-main">{{ number_format($p->price, 2) }} EGP</span>
-            @endif
-          </div>
-          <button class="card-add-btn"
-                  onclick="addToCart({{ $p->id }},'{{ addslashes($p->name) }}',{{ $p->display_price }},'{{ $p->thumbnail_url }}')">
-            Add to Cart
-          </button>
-        </div>
-      </div>
+        @include('web.partials.product-card', ['p' => $p, 'cardVariations' => []])
       @endforeach
     </div>
 

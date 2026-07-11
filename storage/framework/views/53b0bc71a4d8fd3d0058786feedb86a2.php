@@ -1,4 +1,4 @@
-@php
+<?php
   $pid = $p->id;
   $vars = collect($cardVariations ?? []);
   $co = $cardOptions ?? [];
@@ -84,152 +84,156 @@
   /* ── Displayed product name ─────────────────────────────── */
   // $cardNameHtml can be passed as a variable for raw HTML (e.g. search highlights)
   $displayName = $coNameLimit > 0 ? Str::limit($p->name, $coNameLimit) : $p->name;
-@endphp
+?>
 
-<div class="product-card" id="{{ $coIdPrefix }}-{{ $pid }}"
-     data-pid="{{ $pid }}"
-     data-base-img="{{ $displayImg }}"
-     data-base-price="{{ $basePrice }}"
-     data-vars='@json($jsVars)'>
+<div class="product-card" id="<?php echo e($coIdPrefix); ?>-<?php echo e($pid); ?>"
+     data-pid="<?php echo e($pid); ?>"
+     data-base-img="<?php echo e($displayImg); ?>"
+     data-base-price="<?php echo e($basePrice); ?>"
+     data-vars='<?php echo json_encode($jsVars, 15, 512) ?>'>
 
-  <a href="{{ route('product', $pid) }}" class="product-card-img"{{ $imgStyle ? ' style="'.$imgStyle.'"' : '' }}>
-    @if($displayImg)
-      <img src="{{ $displayImg }}" alt="{{ $p->name }}" loading="lazy" id="pc-img-{{ $pid }}">
-    @else
-      <div class="placeholder" id="pc-img-{{ $pid }}">🛍️</div>
-    @endif
-    @if($coShowBadge && $p->on_sale)
-      @if(!empty($p->flash_sale))
-        <span class="badge-sale badge-flash">⚡ {{ round($p->flash_discount_pct) }}% OFF</span>
-      @elseif($p->discount_percentage > 0)
-        <span class="badge-sale">-{{ round($p->discount_percentage) }}%</span>
-      @else
+  <a href="<?php echo e(route('product', $pid)); ?>" class="product-card-img"<?php echo e($imgStyle ? ' style="'.$imgStyle.'"' : ''); ?>>
+    <?php if($displayImg): ?>
+      <img src="<?php echo e($displayImg); ?>" alt="<?php echo e($p->name); ?>" loading="lazy" id="pc-img-<?php echo e($pid); ?>">
+    <?php else: ?>
+      <div class="placeholder" id="pc-img-<?php echo e($pid); ?>">🛍️</div>
+    <?php endif; ?>
+    <?php if($coShowBadge && $p->on_sale): ?>
+      <?php if(!empty($p->flash_sale)): ?>
+        <span class="badge-sale badge-flash">⚡ <?php echo e(round($p->flash_discount_pct)); ?>% OFF</span>
+      <?php elseif($p->discount_percentage > 0): ?>
+        <span class="badge-sale">-<?php echo e(round($p->discount_percentage)); ?>%</span>
+      <?php else: ?>
         <span class="badge-sale">SALE</span>
-      @endif
-    @endif
-    @if($coShowWishlist)
-    <button class="wish-btn" onclick="event.preventDefault();toggleWishlist(this,{{ $pid }})" title="Wishlist">♡</button>
-    @endif
+      <?php endif; ?>
+    <?php endif; ?>
+    <?php if($coShowWishlist): ?>
+    <button class="wish-btn" onclick="event.preventDefault();toggleWishlist(this,<?php echo e($pid); ?>)" title="Wishlist">♡</button>
+    <?php endif; ?>
   </a>
 
-  <div class="product-card-body"{{ $bodyPad ? ' style="'.$bodyPad.'"' : '' }}>
-    <a href="{{ route('product', $pid) }}" class="product-card-name"{{ $nameStyle ? ' style="'.$nameStyle.'"' : '' }}>
-      @if(!empty($cardNameHtml))
-        {!! $cardNameHtml !!}
-      @else
-        {{ $displayName }}
-      @endif
+  <div class="product-card-body"<?php echo e($bodyPad ? ' style="'.$bodyPad.'"' : ''); ?>>
+    <a href="<?php echo e(route('product', $pid)); ?>" class="product-card-name"<?php echo e($nameStyle ? ' style="'.$nameStyle.'"' : ''); ?>>
+      <?php if(!empty($cardNameHtml)): ?>
+        <?php echo $cardNameHtml; ?>
+
+      <?php else: ?>
+        <?php echo e($displayName); ?>
+
+      <?php endif; ?>
     </a>
 
-    @if($coShowRating)
-    @php
+    <?php if($coShowRating): ?>
+    <?php
       $__avgRating = \Illuminate\Support\Facades\DB::table('product_reviews')
         ->where('product_id', $pid)->where('approved', true)->avg('rating') ?? 0;
       $__avgRating = round((float)$__avgRating, 1);
-    @endphp
-    @if($__avgRating > 0)
+    ?>
+    <?php if($__avgRating > 0): ?>
     <div class="pc-rating-row">
-      @for($__s=1;$__s<=5;$__s++)<span style="color:{{ $__s<=round($__avgRating)?'#f5a623':'#ddd' }};font-size:11px">★</span>@endfor
-      <span style="font-size:11px;color:#666;margin-left:3px">{{ $__avgRating }}</span>
+      <?php for($__s=1;$__s<=5;$__s++): ?><span style="color:<?php echo e($__s<=round($__avgRating)?'#f5a623':'#ddd'); ?>;font-size:11px">★</span><?php endfor; ?>
+      <span style="font-size:11px;color:#666;margin-left:3px"><?php echo e($__avgRating); ?></span>
     </div>
-    @endif
-    @endif
+    <?php endif; ?>
+    <?php endif; ?>
 
-    {{-- Color swatches (only when 2+ colors exist) --}}
-    @if($coShowSwatches && $hasColors)
-    <div class="pc-swatches" id="pc-swatches-{{ $pid }}">
-      @foreach($colorMap as $colorName => $cdata)
+    
+    <?php if($coShowSwatches && $hasColors): ?>
+    <div class="pc-swatches" id="pc-swatches-<?php echo e($pid); ?>">
+      <?php $__currentLoopData = $colorMap; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $colorName => $cdata): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
       <button class="pc-swatch"
-              title="{{ $colorName }}"
-              data-color="{{ $colorName }}"
-              data-img="{{ $cdata['img'] ?? '' }}"
-              style="background:{{ $cdata['hex'] }};{{ $cdata['hex'] === '#f5f5f5' ? 'border-color:#bbb' : '' }}"
-              onclick="event.preventDefault();pcPickColor({{ $pid }},'{{ addslashes($colorName) }}',this)">
+              title="<?php echo e($colorName); ?>"
+              data-color="<?php echo e($colorName); ?>"
+              data-img="<?php echo e($cdata['img'] ?? ''); ?>"
+              style="background:<?php echo e($cdata['hex']); ?>;<?php echo e($cdata['hex'] === '#f5f5f5' ? 'border-color:#bbb' : ''); ?>"
+              onclick="event.preventDefault();pcPickColor(<?php echo e($pid); ?>,'<?php echo e(addslashes($colorName)); ?>',this)">
       </button>
-      @endforeach
+      <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
     </div>
-    @endif
+    <?php endif; ?>
 
-    <div class="pc-selected" id="pc-selected-{{ $pid }}" aria-live="polite"></div>
+    <div class="pc-selected" id="pc-selected-<?php echo e($pid); ?>" aria-live="polite"></div>
 
-    {{-- Size pills --}}
-    @if($coShowSizes && $hasSizes)
-    <div class="pc-sizes" id="pc-sizes-{{ $pid }}">
-      @foreach($sizeList as $sz)
+    
+    <?php if($coShowSizes && $hasSizes): ?>
+    <div class="pc-sizes" id="pc-sizes-<?php echo e($pid); ?>">
+      <?php $__currentLoopData = $sizeList; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $sz): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
       <button class="pc-size"
-              data-size="{{ $sz }}"
-              onclick="event.preventDefault();pcPickSize({{ $pid }},'{{ addslashes($sz) }}',this)">
-        {{ $sz }}
+              data-size="<?php echo e($sz); ?>"
+              onclick="event.preventDefault();pcPickSize(<?php echo e($pid); ?>,'<?php echo e(addslashes($sz)); ?>',this)">
+        <?php echo e($sz); ?>
+
       </button>
-      @endforeach
+      <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
     </div>
-    @endif
+    <?php endif; ?>
 
-    {{-- Price --}}
+    
     <div class="product-card-price">
-      @if($p->on_sale)
-        <span class="price-main sale" id="pc-price-{{ $pid }}"{{ $priceStyle ? ' style="'.$priceStyle.'"' : '' }}>{{ number_format($p->sale_price, 2) }} EGP</span>
-        @if($coShowOldPrice)
-        <span class="price-old" id="pc-orig-{{ $pid }}">{{ number_format($p->price, 2) }}</span>
-        @endif
-      @else
-        <span class="price-main" id="pc-price-{{ $pid }}"{{ $priceStyle ? ' style="'.$priceStyle.'"' : '' }}>{{ number_format($p->price, 2) }} EGP</span>
-      @endif
+      <?php if($p->on_sale): ?>
+        <span class="price-main sale" id="pc-price-<?php echo e($pid); ?>"<?php echo e($priceStyle ? ' style="'.$priceStyle.'"' : ''); ?>><?php echo e(number_format($p->sale_price, 2)); ?> EGP</span>
+        <?php if($coShowOldPrice): ?>
+        <span class="price-old" id="pc-orig-<?php echo e($pid); ?>"><?php echo e(number_format($p->price, 2)); ?></span>
+        <?php endif; ?>
+      <?php else: ?>
+        <span class="price-main" id="pc-price-<?php echo e($pid); ?>"<?php echo e($priceStyle ? ' style="'.$priceStyle.'"' : ''); ?>><?php echo e(number_format($p->price, 2)); ?> EGP</span>
+      <?php endif; ?>
     </div>
 
-    @if($coShowAddToCart || $coRemoveWishlist)
-    <div style="{{ $coRemoveWishlist ? 'display:flex;gap:8px;margin-top:4px' : '' }}">
-      @if($coShowAddToCart)
-      <button class="card-add-btn{{ $coRemoveWishlist ? '' : '' }}" id="pc-add-{{ $pid }}"
-              data-name="{{ addslashes($p->name) }}"
-              data-img="{{ $displayImg }}"
-              style="{{ $coRemoveWishlist ? 'flex:1' : '' }}"
-              onclick="pcAddToCart({{ $pid }})">
+    <?php if($coShowAddToCart || $coRemoveWishlist): ?>
+    <div style="<?php echo e($coRemoveWishlist ? 'display:flex;gap:8px;margin-top:4px' : ''); ?>">
+      <?php if($coShowAddToCart): ?>
+      <button class="card-add-btn<?php echo e($coRemoveWishlist ? '' : ''); ?>" id="pc-add-<?php echo e($pid); ?>"
+              data-name="<?php echo e(addslashes($p->name)); ?>"
+              data-img="<?php echo e($displayImg); ?>"
+              style="<?php echo e($coRemoveWishlist ? 'flex:1' : ''); ?>"
+              onclick="pcAddToCart(<?php echo e($pid); ?>)">
         Add to Cart
       </button>
-      @endif
-      @if($coRemoveWishlist)
-      <form action="{{ route('wishlist.remove', $pid) }}" method="POST" style="flex-shrink:0">
-        @csrf @method('DELETE')
+      <?php endif; ?>
+      <?php if($coRemoveWishlist): ?>
+      <form action="<?php echo e(route('wishlist.remove', $pid)); ?>" method="POST" style="flex-shrink:0">
+        <?php echo csrf_field(); ?> <?php echo method_field('DELETE'); ?>
         <button class="btn btn-outline" style="padding:9px 12px;font-size:13px;border-radius:8px;color:#e02020;border-color:#e02020;height:100%" title="Remove from wishlist">✕</button>
       </form>
-      @endif
+      <?php endif; ?>
     </div>
-    @endif
+    <?php endif; ?>
 
-    @if($coShowDetails)
-    <a href="{{ route('product', $pid) }}" class="card-details-btn">
+    <?php if($coShowDetails): ?>
+    <a href="<?php echo e(route('product', $pid)); ?>" class="card-details-btn">
       See details
     </a>
-    @endif
+    <?php endif; ?>
 
-    {{-- Coupon banner --}}
-    @if($coShowCoupon && !empty($p->coupon))
-    @php
+    
+    <?php if($coShowCoupon && !empty($p->coupon)): ?>
+    <?php
       $__coupon = $p->coupon;
       $__base   = $p->on_sale ? $p->sale_price : $p->price;
       $__cprice = $__coupon->discount_type === 'percent'
           ? $__base * (1 - (float)$__coupon->amount / 100)
           : max(0, $__base - (float)$__coupon->amount);
-    @endphp
-    <a href="{{ route('cart') }}" class="pc-coupon-bar" onclick="event.preventDefault();saveCouponAndGo('{{ strtoupper($__coupon->code) }}','{{ route('cart') }}')" title="Click to apply this coupon at checkout">
+    ?>
+    <a href="<?php echo e(route('cart')); ?>" class="pc-coupon-bar" onclick="event.preventDefault();saveCouponAndGo('<?php echo e(strtoupper($__coupon->code)); ?>','<?php echo e(route('cart')); ?>')" title="Click to apply this coupon at checkout">
       <span class="pc-coupon-left">
-        🏷️ WITH CODE <strong class="pc-coupon-code">{{ strtoupper($__coupon->code) }}</strong>
+        🏷️ WITH CODE <strong class="pc-coupon-code"><?php echo e(strtoupper($__coupon->code)); ?></strong>
       </span>
       <span class="pc-coupon-right">
-        ↓ {{ number_format($__cprice, 0) }} EGP
+        ↓ <?php echo e(number_format($__cprice, 0)); ?> EGP
       </span>
     </a>
-    @endif
+    <?php endif; ?>
 
   </div>
 </div>
 
-@once
+<?php if (! $__env->hasRenderedOnce('b23ea888-20b7-478d-8213-e5c6575c0132')): $__env->markAsRenderedOnce('b23ea888-20b7-478d-8213-e5c6575c0132'); ?>
 <style>
 .pc-coupon-bar{display:flex;text-decoration:none;border-radius:0 0 10px 10px;overflow:hidden;margin:10px -14px -14px;font-size:11px;font-weight:700;line-height:1}
 .pc-coupon-left{flex:1;background:#7c3aed;color:#fff;padding:8px 10px;display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pc-coupon-code{background:rgba(255,255,255,.2);border-radius:4px;padding:1px 5px;letter-spacing:.03em}
 .pc-coupon-right{background:#5b21b6;color:#fff;padding:8px 10px;display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0}
 </style>
-@endonce
+<?php endif; ?>
+<?php /**PATH /home/runner/workspace/resources/views/web/partials/product-card.blade.php ENDPATH**/ ?>

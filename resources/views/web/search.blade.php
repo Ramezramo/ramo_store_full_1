@@ -151,42 +151,16 @@
 
         <div class="product-grid" style="margin-bottom:32px">
           @foreach($products as $p)
-          <div class="product-card">
-            <a href="{{ route('product', $p->id) }}" class="product-card-img">
-              @if($p->thumbnail_url)
-                <img src="{{ $p->thumbnail_url }}" alt="{{ $p->name }}" loading="lazy">
-              @else
-                <div class="placeholder">👕</div>
-              @endif
-              @if($p->on_sale)<span class="badge-sale">@if($p->discount_percentage > 0)-{{ round($p->discount_percentage) }}%@else SALE @endif</span>@endif
-              <button class="wish-btn" onclick="event.preventDefault();toggleWishlist(this,{{ $p->id }})" title="Wishlist">♡</button>
-            </a>
-            <div class="product-card-body">
-              <a href="{{ route('product', $p->id) }}" class="product-card-name">
-                @if($q)
-                  {!! preg_replace('/(' . preg_quote(e($q), '/') . ')/i', '<mark class="search-hl">$1</mark>', e($p->name)) !!}
-                @else
-                  {{ $p->name }}
-                @endif
-              </a>
-              <div class="product-card-price">
-                @if($p->on_sale)
-                  <span class="price-main sale">{{ number_format($p->sale_price,2) }} EGP</span>
-                  <span class="price-old">{{ number_format($p->price,2) }}</span>
-                @else
-                  <span class="price-main">{{ number_format($p->price,2) }} EGP</span>
-                @endif
-              </div>
-              <button class="card-add-btn" onclick="addToCart({{ $p->id }},'{{ addslashes($p->name) }}',{{ $p->display_price }},'{{ $p->thumbnail_url }}')">Add to Cart</button>
-              @if(!empty($p->coupon))
-              @php $__c=$p->coupon;$__b=$p->on_sale?$p->sale_price:$p->price;$__cp=$__c->discount_type==='percent'?$__b*(1-(float)$__c->amount/100):max(0,$__b-(float)$__c->amount); @endphp
-              <a href="{{ route('cart') }}" class="pc-coupon-bar" onclick="event.preventDefault();saveCouponAndGo('{{ strtoupper($__c->code) }}','{{ route('cart') }}')" title="Click to apply this coupon at checkout">
-                <span class="pc-coupon-left">🏷️ WITH CODE <strong class="pc-coupon-code">{{ strtoupper($__c->code) }}</strong></span>
-                <span class="pc-coupon-right">↓ {{ number_format($__cp,0) }} EGP</span>
-              </a>
-              @endif
-            </div>
-          </div>
+            @php
+              $cardNameHtml = $q
+                ? preg_replace('/(' . preg_quote(e($q), '/') . ')/i', '<mark class="search-hl">$1</mark>', e($p->name))
+                : null;
+            @endphp
+            @include('web.partials.product-card', [
+              'p'            => $p,
+              'cardVariations' => [],
+              'cardNameHtml' => $cardNameHtml,
+            ])
           @endforeach
         </div>
 

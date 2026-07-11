@@ -472,26 +472,11 @@
       <div class="tl-scroll-track">
         @foreach($vendorProducts as $p)
         <div class="tl-scroll-card">
-          <div class="product-card">
-            <a href="{{ route('product', $p->id) }}" class="product-card-img" style="height:180px">
-              @if($p->thumbnail_url)
-                <img src="{{ $p->thumbnail_url }}" alt="{{ $p->name }}" loading="lazy">
-              @else
-                <div class="placeholder">🛍️</div>
-              @endif
-              @if($p->on_sale)<span class="badge-sale">SALE</span>@endif
-            </a>
-            <div class="product-card-body" style="padding:8px">
-              <a href="{{ route('product', $p->id) }}" class="product-card-name" style="font-size:12px">{{ Str::limit($p->name, 28) }}</a>
-              <div class="product-card-price">
-                @if($p->on_sale)
-                  <span class="price-main sale" style="font-size:12px">{{ number_format($p->sale_price, 0) }} EGP</span>
-                @else
-                  <span class="price-main" style="font-size:12px">{{ number_format($p->price, 0) }} EGP</span>
-                @endif
-              </div>
-            </div>
-          </div>
+          @include('web.partials.product-card', [
+            'p'              => $p,
+            'cardVariations' => [],
+            'cardOptions'    => ['compact' => true, 'nameLimit' => 28, 'showWishlist' => false, 'showAddToCart' => false, 'showDetails' => false, 'showCoupon' => false],
+          ])
         </div>
         @endforeach
       </div>
@@ -509,29 +494,7 @@
     </div>
     <div class="product-grid cols-4">
       @foreach($related as $p)
-      <div class="product-card">
-        <a href="{{ route('product', $p->id) }}" class="product-card-img">
-          @if($p->thumbnail_url)
-            <img src="{{ $p->thumbnail_url }}" alt="{{ $p->name }}" loading="lazy">
-          @else
-            <div class="placeholder">👕</div>
-          @endif
-          @if($p->on_sale)<span class="badge-sale">SALE</span>@endif
-          <button class="wish-btn" onclick="event.preventDefault();toggleWishlist(this,{{ $p->id }})" title="Wishlist">♡</button>
-        </a>
-        <div class="product-card-body">
-          <a href="{{ route('product', $p->id) }}" class="product-card-name">{{ $p->name }}</a>
-          <div class="product-card-price">
-            @if($p->on_sale)
-              <span class="price-main sale">{{ number_format($p->sale_price,2) }} EGP</span>
-              <span class="price-old">{{ number_format($p->price,2) }}</span>
-            @else
-              <span class="price-main">{{ number_format($p->price,2) }} EGP</span>
-            @endif
-          </div>
-          <button class="card-add-btn" onclick="addToCart({{ $p->id }},'{{ addslashes($p->name) }}',{{ $p->display_price }},'{{ $p->thumbnail_url }}')">Add to Cart</button>
-        </div>
-      </div>
+        @include('web.partials.product-card', ['p' => $p, 'cardVariations' => []])
       @endforeach
     </div>
   </div>
