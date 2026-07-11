@@ -1,0 +1,15 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Ramo Store (Postgres)",
+      "Group": "Servers",
+      "Host": "helium",
+      "Port": 5432,
+      "MaintenanceDB": "heliumdb",
+      "Username": "postgres",
+      "SSLMode": "prefer",
+      "Comment": "Auto-loaded connection to the app's Postgres database",
+      "PassFile": "/home/runner/workspace/.pgadmin/pgpass"
+    }
+  }
+}
