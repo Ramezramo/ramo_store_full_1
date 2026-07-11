@@ -340,12 +340,14 @@
     {{-- SALE IMAGES — Horizontal scroll of products --}}
     @elseif($layout === 'saleImages')
       @php
-        $products   = $sectionProducts[$si] ?? collect();
-        $title      = $sec['headerText'] ?? 'Products';
-        $catId      = $sec['category'] ?? null;
-        $prodWidth  = (int)($sec['productWidth'] ?? 140);
-        $imgHeight  = isset($sec['imageHeight']) ? max(60, (int)$sec['imageHeight']) : (isset($sec['imageRatio']) ? max(60, round($prodWidth * (float)$sec['imageRatio'])) : 196);
-        $cardRadius = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 10;
+        $products       = $sectionProducts[$si] ?? collect();
+        $title          = $sec['headerText'] ?? 'Products';
+        $catId          = $sec['category'] ?? null;
+        $prodWidth      = (int)($sec['productWidth'] ?? 140);
+        $imgHeight      = isset($sec['imageHeight']) ? max(60, (int)$sec['imageHeight']) : (isset($sec['imageRatio']) ? max(60, round($prodWidth * (float)$sec['imageRatio'])) : 196);
+        $cardRadius     = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 10;
+        $secId          = 'sg-'.$si;
+        $uniformHeight  = !empty($sec['uniformHeight']);
         $cardOptions = [
           'showBadge'     => $sec['showBadge']     ?? true,
           'showWishlist'  => $sec['showWishlist']  ?? true,
@@ -359,12 +361,23 @@
         ];
       @endphp
       @if($products->count())
+      <style>
+        #{{ $secId }} .product-card { border-radius: var(--tl-card-r,{{ $cardRadius }}px) }
+        #{{ $secId }} .product-card-img { aspect-ratio: unset; height: var(--tl-img-h,{{ $imgHeight }}px) }
+        @if($uniformHeight)
+        #{{ $secId }} { align-items: stretch }
+        #{{ $secId }} .tl-scroll-card { display: flex; flex-direction: column }
+        #{{ $secId }} .product-card { height: 100%; display: flex; flex-direction: column }
+        #{{ $secId }} .product-card-body { flex: 1; display: flex; flex-direction: column }
+        #{{ $secId }} .card-add-btn { margin-top: auto }
+        @endif
+      </style>
       <div class="sec-head">
         <h2 class="sec-title">{{ $title }}</h2>
         <a href="{{ route('shop', array_filter(['category' => $catId])) }}" class="sec-link">See all →</a>
       </div>
       <div class="tl-scroll-section" style="margin-bottom:36px">
-        <div class="tl-scroll-track">
+        <div class="tl-scroll-track" id="{{ $secId }}">
           @foreach($products as $p)
           <div class="tl-scroll-card" style="width:var(--tl-prod-w,{{ $prodWidth }}px)">
             @include('web.partials.product-card', [
