@@ -12,6 +12,8 @@ class EncryptCookies extends Middleware
      * @var array<int, string>
      */
     protected $except = [
-        //
+        // Plain 0/1 flag read by the client-side Service Worker page cache
+        // (public/sw.js) — must stay unencrypted and JS-readable.
+        'ramo_auth_flag',
     ];
 }

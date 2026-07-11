@@ -1026,6 +1026,28 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 <script>
 const CSRF_TOKEN = '{{ csrf_token() }}';
 
+// ── Device-side page cache (Home + Shop) ──────────────────────────────────
+// Registers a Service Worker that caches these two pages in the browser's
+// own Cache Storage (nothing stored on the backend). Repeat visits render
+// instantly from that cache while a background request refreshes it for
+// next time. See public/sw.js for the caching strategy.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/sw.js').catch(function () {});
+  });
+}
+
+// Whatever the page shipped with for the cart badge count may be a stale
+// cached copy — always reconcile it against the live count right after paint.
+(function refreshCartBadgeFromServer() {
+  fetch('/cart/count', { headers: { 'Accept': 'application/json' } })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((data) => {
+      if (data && typeof data.count === 'number') updateCartBadge(data.count);
+    })
+    .catch(() => {});
+})();
+
 function toggleMobileMenu() {
   const menu = document.getElementById('nav-mobile-menu');
   const btn  = document.getElementById('nav-hamburger');
