@@ -359,6 +359,22 @@ class WebController extends Controller
         $rawProducts = $query->paginate(16)->withQueryString();
         $products    = $rawProducts->through(fn($p) => $this->parseProduct($p, $flashSale));
 
+        // AJAX / infinite-scroll request — return JSON with rendered card HTML
+        if ($request->ajax()) {
+            $html = '';
+            foreach ($products as $p) {
+                $html .= view('web.partials.product-card', [
+                    'p'              => $p,
+                    'cardVariations' => [],
+                ])->render();
+            }
+            return response()->json([
+                'html'     => $html,
+                'hasMore'  => $products->hasMorePages(),
+                'nextPage' => $products->currentPage() + 1,
+            ]);
+        }
+
         // Find active parent: if a child is selected, its parent is considered "open"
         $activeParentId = null;
         if ($activeCategoryId) {

@@ -334,21 +334,23 @@
       </div>
 
       @if($products->count())
-        <div class="product-grid">
+        <div class="product-grid" id="infinite-product-grid">
           @foreach($products as $p)
             @include('web.partials.product-card', ['p' => $p, 'cardVariations' => []])
           @endforeach
         </div>
 
-        @if($products->hasPages())
-        <div class="pagination-wrap">
-          @if($products->onFirstPage())<span>‹</span>@else<a href="{{ $products->previousPageUrl() }}">‹</a>@endif
-          @foreach($products->getUrlRange(max(1,$products->currentPage()-2), min($products->lastPage(),$products->currentPage()+2)) as $page => $url)
-            @if($page == $products->currentPage())<span class="active-page">{{ $page }}</span>@else<a href="{{ $url }}">{{ $page }}</a>@endif
-          @endforeach
-          @if($products->hasMorePages())<a href="{{ $products->nextPageUrl() }}">›</a>@else<span>›</span>@endif
+        {{-- Infinite scroll sentinel & loader --}}
+        <div id="scroll-sentinel" style="height:1px;margin-top:8px"></div>
+        <div id="scroll-loader" style="display:none;text-align:center;padding:24px 0">
+          <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--c-mid)">
+            <svg style="animation:spin .8s linear infinite" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+            Loading more products…
+          </span>
         </div>
-        @endif
+        <div id="scroll-end" style="display:none;text-align:center;padding:20px 0;font-size:13px;color:var(--c-mid)">
+          You've seen all {{ $products->total() }} products
+        </div>
 
       @else
         <div class="empty">
@@ -412,5 +414,72 @@ function toggleShopFilter() {
     ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Close Filters'
     : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg> Filters & Categories';
 }
+
+/* ── Infinite scroll ────────────────────────────────────────── */
+(function () {
+  const grid      = document.getElementById('infinite-product-grid');
+  const sentinel  = document.getElementById('scroll-sentinel');
+  const loader    = document.getElementById('scroll-loader');
+  const endMsg    = document.getElementById('scroll-end');
+
+  if (!grid || !sentinel) return;
+
+  let nextPage    = {{ $products->hasMorePages() ? $products->currentPage() + 1 : 'null' }};
+  let loading     = false;
+
+  /* Build base URL from current page URL (strip ?page=…) */
+  function buildUrl(page) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', page);
+    return url.toString();
+  }
+
+  function loadMore() {
+    if (loading || nextPage === null) return;
+    loading = true;
+    loader.style.display = 'block';
+
+    fetch(buildUrl(nextPage), {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+      .then(r => r.json())
+      .then(data => {
+        /* Append new cards */
+        grid.insertAdjacentHTML('beforeend', data.html);
+
+        if (data.hasMore) {
+          nextPage = data.nextPage;
+          loader.style.display = 'none';
+        } else {
+          nextPage = null;
+          loader.style.display = 'none';
+          endMsg.style.display = 'block';
+          observer.disconnect();
+        }
+        loading = false;
+      })
+      .catch(() => {
+        loader.style.display = 'none';
+        loading = false;
+      });
+  }
+
+  const observer = new IntersectionObserver(function (entries) {
+    if (entries[0].isIntersecting) loadMore();
+  }, { rootMargin: '200px' });
+
+  if (nextPage !== null) {
+    observer.observe(sentinel);
+  } else {
+    /* Already showing all products on first load */
+    endMsg.style.display = 'block';
+  }
+})();
 </script>
+
+@push('styles')
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+@endpush
 @endpush
