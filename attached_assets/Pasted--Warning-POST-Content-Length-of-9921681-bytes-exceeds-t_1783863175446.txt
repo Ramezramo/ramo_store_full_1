@@ -1,0 +1,158 @@
+
+Warning: POST Content-Length of 9921681 bytes exceeds the limit of 8388608 bytes in Unknown on line 0
+Stack
+Context
+Flare
+Share
+Share with Flare
+Docs
+
+Stack
+
+Context
+
+Debug
+Create Share
+Docs
+
+Ignition Settings
+Docs
+Editor
+
+PhpStorm
+Theme
+auto
+Save settings
+Settings will be saved locally in ~/.ignition.json.
+
+Illuminate
+ \ 
+Http
+ \ 
+Exceptions
+ \ 
+PostTooLargeException
+PHP 8.2.23
+10.50.2
+
+Expand vendor frames
+11 vendor frames
+public
+ / 
+index
+.php
+ 
+: 51
+require_once
+1 vendor frame
+public
+ / 
+index
+.php
+ 
+: 51
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+|
+
+| Composer provides a convenient, automatically generated class loader for
+
+| this application. We just need to utilize it! We'll simply require it
+
+| into the script here so we don't need to manually load our classes.
+
+|
+
+*/
+
+
+
+require __DIR__.'/../vendor/autoload.php';
+
+
+
+/*
+
+|--------------------------------------------------------------------------
+
+| Run The Application
+
+|--------------------------------------------------------------------------
+
+|
+
+| Once we have the application, we can handle the incoming request using
+
+| the application's HTTP kernel. Then, we will send the response back
+
+| to this client's browser, allowing them to enjoy our application.
+
+|
+
+*/
+
+
+
+$app = require_once __DIR__.'/../bootstrap/app.php';
+
+
+
+$kernel = $app->make(Kernel::class);
+
+
+
+$response = $kernel->handle(
+
+    $request = Request::capture()
+
+)->send();
+
+
+
+$kernel->terminate($request, $response);
+
+arguments
+$request:Illuminate\Http\Request
+POST https://a8cb125b-1b20-4efc-8904-98ec1663eb6a-00-2iaovczbnu3th.kirk.replit.dev/seller/products
+
+Request
+Browser
+Headers
+Body
+Context
+Git
+Versions
+Request
+https://a8cb125b-1b20-4efc-8904-98ec1663eb6a-00-2iaovczbnu3th.kirk.replit.dev/seller/products
+POST
+curl "https://a8cb125b-1b20-4efc-8904-98ec1663eb6a-00-2iaovczbnu3th.kirk.replit.dev/seller/products" \
+   -X POST \

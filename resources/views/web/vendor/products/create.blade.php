@@ -697,7 +697,7 @@ textarea.vs-input{resize:vertical;min-height:100px}
 {{-- ── SAVE ─────────────────────────────────────────────────────────── --}}
 <div style="display:flex;justify-content:flex-end;gap:12px;margin-bottom:40px">
   <a href="{{ route('vendor.products') }}" class="vs-btn vs-btn-ghost">Cancel</a>
-  <button type="submit" class="vs-btn vs-btn-primary">
+  <button type="submit" id="product-submit-btn" class="vs-btn vs-btn-primary">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
     {{ $isEdit ? 'Save Changes' : 'Add Product' }}
   </button>
@@ -856,6 +856,7 @@ function previewSingle(input, dropId, labelId) {
   if (!input.files || !input.files[0]) return;
   document.getElementById(dropId).classList.add('has-file');
   document.getElementById(labelId).textContent = '✓ ' + input.files[0].name;
+  checkUploadSize();
 }
 function previewMulti(input, dropId, labelId, previewsId) {
   if (!input.files || !input.files.length) return;
@@ -873,6 +874,66 @@ function previewMulti(input, dropId, labelId, previewsId) {
   });
   document.getElementById(dropId).classList.add('has-file');
   document.getElementById(labelId).textContent = `✓ ${input.files.length} image(s) selected`;
+  checkUploadSize();
+}
+
+// ─── Upload size guard ──────────────────────────────────────────────
+// The server (PHP) rejects the whole request outside Laravel's own
+// validation when the total POST body exceeds post_max_size, producing an
+// ugly generic error page instead of a friendly one. We warn ahead of time
+// and block the submit button so the seller never hits that page.
+const MAX_SINGLE_FILE_MB = 5;
+const MAX_TOTAL_UPLOAD_MB = 7; // stays safely under the server's 8MB POST limit
+function _collectUploadFiles() {
+  const files = [];
+  document.querySelectorAll('#product-form input[type="file"]').forEach(inp => {
+    if (inp.files) files.push(...Array.from(inp.files));
+  });
+  return files;
+}
+function checkUploadSize() {
+  const files = _collectUploadFiles();
+  const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
+  const totalMB = totalBytes / (1024 * 1024);
+  const tooBigFiles = files.filter(f => f.size / (1024 * 1024) > MAX_SINGLE_FILE_MB);
+  const overLimit = totalMB > MAX_TOTAL_UPLOAD_MB || tooBigFiles.length > 0;
+
+  let box = document.getElementById('upload-size-warning');
+  const submitBtn = document.getElementById('product-submit-btn');
+
+  if (!overLimit) {
+    if (box) box.remove();
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.title = ''; }
+    return false;
+  }
+
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'upload-size-warning';
+    box.className = 'vs-alert vs-alert-error';
+    box.style.marginBottom = '12px';
+    document.getElementById('section-images').prepend(box);
+  }
+  const parts = [];
+  if (tooBigFiles.length) {
+    parts.push(`<li>${tooBigFiles.map(f => `"${f.name}" is ${(f.size/(1024*1024)).toFixed(1)} MB`).join(', ')} — each image must be under ${MAX_SINGLE_FILE_MB} MB.</li>`);
+  }
+  if (totalMB > MAX_TOTAL_UPLOAD_MB) {
+    parts.push(`<li>Total selected images are ${totalMB.toFixed(1)} MB — please keep the combined size under ${MAX_TOTAL_UPLOAD_MB} MB.</li>`);
+  }
+  box.innerHTML =
+    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+     <div style="flex:1">
+       <strong>These images are too large to upload:</strong>
+       <ul style="margin:6px 0 0 16px;font-size:12px;line-height:1.7">${parts.join('')}</ul>
+       <div style="font-size:12px;margin-top:4px">Try compressing the image or choosing a smaller file, then reselect it above.</div>
+     </div>`;
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.title = 'Reduce the image size(s) before saving';
+  }
+  return true;
 }
 
 // ─── Related products search ──────────────────────────────────────
@@ -1155,6 +1216,7 @@ function previewColorImages(input, idx) {
   const label = document.getElementById(`color-img-label-${idx}`);
   if (label) label.textContent = `✓ ${input.files.length} image(s)`;
   document.getElementById(`color-img-drop-${idx}`).classList.add('has-file');
+  checkUploadSize();
 }
 
 // ─── Product Attributes ───────────────────────────────────────────
@@ -1344,6 +1406,10 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!rp || rp <= 0) issues.push('Regular price is required and must be greater than 0.');
       const sq = document.querySelector('[name="stock_quantity"]')?.value;
       if (sq === '' || sq === null || sq === undefined) issues.push('Stock quantity is required.');
+    }
+
+    if (checkUploadSize()) {
+      issues.push(`Some images are too large — reduce them to under ${MAX_SINGLE_FILE_MB} MB each and ${MAX_TOTAL_UPLOAD_MB} MB total before saving.`);
     }
 
     if (issues.length === 0) {
