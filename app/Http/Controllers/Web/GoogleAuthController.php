@@ -117,7 +117,7 @@ class GoogleAuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->intended(route('account.profile'));
+        return redirect()->intended(route('home'));
     }
 
     private function exchangeCode(string $code): ?array

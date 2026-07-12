@@ -41,7 +41,7 @@ class AuthWebController extends Controller
 
             $this->mergeGuestSessionOnLogin($user->id);
 
-            return redirect()->intended(route('account.profile'));
+            return redirect()->intended(route('home'));
         }
 
         return back()->withErrors(['email' => 'Invalid email or password.'])->withInput();
@@ -87,7 +87,7 @@ class AuthWebController extends Controller
 
         $this->mergeGuestSessionOnLogin($user->id);
 
-        return redirect()->intended(route('account.profile'));
+        return redirect()->intended(route('home'));
     }
 
     public function logout(Request $r)

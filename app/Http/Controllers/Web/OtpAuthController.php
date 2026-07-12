@@ -160,7 +160,7 @@ class OtpAuthController extends Controller
             $user->update(['is_phone_verified' => true]);
             Auth::login($user);
             $request->session()->regenerate();
-            return response()->json(['success' => true, 'new_user' => false, 'redirect' => route('account.profile')]);
+            return response()->json(['success' => true, 'new_user' => false, 'redirect' => route('home')]);
         }
 
         if (!$cfg['auto_register_otp']) {
@@ -185,7 +185,7 @@ class OtpAuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return response()->json(['success' => true, 'new_user' => true, 'redirect' => route('account.profile')]);
+        return response()->json(['success' => true, 'new_user' => true, 'redirect' => route('home')]);
     }
 
     public function showCompleteProfile(Request $request)
@@ -215,7 +215,7 @@ class OtpAuthController extends Controller
             session()->forget(['otp_temp_token', 'otp_temp_phone']);
             Auth::login($existingUser);
             $request->session()->regenerate();
-            return redirect()->route('account.profile');
+            return redirect()->route('home');
         }
 
         $user = $this->createUserFromPhone($phone, $request->input('name'), $request->input('email'));
@@ -224,7 +224,7 @@ class OtpAuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('account.profile')->with('success', 'Welcome to Ramo Store!');
+        return redirect()->route('home')->with('success', 'Welcome to Ramo Store!');
     }
 
     private function createUserFromPhone(string $phone, ?string $name = null, ?string $email = null): User
