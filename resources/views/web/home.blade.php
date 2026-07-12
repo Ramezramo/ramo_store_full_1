@@ -376,18 +376,22 @@
         <h2 class="sec-title">{{ $title }}</h2>
         <a href="{{ route('shop', array_filter(['category' => $catId])) }}" class="sec-link">See all →</a>
       </div>
-      <div class="tl-scroll-section" style="margin-bottom:36px">
-        <div class="tl-scroll-track" id="{{ $secId }}">
-          @foreach($products as $p)
-          <div class="tl-scroll-card" style="width:var(--tl-prod-w,{{ $prodWidth }}px)">
-            @include('web.partials.product-card', [
-              'p'            => $p,
-              'cardVariations' => $sectionVariations[$p->id] ?? [],
-              'cardOptions'  => $cardOptions,
-            ])
+      <div class="tl-scroll-wrap" style="margin-bottom:36px">
+        <button type="button" class="tl-scroll-arrow prev" aria-label="Scroll left" onclick="scrollProducts('{{ $secId }}', -1)">&#8249;</button>
+        <div class="tl-scroll-section">
+          <div class="tl-scroll-track" id="{{ $secId }}">
+            @foreach($products as $p)
+            <div class="tl-scroll-card" style="width:var(--tl-prod-w,{{ $prodWidth }}px)">
+              @include('web.partials.product-card', [
+                'p'            => $p,
+                'cardVariations' => $sectionVariations[$p->id] ?? [],
+                'cardOptions'  => $cardOptions,
+              ])
+            </div>
+            @endforeach
           </div>
-          @endforeach
         </div>
+        <button type="button" class="tl-scroll-arrow next" aria-label="Scroll right" onclick="scrollProducts('{{ $secId }}', 1)">&#8250;</button>
       </div>
       @endif
 
@@ -1426,6 +1430,32 @@ function slidePrev(id) {
   const s = sliderState[id];
   if (s) slideTo(id, s.current - 1);
 }
+
+// Horizontal product-scroll arrows (Shop by Look, etc.)
+function updateScrollArrows(track) {
+  if (!track) return;
+  const wrap = track.closest('.tl-scroll-wrap');
+  if (!wrap) return;
+  const prev = wrap.querySelector('.tl-scroll-arrow.prev');
+  const next = wrap.querySelector('.tl-scroll-arrow.next');
+  if (prev) prev.disabled = track.scrollLeft <= 4;
+  if (next) next.disabled = track.scrollLeft >= track.scrollWidth - track.clientWidth - 4;
+}
+
+function scrollProducts(id, dir) {
+  const track = document.getElementById(id);
+  if (!track) return;
+  track.scrollBy({ left: dir * track.clientWidth * 0.8, behavior: 'smooth' });
+  setTimeout(() => updateScrollArrows(track), 350);
+}
+
+document.querySelectorAll('.tl-scroll-wrap .tl-scroll-track').forEach(track => {
+  updateScrollArrows(track);
+  track.addEventListener('scroll', () => updateScrollArrows(track));
+});
+window.addEventListener('resize', () => {
+  document.querySelectorAll('.tl-scroll-wrap .tl-scroll-track').forEach(updateScrollArrows);
+});
 
 // Init all sliders declared in page
 @foreach($sections as $si => $sec)

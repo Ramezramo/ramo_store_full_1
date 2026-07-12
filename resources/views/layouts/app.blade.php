@@ -703,6 +703,15 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 .tl-scroll-track{display:flex;gap:12px}
 .tl-scroll-card{flex-shrink:0;width:140px}
 .tl-scroll-card .product-card-img{height:196px}
+.tl-scroll-wrap{position:relative}
+.tl-scroll-wrap:hover .tl-scroll-arrow{opacity:1;visibility:visible}
+.tl-scroll-arrow{position:absolute;top:calc(50% - 14px);transform:translateY(-50%);background:rgba(0,0,0,.45);color:#fff;border:none;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;z-index:2;transition:.2s;opacity:0;visibility:hidden}
+.tl-scroll-arrow:hover{background:rgba(0,0,0,.7)}
+.tl-scroll-arrow.prev{left:-6px}
+.tl-scroll-arrow.next{right:-6px}
+.tl-scroll-arrow:disabled{opacity:.2 !important;cursor:default;pointer-events:none}
+@media(hover:none){.tl-scroll-arrow{display:none !important}}
+@media(max-width:768px){.tl-scroll-arrow{display:none !important}}
 /* Utility */
 .tl-spacer{display:block}
 .tl-divider{border:none;border-top:1px solid var(--c-light);margin:8px 0}
