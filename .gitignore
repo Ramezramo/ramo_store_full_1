@@ -60,3 +60,6 @@ Thumbs.db
 /storage/logs/*.log
 /storage/*.key
 /public/build/*
+
+# Uploaded/imported product & store media (regenerated from DB import; not source)
+/storage/app/public/*
