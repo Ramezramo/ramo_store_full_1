@@ -12,7 +12,10 @@
  * cookie this relies on is kept accurate.
  */
 
-const CACHE_NAME = 'ramo-page-cache-v1';
+// Bumped to v2: forces old caches to be purged on activate. The v1 cache could
+// contain personalized/authenticated HTML that was wrongly cached due to the
+// Cookie-header bug described below, so it must not be reused.
+const CACHE_NAME = 'ramo-page-cache-v2';
 const CACHEABLE_PATHS = ['/', '/shop'];
 
 self.addEventListener('install', (event) => {
@@ -27,9 +30,21 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-function isAuthenticated(request) {
-  const cookie = request.headers.get('cookie') || '';
-  return /(?:^|;\s*)ramo_auth_flag=1(?:;|$)/.test(cookie);
+// NOTE: FetchEvent.request.headers never exposes the "Cookie" header — browsers
+// strip it before handing the request to the service worker, for privacy reasons.
+// So we can't read `ramo_auth_flag` off `request` at all; we must use the
+// Cookie Store API (available in the SW global scope in Chromium browsers) to
+// read the cookie directly. Where that API isn't available, fail safe by
+// treating the visitor as authenticated (i.e. always hit the network) rather
+// than risk serving a stale/incorrect cached page.
+async function isAuthenticated() {
+  if (!('cookieStore' in self)) return true;
+  try {
+    const cookie = await self.cookieStore.get('ramo_auth_flag');
+    return !cookie || cookie.value !== '0';
+  } catch (e) {
+    return true;
+  }
 }
 
 function isCacheableRequest(request, url) {
@@ -71,9 +86,13 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (!isCacheableRequest(request, url)) return;
-  if (isAuthenticated(request)) return; // always hit the network for logged-in visitors
 
-  event.respondWith(staleWhileRevalidate(request));
+  event.respondWith(
+    isAuthenticated().then((authed) => {
+      if (authed) return fetch(request); // always hit the network for logged-in visitors, never touch the cache
+      return staleWhileRevalidate(request);
+    })
+  );
 });
 
 self.addEventListener('message', (event) => {
