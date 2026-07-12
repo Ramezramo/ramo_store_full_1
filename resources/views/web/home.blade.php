@@ -1432,29 +1432,33 @@ function slidePrev(id) {
 }
 
 // Horizontal product-scroll arrows (Shop by Look, etc.)
-function updateScrollArrows(track) {
-  if (!track) return;
-  const wrap = track.closest('.tl-scroll-wrap');
+// Note: the *track* (flex row of cards) doesn't scroll itself — its parent
+// .tl-scroll-section is the actual overflow-x:auto element, so that's what
+// we need to scrollBy().
+function updateScrollArrows(scroller) {
+  if (!scroller) return;
+  const wrap = scroller.closest('.tl-scroll-wrap');
   if (!wrap) return;
   const prev = wrap.querySelector('.tl-scroll-arrow.prev');
   const next = wrap.querySelector('.tl-scroll-arrow.next');
-  if (prev) prev.disabled = track.scrollLeft <= 4;
-  if (next) next.disabled = track.scrollLeft >= track.scrollWidth - track.clientWidth - 4;
+  if (prev) prev.disabled = scroller.scrollLeft <= 4;
+  if (next) next.disabled = scroller.scrollLeft >= scroller.scrollWidth - scroller.clientWidth - 4;
 }
 
 function scrollProducts(id, dir) {
   const track = document.getElementById(id);
   if (!track) return;
-  track.scrollBy({ left: dir * track.clientWidth * 0.8, behavior: 'smooth' });
-  setTimeout(() => updateScrollArrows(track), 350);
+  const scroller = track.closest('.tl-scroll-section') || track;
+  scroller.scrollBy({ left: dir * scroller.clientWidth * 0.8, behavior: 'smooth' });
+  setTimeout(() => updateScrollArrows(scroller), 350);
 }
 
-document.querySelectorAll('.tl-scroll-wrap .tl-scroll-track').forEach(track => {
-  updateScrollArrows(track);
-  track.addEventListener('scroll', () => updateScrollArrows(track));
+document.querySelectorAll('.tl-scroll-wrap .tl-scroll-section').forEach(scroller => {
+  updateScrollArrows(scroller);
+  scroller.addEventListener('scroll', () => updateScrollArrows(scroller));
 });
 window.addEventListener('resize', () => {
-  document.querySelectorAll('.tl-scroll-wrap .tl-scroll-track').forEach(updateScrollArrows);
+  document.querySelectorAll('.tl-scroll-wrap .tl-scroll-section').forEach(updateScrollArrows);
 });
 
 // Init all sliders declared in page
