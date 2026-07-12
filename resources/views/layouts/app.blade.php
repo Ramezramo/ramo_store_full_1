@@ -651,6 +651,8 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 
 /* ── PRODUCT CARD VARIATION SWATCHES ── */
 .pc-swatches{display:flex;gap:5px;flex-wrap:wrap;margin:6px 0 4px}
+.pc-selected{font-size:11px;line-height:1.3;color:var(--c-mid);min-height:0}
+.pc-selected:empty{display:none}
 .pc-swatch{width:20px;height:20px;border-radius:50%;border:2px solid rgba(0,0,0,.12);cursor:pointer;transition:all .15s;flex-shrink:0;padding:0;outline:2.5px solid transparent;outline-offset:2px}
 .pc-swatch:hover{outline-color:#aaa}
 .pc-swatch.selected{outline-color:var(--c-dark);border-color:transparent}
