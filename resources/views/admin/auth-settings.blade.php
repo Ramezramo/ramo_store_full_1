@@ -126,6 +126,17 @@
       <div><div class="toggle-label">Require Email</div><div class="toggle-sub">Email mandatory on OTP signup</div></div>
       <label class="toggle-switch"><input type="checkbox" name="require_email_on_register" {{ ($config['require_email_on_register'] ?? false) ? 'checked' : '' }}><span class="toggle-slider"></span></label>
     </div>
+
+    <div class="toggle-row">
+      <div>
+        <div class="toggle-label">Require Email Verification</div>
+        <div class="toggle-sub">Block login until email is verified</div>
+        <div style="margin-top:6px;font-size:11px;background:rgba(245,158,11,.12);color:#b45309;border-radius:6px;padding:4px 8px;display:inline-block">
+          Currently OFF → users can log in without verifying email
+        </div>
+      </div>
+      <label class="toggle-switch"><input type="checkbox" name="require_email_verification" {{ ($config['require_email_verification'] ?? false) ? 'checked' : '' }}><span class="toggle-slider"></span></label>
+    </div>
   </div>
 
   <div class="setting-section">
@@ -178,7 +189,7 @@ async function saveSettings() {
   const formData = new FormData(form);
   const data = {};
 
-  ['email_login','google_login','phone_otp_login','guest_checkout','auto_register_google','auto_register_otp','require_name_on_register','require_email_on_register'].forEach(k => {
+  ['email_login','google_login','phone_otp_login','guest_checkout','auto_register_google','auto_register_otp','require_name_on_register','require_email_on_register','require_email_verification'].forEach(k => {
     data[k] = formData.has(k);
   });
 

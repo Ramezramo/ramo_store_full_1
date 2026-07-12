@@ -49,6 +49,7 @@ class AuthSettingsController extends Controller
             'auto_register_otp'         => $request->boolean('auto_register_otp'),
             'require_name_on_register'  => $request->boolean('require_name_on_register'),
             'require_email_on_register' => $request->boolean('require_email_on_register'),
+            'require_email_verification'=> $request->boolean('require_email_verification'),
             'otp_length'                => (int) $request->input('otp_length', 6),
             'otp_expiry_minutes'        => (int) $request->input('otp_expiry_minutes', 5),
             'max_otp_attempts'          => (int) $request->input('max_otp_attempts', 3),

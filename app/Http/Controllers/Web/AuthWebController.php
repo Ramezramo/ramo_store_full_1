@@ -35,7 +35,7 @@ class AuthWebController extends Controller
             $r->session()->regenerate();
             $user = Auth::user();
 
-            if (!$user->email_verified_at && !str_ends_with($user->email, '@ramostore.local')) {
+            if (AuthConfig::val('require_email_verification', false) && !$user->email_verified_at && !str_ends_with($user->email, '@ramostore.local')) {
                 return redirect()->route('email.verify.notice');
             }
 

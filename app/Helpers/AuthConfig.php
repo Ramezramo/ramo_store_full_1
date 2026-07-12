@@ -16,6 +16,7 @@ class AuthConfig
         'auto_register_otp'        => true,
         'require_name_on_register' => true,
         'require_email_on_register'=> false,
+        'require_email_verification'=> false,
         'otp_length'               => 6,
         'otp_expiry_minutes'       => 5,
         'max_otp_attempts'         => 3,
