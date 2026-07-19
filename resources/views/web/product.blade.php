@@ -15,12 +15,11 @@
     {{-- GALLERY --}}
     <div>
       @php
-        $allImages = array_values(array_filter(array_merge(
+        // gallery_urls already contains other_images + natural_images; avoid duplicating them
+        $allImages = array_values(array_unique(array_filter(array_merge(
           $product->thumbnail_url ? [$product->thumbnail_url] : [],
-          $product->gallery_urls ?? [],
-          $product->other_images_urls ?? [],
-          $product->natural_images_urls ?? []
-        )));
+          $product->gallery_urls ?? []
+        ))));
       @endphp
       <div class="gallery-wrap">
         <div class="gallery-thumbs" id="gallery-thumbs">
