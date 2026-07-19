@@ -223,6 +223,23 @@
         @if(!empty($shipping['city'])) {{ $shipping['city'] }}@endif
         @if(!empty($shipping['country'])) &nbsp;{{ $shipping['country'] }}@endif
       </div>
+      @if(!empty($shipping['latitude']) && !empty($shipping['longitude']))
+        <div style="margin-top:8px">
+          <a href="https://www.google.com/maps?q={{ $shipping['latitude'] }},{{ $shipping['longitude'] }}"
+             target="_blank" rel="noopener"
+             style="font-size:12px;color:var(--accent);text-decoration:none;display:inline-block;margin-bottom:6px">
+            📍 {{ $shipping['latitude'] }}, {{ $shipping['longitude'] }} — Open in Google Maps
+          </a>
+        </div>
+        <iframe
+          width="100%"
+          height="200"
+          style="border:0;border-radius:10px;display:block"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          src="https://www.google.com/maps?q={{ $shipping['latitude'] }},{{ $shipping['longitude'] }}&z=15&output=embed">
+        </iframe>
+      @endif
     </div>
     @endif
 
