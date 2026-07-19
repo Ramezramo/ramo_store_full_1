@@ -297,7 +297,9 @@ class CheckoutController extends Controller
         }
         // ───────────────────────────────────────────────────────────────────────
 
-        session()->forget(['ramo_cart', 'ramo_coupon']);
+        // Clear cart for both guests (session) and logged-in users (DB cart_items)
+        $this->saveCart([]);
+        session()->forget('ramo_coupon');
 
         return redirect()->route('order.success', $orderId);
     }
