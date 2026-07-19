@@ -202,6 +202,42 @@
     </div>
     @endif
 
+    {{-- Shipping Address --}}
+    @if($order->shipping)
+    @php $shipping = json_decode($order->shipping, true) ?? []; @endphp
+    @if(array_filter(array_intersect_key($shipping, array_flip(['first_name','last_name','address_1','city','state','country','latitude','longitude']))))
+    <div class="section">
+      <div class="section-header"><div class="section-title">Shipping Address</div></div>
+      <div style="padding:20px">
+        @foreach(['first_name','last_name','address_1','address_2','city','state','postcode','country','phone','email'] as $field)
+          @if(!empty($shipping[$field]))
+            <div style="font-size:13px;color:var(--text);margin-bottom:4px">{{ $shipping[$field] }}</div>
+          @endif
+        @endforeach
+        @if(!empty($shipping['latitude']) && !empty($shipping['longitude']))
+          <div style="margin-top:6px;margin-bottom:8px">
+            <a href="https://www.google.com/maps?q={{ $shipping['latitude'] }},{{ $shipping['longitude'] }}"
+               target="_blank" rel="noopener"
+               style="font-size:12px;color:var(--accent);text-decoration:none">
+              📍 {{ $shipping['latitude'] }}, {{ $shipping['longitude'] }} — Open in Google Maps
+            </a>
+          </div>
+          <div style="margin-top:4px">
+            <iframe
+              width="100%"
+              height="220"
+              style="border:0;border-radius:12px"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              src="https://www.google.com/maps?q={{ $shipping['latitude'] }},{{ $shipping['longitude'] }}&z=15&output=embed">
+            </iframe>
+          </div>
+        @endif
+      </div>
+    </div>
+    @endif
+    @endif
+
   </div>
 
 </div>
