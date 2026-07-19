@@ -14,32 +14,34 @@
 
     {{-- GALLERY --}}
     <div>
-      <div class="gallery-main" id="gallery-main-wrap">
-        @if($product->thumbnail_url)
-          <img src="{{ $product->thumbnail_url }}" alt="{{ $product->name }}" id="main-img"
-               onerror="handleImgError(this)">
-        @else
-          <img src="" alt="{{ $product->name }}" id="main-img" style="display:none"
-               onerror="handleImgError(this)">
-          <div id="main-img-placeholder" class="img-placeholder-box" style="width:100%;height:100%">
-            <span class="img-placeholder-icon">🖼️</span>
-            <span class="img-placeholder-text">No image</span>
-          </div>
-        @endif
-      </div>
       @php
         $allImages = array_values(array_filter(array_merge(
           $product->thumbnail_url ? [$product->thumbnail_url] : [],
           $product->gallery_urls ?? []
         )));
       @endphp
-      <div class="gallery-thumbs" id="gallery-thumbs">
-        @foreach($allImages as $i => $url)
-        <div class="gallery-thumb {{ $i === 0 ? 'active' : '' }}" onclick="switchImg(this,'{{ $url }}')">
-          <img src="{{ $url }}" alt="Image {{ $i+1 }}" loading="lazy"
-               onerror="handleThumbError(this)">
+      <div class="gallery-wrap">
+        <div class="gallery-thumbs" id="gallery-thumbs">
+          @foreach($allImages as $i => $url)
+          <div class="gallery-thumb {{ $i === 0 ? 'active' : '' }}" onclick="switchImg(this,'{{ $url }}')">
+            <img src="{{ $url }}" alt="Image {{ $i+1 }}" loading="lazy"
+                 onerror="handleThumbError(this)">
+          </div>
+          @endforeach
         </div>
-        @endforeach
+        <div class="gallery-main" id="gallery-main-wrap">
+          @if($product->thumbnail_url)
+            <img src="{{ $product->thumbnail_url }}" alt="{{ $product->name }}" id="main-img"
+                 onerror="handleImgError(this)">
+          @else
+            <img src="" alt="{{ $product->name }}" id="main-img" style="display:none"
+                 onerror="handleImgError(this)">
+            <div id="main-img-placeholder" class="img-placeholder-box" style="width:100%;height:100%">
+              <span class="img-placeholder-icon">🖼️</span>
+              <span class="img-placeholder-text">No image</span>
+            </div>
+          @endif
+        </div>
       </div>
 
       {{-- OTHER IMAGES SECTION --}}
