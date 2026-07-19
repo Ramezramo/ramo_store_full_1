@@ -956,8 +956,17 @@ function _collectUploadFiles() {
   });
   return files;
 }
+function _collectUploadInputs() {
+  // Returns [{input, file}] for every selected file, so we know which input owns each file
+  const pairs = [];
+  document.querySelectorAll('#product-form input[type="file"]').forEach(inp => {
+    if (inp.files) Array.from(inp.files).forEach(f => pairs.push({ input: inp, file: f }));
+  });
+  return pairs;
+}
 function checkUploadSize() {
-  const files = _collectUploadFiles();
+  const pairs = _collectUploadInputs();
+  const files = pairs.map(p => p.file);
   const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
   const totalMB = totalBytes / (1024 * 1024);
   const tooBigFiles = files.filter(f => f.size / (1024 * 1024) > MAX_SINGLE_FILE_MB);
@@ -981,17 +990,24 @@ function checkUploadSize() {
   }
   const parts = [];
   if (tooBigFiles.length) {
-    parts.push(`<li>${tooBigFiles.map(f => `"${f.name}" is ${(f.size/(1024*1024)).toFixed(1)} MB`).join(', ')} — each image must be under ${MAX_SINGLE_FILE_MB} MB.</li>`);
+    parts.push(`<li>${tooBigFiles.map(f => `"${f.name}" is ${(f.size/(1024*1024)).toFixed(1)} MB`).join(', ')} — each must be under ${MAX_SINGLE_FILE_MB} MB.</li>`);
   }
   if (totalMB > MAX_TOTAL_UPLOAD_MB) {
     parts.push(`<li>Total selected images are ${totalMB.toFixed(1)} MB — please keep the combined size under ${MAX_TOTAL_UPLOAD_MB} MB.</li>`);
   }
   box.innerHTML =
-    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
      <div style="flex:1">
        <strong>These images are too large to upload:</strong>
        <ul style="margin:6px 0 0 16px;font-size:12px;line-height:1.7">${parts.join('')}</ul>
-       <div style="font-size:12px;margin-top:4px">Try compressing the image or choosing a smaller file, then reselect it above.</div>
+       <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+         <button type="button" id="compress-btn"
+           onclick="compressOversizedImages()"
+           style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#e85d26;border:none;border-radius:7px;color:#fff;font-size:12px;font-weight:700;cursor:pointer">
+           🗜️ Compress oversized images
+         </button>
+         <span style="font-size:11px;color:var(--mid)">Only the images exceeding ${MAX_SINGLE_FILE_MB} MB will be compressed. Others stay untouched.</span>
+       </div>
      </div>`;
 
   if (submitBtn) {
@@ -999,6 +1015,95 @@ function checkUploadSize() {
     submitBtn.title = 'Reduce the image size(s) before saving';
   }
   return true;
+}
+
+// ─── Canvas-based compression for oversized images only ───────────
+async function compressOversizedImages() {
+  const btn = document.getElementById('compress-btn');
+  if (btn) { btn.textContent = '⏳ Compressing…'; btn.disabled = true; }
+
+  const pairs = _collectUploadInputs();
+  // Group pairs by input element
+  const byInput = new Map();
+  pairs.forEach(({ input, file }) => {
+    if (!byInput.has(input)) byInput.set(input, []);
+    byInput.get(input).push(file);
+  });
+
+  for (const [input, files] of byInput.entries()) {
+    const oversized = files.filter(f => f.size / (1024 * 1024) > MAX_SINGLE_FILE_MB);
+    if (!oversized.length) continue;
+
+    // Re-build FileList: keep non-oversized as-is, compress oversized
+    const dt = new DataTransfer();
+    for (const file of files) {
+      if (file.size / (1024 * 1024) <= MAX_SINGLE_FILE_MB) {
+        dt.items.add(file);
+        continue;
+      }
+      const compressed = await _compressFile(file);
+      dt.items.add(compressed);
+    }
+    input.files = dt.files;
+    // Refresh preview for this input
+    const dropId     = input.id.replace('-input', '-drop');
+    const labelId    = input.id.replace('-input', '-label');
+    const previewsId = input.id.replace('-input', '-previews');
+    if (input.multiple) {
+      // colour variation images use a different naming convention
+      const colorMatch = input.id.match(/^color-img-(\d+)$/);
+      if (colorMatch) {
+        previewColorImages(input, colorMatch[1]);
+      } else {
+        previewMulti(input, dropId, labelId, previewsId);
+      }
+    } else {
+      previewSingle(input, dropId, labelId);
+    }
+  }
+  checkUploadSize();
+}
+
+function _compressFile(file, maxMB = 4.5, maxDim = 2000) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let { naturalWidth: w, naturalHeight: h } = img;
+        // Scale down if too large
+        if (w > maxDim || h > maxDim) {
+          if (w >= h) { h = Math.round(h * maxDim / w); w = maxDim; }
+          else        { w = Math.round(w * maxDim / h); h = maxDim; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+
+        // Binary-search for quality that gets under maxMB
+        let lo = 0.3, hi = 0.92, quality = 0.75, blob;
+        const tryQuality = q => new Promise(res =>
+          canvas.toBlob(b => res(b), 'image/jpeg', q)
+        );
+
+        (async () => {
+          for (let i = 0; i < 6; i++) {
+            blob = await tryQuality(quality);
+            if (!blob) break;
+            const mb = blob.size / (1024 * 1024);
+            if (mb <= maxMB) { lo = quality; } else { hi = quality; }
+            quality = (lo + hi) / 2;
+          }
+          blob = await tryQuality(lo);
+          const ext  = file.name.replace(/\.[^.]+$/, '');
+          const name = ext + '_compressed.jpg';
+          resolve(new File([blob], name, { type: 'image/jpeg' }));
+        })();
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 // ─── Related products search ──────────────────────────────────────
