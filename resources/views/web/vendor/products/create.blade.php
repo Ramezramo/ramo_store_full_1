@@ -28,6 +28,11 @@
 .img-preview-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .img-preview-item{position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;border:1px solid var(--light);background:#f3f4f6}
 .img-preview-item img{width:100%;height:100%;object-fit:cover}
+.img-size-badge{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:#fff;font-size:9px;font-weight:700;text-align:center;padding:2px 3px;line-height:1.3;backdrop-filter:blur(2px)}
+.thumb-info{display:flex;align-items:center;gap:10px;margin-top:8px;padding:8px 12px;background:#f9fafb;border:1px solid var(--light);border-radius:8px}
+.thumb-info img{width:52px;height:52px;object-fit:cover;border-radius:6px;border:1px solid var(--light);flex-shrink:0}
+.thumb-info-text{font-size:11px;color:var(--mid);line-height:1.6}
+.thumb-info-text strong{color:var(--dark);font-size:12px}
 
 /* ── Related products ────────────────────────────────── */
 .rp-search-wrap{position:relative}
@@ -861,24 +866,75 @@ function toggleProductType(val) {
 }
 
 // ─── Image previews ───────────────────────────────────────────────
+// ─── Image size helpers ────────────────────────────────────────────
+function fmtBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+}
+function imgDimensions(src) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+function makePreviewItem(dataUrl, file, container) {
+  const reader = new FileReader();
+  const div = document.createElement('div');
+  div.className = 'img-preview-item';
+  const imgEl = document.createElement('img');
+  imgEl.src = dataUrl;
+  imgEl.alt = '';
+  div.appendChild(imgEl);
+  const badge = document.createElement('div');
+  badge.className = 'img-size-badge';
+  badge.textContent = '…';
+  div.appendChild(badge);
+  container.appendChild(div);
+  imgDimensions(dataUrl).then(dim => {
+    badge.textContent = dim ? `${dim.w}×${dim.h}\n${fmtBytes(file.size)}` : fmtBytes(file.size);
+  });
+}
+
 function previewSingle(input, dropId, labelId) {
   if (!input.files || !input.files[0]) return;
-  document.getElementById(dropId).classList.add('has-file');
-  document.getElementById(labelId).textContent = '✓ ' + input.files[0].name;
+  const file = input.files[0];
+  const drop = document.getElementById(dropId);
+  drop.classList.add('has-file');
+  document.getElementById(labelId).textContent = '✓ ' + file.name;
+
+  // Remove any existing thumb-info
+  const existingInfo = drop.parentElement.querySelector('.thumb-info');
+  if (existingInfo) existingInfo.remove();
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dataUrl = e.target.result;
+    imgDimensions(dataUrl).then(dim => {
+      const info = document.createElement('div');
+      info.className = 'thumb-info';
+      info.innerHTML = `
+        <img src="${dataUrl}" alt="preview">
+        <div class="thumb-info-text">
+          <strong>${file.name}</strong><br>
+          ${dim ? `${dim.w} × ${dim.h} px &nbsp;·&nbsp; ` : ''}${fmtBytes(file.size)}
+        </div>`;
+      drop.parentElement.appendChild(info);
+    });
+  };
+  reader.readAsDataURL(file);
   checkUploadSize();
 }
+
 function previewMulti(input, dropId, labelId, previewsId) {
   if (!input.files || !input.files.length) return;
   const container = document.getElementById(previewsId);
   container.innerHTML = '';
   Array.from(input.files).forEach(file => {
     const reader = new FileReader();
-    reader.onload = e => {
-      const div = document.createElement('div');
-      div.className = 'img-preview-item';
-      div.innerHTML = `<img src="${e.target.result}" alt="">`;
-      container.appendChild(div);
-    };
+    reader.onload = e => makePreviewItem(e.target.result, file, container);
     reader.readAsDataURL(file);
   });
   document.getElementById(dropId).classList.add('has-file');
@@ -1214,12 +1270,7 @@ function previewColorImages(input, idx) {
   container.innerHTML = '';
   Array.from(input.files).forEach(file => {
     const reader = new FileReader();
-    reader.onload = e => {
-      const div = document.createElement('div');
-      div.className = 'img-preview-item';
-      div.innerHTML = `<img src="${e.target.result}" alt="">`;
-      container.appendChild(div);
-    };
+    reader.onload = e => makePreviewItem(e.target.result, file, container);
     reader.readAsDataURL(file);
   });
   const label = document.getElementById(`color-img-label-${idx}`);
