@@ -344,6 +344,14 @@ class WebController extends Controller
             })->distinct();
         }
 
+        if ($request->filled('brand')) {
+            $brandName = $request->brand;
+            $brandId = DB::table('brands')->where('name', $brandName)->value('id');
+            if ($brandId) {
+                $query->where('p.brand_id', (string) $brandId);
+            }
+        }
+
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -386,9 +394,13 @@ class WebController extends Controller
             }
         }
 
+        $activeBrandName = $request->filled('brand') ? $request->brand : null;
+        $allBrands = DB::table('brands')->orderBy('name')->get();
+
         return view('web.shop', compact(
             'products', 'parentCats', 'childCats',
-            'activeCategoryId', 'activeParentId', 'catCounts'
+            'activeCategoryId', 'activeParentId', 'catCounts',
+            'activeBrandName', 'allBrands'
         ));
     }
 

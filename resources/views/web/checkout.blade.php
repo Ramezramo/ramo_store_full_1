@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.L) initMap(startLat, startLng);
     else loadMap();
     if (useLocationBtn && navigator.geolocation) {
-      useLocationBtn.addEventListener('click', () => {
+      function fetchLocation() {
         setStatus('Locating...');
         navigator.geolocation.getCurrentPosition((pos) => {
           const { latitude, longitude, accuracy } = pos.coords;
@@ -276,7 +276,38 @@ document.addEventListener('DOMContentLoaded', () => {
           setStatus(accuracy ? `Location detected (${Math.round(accuracy)}m accuracy). You can drag the pin to adjust it.` : 'Location detected. You can drag the pin to adjust it.');
         }, () => {
           setStatus('Could not detect your location. Please allow location access and try again.');
-        }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+        }, { enableHighAccuracy: true, timeout: 60000, maximumAge: 0 });
+      }
+
+      useLocationBtn.addEventListener('click', () => {
+        // If Permissions API is available, watch for the grant so the user
+        // doesn't have to click the button a second time after allowing.
+        if (navigator.permissions) {
+          navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+            if (result.state === 'granted') {
+              // Already granted — fetch immediately.
+              fetchLocation();
+            } else if (result.state === 'prompt') {
+              // Permission dialog is about to appear; start a high-timeout
+              // request so it survives the dialog, then watch for the grant.
+              fetchLocation();
+              result.onchange = () => {
+                if (result.state === 'granted') {
+                  result.onchange = null;
+                  fetchLocation();
+                } else if (result.state === 'denied') {
+                  result.onchange = null;
+                  setStatus('Location access was denied. Please enable it in your browser settings and try again.');
+                }
+              };
+            } else {
+              setStatus('Location access is blocked. Please enable it in your browser settings and try again.');
+            }
+          });
+        } else {
+          // Fallback for browsers without Permissions API.
+          fetchLocation();
+        }
       });
     }
   }

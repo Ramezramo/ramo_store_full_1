@@ -634,7 +634,7 @@
       </div>
       <div class="brand-strip" style="margin-bottom:36px">
         @foreach($brands as $brand)
-        <span class="brand-chip">{{ $brand->name }}</span>
+        <a href="{{ route('shop', ['brand' => $brand->name]) }}" class="brand-chip">{{ $brand->name }}</a>
         @endforeach
       </div>
       @endif

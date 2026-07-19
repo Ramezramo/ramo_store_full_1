@@ -175,6 +175,7 @@
       @endif
       <span>/</span><strong>{{ $activeCatName }}</strong>
     @endif
+    @if($activeBrandName ?? false)<span>/</span><strong>{{ $activeBrandName }}</strong>@endif
     @if(request('search'))<span>/</span><span>"{{ request('search') }}"</span>@endif
   </div>
 
@@ -273,6 +274,39 @@
         </div>{{-- /widget-body --}}
       </div>{{-- /widget-categories --}}
 
+      @if($allBrands->count())
+      <hr class="widget-divider">
+
+      {{-- ── Widget: Brands ───────────────────────────────────── --}}
+      <div class="widget" id="widget-brands">
+
+        <div class="widget-header" onclick="toggleWidget('widget-brands')" title="Click to collapse">
+          <span class="widget-header-left">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Brands
+          </span>
+          <span class="widget-fold-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="9" height="9"><polyline points="6 9 12 15 18 9"/></svg>
+          </span>
+        </div>
+
+        <div class="widget-body">
+          @foreach($allBrands as $brand)
+            @php $isBrandActive = $activeBrandName === $brand->name; @endphp
+            <a href="{{ $isBrandActive ? route('shop', array_filter(request()->except('brand','page'))) : route('shop', array_merge(request()->except('brand','page'), ['brand' => $brand->name])) }}"
+               class="cat-parent-btn {{ $isBrandActive ? 'active' : '' }}"
+               style="margin-bottom:2px">
+              {{ $brand->name }}
+              @if($isBrandActive)
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10" style="margin-left:auto;opacity:.7"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              @endif
+            </a>
+          @endforeach
+        </div>
+
+      </div>{{-- /widget-brands --}}
+      @endif
+
       <hr class="widget-divider">
 
       {{-- ── Widget: Sort By ──────────────────────────────────── --}}
@@ -317,6 +351,15 @@
               @php $isParentFilter = $parentCats->firstWhere('id', $activeCategoryId) && isset($childCats[$activeCategoryId]) && $childCats[$activeCategoryId]->count() > 0; @endphp
               @if($isParentFilter)<span style="opacity:.6;font-weight:500">+ sub-categories</span>@endif
               <a href="{{ route('shop', array_filter(request()->except('category','page'))) }}" title="Clear category">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </a>
+            </span>
+          @endif
+          @if($activeBrandName ?? false)
+            <span class="active-cat-strip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Brand: {{ $activeBrandName }}
+              <a href="{{ route('shop', array_filter(request()->except('brand','page'))) }}" title="Clear brand">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </a>
             </span>
