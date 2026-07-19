@@ -462,11 +462,72 @@
   </div>
   @endif
 
+{{-- ── Sticky Add-to-Cart bar ── --}}
+<div id="sticky-atc-bar" class="sticky-atc-bar" aria-hidden="true">
+  <div class="sticky-atc-inner">
+    <div class="sticky-atc-info">
+      @if($product->thumbnail_url)
+        <img src="{{ $product->thumbnail_url }}" alt="" class="sticky-atc-thumb" onerror="this.style.display='none'">
+      @endif
+      <div class="sticky-atc-meta">
+        <div class="sticky-atc-name">{{ Str::limit($product->name, 48) }}</div>
+        <div class="sticky-atc-price" id="sticky-price">{{ number_format($product->display_price, 2) }} EGP</div>
+      </div>
+    </div>
+    <button class="sticky-atc-btn"
+            onclick="handleAddToCart({{ $product->id }}, '{{ addslashes($product->name) }}', {{ $product->display_price }}, '{{ $product->thumbnail_url }}')">
+      Add to Cart
+    </button>
+  </div>
+</div>
+
 </div>
 @endsection
 
 @push('scripts')
 <style>
+/* ── Sticky ATC bar ── */
+.sticky-atc-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 999;
+  background: #fff; border-top: 1px solid #e8e8e4;
+  box-shadow: 0 -4px 20px rgba(0,0,0,.10);
+  transform: translateY(100%);
+  transition: transform .3s cubic-bezier(.4,0,.2,1);
+  will-change: transform;
+}
+.sticky-atc-bar.visible { transform: translateY(0); }
+.sticky-atc-inner {
+  max-width: 1200px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; padding: 12px 24px;
+}
+.sticky-atc-info { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.sticky-atc-thumb {
+  width: 48px; height: 48px; border-radius: 8px;
+  object-fit: contain; background: #f5f5f3; flex-shrink: 0;
+}
+.sticky-atc-meta { min-width: 0; }
+.sticky-atc-name {
+  font-size: 14px; font-weight: 700; color: #1a1a1a;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sticky-atc-price { font-size: 14px; color: #555; margin-top: 2px; }
+.sticky-atc-btn {
+  flex-shrink: 0;
+  background: #1a1a1a; color: #fff;
+  border: none; border-radius: 100px;
+  padding: 12px 32px; font-size: 15px; font-weight: 700;
+  cursor: pointer; transition: background .18s, transform .15s;
+  white-space: nowrap;
+}
+.sticky-atc-btn:hover { background: #333; transform: scale(1.02); }
+@media(max-width:600px){
+  .sticky-atc-inner { padding: 10px 16px; }
+  .sticky-atc-thumb { display: none; }
+  .sticky-atc-name { font-size: 13px; }
+  .sticky-atc-btn { padding: 11px 20px; font-size: 14px; }
+}
+
 /* Gallery image switching */
 #main-img { transition: opacity 0.18s ease; }
 #main-img.img-switching { opacity: 0; }
@@ -1331,4 +1392,38 @@ function applyProductCoupon() {
   .rv-form-card { padding: 20px; }
 }
 </style>
+<script>
+// ── Sticky ATC bar visibility ──────────────────────────────────────────
+(function () {
+  const bar    = document.getElementById('sticky-atc-bar');
+  const mainBtn = document.getElementById('add-to-cart-btn');
+  if (!bar || !mainBtn) return;
+
+  // Keep the sticky price in sync whenever the variation engine updates it
+  const priceEl = document.getElementById('price-display');
+  const stickyPrice = document.getElementById('sticky-price');
+  if (priceEl && stickyPrice) {
+    new MutationObserver(() => {
+      stickyPrice.textContent = priceEl.textContent;
+    }).observe(priceEl, { childList: true, characterData: true, subtree: true });
+  }
+
+  let ticking = false;
+  function onScroll() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      const rect = mainBtn.getBoundingClientRect();
+      // Show bar when the main button has scrolled above the viewport
+      const shouldShow = rect.bottom < 0;
+      bar.classList.toggle('visible', shouldShow);
+      bar.setAttribute('aria-hidden', String(!shouldShow));
+      ticking = false;
+    });
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll(); // run once on load
+})();
+</script>
 @endpush
