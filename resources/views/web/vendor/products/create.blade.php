@@ -880,13 +880,13 @@ function imgDimensions(src) {
     img.src = src;
   });
 }
-// ─── Shared: build one thumbnail card with size badge only (no compress btn here) ──
+const COMPRESS_SHOW_MB = 1; // show compress button when file exceeds this
+
+// ─── Shared: build one thumbnail card with size badge + per-image compress ──
 function makePreviewItem(dataUrl, file, container, input) {
+  const tooBig = file.size > COMPRESS_SHOW_MB * 1024 * 1024;
   const wrap = document.createElement('div');
   wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px';
-  // Store file+input refs so checkUploadSize can attach compress buttons later
-  wrap._compressFile  = file;
-  wrap._compressInput = input;
 
   const div = document.createElement('div');
   div.className = 'img-preview-item';
@@ -896,53 +896,31 @@ function makePreviewItem(dataUrl, file, container, input) {
 
   const badge = document.createElement('div');
   badge.className = 'img-size-badge';
+  badge.style.color = tooBig ? '#fca5a5' : '#fff';
   badge.textContent = '…';
   div.appendChild(badge);
   wrap.appendChild(div);
-  container.appendChild(wrap);
 
+  if (tooBig && input) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = '🗜️ Compress';
+    btn.style.cssText = 'font-size:10px;font-weight:700;padding:2px 7px;border:none;border-radius:5px;background:#e85d26;color:#fff;cursor:pointer;white-space:nowrap';
+    btn.title = 'Compress this image to under 1 MB';
+    btn.onclick = () => compressSingleInInput(file, input, btn);
+    wrap.appendChild(btn);
+  }
+
+  container.appendChild(wrap);
   imgDimensions(dataUrl).then(dim => {
     badge.textContent = dim ? `${dim.w}×${dim.h}\n${fmtBytes(file.size)}` : fmtBytes(file.size);
   });
 }
 
-// ─── Add / remove compress buttons driven by checkUploadSize ─────
-function _syncCompressButtons(overLimit) {
-  // Multi-image previews: wraps built by makePreviewItem
-  document.querySelectorAll('#product-form [data-compress-wrap]').forEach(wrap => {
-    _removeCompressBtn(wrap);
-    if (overLimit && wrap._compressInput) _addCompressBtn(wrap, wrap._compressFile, wrap._compressInput, false);
-  });
-  // Single-image thumb-info cards
-  document.querySelectorAll('#product-form .thumb-info[data-compress-input-id]').forEach(info => {
-    _removeCompressBtn(info);
-    if (overLimit) {
-      const inp = document.getElementById(info.dataset.compressInputId);
-      if (inp) _addCompressBtn(info, info._compressFile, inp, true);
-    }
-    info.style.borderColor = overLimit && info._compressFile && (info._compressFile.size/(1024*1024) > MAX_SINGLE_FILE_MB) ? '#fca5a5' : '';
-  });
-}
-function _removeCompressBtn(parent) {
-  parent.querySelectorAll('.inline-compress-btn').forEach(b => b.remove());
-}
-function _addCompressBtn(parent, file, input, isSingle) {
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'inline-compress-btn';
-  btn.textContent = '🗜️ Compress';
-  btn.title = 'Compress this image to reduce its file size';
-  btn.style.cssText = isSingle
-    ? 'flex-shrink:0;padding:5px 12px;background:#e85d26;border:none;border-radius:7px;color:#fff;font-size:12px;font-weight:700;cursor:pointer'
-    : 'font-size:10px;font-weight:700;padding:2px 7px;border:none;border-radius:5px;background:#e85d26;color:#fff;cursor:pointer;white-space:nowrap';
-  btn.onclick = () => compressSingleInInput(file, input, btn);
-  parent.appendChild(btn);
-}
-
 // ─── Single-input compress: replaces only that file then re-renders ──
 async function compressSingleInInput(file, input, btn) {
   if (btn) { btn.textContent = '⏳…'; btn.disabled = true; }
-  const compressed = await _compressFile(file);
+  const compressed = await _compressFile(file, COMPRESS_SHOW_MB * 0.9); // target just under 1 MB
   const dt = new DataTransfer();
   Array.from(input.files).forEach(f => dt.items.add(f === file ? compressed : f));
   input.files = dt.files;
@@ -957,12 +935,12 @@ async function compressSingleInInput(file, input, btn) {
   } else {
     previewSingle(input, 'thumb-drop', 'thumb-label');
   }
-  // checkUploadSize is called inside previewX, so compress buttons update automatically
 }
 
 function previewSingle(input, dropId, labelId) {
   if (!input.files || !input.files[0]) return;
   const file = input.files[0];
+  const tooBig = file.size > COMPRESS_SHOW_MB * 1024 * 1024;
   const drop = document.getElementById(dropId);
   drop.classList.add('has-file');
   document.getElementById(labelId).textContent = '✓ ' + file.name;
@@ -975,15 +953,20 @@ function previewSingle(input, dropId, labelId) {
     imgDimensions(dataUrl).then(dim => {
       const info = document.createElement('div');
       info.className = 'thumb-info';
-      // Store refs for _syncCompressButtons
-      info._compressFile = file;
-      info.dataset.compressInputId = input.id;
+      if (tooBig) info.style.borderColor = '#fca5a5';
       info.innerHTML = `
         <img src="${dataUrl}" alt="preview">
         <div class="thumb-info-text" style="flex:1">
           <strong>${file.name}</strong><br>
-          ${dim ? `${dim.w} × ${dim.h} px &nbsp;·&nbsp; ` : ''}${fmtBytes(file.size)}
-        </div>`;
+          ${dim ? `${dim.w} × ${dim.h} px &nbsp;·&nbsp; ` : ''}<span style="color:${tooBig ? '#dc2626' : 'inherit'}">${fmtBytes(file.size)}</span>
+        </div>
+        ${tooBig ? `<button type="button" class="thumb-compress-btn"
+            style="flex-shrink:0;padding:5px 12px;background:#e85d26;border:none;border-radius:7px;color:#fff;font-size:12px;font-weight:700;cursor:pointer"
+            title="Compress this image to under 1 MB">🗜️ Compress</button>` : ''}`;
+      if (tooBig) {
+        info.querySelector('.thumb-compress-btn').onclick =
+          () => compressSingleInInput(file, input, info.querySelector('.thumb-compress-btn'));
+      }
       drop.parentElement.appendChild(info);
     });
   };
@@ -997,13 +980,7 @@ function previewMulti(input, dropId, labelId, previewsId) {
   container.innerHTML = '';
   Array.from(input.files).forEach(file => {
     const reader = new FileReader();
-    reader.onload = e => {
-      const wrap = document.createElement('div');
-      // Temporary — makePreviewItem will be called below
-      makePreviewItem(e.target.result, file, container, input);
-      // Tag the last appended child for _syncCompressButtons lookup
-      container.lastElementChild.setAttribute('data-compress-wrap', '1');
-    };
+    reader.onload = e => makePreviewItem(e.target.result, file, container, input);
     reader.readAsDataURL(file);
   });
   document.getElementById(dropId).classList.add('has-file');
@@ -1047,7 +1024,6 @@ function checkUploadSize() {
   if (!overLimit) {
     if (box) box.remove();
     if (submitBtn) { submitBtn.disabled = false; submitBtn.title = ''; }
-    _syncCompressButtons(false);
     return false;
   }
 
@@ -1077,56 +1053,7 @@ function checkUploadSize() {
     submitBtn.disabled = true;
     submitBtn.title = 'Reduce the image size(s) before saving';
   }
-  // Inject compress buttons — small delay so preview DOM is fully painted first
-  setTimeout(() => _syncCompressButtons(true), 50);
   return true;
-}
-
-// ─── Canvas-based compression for oversized images only ───────────
-async function compressOversizedImages() {
-  const btn = document.getElementById('compress-btn');
-  if (btn) { btn.textContent = '⏳ Compressing…'; btn.disabled = true; }
-
-  const pairs = _collectUploadInputs();
-  // Group pairs by input element
-  const byInput = new Map();
-  pairs.forEach(({ input, file }) => {
-    if (!byInput.has(input)) byInput.set(input, []);
-    byInput.get(input).push(file);
-  });
-
-  for (const [input, files] of byInput.entries()) {
-    const oversized = files.filter(f => f.size / (1024 * 1024) > MAX_SINGLE_FILE_MB);
-    if (!oversized.length) continue;
-
-    // Re-build FileList: keep non-oversized as-is, compress oversized
-    const dt = new DataTransfer();
-    for (const file of files) {
-      if (file.size / (1024 * 1024) <= MAX_SINGLE_FILE_MB) {
-        dt.items.add(file);
-        continue;
-      }
-      const compressed = await _compressFile(file);
-      dt.items.add(compressed);
-    }
-    input.files = dt.files;
-    // Refresh preview for this input
-    const dropId     = input.id.replace('-input', '-drop');
-    const labelId    = input.id.replace('-input', '-label');
-    const previewsId = input.id.replace('-input', '-previews');
-    if (input.multiple) {
-      // colour variation images use a different naming convention
-      const colorMatch = input.id.match(/^color-img-(\d+)$/);
-      if (colorMatch) {
-        previewColorImages(input, colorMatch[1]);
-      } else {
-        previewMulti(input, dropId, labelId, previewsId);
-      }
-    } else {
-      previewSingle(input, dropId, labelId);
-    }
-  }
-  checkUploadSize();
 }
 
 function _compressFile(file, maxMB = 4.5, maxDim = 2000) {
