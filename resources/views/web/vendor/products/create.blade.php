@@ -880,22 +880,62 @@ function imgDimensions(src) {
     img.src = src;
   });
 }
-function makePreviewItem(dataUrl, file, container) {
-  const reader = new FileReader();
+// ─── Shared: build one thumbnail card with size badge + inline compress ──
+function makePreviewItem(dataUrl, file, container, input) {
+  const tooBig = file.size / (1024 * 1024) > MAX_SINGLE_FILE_MB;
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px';
+
   const div = document.createElement('div');
   div.className = 'img-preview-item';
   const imgEl = document.createElement('img');
-  imgEl.src = dataUrl;
-  imgEl.alt = '';
+  imgEl.src = dataUrl; imgEl.alt = '';
   div.appendChild(imgEl);
+
   const badge = document.createElement('div');
   badge.className = 'img-size-badge';
+  badge.style.color = tooBig ? '#fca5a5' : '#fff';
   badge.textContent = '…';
   div.appendChild(badge);
-  container.appendChild(div);
+  wrap.appendChild(div);
+
+  // Inline compress button — only for oversized files
+  if (tooBig && input) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = '🗜️ Compress';
+    btn.style.cssText = 'font-size:10px;font-weight:700;padding:2px 7px;border:none;border-radius:5px;background:#e85d26;color:#fff;cursor:pointer;white-space:nowrap';
+    btn.title = 'Compress this image to under 5 MB';
+    btn.onclick = () => compressSingleInInput(file, input, btn);
+    wrap.appendChild(btn);
+  }
+
+  container.appendChild(wrap);
   imgDimensions(dataUrl).then(dim => {
     badge.textContent = dim ? `${dim.w}×${dim.h}\n${fmtBytes(file.size)}` : fmtBytes(file.size);
   });
+}
+
+// ─── Single-input compress: replaces only the oversized file ──────
+async function compressSingleInInput(file, input, btn) {
+  if (btn) { btn.textContent = '⏳…'; btn.disabled = true; }
+  const compressed = await _compressFile(file);
+  const dt = new DataTransfer();
+  Array.from(input.files).forEach(f => dt.items.add(f === file ? compressed : f));
+  input.files = dt.files;
+  // Refresh preview
+  const dropId = input.id.replace('-input','').replace('thumbnail','thumb') + '-drop';
+  const labelId = input.id.replace('-input','').replace('thumbnail','thumb') + '-label';
+  const colorMatch = input.id.match(/^color-img-(\d+)$/);
+  if (colorMatch) {
+    previewColorImages(input, colorMatch[1]);
+  } else if (input.multiple) {
+    const previewsId = input.id.replace('-input','-previews').replace('other','other').replace('natural','natural');
+    previewMulti(input, dropId, labelId, previewsId);
+  } else {
+    previewSingle(input, 'thumb-drop', 'thumb-label');
+  }
+  checkUploadSize();
 }
 
 function previewSingle(input, dropId, labelId) {
@@ -906,21 +946,33 @@ function previewSingle(input, dropId, labelId) {
   document.getElementById(labelId).textContent = '✓ ' + file.name;
 
   // Remove any existing thumb-info
-  const existingInfo = drop.parentElement.querySelector('.thumb-info');
-  if (existingInfo) existingInfo.remove();
+  drop.parentElement.querySelectorAll('.thumb-info').forEach(el => el.remove());
 
+  const tooBig = file.size / (1024 * 1024) > MAX_SINGLE_FILE_MB;
   const reader = new FileReader();
   reader.onload = e => {
     const dataUrl = e.target.result;
     imgDimensions(dataUrl).then(dim => {
       const info = document.createElement('div');
       info.className = 'thumb-info';
+      info.style.borderColor = tooBig ? '#fca5a5' : '';
       info.innerHTML = `
         <img src="${dataUrl}" alt="preview">
-        <div class="thumb-info-text">
+        <div class="thumb-info-text" style="flex:1">
           <strong>${file.name}</strong><br>
-          ${dim ? `${dim.w} × ${dim.h} px &nbsp;·&nbsp; ` : ''}${fmtBytes(file.size)}
-        </div>`;
+          ${dim ? `${dim.w} × ${dim.h} px &nbsp;·&nbsp; ` : ''}<span style="color:${tooBig?'#dc2626':'inherit'}">${fmtBytes(file.size)}</span>
+        </div>
+        ${tooBig ? `<button type="button"
+            style="flex-shrink:0;padding:5px 12px;background:#e85d26;border:none;border-radius:7px;color:#fff;font-size:12px;font-weight:700;cursor:pointer"
+            title="Compress this image to under 5 MB"
+            onclick="compressSingleInInput(null, document.getElementById('${input.id}'), this)">
+            🗜️ Compress
+          </button>` : ''}`;
+      // patch onclick to pass correct file ref after render
+      if (tooBig) {
+        const btn = info.querySelector('button');
+        btn.onclick = () => compressSingleInInput(file, input, btn);
+      }
       drop.parentElement.appendChild(info);
     });
   };
@@ -934,7 +986,7 @@ function previewMulti(input, dropId, labelId, previewsId) {
   container.innerHTML = '';
   Array.from(input.files).forEach(file => {
     const reader = new FileReader();
-    reader.onload = e => makePreviewItem(e.target.result, file, container);
+    reader.onload = e => makePreviewItem(e.target.result, file, container, input);
     reader.readAsDataURL(file);
   });
   document.getElementById(dropId).classList.add('has-file');
@@ -1000,14 +1052,7 @@ function checkUploadSize() {
      <div style="flex:1">
        <strong>These images are too large to upload:</strong>
        <ul style="margin:6px 0 0 16px;font-size:12px;line-height:1.7">${parts.join('')}</ul>
-       <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-         <button type="button" id="compress-btn"
-           onclick="compressOversizedImages()"
-           style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#e85d26;border:none;border-radius:7px;color:#fff;font-size:12px;font-weight:700;cursor:pointer">
-           🗜️ Compress oversized images
-         </button>
-         <span style="font-size:11px;color:var(--mid)">Only the images exceeding ${MAX_SINGLE_FILE_MB} MB will be compressed. Others stay untouched.</span>
-       </div>
+       <div style="font-size:12px;margin-top:4px;color:var(--mid)">Use the 🗜️ <strong>Compress</strong> button on each oversized image below to fix it.</div>
      </div>`;
 
   if (submitBtn) {
@@ -1375,7 +1420,7 @@ function previewColorImages(input, idx) {
   container.innerHTML = '';
   Array.from(input.files).forEach(file => {
     const reader = new FileReader();
-    reader.onload = e => makePreviewItem(e.target.result, file, container);
+    reader.onload = e => makePreviewItem(e.target.result, file, container, input);
     reader.readAsDataURL(file);
   });
   const label = document.getElementById(`color-img-label-${idx}`);
