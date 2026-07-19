@@ -200,8 +200,10 @@ class VendorProductController extends Controller
         $dbVariations = collect();
         $hasVariations = false;
 
+        $isDebug = config('app.debug');
+
         return view('web.vendor.products.create', compact(
-            'categories', 'brands', 'dbVariations', 'hasVariations'
+            'categories', 'brands', 'dbVariations', 'hasVariations', 'isDebug'
         ));
     }
 

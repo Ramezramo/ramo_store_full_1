@@ -136,10 +136,19 @@ textarea.vs-input{resize:vertical;min-height:100px}
   $unitAmount    = $unitAmount ?? 1;
 @endphp
 
-<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
   <a href="{{ route('vendor.products') }}" style="color:var(--mid);font-size:13px">← Back to Products</a>
   <span style="color:var(--light)">|</span>
   <div style="font-size:22px;font-weight:800">{{ $isEdit ? 'Edit: '.$product->name : 'Add New Product' }}</div>
+  @if(!empty($isDebug) && !$isEdit)
+  <button type="button" onclick="fillFakeData()"
+    style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#f3f4f6;border:1.5px dashed #9ca3af;border-radius:8px;font-size:12px;font-weight:700;color:#6b7280;cursor:pointer;transition:.15s"
+    onmouseover="this.style.borderColor='#e85d26';this.style.color='#e85d26'"
+    onmouseout="this.style.borderColor='#9ca3af';this.style.color='#6b7280'"
+    title="Debug mode only — fills the form with random test data">
+    🧪 Fill with Test Data
+  </button>
+  @endif
 </div>
 
 @if($errors->any())
@@ -1450,6 +1459,74 @@ document.addEventListener('DOMContentLoaded', function () {
     setTimeout(() => box.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
   });
 });
+
+// ─── 🧪 Debug: Fill with fake data ───────────────────────────────
+function fillFakeData() {
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+  const adjectives = ['Classic','Premium','Modern','Slim-Fit','Vintage','Essential','Luxe','Casual','Tailored','Bold'];
+  const materials  = ['Cotton','Linen','Polyester','Wool','Denim','Leather','Silk','Velvet'];
+  const nouns      = ['T-Shirt','Hoodie','Jacket','Blazer','Trousers','Dress','Skirt','Coat','Jeans','Vest'];
+  const colors     = ['Black','White','Navy','Beige','Olive','Grey','Burgundy','Teal'];
+
+  const name    = `${pick(adjectives)} ${pick(materials)} ${pick(nouns)} — ${pick(colors)}`;
+  const sku     = `SKU-${Math.random().toString(36).substring(2,8).toUpperCase()}`;
+  const price   = (rand(199, 2999)).toFixed(2);
+  const stock   = rand(5, 150);
+  const disc    = pick([0, 0, 5, 10, 15, 20]);
+  const shortDesc = `High-quality ${pick(materials).toLowerCase()} ${nouns[rand(0,nouns.length-1)].toLowerCase()} perfect for everyday wear. Comfortable fit with a modern look.`;
+  const fullDesc  = `${shortDesc}\n\nFeatures:\n• Premium ${pick(materials).toLowerCase()} fabric\n• Available in multiple sizes\n• Machine washable\n• True to size fit\n\nCare instructions: Wash at 30°C, do not tumble dry.`;
+  const tagList   = [pick(['summer','winter','casual','formal']), pick(['trending','new','sale','bestseller']), pick(['gift','everyday','premium'])];
+
+  // Basic fields
+  document.querySelector('[name="name"]').value              = name;
+  document.querySelector('[name="status"]').value            = 'publish';
+  document.querySelector('[name="short_description"]').value = shortDesc;
+  document.querySelector('[name="description"]').value       = fullDesc;
+  document.querySelector('[name="sku"]').value               = sku;
+  document.querySelector('[name="discount_percentage"]').value = disc;
+  document.querySelector('[name="minimum_order_qty"]').value = 1;
+  document.querySelector('[name="max_orders_per_person"]').value = 0;
+  document.querySelector('[name="unit"]').value              = 'piece';
+  document.querySelector('[name="unit_amount"]').value       = 1;
+
+  // Pick first brand if available
+  const brandSel = document.querySelector('[name="brand_id"]');
+  if (brandSel && brandSel.options.length > 1) brandSel.selectedIndex = 1;
+
+  // Simple pricing & stock
+  const hasVarChk = document.getElementById('has-variations-toggle');
+  if (hasVarChk && hasVarChk.checked) {
+    hasVarChk.checked = false;
+    toggleVariations(false);
+  }
+  document.getElementById('simple-regular-price').value = price;
+  document.getElementById('simple-stock').value         = stock;
+  updateSimpleEffectivePrice();
+  updateDiscountHint(disc);
+
+  // Tags
+  tagList.forEach(t => {
+    const existing = document.getElementById('tags-hidden');
+    const cur = existing.value ? existing.value.split(', ').filter(Boolean) : [];
+    if (!cur.includes(t)) {
+      cur.push(t);
+      existing.value = cur.join(', ');
+      const pill = document.createElement('span');
+      pill.className = 'tag-pill';
+      pill.dataset.tag = t;
+      pill.innerHTML = `${t}<button type="button" class="tag-pill-remove" onclick="removeTag('${t}')">×</button>`;
+      document.getElementById('tags-visual').insertBefore(pill, document.getElementById('tag-input'));
+    }
+  });
+
+  // Pick a random category checkbox
+  const catBoxes = document.querySelectorAll('[name="categories[]"]');
+  if (catBoxes.length) catBoxes[rand(0, catBoxes.length-1)].checked = true;
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 </script>
 
 @endsection
