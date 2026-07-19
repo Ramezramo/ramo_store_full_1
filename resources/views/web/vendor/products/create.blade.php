@@ -1525,6 +1525,33 @@ function fillFakeData() {
   const catBoxes = document.querySelectorAll('[name="categories[]"]');
   if (catBoxes.length) catBoxes[rand(0, catBoxes.length-1)].checked = true;
 
+  // Translations — add Arabic with fake data
+  const arNames  = ['قميص قطني كلاسيكي','بنطلون جينز أنيق','جاكيت عصري فاخر','فستان صيفي خفيف','بلوزة كاجوال مريحة'];
+  const arShorts = ['ملابس عالية الجودة مناسبة للاستخدام اليومي بتصميم عصري ومريح.','قطعة أنيقة من أجود الخامات تناسب جميع المناسبات.'];
+  const arFulls  = ['منتج مصنوع من أجود الخامات، مريح وعملي للاستخدام اليومي.\n\nالمميزات:\n• خامة ممتازة\n• مقاسات متعددة\n• سهل العناية\n\nتعليمات العناية: اغسل على 30 درجة مئوية.'];
+
+  // Only add if Arabic tab doesn't already exist
+  if (!document.querySelector('[data-lang="ar"]')) {
+    const langSelect = document.getElementById('lang-add-select');
+    if (langSelect) {
+      langSelect.value = 'ar';
+      addLangTab(); // fires the existing addLangTab() function which creates the panel
+    }
+  }
+
+  // Fill the AR panel fields (may take a tick to render)
+  setTimeout(() => {
+    const arPanel = document.getElementById('tr-panel-ar');
+    if (arPanel) {
+      const nameInput  = arPanel.querySelector('input[name$="[name]"]');
+      const shortArea  = arPanel.querySelector('textarea[name$="[short_description]"]');
+      const fullArea   = arPanel.querySelector('textarea[name$="[description]"]');
+      if (nameInput) nameInput.value = pick(arNames);
+      if (shortArea) shortArea.value = pick(arShorts);
+      if (fullArea)  fullArea.value  = pick(arFulls);
+    }
+  }, 80);
+
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 </script>
