@@ -1070,27 +1070,70 @@ function _compressFile(file, maxMB = 4.5, maxDim = 2000) {
         }
         const canvas = document.createElement('canvas');
         canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const ctx = canvas.getContext('2d');
 
-        // Binary-search for quality that gets under maxMB
-        let lo = 0.3, hi = 0.92, quality = 0.75, blob;
-        const tryQuality = q => new Promise(res =>
-          canvas.toBlob(b => res(b), 'image/jpeg', q)
-        );
+        // Detect if the source is PNG (may have transparency)
+        const isPng = file.type === 'image/png';
 
-        (async () => {
-          for (let i = 0; i < 6; i++) {
-            blob = await tryQuality(quality);
-            if (!blob) break;
-            const mb = blob.size / (1024 * 1024);
-            if (mb <= maxMB) { lo = quality; } else { hi = quality; }
-            quality = (lo + hi) / 2;
+        if (isPng) {
+          // Keep canvas transparent so alpha channel is preserved
+          ctx.clearRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+
+          // Check whether the image actually uses transparency
+          const pixels = ctx.getImageData(0, 0, w, h).data;
+          let hasAlpha = false;
+          for (let i = 3; i < pixels.length; i += 4) {
+            if (pixels[i] < 255) { hasAlpha = true; break; }
           }
-          blob = await tryQuality(lo);
-          const ext  = file.name.replace(/\.[^.]+$/, '');
-          const name = ext + '_compressed.jpg';
-          resolve(new File([blob], name, { type: 'image/jpeg' }));
-        })();
+
+          (async () => {
+            const ext = file.name.replace(/\.[^.]+$/, '');
+            if (hasAlpha) {
+              // Must stay PNG to keep transparency — resize is the only compression
+              const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+              resolve(new File([blob], ext + '_compressed.png', { type: 'image/png' }));
+            } else {
+              // No transparency — safe to convert to JPEG for better compression
+              let lo = 0.3, hi = 0.92, quality = 0.75, blob;
+              const tryQ = q => new Promise(res => canvas.toBlob(res, 'image/jpeg', q));
+              for (let i = 0; i < 6; i++) {
+                blob = await tryQ(quality);
+                if (!blob) break;
+                const mb = blob.size / (1024 * 1024);
+                if (mb <= maxMB) { lo = quality; } else { hi = quality; }
+                quality = (lo + hi) / 2;
+              }
+              blob = await tryQ(lo);
+              resolve(new File([blob], ext + '_compressed.jpg', { type: 'image/jpeg' }));
+            }
+          })();
+        } else {
+          // Non-PNG: fill white background then JPEG binary-search
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+
+          // Binary-search for quality that gets under maxMB
+          let lo = 0.3, hi = 0.92, quality = 0.75, blob;
+          const tryQuality = q => new Promise(res =>
+            canvas.toBlob(b => res(b), 'image/jpeg', q)
+          );
+
+          (async () => {
+            for (let i = 0; i < 6; i++) {
+              blob = await tryQuality(quality);
+              if (!blob) break;
+              const mb = blob.size / (1024 * 1024);
+              if (mb <= maxMB) { lo = quality; } else { hi = quality; }
+              quality = (lo + hi) / 2;
+            }
+            blob = await tryQuality(lo);
+            const ext  = file.name.replace(/\.[^.]+$/, '');
+            const name = ext + '_compressed.jpg';
+            resolve(new File([blob], name, { type: 'image/jpeg' }));
+          })();
+        }
       };
       img.src = e.target.result;
     };
