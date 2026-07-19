@@ -1783,6 +1783,9 @@ function fillFakeData() {
   document.querySelector('[name="max_orders_per_person"]').value = 0;
   document.querySelector('[name="unit"]').value              = 'piece';
   document.querySelector('[name="unit_amount"]').value       = 1;
+  document.querySelector('[name="button_mode"]').value       = 'both';
+  document.querySelector('[name="product_type"]').value      = 'physical';
+  if (typeof toggleProductType === 'function') toggleProductType('physical');
 
   // Pick first brand if available
   const brandSel = document.querySelector('[name="brand_id"]');
