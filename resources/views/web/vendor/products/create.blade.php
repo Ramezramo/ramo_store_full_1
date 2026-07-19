@@ -882,7 +882,6 @@ function imgDimensions(src) {
 }
 // ─── Shared: build one thumbnail card with size badge + inline compress ──
 function makePreviewItem(dataUrl, file, container, input) {
-  const tooBig = file.size / (1024 * 1024) > MAX_SINGLE_FILE_MB;
   const wrap = document.createElement('div');
   wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px';
 
@@ -894,18 +893,17 @@ function makePreviewItem(dataUrl, file, container, input) {
 
   const badge = document.createElement('div');
   badge.className = 'img-size-badge';
-  badge.style.color = tooBig ? '#fca5a5' : '#fff';
   badge.textContent = '…';
   div.appendChild(badge);
   wrap.appendChild(div);
 
-  // Inline compress button — only for oversized files
-  if (tooBig && input) {
+  // Always show compress button — useful whether one file is too big or total is over limit
+  if (input) {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.textContent = '🗜️ Compress';
     btn.style.cssText = 'font-size:10px;font-weight:700;padding:2px 7px;border:none;border-radius:5px;background:#e85d26;color:#fff;cursor:pointer;white-space:nowrap';
-    btn.title = 'Compress this image to under 5 MB';
+    btn.title = 'Compress this image to reduce its file size';
     btn.onclick = () => compressSingleInInput(file, input, btn);
     wrap.appendChild(btn);
   }
@@ -962,17 +960,12 @@ function previewSingle(input, dropId, labelId) {
           <strong>${file.name}</strong><br>
           ${dim ? `${dim.w} × ${dim.h} px &nbsp;·&nbsp; ` : ''}<span style="color:${tooBig?'#dc2626':'inherit'}">${fmtBytes(file.size)}</span>
         </div>
-        ${tooBig ? `<button type="button"
+        <button type="button"
             style="flex-shrink:0;padding:5px 12px;background:#e85d26;border:none;border-radius:7px;color:#fff;font-size:12px;font-weight:700;cursor:pointer"
-            title="Compress this image to under 5 MB"
-            onclick="compressSingleInInput(null, document.getElementById('${input.id}'), this)">
-            🗜️ Compress
-          </button>` : ''}`;
-      // patch onclick to pass correct file ref after render
-      if (tooBig) {
-        const btn = info.querySelector('button');
-        btn.onclick = () => compressSingleInInput(file, input, btn);
-      }
+            title="Compress this image to reduce its file size">
+          🗜️ Compress
+        </button>`;
+      info.querySelector('button').onclick = () => compressSingleInInput(file, input, info.querySelector('button'));
       drop.parentElement.appendChild(info);
     });
   };
