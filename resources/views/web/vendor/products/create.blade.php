@@ -882,6 +882,87 @@ function imgDimensions(src) {
 }
 const COMPRESS_SHOW_MB = 1; // show compress button when file exceeds this
 
+// ─── Compression settings (user-adjustable via ⚙️ popover) ──────────────────
+let compressSettings = { targetMB: 0.9, maxDim: 2000 };
+
+function showCompressPopover(anchorEl, onCompress) {
+  // Remove any existing popover
+  document.querySelectorAll('.compress-popover').forEach(p => p.remove());
+
+  const pop = document.createElement('div');
+  pop.className = 'compress-popover';
+  pop.style.cssText = `
+    position:absolute;z-index:9999;background:#fff;border:1.5px solid #e85d26;
+    border-radius:10px;padding:14px 16px;box-shadow:0 6px 24px rgba(0,0,0,0.18);
+    min-width:220px;font-size:13px;color:#222;
+  `;
+
+  pop.innerHTML = `
+    <div style="font-weight:700;margin-bottom:10px;color:#e85d26;font-size:13px">⚙️ Compression Settings</div>
+
+    <label style="display:block;margin-bottom:4px;font-weight:600">Target size</label>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <input type="range" id="cp-mb-range" min="0.2" max="5" step="0.1"
+        value="${compressSettings.targetMB}"
+        style="flex:1;accent-color:#e85d26">
+      <span id="cp-mb-val" style="font-weight:700;width:44px;text-align:right">${compressSettings.targetMB} MB</span>
+    </div>
+
+    <label style="display:block;margin-bottom:4px;font-weight:600">Max dimension</label>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <input type="range" id="cp-dim-range" min="400" max="4000" step="100"
+        value="${compressSettings.maxDim}"
+        style="flex:1;accent-color:#e85d26">
+      <span id="cp-dim-val" style="font-weight:700;width:54px;text-align:right">${compressSettings.maxDim}px</span>
+    </div>
+
+    <div style="display:flex;gap:8px">
+      <button type="button" id="cp-cancel"
+        style="flex:1;padding:6px;border:1.5px solid #ddd;border-radius:7px;background:#f5f5f5;cursor:pointer;font-size:12px">
+        Cancel
+      </button>
+      <button type="button" id="cp-apply"
+        style="flex:1;padding:6px;border:none;border-radius:7px;background:#e85d26;color:#fff;font-weight:700;cursor:pointer;font-size:12px">
+        🗜️ Compress
+      </button>
+    </div>
+  `;
+
+  // Position near anchor
+  document.body.appendChild(pop);
+  const rect = anchorEl.getBoundingClientRect();
+  const scrollY = window.scrollY || document.documentElement.scrollTop;
+  const scrollX = window.scrollX || document.documentElement.scrollLeft;
+  pop.style.top  = (rect.bottom + scrollY + 6) + 'px';
+  pop.style.left = Math.max(8, rect.left + scrollX - pop.offsetWidth + rect.width) + 'px';
+
+  // Live update labels
+  const mbRange  = pop.querySelector('#cp-mb-range');
+  const mbVal    = pop.querySelector('#cp-mb-val');
+  const dimRange = pop.querySelector('#cp-dim-range');
+  const dimVal   = pop.querySelector('#cp-dim-val');
+  mbRange.addEventListener('input',  () => mbVal.textContent  = parseFloat(mbRange.value).toFixed(1) + ' MB');
+  dimRange.addEventListener('input', () => dimVal.textContent = dimRange.value + 'px');
+
+  pop.querySelector('#cp-cancel').onclick = () => pop.remove();
+  pop.querySelector('#cp-apply').onclick = () => {
+    compressSettings.targetMB = parseFloat(mbRange.value);
+    compressSettings.maxDim   = parseInt(dimRange.value);
+    pop.remove();
+    onCompress();
+  };
+
+  // Close on outside click
+  setTimeout(() => {
+    document.addEventListener('click', function outsideClick(ev) {
+      if (!pop.contains(ev.target) && ev.target !== anchorEl) {
+        pop.remove();
+        document.removeEventListener('click', outsideClick);
+      }
+    });
+  }, 0);
+}
+
 // ─── Shared: build one thumbnail card with size badge + per-image compress ──
 function makePreviewItem(dataUrl, file, container, input) {
   const tooBig = file.size > COMPRESS_SHOW_MB * 1024 * 1024;
@@ -902,13 +983,26 @@ function makePreviewItem(dataUrl, file, container, input) {
   wrap.appendChild(div);
 
   if (tooBig && input) {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:4px;position:relative';
+
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.textContent = '🗜️ Compress';
     btn.style.cssText = 'font-size:10px;font-weight:700;padding:2px 7px;border:none;border-radius:5px;background:#e85d26;color:#fff;cursor:pointer;white-space:nowrap';
-    btn.title = 'Compress this image to under 1 MB';
+    btn.title = 'Compress this image';
     btn.onclick = () => compressSingleInInput(file, input, btn);
-    wrap.appendChild(btn);
+
+    const gear = document.createElement('button');
+    gear.type = 'button';
+    gear.textContent = '⚙️';
+    gear.style.cssText = 'font-size:11px;padding:2px 5px;border:1px solid #e85d26;border-radius:5px;background:#fff3ee;cursor:pointer;line-height:1';
+    gear.title = 'Adjust compression settings';
+    gear.onclick = (ev) => { ev.stopPropagation(); showCompressPopover(gear, () => compressSingleInInput(file, input, btn)); };
+
+    row.appendChild(btn);
+    row.appendChild(gear);
+    wrap.appendChild(row);
   }
 
   container.appendChild(wrap);
@@ -920,7 +1014,7 @@ function makePreviewItem(dataUrl, file, container, input) {
 // ─── Single-input compress: replaces only that file then re-renders ──
 async function compressSingleInInput(file, input, btn) {
   if (btn) { btn.textContent = '⏳…'; btn.disabled = true; }
-  const compressed = await _compressFile(file, COMPRESS_SHOW_MB * 0.9); // target just under 1 MB
+  const compressed = await _compressFile(file, compressSettings.targetMB, compressSettings.maxDim);
   const dt = new DataTransfer();
   Array.from(input.files).forEach(f => dt.items.add(f === file ? compressed : f));
   input.files = dt.files;
@@ -960,12 +1054,20 @@ function previewSingle(input, dropId, labelId) {
           <strong>${file.name}</strong><br>
           ${dim ? `${dim.w} × ${dim.h} px &nbsp;·&nbsp; ` : ''}<span style="color:${tooBig ? '#dc2626' : 'inherit'}">${fmtBytes(file.size)}</span>
         </div>
-        ${tooBig ? `<button type="button" class="thumb-compress-btn"
-            style="flex-shrink:0;padding:5px 12px;background:#e85d26;border:none;border-radius:7px;color:#fff;font-size:12px;font-weight:700;cursor:pointer"
-            title="Compress this image to under 1 MB">🗜️ Compress</button>` : ''}`;
+        ${tooBig ? `
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;position:relative">
+            <button type="button" class="thumb-compress-btn"
+              style="padding:5px 12px;background:#e85d26;border:none;border-radius:7px;color:#fff;font-size:12px;font-weight:700;cursor:pointer"
+              title="Compress this image">🗜️ Compress</button>
+            <button type="button" class="thumb-gear-btn"
+              style="padding:5px 8px;border:1.5px solid #e85d26;border-radius:7px;background:#fff3ee;font-size:13px;cursor:pointer;line-height:1"
+              title="Adjust compression settings">⚙️</button>
+          </div>` : ''}`;
       if (tooBig) {
-        info.querySelector('.thumb-compress-btn').onclick =
-          () => compressSingleInInput(file, input, info.querySelector('.thumb-compress-btn'));
+        const compressBtn = info.querySelector('.thumb-compress-btn');
+        const gearBtn     = info.querySelector('.thumb-gear-btn');
+        compressBtn.onclick = () => compressSingleInInput(file, input, compressBtn);
+        gearBtn.onclick = (ev) => { ev.stopPropagation(); showCompressPopover(gearBtn, () => compressSingleInInput(file, input, compressBtn)); };
       }
       drop.parentElement.appendChild(info);
     });
