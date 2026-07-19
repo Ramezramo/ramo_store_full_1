@@ -51,7 +51,14 @@
           <div class="form-group">
             <label>Pin Your Location on Map</label>
             <button type="button" class="btn btn-outline" id="use-current-location-btn" style="margin-bottom:12px">📍 Use My Current Location</button>
-            <div id="checkout-map" style="width:100%;height:280px;border-radius:14px;overflow:hidden;border:1px solid rgba(0,0,0,.08);margin-bottom:12px"></div>
+            <div style="position:relative;width:100%;margin-bottom:12px">
+              <div id="checkout-map" style="width:100%;height:280px;border-radius:14px;overflow:hidden;border:1px solid rgba(0,0,0,.08)"></div>
+              <div id="map-locating-overlay" style="display:none;position:absolute;inset:0;background:rgba(255,255,255,.75);border-radius:14px;z-index:999;flex-direction:column;align-items:center;justify-content:center;gap:10px">
+                <div style="width:38px;height:38px;border:4px solid #e85d26;border-top-color:transparent;border-radius:50%;animation:map-spin .8s linear infinite"></div>
+                <span style="font-size:13px;font-weight:600;color:#e85d26">Getting your location…</span>
+              </div>
+            </div>
+            <style>@keyframes map-spin{to{transform:rotate(360deg)}}</style>
             <div id="location-status" style="font-size:12px;color:var(--muted)"></div>
           </div>
           <div class="form-group">
@@ -261,9 +268,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.L) initMap(startLat, startLng);
     else loadMap();
     if (useLocationBtn && navigator.geolocation) {
+      const mapOverlay = document.getElementById('map-locating-overlay');
+      function showMapLoading() { if (mapOverlay) mapOverlay.style.display = 'flex'; }
+      function hideMapLoading() { if (mapOverlay) mapOverlay.style.display = 'none'; }
+
       function fetchLocation() {
         setStatus('Locating...');
+        showMapLoading();
         navigator.geolocation.getCurrentPosition((pos) => {
+          hideMapLoading();
           const { latitude, longitude, accuracy } = pos.coords;
           setCoords(latitude, longitude);
           if (map) {
@@ -275,6 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
           updateFields(latitude, longitude);
           setStatus(accuracy ? `Location detected (${Math.round(accuracy)}m accuracy). You can drag the pin to adjust it.` : 'Location detected. You can drag the pin to adjust it.');
         }, () => {
+          hideMapLoading();
           setStatus('Could not detect your location. Please allow location access and try again.');
         }, { enableHighAccuracy: true, timeout: 60000, maximumAge: 0 });
       }
