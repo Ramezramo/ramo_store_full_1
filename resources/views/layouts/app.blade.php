@@ -153,7 +153,8 @@ button{cursor:pointer;font-family:inherit}
 .gallery-main img{width:100%;height:100%;object-fit:cover}
 .gallery-thumb{width:70px;height:70px;border-radius:8px;overflow:hidden;border:2px solid transparent;cursor:pointer;background:var(--c-white);flex-shrink:0}
 .gallery-thumb:hover,.gallery-thumb.active{border-color:var(--c-dark)}
-.gallery-thumb img{width:100%;height:100%;object-fit:contain;background:#fff}
+.gallery-thumb img{width:100%;height:100%;object-fit:contain;background:#fff;filter:blur(1.5px) brightness(.82);transition:filter .2s}
+.gallery-thumb:hover img,.gallery-thumb.active img{filter:none}
 .product-info{padding:8px 0}
 .product-info h1{font-size:26px;font-weight:800;letter-spacing:-.4px;margin-bottom:14px;line-height:1.25}
 .price-block{display:flex;align-items:baseline;gap:12px;margin-bottom:20px;flex-wrap:wrap}
