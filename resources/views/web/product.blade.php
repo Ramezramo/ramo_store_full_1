@@ -17,7 +17,9 @@
       @php
         $allImages = array_values(array_filter(array_merge(
           $product->thumbnail_url ? [$product->thumbnail_url] : [],
-          $product->gallery_urls ?? []
+          $product->gallery_urls ?? [],
+          $product->other_images_urls ?? [],
+          $product->natural_images_urls ?? []
         )));
       @endphp
       <div class="gallery-wrap">
@@ -43,47 +45,6 @@
           @endif
         </div>
       </div>
-
-      {{-- OTHER IMAGES SECTION --}}
-      @if(!empty($product->other_images_urls) || !empty($product->natural_images_urls))
-      <div class="product-image-sections">
-
-        @if(!empty($product->other_images_urls))
-        <div class="img-section">
-          <div class="img-section-header">
-            <span class="img-section-label">📷 Product Images</span>
-            <span class="img-section-count">{{ count($product->other_images_urls) }} photo{{ count($product->other_images_urls) != 1 ? 's' : '' }}</span>
-          </div>
-          <div class="img-section-grid">
-            @foreach($product->other_images_urls as $url)
-            <div class="img-section-item" onclick="switchImgFromSection('{{ $url }}')">
-              <img src="{{ $url }}" alt="Product image" loading="lazy"
-                   onerror="handleSectionImgError(this)">
-            </div>
-            @endforeach
-          </div>
-        </div>
-        @endif
-
-        @if(!empty($product->natural_images_urls))
-        <div class="img-section">
-          <div class="img-section-header">
-            <span class="img-section-label">🌿 Natural / Lifestyle Images</span>
-            <span class="img-section-count">{{ count($product->natural_images_urls) }} photo{{ count($product->natural_images_urls) != 1 ? 's' : '' }}</span>
-          </div>
-          <div class="img-section-grid">
-            @foreach($product->natural_images_urls as $url)
-            <div class="img-section-item" onclick="switchImgFromSection('{{ $url }}')">
-              <img src="{{ $url }}" alt="Natural image" loading="lazy"
-                   onerror="handleSectionImgError(this)">
-            </div>
-            @endforeach
-          </div>
-        </div>
-        @endif
-
-      </div>
-      @endif
     </div>
 
     {{-- INFO --}}
