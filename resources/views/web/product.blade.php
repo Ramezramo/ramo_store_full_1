@@ -1424,12 +1424,12 @@ function applyProductCoupon() {
 <script>
 // ── Sticky ATC bar visibility ──────────────────────────────────────────
 (function () {
-  const bar    = document.getElementById('sticky-atc-bar');
+  const bar     = document.getElementById('sticky-atc-bar');
   const mainBtn = document.getElementById('add-to-cart-btn');
   if (!bar || !mainBtn) return;
 
   // Keep the sticky price in sync whenever the variation engine updates it
-  const priceEl = document.getElementById('price-display');
+  const priceEl     = document.getElementById('price-display');
   const stickyPrice = document.getElementById('sticky-price');
   if (priceEl && stickyPrice) {
     new MutationObserver(() => {
@@ -1437,22 +1437,23 @@ function applyProductCoupon() {
     }).observe(priceEl, { childList: true, characterData: true, subtree: true });
   }
 
-  let ticking = false;
-  function onScroll() {
-    if (ticking) return;
-    ticking = true;
-    requestAnimationFrame(() => {
-      const rect = mainBtn.getBoundingClientRect();
-      // Show bar as soon as the main button starts to leave the viewport
-      const shouldShow = rect.top < 0;
-      bar.classList.toggle('visible', shouldShow);
-      bar.setAttribute('aria-hidden', String(!shouldShow));
-      ticking = false;
-    });
+  function setBar(show) {
+    bar.classList.toggle('visible', show);
+    bar.setAttribute('aria-hidden', String(!show));
   }
 
-  window.addEventListener('scroll', onScroll, { passive: true });
-  onScroll(); // run once on load
+  // IntersectionObserver is reliable in iframes and all scroll contexts.
+  // Show the bar when the button has scrolled ABOVE the viewport (top < 0).
+  // threshold:0 fires as soon as any part of the button leaves the viewport.
+  const observer = new IntersectionObserver(([entry]) => {
+    // isIntersecting: button is (at least partially) visible
+    // !isIntersecting + top < 0: button scrolled off the top → show bar
+    // !isIntersecting + top > 0: button not yet reached → keep bar hidden
+    const aboveViewport = !entry.isIntersecting && entry.boundingClientRect.top < 0;
+    setBar(aboveViewport);
+  }, { threshold: 0 });
+
+  observer.observe(mainBtn);
 })();
 </script>
 @endpush
