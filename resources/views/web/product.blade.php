@@ -1443,8 +1443,8 @@ function applyProductCoupon() {
     ticking = true;
     requestAnimationFrame(() => {
       const rect = mainBtn.getBoundingClientRect();
-      // Show bar when the main button has scrolled above the viewport
-      const shouldShow = rect.bottom < 0;
+      // Show bar as soon as the main button starts to leave the viewport
+      const shouldShow = rect.top < 0;
       bar.classList.toggle('visible', shouldShow);
       bar.setAttribute('aria-hidden', String(!shouldShow));
       ticking = false;
