@@ -199,6 +199,10 @@ button{cursor:pointer;font-family:inherit}
 .coupon-copy-btn:hover{background:rgba(255,255,255,.4)}
 .coupon-min{font-size:11px;opacity:.65;margin-top:7px}
 .desc-block{font-size:14px;color:var(--c-mid);line-height:1.75;border-top:1px solid var(--c-light);padding-top:20px;margin-top:20px}
+.desc-intro{margin-bottom:10px}
+.desc-bullets{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+.desc-bullets li{display:flex;align-items:flex-start;gap:8px;line-height:1.55}
+.desc-bullets li::before{content:'•';color:var(--c-orange,#e85d26);font-size:16px;line-height:1.4;flex-shrink:0}
 .add-to-cart-row{display:flex;gap:12px;margin-top:24px;align-items:center}
 .qty-input{display:flex;align-items:center;border:1.5px solid var(--c-light);border-radius:8px;overflow:hidden;background:var(--c-white)}
 .qty-input button{width:36px;height:44px;background:none;border:none;font-size:18px;color:var(--c-mid)}

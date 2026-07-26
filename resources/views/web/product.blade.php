@@ -216,7 +216,36 @@
 
       @if($product->description || $product->unit_label)
       <div class="desc-block pi-desc">
-        @if($product->description)<p>{{ $product->description }}</p>@endif
+        @if($product->description)
+          @php
+            // Split on bullet characters (•, -, or *) to detect list items
+            $raw = $product->description;
+            // Separate a leading sentence (before first bullet) from the bullet list
+            $parts = preg_split('/\s*[•]\s*/', $raw, -1, PREG_SPLIT_NO_EMPTY);
+            $hasBullets = str_contains($raw, '•') && count($parts) > 1;
+          @endphp
+          @if($hasBullets)
+            @php
+              // First segment before the first bullet is the intro text
+              $firstBulletPos = strpos($raw, '•');
+              $intro = $firstBulletPos > 0 ? trim(substr($raw, 0, $firstBulletPos)) : null;
+              // $parts[0] is the intro when there's text before the first •; skip it
+              $bullets = array_values(array_filter(array_map('trim',
+                ($intro !== null && $intro !== '') ? array_slice($parts, 1) : $parts
+              )));
+            @endphp
+            @if($intro)
+              <p class="desc-intro">{{ $intro }}</p>
+            @endif
+            <ul class="desc-bullets">
+              @foreach($bullets as $bullet)
+                <li>{{ $bullet }}</li>
+              @endforeach
+            </ul>
+          @else
+            <p>{{ $raw }}</p>
+          @endif
+        @endif
         @if($product->unit_label)<p style="margin-top:10px;font-size:13px"><strong>Unit:</strong> {{ $product->unit_label }}</p>@endif
       </div>
       @endif
