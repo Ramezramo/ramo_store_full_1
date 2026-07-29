@@ -94,7 +94,9 @@
 
   <a href="{{ route('product', $pid) }}" class="product-card-img"{{ $imgStyle ? ' style="'.$imgStyle.'"' : '' }}>
     @if($displayImg)
-      <img src="{{ $displayImg }}" alt="{{ $p->name }}" loading="lazy" id="pc-img-{{ $pid }}">
+      <img src="{{ $displayImg }}" alt="{{ $p->name }}" loading="lazy" id="pc-img-{{ $pid }}"
+           onerror="this.onerror=null;this.style.display='none';this.parentElement.querySelector('.pc-img-fallback')?.style.setProperty('display','flex')">
+      <div class="pc-img-fallback" style="display:none;width:100%;height:100%;align-items:center;justify-content:center;background:#f7f7f7;color:#ccc;font-size:32px">🛍️</div>
     @else
       <div class="placeholder" id="pc-img-{{ $pid }}">🛍️</div>
     @endif
