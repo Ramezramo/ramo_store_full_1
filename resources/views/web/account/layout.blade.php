@@ -1,17 +1,55 @@
 @extends('layouts.app')
-@section('title', $pageTitle ?? 'My Account — Ramo Store')
+@section('title', ($pageTitle ?? 'My Account') . ' — Ramo Store')
 
 @section('content')
+@php $u = Auth::user(); @endphp
+
+{{-- Mobile back bar (hidden on desktop) --}}
+<div class="acc-mobile-back">
+  <a href="{{ route('account.hub') }}" class="acc-mobile-back-btn">
+    <svg fill="none" stroke="currentColor" stroke-width="2.5" width="20" height="20" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+  </a>
+  <span class="acc-mobile-back-title">{{ $pageTitle ?? 'My Account' }}</span>
+</div>
+
+<style>
+.acc-mobile-back {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fff;
+  position: sticky; top: 0; z-index: 10;
+}
+.acc-mobile-back-btn {
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; background: #f5f5f5; color: #333;
+  flex-shrink: 0;
+}
+.acc-mobile-back-title { font-size: 16px; font-weight: 700; color: #1a1a1a; }
+@media(max-width: 768px) {
+  .acc-mobile-back { display: flex; }
+  .acc-sidebar { display: none !important; }
+  .acc-layout { display: block !important; }
+  .acc-main { padding: 16px !important; }
+  /* breadcrumb hidden on mobile to save space */
+  .breadcrumb { display: none; }
+}
+</style>
+
 <div class="page">
   <div class="breadcrumb">
-    <a href="{{ route('home') }}">Home</a><span>/</span><strong>{{ $pageTitle ?? 'My Account' }}</strong>
+    <a href="{{ route('home') }}">Home</a><span>/</span>
+    <a href="{{ route('account.hub') }}">My Account</a><span>/</span>
+    <strong>{{ $pageTitle ?? 'My Account' }}</strong>
   </div>
 
   <div class="acc-layout">
 
-    {{-- Sidebar --}}
+    {{-- Sidebar (desktop only) --}}
     <aside class="acc-sidebar">
-      @php $u = Auth::user(); @endphp
       <div class="acc-avatar-block">
         <div class="acc-avatar">{{ strtoupper(substr($u->first_name ?: $u->name, 0, 1)) }}</div>
         <div>

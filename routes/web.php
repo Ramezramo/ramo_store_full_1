@@ -71,6 +71,7 @@ Route::post('/wishlist/toggle', [WishlistController::class, 'toggle'])->name('wi
 Route::delete('/wishlist/{id}', [WishlistController::class, 'remove'])->name('wishlist.remove');
 
 Route::middleware('auth')->prefix('account')->group(function () {
+    Route::get('/', [AccountController::class, 'hub'])->name('account.hub');
     Route::get('/profile', [AccountController::class, 'profile'])->name('account.profile');
     Route::post('/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
     Route::get('/orders', [AccountController::class, 'orders'])->name('account.orders');

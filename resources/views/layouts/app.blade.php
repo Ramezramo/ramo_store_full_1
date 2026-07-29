@@ -946,7 +946,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
       <hr class="nav-mobile-divider">
       @auth
         @php $__mu = Auth::user(); @endphp
-        <a href="{{ route('account.profile') }}">👤 {{ $__mu->first_name ?: $__mu->name }}</a>
+        <a href="{{ route('account.hub') }}">👤 {{ $__mu->first_name ?: $__mu->name }}</a>
         <a href="{{ route('account.orders') }}">📋 My Orders</a>
         @php $__isAdm = $__mu->email === 'adminramoui@gmail.com' || str_contains((string)$__mu->role,'admin'); @endphp
         @if($__isAdm)<a href="{{ route('admin.dashboard') }}">⚙️ Admin Panel</a>@endif
@@ -1033,7 +1033,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
     <span>Wishlist</span>
   </a>
   @auth
-  <a href="{{ route('account.profile') }}" class="{{ request()->routeIs('account.*') ? 'on' : '' }}">
+  <a href="{{ route('account.hub') }}" class="{{ request()->routeIs('account.*') ? 'on' : '' }}">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
     <span>Account</span>
   </a>

@@ -16,6 +16,12 @@ class AccountController extends Controller
         $this->middleware('auth');
     }
 
+    public function hub()
+    {
+        $user = Auth::user();
+        return view('web.account.hub', compact('user'));
+    }
+
     public function profile()
     {
         $user = Auth::user();
