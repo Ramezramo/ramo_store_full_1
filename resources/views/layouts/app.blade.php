@@ -107,9 +107,9 @@ button{cursor:pointer;font-family:inherit}
 .placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:48px;color:var(--c-light)}
 .product-card-body{padding:16px;display:flex;flex-direction:column;gap:6px}
 .product-card-name{font-size:13.5px;font-weight:600;color:var(--c-dark);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.product-card-price{display:flex;align-items:center;gap:8px;padding-top:8px}
-.price-main{font-size:16px;font-weight:800;color:var(--c-dark)}
-.price-old{font-size:13px;color:#aaa;text-decoration:line-through}
+.product-card-price{display:flex;align-items:center;gap:6px;padding-top:8px;flex-wrap:wrap;row-gap:2px}
+.price-main{font-size:16px;font-weight:800;color:var(--c-dark);white-space:nowrap}
+.price-old{font-size:13px;color:#aaa;text-decoration:line-through;white-space:nowrap}
 .price-main.sale{color:var(--c-orange)}
 .card-add-btn{margin-top:10px;padding:9px 14px;background:var(--c-dark);color:#fff;border:none;border-radius:8px;font-size:12.5px;font-weight:700;width:100%;transition:all .2s}
 .card-add-btn:hover{background:var(--c-accent-h)}
