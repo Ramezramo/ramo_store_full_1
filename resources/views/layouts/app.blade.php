@@ -628,6 +628,8 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
   .nav-hamburger{display:flex}
   .page{padding:20px 14px 48px}
   .acc-main{padding:22px 16px}
+  /* Hide admin/vendor portal buttons from top nav — use bottom nav instead */
+  .nav-portal{display:none}
 }
 @media(max-width:600px){
   .hero{padding:28px 18px}.hero-title{font-size:22px;letter-spacing:-.3px}.hero::after{display:none}.hero-sub{font-size:13.5px;margin-bottom:22px}
