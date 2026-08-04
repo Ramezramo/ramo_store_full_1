@@ -15,8 +15,8 @@
 // Bumped to v2: forces old caches to be purged on activate. The v1 cache could
 // contain personalized/authenticated HTML that was wrongly cached due to the
 // Cookie-header bug described below, so it must not be reused.
-const CACHE_NAME = 'ramo-page-cache-v3';
-const CACHEABLE_PATHS = ['/', '/shop'];
+const CACHE_NAME = 'ramo-page-cache-v4';
+const CACHEABLE_PATHS = ['/'];
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

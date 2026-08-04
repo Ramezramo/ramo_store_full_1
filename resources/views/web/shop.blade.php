@@ -4,6 +4,24 @@
 @push('styles')
 <style>
 /* ══════════════════════════════════════════════
+   SHOP PAGE — PRODUCT GRID OVERRIDE
+   Scoped here so it always loads with this page,
+   unaffected by any browser or service-worker cache
+   that may hold an older version of the global CSS.
+══════════════════════════════════════════════ */
+#infinite-product-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)) !important;
+  gap: 16px !important;
+}
+@media (max-width: 600px) {
+  #infinite-product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+    gap: 10px !important;
+  }
+}
+
+/* ══════════════════════════════════════════════
    FOLDABLE WIDGET SECTIONS
 ══════════════════════════════════════════════ */
 .widget {
@@ -525,4 +543,12 @@ function toggleShopFilter() {
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 @endpush
+
+<script>
+/* Tell any active service worker to clear its page cache immediately,
+   so stale shop HTML doesn't block CSS updates from reaching the user. */
+if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+  navigator.serviceWorker.controller.postMessage('clear');
+}
+</script>
 @endpush
