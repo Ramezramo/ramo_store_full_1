@@ -397,11 +397,15 @@ class WebController extends Controller
         $activeBrandName = $request->filled('brand') ? $request->brand : null;
         $allBrands = DB::table('brands')->orderBy('name')->get();
 
-        return view('web.shop', compact(
-            'products', 'parentCats', 'childCats',
-            'activeCategoryId', 'activeParentId', 'catCounts',
-            'activeBrandName', 'allBrands'
-        ));
+        return response()
+            ->view('web.shop', compact(
+                'products', 'parentCats', 'childCats',
+                'activeCategoryId', 'activeParentId', 'catCounts',
+                'activeBrandName', 'allBrands'
+            ))
+            ->header('Clear-Site-Data', '"cache"')
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate')
+            ->header('Pragma', 'no-cache');
     }
 
     public function product($id)
