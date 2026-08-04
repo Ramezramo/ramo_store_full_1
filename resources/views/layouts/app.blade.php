@@ -86,7 +86,7 @@ button{cursor:pointer;font-family:inherit}
 .cat-chip:hover{border-color:#999;background:var(--c-tag);transform:translateY(-2px);box-shadow:var(--shadow)}
 
 /* ── PRODUCT GRID ── */
-.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:20px;align-items:start}
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:16px;align-items:start}
 .product-grid.cols-4{grid-template-columns:repeat(4,1fr)}
 .product-card{background:var(--c-white);border-radius:var(--radius-lg);overflow:hidden;border:1.5px solid var(--c-light);transition:all .2s;display:flex;flex-direction:column}
 .product-card:hover{box-shadow:var(--shadow-md);border-color:#d0d0d0;transform:translateY(-3px)}
