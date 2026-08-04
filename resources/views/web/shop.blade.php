@@ -16,8 +16,8 @@
 }
 @media (max-width: 600px) {
   #infinite-product-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
-    gap: 10px !important;
+    grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)) !important;
+    gap: 8px !important;
   }
 }
 

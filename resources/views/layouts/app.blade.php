@@ -633,12 +633,13 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 }
 @media(max-width:600px){
   .hero{padding:28px 18px}.hero-title{font-size:22px;letter-spacing:-.3px}.hero::after{display:none}.hero-sub{font-size:13.5px;margin-bottom:22px}
-  .product-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
-  .product-card-body{padding:10px}
-  .product-card-name{font-size:12.5px}
-  .price-main{font-size:14px}
-  .card-add-btn{padding:8px 10px;font-size:12px}
-  .card-details-btn{padding:8px 10px;font-size:12px}
+  .product-grid{grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:8px}
+  .product-card-body{padding:8px}
+  .product-card-name{font-size:11.5px}
+  .price-main{font-size:12px}
+  .price-old{font-size:11px}
+  .card-add-btn{padding:7px 6px;font-size:11px;margin-top:6px}
+  .card-details-btn{padding:7px 6px;font-size:11px;margin-top:4px}
   .sec-title{font-size:18px}
   .form-grid-2{grid-template-columns:1fr}
   .acc-sidebar{padding:14px;border-radius:12px}
