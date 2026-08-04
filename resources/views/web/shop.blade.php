@@ -12,12 +12,12 @@
 #infinite-product-grid {
   display: grid !important;
   grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)) !important;
-  gap: 16px !important;
+  gap: 14px !important;
 }
 @media (max-width: 600px) {
   #infinite-product-grid {
-    grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)) !important;
-    gap: 8px !important;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)) !important;
+    gap: 10px !important;
   }
 }
 

@@ -86,7 +86,7 @@ button{cursor:pointer;font-family:inherit}
 .cat-chip:hover{border-color:#999;background:var(--c-tag);transform:translateY(-2px);box-shadow:var(--shadow)}
 
 /* ── PRODUCT GRID ── */
-.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:16px;align-items:start}
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px;align-items:start}
 .product-grid.cols-4{grid-template-columns:repeat(4,1fr)}
 .product-card{background:var(--c-white);border-radius:var(--radius-lg);overflow:hidden;border:1.5px solid var(--c-light);transition:all .2s;display:flex;flex-direction:column}
 .product-card:hover{box-shadow:var(--shadow-md);border-color:#d0d0d0;transform:translateY(-3px)}
@@ -633,13 +633,12 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 }
 @media(max-width:600px){
   .hero{padding:28px 18px}.hero-title{font-size:22px;letter-spacing:-.3px}.hero::after{display:none}.hero-sub{font-size:13.5px;margin-bottom:22px}
-  .product-grid{grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:8px}
-  .product-card-body{padding:8px}
-  .product-card-name{font-size:11.5px}
-  .price-main{font-size:12px}
-  .price-old{font-size:11px}
-  .card-add-btn{padding:7px 6px;font-size:11px;margin-top:6px}
-  .card-details-btn{padding:7px 6px;font-size:11px;margin-top:4px}
+  .product-grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+  .product-card-body{padding:10px}
+  .product-card-name{font-size:12.5px}
+  .price-main{font-size:14px}
+  .card-add-btn{padding:8px 10px;font-size:12px}
+  .card-details-btn{padding:8px 10px;font-size:12px}
   .sec-title{font-size:18px}
   .form-grid-2{grid-template-columns:1fr}
   .acc-sidebar{padding:14px;border-radius:12px}
