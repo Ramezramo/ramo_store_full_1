@@ -16,8 +16,20 @@
 }
 @media (max-width: 600px) {
   #infinite-product-grid {
-    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)) !important;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
     gap: 10px !important;
+  }
+}
+/* ── Narrow phones: one full-width card per row, no cut-off peeking ── */
+@media (max-width: 480px) {
+  #infinite-product-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  /* Ensure cards fill the row and nothing bleeds past the edge */
+  #infinite-product-grid .product-card {
+    width: 100% !important;
+    min-width: 0 !important;
   }
 }
 
