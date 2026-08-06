@@ -631,6 +631,9 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
   /* Hide admin/vendor portal buttons from top nav — use bottom nav instead */
   .nav-portal{display:none}
 }
+@media(max-width:360px){
+  .product-grid,.product-grid.cols-4{grid-template-columns:1fr !important;gap:10px}
+}
 @media(max-width:600px){
   .hero{padding:28px 18px}.hero-title{font-size:22px;letter-spacing:-.3px}.hero::after{display:none}.hero-sub{font-size:13.5px;margin-bottom:22px}
   .product-grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
