@@ -20,24 +20,127 @@
     gap: 10px !important;
   }
 }
-/* ── Narrow phones: one full-width card per row, no cut-off peeking ── */
+/* ── Narrow phones: Amazon-style horizontal list ── */
 @media (max-width: 480px) {
+  /* Stack cards vertically, one per row, no side-by-side */
   #infinite-product-grid {
-    grid-template-columns: 1fr !important;
-    gap: 12px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
   }
-  /* Ensure cards fill the row and nothing bleeds past the edge */
+
+  /* Each card: horizontal row — image left, info right */
   #infinite-product-grid .product-card {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: stretch !important;
     width: 100% !important;
     min-width: 0 !important;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-top: none !important;
+    border-bottom: 1px solid var(--c-light) !important;
+    box-shadow: none !important;
+    transform: none !important;
+    background: #fff;
+    padding: 14px 0;
+    gap: 0;
   }
-  /*
-   * Shrink the square image (aspect-ratio:1) to 3:2 so the full card
-   * (image + title + price + both buttons) fits within a typical phone
-   * viewport without being clipped by the bottom nav.
-   */
+  #infinite-product-grid .product-card:hover {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Left: fixed-width square image */
   #infinite-product-grid .product-card-img {
-    aspect-ratio: 3 / 2 !important;
+    width: 120px !important;
+    min-width: 120px !important;
+    height: 120px !important;
+    aspect-ratio: 1 / 1 !important;
+    flex-shrink: 0 !important;
+    border-radius: 8px !important;
+    margin: 0 12px 0 0 !important;
+    overflow: hidden !important;
+    background: var(--c-bg);
+    align-self: flex-start !important;
+  }
+
+  /* Right: info column fills remaining space */
+  #infinite-product-grid .product-card-body {
+    flex: 1 !important;
+    min-width: 0 !important;
+    padding: 0 12px 0 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 5px !important;
+  }
+
+  /* Title: show up to 3 lines */
+  #infinite-product-grid .product-card-name {
+    font-size: 13.5px !important;
+    font-weight: 500 !important;
+    line-height: 1.45 !important;
+    -webkit-line-clamp: 3 !important;
+    color: var(--c-dark);
+  }
+
+  /* Price row */
+  #infinite-product-grid .product-card-price {
+    margin-top: 2px;
+  }
+  #infinite-product-grid .price-main {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+  }
+  #infinite-product-grid .price-old {
+    font-size: 12px !important;
+  }
+
+  /* Sale badge: small pill, doesn't take up layout space */
+  #infinite-product-grid .badge-sale {
+    font-size: 9px !important;
+    padding: 2px 6px !important;
+  }
+
+  /* Wish button stays in image corner */
+  #infinite-product-grid .wish-btn {
+    top: 6px !important;
+    right: 6px !important;
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 13px !important;
+  }
+
+  /* Buttons: compact side-by-side row */
+  #infinite-product-grid .card-add-btn {
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    border-radius: 6px !important;
+    margin-top: 4px !important;
+  }
+  #infinite-product-grid .card-details-btn {
+    padding: 7px 12px !important;
+    font-size: 12px !important;
+    border-radius: 6px !important;
+    margin-top: 4px !important;
+  }
+
+  /* Coupon bar: collapse a bit */
+  #infinite-product-grid .pc-coupon-bar {
+    margin: 6px 0 0 !important;
+    border-radius: 6px !important;
+    font-size: 10px !important;
+  }
+
+  /* Swatches: smaller */
+  #infinite-product-grid .pc-swatch {
+    width: 16px !important;
+    height: 16px !important;
+  }
+  #infinite-product-grid .pc-size {
+    padding: 2px 7px !important;
+    font-size: 10px !important;
   }
 }
 
