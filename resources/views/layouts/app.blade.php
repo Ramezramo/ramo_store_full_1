@@ -13,8 +13,8 @@
   --c-accent:#111;--c-accent-h:#333;--c-tag:#f0ede8;--c-orange:#e85d26;
   --radius:10px;--radius-lg:16px;--shadow:0 2px 12px rgba(0,0,0,.07);--shadow-md:0 4px 24px rgba(0,0,0,.11);
 }
-html{scroll-behavior:smooth}
-body{font-family:'Inter',sans-serif;background:var(--c-bg);color:var(--c-dark);font-size:15px;line-height:1.6;min-height:100vh;display:flex;flex-direction:column}
+html{scroll-behavior:smooth;overflow-x:hidden;width:100%}
+body{font-family:'Inter',sans-serif;background:var(--c-bg);color:var(--c-dark);font-size:15px;line-height:1.6;min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden;width:100%}
 a{color:inherit;text-decoration:none}
 img{max-width:100%;display:block}
 button{cursor:pointer;font-family:inherit}

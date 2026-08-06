@@ -63,3 +63,9 @@ Thumbs.db
 
 # Uploaded/imported product & store media (regenerated from DB import; not source)
 /storage/app/public/*
+
+# pgAdmin runtime sessions (ephemeral, machine-specific)
+.pgadmin/data/sessions/
+
+# Uploaded user/chat assets (not project source)
+/attached_assets/
