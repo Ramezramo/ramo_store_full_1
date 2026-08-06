@@ -22,6 +22,15 @@
 }
 /* ── Narrow phones: Amazon-style horizontal list ── */
 @media (max-width: 480px) {
+
+  /* Hide toolbar search — saves horizontal space, mobile users use the filter panel */
+  .shop-toolbar .search-bar { display: none !important; }
+  .shop-toolbar {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    margin-bottom: 12px !important;
+  }
+
   /* Stack cards vertically, one per row, no side-by-side */
   #infinite-product-grid {
     display: flex !important;
@@ -33,114 +42,116 @@
   #infinite-product-grid .product-card {
     display: flex !important;
     flex-direction: row !important;
-    align-items: stretch !important;
+    align-items: flex-start !important;
     width: 100% !important;
     min-width: 0 !important;
+    overflow: hidden !important;
     border-radius: 0 !important;
     border-left: none !important;
     border-right: none !important;
     border-top: none !important;
-    border-bottom: 1px solid var(--c-light) !important;
+    border-bottom: 1.5px solid var(--c-light) !important;
     box-shadow: none !important;
     transform: none !important;
     background: #fff;
     padding: 14px 0;
-    gap: 0;
   }
   #infinite-product-grid .product-card:hover {
     transform: none !important;
     box-shadow: none !important;
+    border-color: var(--c-light) !important;
   }
 
-  /* Left: fixed-width square image */
+  /* Left: fixed-size square image */
   #infinite-product-grid .product-card-img {
-    width: 120px !important;
-    min-width: 120px !important;
-    height: 120px !important;
-    aspect-ratio: 1 / 1 !important;
     flex-shrink: 0 !important;
-    border-radius: 8px !important;
-    margin: 0 12px 0 0 !important;
+    width: 110px !important;
+    min-width: 110px !important;
+    height: 110px !important;
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 10px !important;
+    margin: 0 12px !important;
     overflow: hidden !important;
-    background: var(--c-bg);
     align-self: flex-start !important;
   }
 
-  /* Right: info column fills remaining space */
+  /* Right: info column fills remaining width, never overflows */
   #infinite-product-grid .product-card-body {
-    flex: 1 !important;
+    flex: 1 1 0 !important;
     min-width: 0 !important;
-    padding: 0 12px 0 0 !important;
+    max-width: 100% !important;
+    padding: 0 14px 0 0 !important;
     display: flex !important;
     flex-direction: column !important;
-    gap: 5px !important;
+    gap: 4px !important;
+    overflow: hidden !important;
   }
 
-  /* Title: show up to 3 lines */
+  /* Title: up to 3 lines, neutral weight like Amazon */
   #infinite-product-grid .product-card-name {
-    font-size: 13.5px !important;
+    font-size: 13px !important;
     font-weight: 500 !important;
-    line-height: 1.45 !important;
+    line-height: 1.5 !important;
     -webkit-line-clamp: 3 !important;
-    color: var(--c-dark);
+    color: #111;
+    white-space: normal !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
   }
 
-  /* Price row */
-  #infinite-product-grid .product-card-price {
-    margin-top: 2px;
-  }
-  #infinite-product-grid .price-main {
-    font-size: 16px !important;
-    font-weight: 700 !important;
-  }
-  #infinite-product-grid .price-old {
-    font-size: 12px !important;
-  }
+  /* Price: large & bold */
+  #infinite-product-grid .product-card-price { margin-top: 3px; }
+  #infinite-product-grid .price-main        { font-size: 17px !important; font-weight: 800 !important; }
+  #infinite-product-grid .price-old         { font-size: 11px !important; }
 
-  /* Sale badge: small pill, doesn't take up layout space */
+  /* Sale badge: absolute top-left of image, small */
   #infinite-product-grid .badge-sale {
     font-size: 9px !important;
-    padding: 2px 6px !important;
+    padding: 2px 5px !important;
   }
 
-  /* Wish button stays in image corner */
+  /* Wishlist button: stay inside the image box */
   #infinite-product-grid .wish-btn {
-    top: 6px !important;
-    right: 6px !important;
-    width: 26px !important;
-    height: 26px !important;
-    font-size: 13px !important;
+    top: 5px !important; right: 5px !important;
+    width: 24px !important; height: 24px !important;
+    font-size: 12px !important;
   }
 
-  /* Buttons: compact side-by-side row */
-  #infinite-product-grid .card-add-btn {
-    padding: 8px 12px !important;
-    font-size: 12px !important;
+  /* Swatches & sizes: compact */
+  #infinite-product-grid .pc-swatches { gap: 4px !important; margin: 2px 0 !important; }
+  #infinite-product-grid .pc-swatch   { width: 14px !important; height: 14px !important; }
+  #infinite-product-grid .pc-sizes    { gap: 3px !important; margin: 2px 0 !important; }
+  #infinite-product-grid .pc-size     { padding: 2px 6px !important; font-size: 10px !important; }
+
+  /* Buttons: compact horizontal pair */
+  #infinite-product-grid .card-add-btn,
+  #infinite-product-grid .card-details-btn {
+    margin-top: 6px !important;
+    padding: 7px 10px !important;
+    font-size: 11.5px !important;
     border-radius: 6px !important;
-    margin-top: 4px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
   #infinite-product-grid .card-details-btn {
-    padding: 7px 12px !important;
-    font-size: 12px !important;
-    border-radius: 6px !important;
-    margin-top: 4px !important;
+    background: transparent !important;
+    color: var(--c-mid) !important;
+    border-color: var(--c-light) !important;
+    font-weight: 600 !important;
+    margin-top: 3px !important;
   }
 
-  /* Coupon bar: collapse a bit */
+  /* Coupon strip */
   #infinite-product-grid .pc-coupon-bar {
     margin: 6px 0 0 !important;
     border-radius: 6px !important;
     font-size: 10px !important;
-  }
-
-  /* Swatches: smaller */
-  #infinite-product-grid .pc-swatch {
-    width: 16px !important;
-    height: 16px !important;
-  }
-  #infinite-product-grid .pc-size {
-    padding: 2px 7px !important;
-    font-size: 10px !important;
+    overflow: hidden !important;
   }
 }
 

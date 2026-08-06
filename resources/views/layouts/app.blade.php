@@ -628,6 +628,10 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
   .nav-hamburger{display:flex}
   /* 58px bottom nav + 16px breathing room = 74px so nothing scrolls behind the nav */
   .page{padding:20px 14px 74px}
+}
+/* At very narrow phones the "Sign In" text overflows — hide it since bottom nav has it */
+@media(max-width:390px){
+  .nav-user-btn{display:none !important}
   .acc-main{padding:22px 16px}
   /* Hide admin/vendor portal buttons from top nav — use bottom nav instead */
   .nav-portal{display:none}
