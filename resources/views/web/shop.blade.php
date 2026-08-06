@@ -31,6 +31,14 @@
     width: 100% !important;
     min-width: 0 !important;
   }
+  /*
+   * Shrink the square image (aspect-ratio:1) to 3:2 so the full card
+   * (image + title + price + both buttons) fits within a typical phone
+   * viewport without being clipped by the bottom nav.
+   */
+  #infinite-product-grid .product-card-img {
+    aspect-ratio: 3 / 2 !important;
+  }
 }
 
 /* ══════════════════════════════════════════════

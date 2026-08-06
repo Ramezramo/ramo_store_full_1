@@ -626,7 +626,8 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
   .nav-links{display:none}
   .nav-search{display:none}
   .nav-hamburger{display:flex}
-  .page{padding:20px 14px 48px}
+  /* 58px bottom nav + 16px breathing room = 74px so nothing scrolls behind the nav */
+  .page{padding:20px 14px 74px}
   .acc-main{padding:22px 16px}
   /* Hide admin/vendor portal buttons from top nav — use bottom nav instead */
   .nav-portal{display:none}
