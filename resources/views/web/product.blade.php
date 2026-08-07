@@ -1183,11 +1183,11 @@ function applyProductCoupon() {
 
 /* Title row with wishlist heart */
 .pi-title-row {
-  display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px;
+  display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; min-width: 0;
 }
 .pi-title {
-  flex: 1; font-size: 22px; font-weight: 800; color: #1a1a1a;
-  line-height: 1.3; margin: 0;
+  flex: 1; min-width: 0; font-size: 22px; font-weight: 800; color: #1a1a1a;
+  line-height: 1.3; margin: 0; overflow-wrap:anywhere;
 }
 .pi-wish-btn {
   flex-shrink: 0; width: 42px; height: 42px; border-radius: 50%;
@@ -1217,7 +1217,7 @@ function applyProductCoupon() {
 /* Price block */
 .pi-price-block { margin-bottom: 16px; }
 .pi-price-row {
-  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 4px;
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; min-width: 0;
 }
 .pi-price-main {
   font-size: 28px; font-weight: 800; color: #1a1a1a; letter-spacing: -.5px;
@@ -1242,10 +1242,10 @@ function applyProductCoupon() {
 
 /* Cart row */
 .pi-cart-row {
-  display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap;
+  display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; min-width: 0;
 }
 .pi-atc-btn {
-  flex: 1; min-width: 160px; font-size: 15px; font-weight: 700;
+  flex: 1 1 160px; min-width: 0; font-size: 15px; font-weight: 700;
   padding: 14px 20px; border-radius: 12px;
 }
 
@@ -1419,6 +1419,10 @@ function applyProductCoupon() {
 .hidden { display: none !important; }
 
 @media(max-width:640px) {
+  .pi-title { font-size: 21px; }
+  .pi-price-main { font-size: 25px; }
+  .pi-price-orig { font-size: 14px; }
+  .pi-atc-btn { flex-basis: 150px; }
   .rv-overview { flex-direction: column; gap: 20px; padding: 20px; }
   .rv-score-box { display: flex; align-items: center; gap: 12px; }
   .rv-big-num { font-size: 40px; }

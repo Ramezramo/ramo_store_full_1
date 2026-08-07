@@ -145,17 +145,17 @@ button{cursor:pointer;font-family:inherit}
 .pagination-wrap span.active-page{background:var(--c-dark);border-color:var(--c-dark);color:#fff}
 
 /* ── PRODUCT DETAIL ── */
-.product-layout{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start}
-.gallery-wrap{display:flex;gap:12px;align-items:flex-start}
+.product-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:start}
+.gallery-wrap{display:flex;gap:12px;align-items:flex-start;min-width:0}
 .gallery-thumbs{display:flex;flex-direction:column;gap:8px;flex-shrink:0;width:74px;max-height:520px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--c-light) transparent}
 .gallery-thumbs::-webkit-scrollbar{width:3px}.gallery-thumbs::-webkit-scrollbar-thumb{background:var(--c-light);border-radius:4px}
-.gallery-main{flex:1;aspect-ratio:1;background:var(--c-white);border-radius:var(--radius-lg);overflow:hidden;border:1.5px solid var(--c-light)}
-.gallery-main img{width:100%;height:100%;object-fit:cover}
+.gallery-main{flex:1;min-width:0;aspect-ratio:1;background:var(--c-white);border-radius:var(--radius-lg);overflow:hidden;border:1.5px solid var(--c-light)}
+.gallery-main img{width:100%;height:100%;object-fit:contain;background:#fff}
 .gallery-thumb{width:70px;height:70px;border-radius:8px;overflow:hidden;border:2px solid transparent;cursor:pointer;background:var(--c-white);flex-shrink:0}
 .gallery-thumb:hover,.gallery-thumb.active{border-color:var(--c-dark)}
 .gallery-thumb img{width:100%;height:100%;object-fit:contain;background:#fff;filter:blur(1.5px) brightness(.82);transition:filter .2s}
 .gallery-thumb:hover img,.gallery-thumb.active img{filter:none}
-.product-info{padding:8px 0}
+.product-info{padding:8px 0;min-width:0}
 .product-info h1{font-size:26px;font-weight:800;letter-spacing:-.4px;margin-bottom:14px;line-height:1.25}
 .price-block{display:flex;align-items:baseline;gap:12px;margin-bottom:20px;flex-wrap:wrap}
 .price-block .big-price{font-size:32px;font-weight:800}
@@ -612,7 +612,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
   .sidebar{position:static;display:none}
   .sidebar.mobile-open{display:block}
   .shop-filter-toggle{display:flex}
-  .product-layout{grid-template-columns:1fr}
+  .product-layout{grid-template-columns:minmax(0,1fr)}
   .gallery-wrap{flex-direction:column-reverse}
   .gallery-thumbs{flex-direction:row;width:100%;max-height:none;overflow-x:auto;overflow-y:hidden}
   .gallery-thumb{flex-shrink:0}
@@ -665,6 +665,14 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
   .btn{padding:11px 20px;font-size:13.5px}
   .cart-row{border-radius:12px}
   .product-layout{gap:24px}
+  /* Product details must stay inside the phone viewport for every product,
+     including long names and wide sale-price combinations. */
+  .product-layout > *,
+  .product-info,
+  .pi-title-row,
+  .pi-price-row,
+  .pi-cart-row,
+  .pi-coupon-row{min-width:0;max-width:100%}
   .reviews-section{margin-top:36px;padding-top:28px}
   .coupon-card{min-width:200px}
 }
