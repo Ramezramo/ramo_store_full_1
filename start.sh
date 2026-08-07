@@ -104,6 +104,12 @@ else
     echo "✓ Database already populated (${TABLE_COUNT} tables)"
 fi
 
+# Apply any migrations added after the database snapshot was exported.
+# The imported dump contains the base tables but may not include newer
+# columns/tables required by the current application code.
+php artisan migrate --force
+echo "✓ Database migrations applied"
+
 # Fix admin user role (ensure it is stored as JSON array) and set email verified
 PGPASSWORD=$PGPASSWORD psql -h $PGHOST -p $PGPORT -U $PGUSER -d $PGDATABASE -c "
   UPDATE users
