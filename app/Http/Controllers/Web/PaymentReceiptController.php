@@ -39,8 +39,7 @@ class PaymentReceiptController extends Controller
 
     private function upload(Request $request, object $order, ?int $userId)
     {
-        $manualMethods = array_keys(PaymentConfig::enabledMethods());
-        if (!in_array($order->payment_method, $manualMethods, true)) {
+        if (!PaymentConfig::isManualMethod($order->payment_method)) {
             return back()->with('error', 'This order does not use a manual payment method.');
         }
 

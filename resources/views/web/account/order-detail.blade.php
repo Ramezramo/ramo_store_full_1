@@ -52,6 +52,7 @@
 </div>
 
 @if(in_array($order->payment_method, ['manual_wallet', 'manual_instapay']))
+@php $accountPaymentMethod = \App\Helpers\PaymentConfig::detailsFor($order->payment_method); @endphp
 <div class="order-detail-card" style="margin-top:16px;border:1.5px solid #fed7aa;background:#fffaf5">
   <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
     <div>
@@ -73,6 +74,11 @@
     </div>
   @endif
   @if($order->payment_status !== 'confirmed')
+    @if($accountPaymentMethod)
+      <p style="font-size:13px;color:#6b7280;line-height:1.6;margin-top:12px">
+        Transfer <strong>{{ number_format($order->final_total, 2) }} EGP</strong> to <strong>{{ $accountPaymentMethod['destination'] }}</strong>, then upload the receipt below.
+      </p>
+    @endif
     <form method="POST" action="{{ route('account.order.payment-receipt', $order->id) }}" enctype="multipart/form-data" style="margin-top:16px">
       @csrf
       <label style="display:block;font-size:12px;font-weight:700;color:#6b7280;margin-bottom:7px">Upload payment receipt (JPG, PNG or WEBP, up to 10MB)</label>

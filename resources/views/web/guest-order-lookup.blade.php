@@ -204,8 +204,7 @@
 
         @if(in_array($order->payment_method ?? '', ['manual_wallet', 'manual_instapay']) && ($order->payment_status ?? '') !== 'confirmed')
           @php
-            $guestPaymentConfig = \App\Helpers\PaymentConfig::enabledMethods();
-            $guestPaymentMethod = $guestPaymentConfig[$order->payment_method] ?? null;
+            $guestPaymentMethod = \App\Helpers\PaymentConfig::detailsFor($order->payment_method);
           @endphp
           @if($guestPaymentMethod)
           <div class="or-section" style="background:#fffaf5">

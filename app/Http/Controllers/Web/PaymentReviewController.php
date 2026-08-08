@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Helpers\PaymentConfig;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -13,7 +14,7 @@ class PaymentReviewController extends Controller
         $order = DB::table('orders')->where('id', $id)->first();
         abort_if(!$order, 404);
 
-        return $this->review($request, $order, 'admin:' . auth()->id());
+        return $this->review($request, $order, 'admin:' . auth()->id(), auth()->id());
     }
 
     public function reviewAsVendor(Request $request, int $id)
@@ -28,10 +29,10 @@ class PaymentReviewController extends Controller
         $order = DB::table('orders')->where('id', $subOrder->parent_order_id)->first();
         abort_if(!$order, 404);
 
-        return $this->review($request, $order, 'vendor:' . $vendor->id, route('vendor.orders.show', $id));
+        return $this->review($request, $order, 'vendor:' . $vendor->id, $vendor->id, route('vendor.orders.show', $id));
     }
 
-    private function review(Request $request, object $order, string $reviewer, ?string $redirect = null)
+    private function review(Request $request, object $order, string $reviewer, ?int $reviewerId = null, ?string $redirect = null)
     {
         $data = $request->validate([
             'decision' => 'required|in:confirm,reject',
@@ -40,6 +41,10 @@ class PaymentReviewController extends Controller
 
         if ($data['decision'] === 'reject' && trim($data['rejection_reason'] ?? '') === '') {
             return back()->with('error', 'Please provide a reason when rejecting a receipt.');
+        }
+
+        if (!PaymentConfig::isManualMethod($order->payment_method) || $order->payment_status !== 'pending_verification') {
+            return back()->with('error', 'This order is not waiting for manual payment verification.');
         }
 
         $receipt = DB::table('payment_receipts')
@@ -64,11 +69,11 @@ class PaymentReviewController extends Controller
             'at' => $now->toDateTimeString(),
         ];
 
-        DB::transaction(function () use ($receipt, $order, $reviewer, $data, $now, $confirmed, $newPaymentStatus, $timeline) {
+        DB::transaction(function () use ($receipt, $order, $reviewerId, $data, $now, $confirmed, $newPaymentStatus, $timeline) {
             DB::table('payment_receipts')->where('id', $receipt->id)->update([
                 'status' => $newPaymentStatus,
                 'rejection_reason' => $confirmed ? null : trim($data['rejection_reason']),
-                'reviewed_by' => auth()->id(),
+                'reviewed_by' => $reviewerId,
                 'reviewed_at' => $now,
                 'updated_at' => $now,
             ]);
@@ -80,7 +85,7 @@ class PaymentReviewController extends Controller
                 'date_paid' => $confirmed ? $now : null,
                 'date_paid_gmt' => $confirmed ? $now->toDateTimeString() : '',
                 'payment_reviewed_at' => $now,
-                'payment_reviewed_by' => auth()->id(),
+                'payment_reviewed_by' => $reviewerId,
                 'payment_rejection_reason' => $confirmed ? null : trim($data['rejection_reason']),
                 'timeline' => json_encode($timeline),
                 'date_modified' => $now,

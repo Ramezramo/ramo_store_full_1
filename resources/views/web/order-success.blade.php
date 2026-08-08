@@ -21,11 +21,12 @@
     <div class="od-row"><span class="od-label">Total</span><span class="od-total">{{ number_format($order->final_total, 2) }} EGP</span></div>
   </div>
 
-  @if(in_array($order->payment_method, ['manual_wallet', 'manual_instapay']) && isset($manualPaymentMethods[$order->payment_method]) && ($order->payment_status ?? '') !== 'confirmed')
+  @if(in_array($order->payment_method, ['manual_wallet', 'manual_instapay']) && ($order->payment_status ?? '') !== 'confirmed')
     @php
-      $paymentMethod = $manualPaymentMethods[$order->payment_method];
+      $paymentMethod = \App\Helpers\PaymentConfig::detailsFor($order->payment_method);
       $successBilling = json_decode($order->billing ?? '{}', true) ?: [];
     @endphp
+    @if($paymentMethod)
     <div class="order-detail-card" style="margin-top:16px;background:#fffaf5;border:1.5px solid #fed7aa">
       <h3 style="font-size:15px;font-weight:800;margin-bottom:7px">Complete your payment</h3>
       <p style="font-size:13px;color:#6b7280;line-height:1.6;margin-bottom:12px">
@@ -49,6 +50,7 @@
         </div>
       </form>
     </div>
+    @endif
   @endif
 
   {{-- VENDOR SUB-ORDERS (if split) --}}
