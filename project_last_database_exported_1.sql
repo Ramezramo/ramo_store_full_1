@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict F2UtdlyqyrEYlyXc8xzcubQfamenOFpb3zJQmGUTx2aaMNthDMMwWO5BuTdGII8
+\restrict A0nWb1jxDLkCt1fx8isuRCTJbHxg38EisQS03piY7ecOdTje0HNCaN4CQAGtk5l
 
 -- Dumped from database version 16.10
 -- Dumped by pg_dump version 16.10
@@ -668,6 +668,42 @@ ALTER SEQUENCE public.getposttest_id_seq OWNED BY public.getposttest.id;
 
 
 --
+-- Name: idempotency_keys; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.idempotency_keys (
+    id bigint NOT NULL,
+    key character varying(36) NOT NULL,
+    user_id bigint NOT NULL,
+    order_id bigint,
+    created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public.idempotency_keys OWNER TO postgres;
+
+--
+-- Name: idempotency_keys_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.idempotency_keys_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.idempotency_keys_id_seq OWNER TO postgres;
+
+--
+-- Name: idempotency_keys_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.idempotency_keys_id_seq OWNED BY public.idempotency_keys.id;
+
+
+--
 -- Name: koto; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -1033,7 +1069,14 @@ CREATE TABLE public.orders (
     number integer DEFAULT 0 NOT NULL,
     timeline text DEFAULT '[]'::text NOT NULL,
     updated_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    payment_status character varying(40) DEFAULT 'confirmed'::character varying NOT NULL,
+    payment_receipt_path character varying(255),
+    payment_receipt_name character varying(255),
+    payment_receipt_uploaded_at timestamp(0) without time zone,
+    payment_reviewed_at timestamp(0) without time zone,
+    payment_reviewed_by bigint,
+    payment_rejection_reason text
 );
 
 
@@ -1114,6 +1157,50 @@ CREATE TABLE public.password_reset_tokens (
 
 
 ALTER TABLE public.password_reset_tokens OWNER TO postgres;
+
+--
+-- Name: payment_receipts; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.payment_receipts (
+    id bigint NOT NULL,
+    order_id integer NOT NULL,
+    payment_method character varying(50) NOT NULL,
+    file_path character varying(255) NOT NULL,
+    original_name character varying(255),
+    status character varying(30) DEFAULT 'pending'::character varying NOT NULL,
+    rejection_reason text,
+    uploaded_by bigint,
+    reviewed_by bigint,
+    uploaded_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    reviewed_at timestamp(0) without time zone,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
+
+
+ALTER TABLE public.payment_receipts OWNER TO postgres;
+
+--
+-- Name: payment_receipts_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.payment_receipts_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.payment_receipts_id_seq OWNER TO postgres;
+
+--
+-- Name: payment_receipts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.payment_receipts_id_seq OWNED BY public.payment_receipts.id;
+
 
 --
 -- Name: personal_access_tokens; Type: TABLE; Schema: public; Owner: postgres
@@ -1225,7 +1312,9 @@ CREATE TABLE public.product_variations (
     stock_quantity integer DEFAULT 0 NOT NULL,
     images text,
     created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone
+    updated_at timestamp(0) without time zone,
+    stock_status character varying(255) DEFAULT 'instock'::character varying NOT NULL,
+    status character varying(255) DEFAULT 'publish'::character varying NOT NULL
 );
 
 
@@ -1339,11 +1428,19 @@ CREATE TABLE public.products_data (
     translations text DEFAULT ''::text NOT NULL,
     acceptance_status text DEFAULT 'pending'::text NOT NULL,
     unit text DEFAULT ''::text NOT NULL,
-    whatsapp text DEFAULT ''::text NOT NULL
+    whatsapp text DEFAULT ''::text NOT NULL,
+    button_mode character varying(255) DEFAULT 'both'::character varying
 );
 
 
 ALTER TABLE public.products_data OWNER TO postgres;
+
+--
+-- Name: COLUMN products_data.button_mode; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.products_data.button_mode IS 'Controls which action buttons show on the product card: both, cart_only, details_only';
+
 
 --
 -- Name: products_data_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -1455,11 +1552,19 @@ CREATE TABLE public.products_data_main (
     vendor_id bigint,
     translations text DEFAULT ''::text NOT NULL,
     acceptance_status text DEFAULT 'pending'::text NOT NULL,
-    unit text DEFAULT ''::text NOT NULL
+    unit text DEFAULT ''::text NOT NULL,
+    button_mode character varying(255) DEFAULT 'both'::character varying
 );
 
 
 ALTER TABLE public.products_data_main OWNER TO postgres;
+
+--
+-- Name: COLUMN products_data_main.button_mode; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.products_data_main.button_mode IS 'Controls which action buttons show on the product card: both, cart_only, details_only';
+
 
 --
 -- Name: products_data_main_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -2001,6 +2106,13 @@ ALTER TABLE ONLY public.getposttest ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
+-- Name: idempotency_keys id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.idempotency_keys ALTER COLUMN id SET DEFAULT nextval('public.idempotency_keys_id_seq'::regclass);
+
+
+--
 -- Name: koto id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2068,6 +2180,13 @@ ALTER TABLE ONLY public.orders ALTER COLUMN id SET DEFAULT nextval('public.order
 --
 
 ALTER TABLE ONLY public.otp_verifications ALTER COLUMN id SET DEFAULT nextval('public.otp_verifications_id_seq'::regclass);
+
+
+--
+-- Name: payment_receipts id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.payment_receipts ALTER COLUMN id SET DEFAULT nextval('public.payment_receipts_id_seq'::regclass);
 
 
 --
@@ -2191,6 +2310,7 @@ COPY public.app_config (id, config_json, created_at, updated_at) FROM stdin;
 COPY public.app_configs (id, config_key, config_group, lang, value, label, description, is_public, sort_order, updated_at) FROM stdin;
 2	horizon_layout	layout	ar	[{"layout":"logo","showMenu":true,"showSearch":true,"showLogo":true,"showliked":true},{"layout":"category","type":"icon","wrap":false,"size":1,"radius":50,"items":[{"category":18,"label":"هواتف","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/phones_image.jpg","colors":["#3CC2BF","#3CC2BF"]},{"category":23,"label":"حقائب","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/bag_image_.jpg","colors":["#3E6AB5","#3E6AB5"]},{"category":25,"label":"بليزرات","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/women_blazers.webp","colors":["#53A2CC","#53A2CC"]},{"category":28,"label":"أحذية","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/sheos.jpg","colors":["#53688A","#53688A"]},{"category":29,"label":"جينز","image":"https:\\/\\/us.dockers.com\\/cdn\\/shop\\/files\\/Monte-Mid-Rise-Jeans-Relaxed-Fit-alt5-A64720005_360x450_crop_center.png?v=1741351564","colors":["#43506A","#43506A"]}]},{"layout":"bannerImage","isSlider":true,"autoPlay":true,"design":"default","radius":2,"items":[{"category":29,"image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/HP-Banner.webp","padding":7},{"category":28,"image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/Campaign-LP-07.webp","padding":7}]},{"layout":"saleImages","category":23,"headerText":"تسوق بالمظهر","maxItemsToShow":8,"productWidth":130,"productConfig":{"imageRatio":1.4,"borderRadius":10}},{"name":"مجموعات الرجال","layout":"twoColumn","headerText":"تخفيضات اليوم ⚡️","productWidth":200,"maxItemsToShow":7,"category":23,"productConfig":{"borderRadius":12.5,"showHeart":true,"imageRatio":1.5,"layout":"grid"}},{"layout":"category","name":"Men's Collection","type":"icon","wrap":false,"size":1,"radius":50,"items":[{"category":18,"label":"Men","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/men_cat.jpg","colors":["#3E6AB5","#3E6AB5"]},{"category":19,"label":"Shirts","image":"","colors":["#53A2CC","#53A2CC"]},{"category":21,"label":"T-Shirts","image":"","colors":["#3CC2BF","#3CC2BF"]},{"category":30,"label":"Jeans Man","image":"https:\\/\\/us.dockers.com\\/cdn\\/shop\\/files\\/Monte-Mid-Rise-Jeans-Relaxed-Fit-alt5-A64720005_360x450_crop_center.png?v=1741351564","colors":["#43506A","#43506A"]},{"category":28,"label":"Jackets","image":"","colors":["#53688A","#53688A"]}]},{"layout":"category","name":"Women's Collection","type":"icon","wrap":false,"size":1,"radius":50,"items":[{"category":22,"label":"Women","image":"","colors":["#EC4899","#EC4899"]},{"category":25,"label":"Blazers","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/women_blazers.webp","colors":["#8B5CF6","#8B5CF6"]},{"category":26,"label":"Dresses","image":"","colors":["#F59E0B","#F59E0B"]},{"category":29,"label":"Jeans","image":"https:\\/\\/us.dockers.com\\/cdn\\/shop\\/files\\/Monte-Mid-Rise-Jeans-Relaxed-Fit-alt5-A64720005_360x450_crop_center.png?v=1741351564","colors":["#43506A","#43506A"]},{"category":23,"label":"Bags","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/bag_image_.jpg","colors":["#3E6AB5","#3E6AB5"]}]},{"layout":"category","name":"All Categories","type":"icon","wrap":false,"size":1,"radius":50,"items":[{"category":208,"label":"Clothing","image":"","colors":["#E85D26","#E85D26"]},{"category":18,"label":"Men","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/men_cat.jpg","colors":["#3E6AB5","#3E6AB5"]},{"category":22,"label":"Women","image":"","colors":["#EC4899","#EC4899"]},{"category":23,"label":"Bags","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/bag_image_.jpg","colors":["#3CC2BF","#3CC2BF"]},{"category":311,"label":"Phones","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/phones_image.jpg","colors":["#22C55E","#22C55E"]}]}]	Homepage Layout (AR)	\N	t	0	2026-05-06 21:26:09
 1	horizon_layout	layout	en	[{"layout":"logo","showMenu":true,"showSearch":true,"showLogo":true,"showliked":true,"hidden":false},{"layout":"category","type":"icon","wrap":false,"size":1,"radius":50,"items":[{"category":18,"label":"Phones","image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/phones_image.jpg","colors":["#3CC2BF","#3CC2BF"]},{"category":23,"label":"Bag","image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/bag_image_.jpg","colors":["#3E6AB5","#3E6AB5"]},{"category":25,"label":"Blazers","image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/women_blazers.webp","colors":["#53A2CC","#53A2CC"]},{"category":28,"label":"Shoes","image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/sheos.jpg","colors":["#53688A","#53688A"]},{"category":29,"label":"Jeans","image":"https://us.dockers.com/cdn/shop/files/Monte-Mid-Rise-Jeans-Relaxed-Fit-alt5-A64720005_360x450_crop_center.png?v=1741351564","colors":["#43506A","#43506A"]},{"category":30,"label":"Jeans Man","image":"https://images.squarespace-cdn.com/content/v1/58add8dd6a49639a87822092/1654105465923-95DJO7H19YLTGOSB4CLO/how-to-style-mens-jeans.jpg?format=750w","colors":["#12B58C","#12B58C"]}],"hidden":false},{"layout":"saleImages","category":null,"headerText":"Shop by Look","maxItemsToShow":8,"productWidth":130,"productConfig":{"imageRatio":1.4,"borderRadius":10},"hidden":false},{"layout":"brands"},{"layout":"bannerImage","isSlider":true,"autoPlay":true,"showNumber":false,"design":"default","showBackGround":true,"radius":10,"items":[{"category":29,"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/HP-Banner.webp","padding":7},{"product":30,"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/Campaign-LP-04.webp","padding":7,"category":18},{"category":28,"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/Campaign-LP-07.webp","padding":7}],"bannerHeight":260},{"name":"Man Collections","layout":"twoColumn","headerText":"On Sale Today ⚡️","productWidth":200,"maxItemsToShow":7,"category":23,"addToCartButtonStyle":{"style":"iconed","backgroundColor":"#E0E0E0","textColor":"#3D3D3D"},"productConfig":{"borderRadius":12.5,"hMargin":10,"vMargin":6,"showHeart":true,"imageRatio":1.5,"layout":"grid"}},{"layout":"bannerImage","design":"static","fit":"fitWidth","marginLeft":0,"marginRight":0,"marginTop":20,"marginBottom":0,"height":0.15,"items":[{"product":30,"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/kobunatkhasm.png","padding":7}],"bannerHeight":280,"radius":7},{"name":"SuperMarket Stars","layout":"seupermarketstars","category":18},{"name":"Brands","layout":"brands","category":21},{"layout":"topVendors","headerText":"Top Sellers","maxItemsToShow":6,"sortBy":"products"},{"layout":"seupermarketstars","name":"Featured","category":26},{"layout":"coupons","headerText":"This Week's Deals","subLabel":"Use code at checkout","maxItemsToShow":6,"sortBy":"amount","showExpiredFallback":true,"hideWhenEmpty":true}]	Homepage Layout (EN)	\N	t	0	2026-05-06 21:34:36
+3	manual_payment_methods	payment	\N	{"wallet_enabled":true,"wallet_number":"010065464565","instapay_enabled":false,"instapay_number":"010065464565","instapay_link":"https:\\/\\/fe029704-391f-4748-94a3-f555c9f75e7d-00-keybxg6x4pcj.worf.replit.dev\\/admin\\/payment-methods"}	Manual Payment Methods	Wallet and InstaPay transfer instructions for website orders	f	0	2026-08-08 04:08:26
 \.
 
 
@@ -2313,6 +2433,14 @@ COPY public.getposttest (id, title, content, created_at, updated_at) FROM stdin;
 
 
 --
+-- Data for Name: idempotency_keys; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.idempotency_keys (id, key, user_id, order_id, created_at) FROM stdin;
+\.
+
+
+--
 -- Data for Name: koto; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -2370,6 +2498,10 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 11	2026_05_03_012001_add_sub_order_id_to_order_messages	1
 12	2026_05_04_000001_add_auth_fields_and_otp_verifications	1
 13	2026_05_06_152830_add_image_to_brands_table	1
+14	2026_05_12_000001_add_status_columns_to_product_variations_table	2
+15	2026_05_12_000002_create_idempotency_keys_table	2
+16	2026_07_11_131407_add_button_mode_to_products_data	2
+17	2026_08_08_000001_add_manual_payment_verification	2
 \.
 
 
@@ -2386,6 +2518,8 @@ COPY public.order_messages (id, order_id, customer_id, vendor_id, sender_type, m
 --
 
 COPY public.order_sub_orders (id, parent_order_id, vendor_id, customer_id, status, line_items, subtotal, discount_total, total, tracking_number, tracking_carrier, timeline, notes, created_at, updated_at) FROM stdin;
+1	1	12	1	pending	[{"product_id":4,"variation_id":9,"name":"Canvas Backpack","sku":null,"quantity":1,"price":760,"subtotal":760,"attributes":{"Color":"Navy"}}]	760.00	0.00	760.00	\N	\N	[]	\N	2026-08-08 04:04:32	2026-08-08 04:04:32
+2	2	16	1	pending	[{"product_id":20,"variation_id":null,"name":"Floral Wrap Dress","sku":null,"quantity":1,"price":890,"subtotal":890,"attributes":[]}]	890.00	0.00	890.00	\N	\N	[]	\N	2026-08-08 04:06:23	2026-08-08 04:06:23
 \.
 
 
@@ -2393,7 +2527,9 @@ COPY public.order_sub_orders (id, parent_order_id, vendor_id, customer_id, statu
 -- Data for Name: orders; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.orders (id, parent_id, parent_vendors_ids, parent_vendors_data, status, currency, version, prices_include_tax, date_created, date_modified, discount_total, discount_tax, shipping_total, shipping_tax, cart_tax, coupon_code, final_total, original_total, coupon_applied, total_tax, customer_id, order_key, billing, shipping, payment_method, payment_method_title, transaction_id, customer_ip_address, customer_user_agent, created_via, customer_note, date_completed, date_paid, cart_hash, meta_data, line_items, tax_lines, shipping_lines, fee_lines, coupon_lines, refunds, payment_url, is_editable, needs_payment, needs_processing, bacs_info, currency_symbol, _links, date_created_gmt, date_modified_gmt, date_completed_gmt, date_paid_gmt, set_paid, number, timeline, updated_at, created_at) FROM stdin;
+COPY public.orders (id, parent_id, parent_vendors_ids, parent_vendors_data, status, currency, version, prices_include_tax, date_created, date_modified, discount_total, discount_tax, shipping_total, shipping_tax, cart_tax, coupon_code, final_total, original_total, coupon_applied, total_tax, customer_id, order_key, billing, shipping, payment_method, payment_method_title, transaction_id, customer_ip_address, customer_user_agent, created_via, customer_note, date_completed, date_paid, cart_hash, meta_data, line_items, tax_lines, shipping_lines, fee_lines, coupon_lines, refunds, payment_url, is_editable, needs_payment, needs_processing, bacs_info, currency_symbol, _links, date_created_gmt, date_modified_gmt, date_completed_gmt, date_paid_gmt, set_paid, number, timeline, updated_at, created_at, payment_status, payment_receipt_path, payment_receipt_name, payment_receipt_uploaded_at, payment_reviewed_at, payment_reviewed_by, payment_rejection_reason) FROM stdin;
+1	0	\N	\N	pending	EGP	\N	f	2026-08-08 04:04:32	2026-08-08 04:05:49	0.00	0.00	0.00	0.00	0.00	\N	760.00	760	0	0.00	1	wc_RDL3pTG00L8EvYMMmudN	{"first_name":"Sara","last_name":"Ehab","email":"adminramoui@gmail.com","phone":"7865876587","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.44544960931289","longitude":"30.80587494633731"}	{"first_name":"Sara","last_name":"Ehab","email":"adminramoui@gmail.com","phone":"7865876587","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.44544960931289","longitude":"30.80587494633731"}	manual_wallet	Pay by Wallet	\N	10.56.4.51	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36	website		\N	\N	11287c40829e028b61ec6d73ec1b074d	\N	[{"product_id":4,"variation_id":9,"name":"Canvas Backpack","sku":null,"quantity":1,"price":760,"subtotal":760,"attributes":{"Color":"Navy"}}]	\N	\N	\N	\N	\N		t	t	t	\N	ج.م	\N	2026-08-08 04:04:32	2026-08-08 04:04:32			f	1	[{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-08 04:05:27"},{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-08 04:05:49"}]	2026-08-08 04:05:49	2026-08-08 04:04:32	pending_verification	payment-receipts/eo5R4QKHI4TWNOQHlWaL2RlVxjDHfTG4TDtmVoQW.png	Screenshot (3).png	2026-08-08 04:05:49	\N	\N	\N
+2	0	\N	\N	shipped	EGP	\N	f	2026-08-08 04:06:23	2026-08-08 04:14:58	0.00	0.00	0.00	0.00	0.00	\N	890.00	890	0	0.00	1	wc_1gUBnyOU3kLaME5jPMMK	{"first_name":"Sara","last_name":"Ehab","email":"adminramoui@gmail.com","phone":"7865876587","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.445440824393827","longitude":"30.805906818883177"}	{"first_name":"Sara","last_name":"Ehab","email":"adminramoui@gmail.com","phone":"7865876587","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.445440824393827","longitude":"30.805906818883177"}	manual_wallet	Pay by Wallet	\N	10.56.4.51	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36	website		\N	2026-08-08 04:14:49	6bcb195325a706e72a319e5582cb3d38	\N	[{"product_id":20,"variation_id":null,"name":"Floral Wrap Dress","sku":null,"quantity":1,"price":890,"subtotal":890,"attributes":[]}]	\N	\N	\N	\N	\N		t	f	t	\N	ج.م	\N	2026-08-08 04:06:23	2026-08-08 04:06:23		2026-08-08 04:14:49	t	2	[{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-08 04:06:33"},{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-08 04:09:06"},{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-08 04:09:19"},{"status":"rejected","note":"Payment receipt rejected: Blurred","by":"admin:1","at":"2026-08-08 04:12:43"},{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-08 04:14:38"},{"status":"confirmed","note":"Payment receipt approved.","by":"admin:1","at":"2026-08-08 04:14:49"}]	2026-08-08 04:14:58	2026-08-08 04:06:23	confirmed	payment-receipts/HUbhyU0YazbFgvWf4EY8GuAaggWwHTvEYIArJTDG.png	Screenshot (7).png	2026-08-08 04:14:38	2026-08-08 04:14:49	1	\N
 \.
 
 
@@ -2410,6 +2546,20 @@ COPY public.otp_verifications (id, phone, otp_code, expires_at, attempts, resend
 --
 
 COPY public.password_reset_tokens (email, token, created_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: payment_receipts; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.payment_receipts (id, order_id, payment_method, file_path, original_name, status, rejection_reason, uploaded_by, reviewed_by, uploaded_at, reviewed_at, created_at, updated_at) FROM stdin;
+1	1	manual_wallet	payment-receipts/CS5W4tdfc3V844et881EJdY0gpGKbZfOnbN5V9va.png	Screenshot (2).png	pending	\N	1	\N	2026-08-08 04:05:27	\N	2026-08-08 04:05:27	2026-08-08 04:05:27
+2	1	manual_wallet	payment-receipts/eo5R4QKHI4TWNOQHlWaL2RlVxjDHfTG4TDtmVoQW.png	Screenshot (3).png	pending	\N	1	\N	2026-08-08 04:05:49	\N	2026-08-08 04:05:49	2026-08-08 04:05:49
+3	2	manual_wallet	payment-receipts/TAJcbPvOVnDipgaZphL5LjhWY1fzpo8K3gnArkWc.png	Screenshot (3).png	pending	\N	1	\N	2026-08-08 04:06:33	\N	2026-08-08 04:06:33	2026-08-08 04:06:33
+4	2	manual_wallet	payment-receipts/Mew1KOXtbSOC4jrXdkryJIqcs0Ti0yRdlej4UERM.png	Screenshot (3).png	pending	\N	1	\N	2026-08-08 04:09:06	\N	2026-08-08 04:09:06	2026-08-08 04:09:06
+5	2	manual_wallet	payment-receipts/4bXHcmWDC6LAtBi2aOiNvd6HBZjPIrEUt24YERI6.png	Screenshot (6).png	rejected	Blurred	1	1	2026-08-08 04:09:19	2026-08-08 04:12:43	2026-08-08 04:09:19	2026-08-08 04:12:43
+6	2	manual_wallet	payment-receipts/HUbhyU0YazbFgvWf4EY8GuAaggWwHTvEYIArJTDG.png	Screenshot (7).png	confirmed	\N	1	1	2026-08-08 04:14:38	2026-08-08 04:14:49	2026-08-08 04:14:38	2026-08-08 04:14:49
 \.
 
 
@@ -2462,91 +2612,91 @@ COPY public.product_reviews (id, product_id, user_id, rating, title, body, creat
 -- Data for Name: product_variations; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.product_variations (id, product_id, main_variation, attributes, price, regular_price, sale_price, stock_quantity, images, created_at, updated_at) FROM stdin;
-1	1	t	{"Color":"Black"}	1850.00	1850.00	\N	25	[]	2026-02-12 17:10:14	2026-02-12 17:10:14
-2	1	f	{"Color":"Tan"}	1850.00	1850.00	\N	18	[]	2026-02-12 17:10:14	2026-02-12 17:10:14
-3	1	f	{"Color":"Brown"}	1850.00	1850.00	\N	12	[]	2026-02-12 17:10:14	2026-02-12 17:10:14
-4	2	t	{"Color":"Beige"}	637.50	750.00	637.50	40	[]	2025-12-18 17:10:14	2025-12-18 17:10:14
-5	2	f	{"Color":"Black"}	637.50	750.00	637.50	35	[]	2025-12-18 17:10:14	2025-12-18 17:10:14
-6	2	f	{"Color":"Red"}	637.50	750.00	637.50	20	[]	2025-12-18 17:10:14	2025-12-18 17:10:14
-7	3	t	{"Color":"Black"}	2200.00	2200.00	\N	15	[]	2025-08-16 17:10:14	2025-08-16 17:10:14
-8	3	f	{"Color":"Cream"}	2200.00	2200.00	\N	10	[]	2025-08-16 17:10:14	2025-08-16 17:10:14
-9	4	t	{"Color":"Navy"}	760.00	950.00	760.00	60	[]	2025-07-21 17:10:14	2025-07-21 17:10:14
-10	4	f	{"Color":"Khaki"}	760.00	950.00	760.00	45	[]	2025-07-21 17:10:14	2025-07-21 17:10:14
-11	4	f	{"Color":"Black"}	760.00	950.00	760.00	55	[]	2025-07-21 17:10:14	2025-07-21 17:10:14
-12	5	t	{"Size":"S"}	699.00	699.00	\N	30	[]	2025-01-29 17:10:14	2025-01-29 17:10:14
-13	5	f	{"Size":"M"}	699.00	699.00	\N	45	[]	2025-01-29 17:10:14	2025-01-29 17:10:14
-14	5	f	{"Size":"L"}	699.00	699.00	\N	35	[]	2025-01-29 17:10:14	2025-01-29 17:10:14
-15	5	f	{"Size":"XL"}	699.00	699.00	\N	20	[]	2025-01-29 17:10:14	2025-01-29 17:10:14
-16	6	t	{"Size":"XS"}	674.10	749.00	674.10	25	[]	2024-12-05 17:10:14	2024-12-05 17:10:14
-17	6	f	{"Size":"S"}	674.10	749.00	674.10	40	[]	2024-12-05 17:10:14	2024-12-05 17:10:14
-18	6	f	{"Size":"M"}	674.10	749.00	674.10	50	[]	2024-12-05 17:10:14	2024-12-05 17:10:14
-19	6	f	{"Size":"L"}	674.10	749.00	674.10	30	[]	2024-12-05 17:10:14	2024-12-05 17:10:14
-20	7	t	{"Size":"S"}	615.00	820.00	615.00	22	[]	2024-11-17 17:10:14	2024-11-17 17:10:14
-21	7	f	{"Size":"M"}	615.00	820.00	615.00	38	[]	2024-11-17 17:10:14	2024-11-17 17:10:14
-22	7	f	{"Size":"L"}	615.00	820.00	615.00	28	[]	2024-11-17 17:10:14	2024-11-17 17:10:14
-23	8	t	{"Size":"S"}	450.00	450.00	\N	35	[]	2024-09-12 17:10:14	2024-09-12 17:10:14
-24	8	f	{"Size":"M"}	450.00	450.00	\N	50	[]	2024-09-12 17:10:14	2024-09-12 17:10:14
-25	8	f	{"Size":"L"}	450.00	450.00	\N	40	[]	2024-09-12 17:10:14	2024-09-12 17:10:14
-26	8	f	{"Size":"XL"}	450.00	450.00	\N	25	[]	2024-09-12 17:10:14	2024-09-12 17:10:14
-27	8	f	{"Size":"XXL"}	450.00	450.00	\N	15	[]	2024-09-12 17:10:14	2024-09-12 17:10:14
-28	9	t	{"Color":"White","Size":"M"}	520.00	520.00	\N	30	[]	2024-06-06 17:10:14	2024-06-06 17:10:14
-29	9	f	{"Color":"Blue","Size":"M"}	520.00	520.00	\N	28	[]	2024-06-06 17:10:14	2024-06-06 17:10:14
-30	9	f	{"Color":"White","Size":"L"}	520.00	520.00	\N	25	[]	2024-06-06 17:10:14	2024-06-06 17:10:14
-31	9	f	{"Color":"Blue","Size":"L"}	520.00	520.00	\N	22	[]	2024-06-06 17:10:14	2024-06-06 17:10:14
-32	10	t	{"Color":"Navy","Size":"S"}	323.00	380.00	323.00	40	[]	2024-06-03 17:10:14	2024-06-03 17:10:14
-33	10	f	{"Color":"Navy","Size":"M"}	323.00	380.00	323.00	55	[]	2024-06-03 17:10:14	2024-06-03 17:10:14
-34	10	f	{"Color":"Red","Size":"M"}	323.00	380.00	323.00	35	[]	2024-06-03 17:10:14	2024-06-03 17:10:14
-35	10	f	{"Color":"White","Size":"L"}	323.00	380.00	323.00	30	[]	2024-06-03 17:10:14	2024-06-03 17:10:14
-36	11	t	{"Color":"Black","Size":"S"}	1250.00	1250.00	\N	18	[]	2024-02-14 17:10:14	2024-02-14 17:10:14
-37	11	f	{"Color":"Black","Size":"M"}	1250.00	1250.00	\N	22	[]	2024-02-14 17:10:14	2024-02-14 17:10:14
-38	11	f	{"Color":"Black","Size":"L"}	1250.00	1250.00	\N	15	[]	2024-02-14 17:10:14	2024-02-14 17:10:14
-39	11	f	{"Color":"Camel","Size":"M"}	1250.00	1250.00	\N	12	[]	2024-02-14 17:10:14	2024-02-14 17:10:14
-40	12	t	{"Color":"Navy","Size":"M"}	1512.00	1890.00	1512.00	10	[]	2023-12-10 17:10:14	2023-12-10 17:10:14
-41	12	f	{"Color":"Navy","Size":"L"}	1512.00	1890.00	1512.00	12	[]	2023-12-10 17:10:14	2023-12-10 17:10:14
-42	12	f	{"Color":"Grey","Size":"M"}	1512.00	1890.00	1512.00	8	[]	2023-12-10 17:10:14	2023-12-10 17:10:14
-43	12	f	{"Color":"Grey","Size":"L"}	1512.00	1890.00	1512.00	9	[]	2023-12-10 17:10:14	2023-12-10 17:10:14
-44	13	t	{"Color":"White","Size":"40"}	1150.00	1150.00	\N	20	[]	2023-11-07 17:10:14	2023-11-07 17:10:14
-45	13	f	{"Color":"White","Size":"41"}	1150.00	1150.00	\N	30	[]	2023-11-07 17:10:14	2023-11-07 17:10:14
-46	13	f	{"Color":"White","Size":"42"}	1150.00	1150.00	\N	28	[]	2023-11-07 17:10:14	2023-11-07 17:10:14
-47	13	f	{"Color":"Black","Size":"41"}	1150.00	1150.00	\N	25	[]	2023-11-07 17:10:14	2023-11-07 17:10:14
-48	13	f	{"Color":"Black","Size":"42"}	1150.00	1150.00	\N	22	[]	2023-11-07 17:10:14	2023-11-07 17:10:14
-49	14	t	{"Color":"Black","Size":"37"}	1332.00	1480.00	1332.00	15	[]	2023-11-06 17:10:14	2023-11-06 17:10:14
-50	14	f	{"Color":"Black","Size":"38"}	1332.00	1480.00	1332.00	20	[]	2023-11-06 17:10:14	2023-11-06 17:10:14
-51	14	f	{"Color":"Black","Size":"39"}	1332.00	1480.00	1332.00	18	[]	2023-11-06 17:10:14	2023-11-06 17:10:14
-52	14	f	{"Color":"Brown","Size":"38"}	1332.00	1480.00	1332.00	12	[]	2023-11-06 17:10:14	2023-11-06 17:10:14
-53	15	t	{"Color":"Black","Size":"41"}	2100.00	2100.00	\N	10	[]	2023-08-07 17:10:14	2023-08-07 17:10:14
-54	15	f	{"Color":"Black","Size":"42"}	2100.00	2100.00	\N	12	[]	2023-08-07 17:10:14	2023-08-07 17:10:14
-55	15	f	{"Color":"Brown","Size":"41"}	2100.00	2100.00	\N	8	[]	2023-08-07 17:10:14	2023-08-07 17:10:14
-56	15	f	{"Color":"Brown","Size":"42"}	2100.00	2100.00	\N	10	[]	2023-08-07 17:10:14	2023-08-07 17:10:14
-57	16	t	{"Color":"White","Size":"S"}	280.00	280.00	\N	60	[]	2023-06-18 17:10:14	2023-06-18 17:10:14
-58	16	f	{"Color":"White","Size":"M"}	280.00	280.00	\N	80	[]	2023-06-18 17:10:14	2023-06-18 17:10:14
-59	16	f	{"Color":"Black","Size":"M"}	280.00	280.00	\N	75	[]	2023-06-18 17:10:14	2023-06-18 17:10:14
-60	16	f	{"Color":"Black","Size":"L"}	280.00	280.00	\N	65	[]	2023-06-18 17:10:14	2023-06-18 17:10:14
-61	16	f	{"Color":"Grey","Size":"L"}	280.00	280.00	\N	50	[]	2023-06-18 17:10:14	2023-06-18 17:10:14
-62	17	t	{"Color":"Sand","Size":"S"}	455.00	650.00	455.00	30	[]	2023-03-09 17:10:14	2023-03-09 17:10:14
-63	17	f	{"Color":"Sand","Size":"M"}	455.00	650.00	455.00	45	[]	2023-03-09 17:10:14	2023-03-09 17:10:14
-64	17	f	{"Color":"Black","Size":"M"}	455.00	650.00	455.00	50	[]	2023-03-09 17:10:14	2023-03-09 17:10:14
-65	17	f	{"Color":"Black","Size":"L"}	455.00	650.00	455.00	40	[]	2023-03-09 17:10:14	2023-03-09 17:10:14
-66	17	f	{"Color":"Grey","Size":"XL"}	455.00	650.00	455.00	25	[]	2023-03-09 17:10:14	2023-03-09 17:10:14
-67	18	t	{"Color":"Navy\\/White","Size":"S"}	320.00	320.00	\N	35	[]	2022-10-24 17:10:14	2022-10-24 17:10:14
-68	18	f	{"Color":"Navy\\/White","Size":"M"}	320.00	320.00	\N	50	[]	2022-10-24 17:10:14	2022-10-24 17:10:14
-69	18	f	{"Color":"Red\\/White","Size":"M"}	320.00	320.00	\N	40	[]	2022-10-24 17:10:14	2022-10-24 17:10:14
-70	18	f	{"Color":"Red\\/White","Size":"L"}	320.00	320.00	\N	30	[]	2022-10-24 17:10:14	2022-10-24 17:10:14
-71	19	t	{"Color":"Khaki","Size":"S"}	550.00	550.00	\N	30	[]	2022-10-07 17:10:14	2022-10-07 17:10:14
-72	19	f	{"Color":"Khaki","Size":"M"}	550.00	550.00	\N	45	[]	2022-10-07 17:10:14	2022-10-07 17:10:14
-73	19	f	{"Color":"Khaki","Size":"L"}	550.00	550.00	\N	35	[]	2022-10-07 17:10:14	2022-10-07 17:10:14
-74	19	f	{"Color":"Navy","Size":"M"}	550.00	550.00	\N	40	[]	2022-10-07 17:10:14	2022-10-07 17:10:14
-75	19	f	{"Color":"Navy","Size":"L"}	550.00	550.00	\N	30	[]	2022-10-07 17:10:14	2022-10-07 17:10:14
-76	20	t	{"Color":"Multi","Size":"XS"}	890.00	890.00	\N	20	[]	2022-08-23 17:10:14	2022-08-23 17:10:14
-77	20	f	{"Color":"Multi","Size":"S"}	890.00	890.00	\N	35	[]	2022-08-23 17:10:14	2022-08-23 17:10:14
-78	20	f	{"Color":"Multi","Size":"M"}	890.00	890.00	\N	40	[]	2022-08-23 17:10:14	2022-08-23 17:10:14
-79	20	f	{"Color":"Multi","Size":"L"}	890.00	890.00	\N	25	[]	2022-08-23 17:10:14	2022-08-23 17:10:14
-80	21	t	{"Color":"Black","Size":"XS"}	880.00	1100.00	880.00	15	[]	2022-05-22 17:10:14	2022-05-22 17:10:14
-81	21	f	{"Color":"Black","Size":"S"}	880.00	1100.00	880.00	22	[]	2022-05-22 17:10:14	2022-05-22 17:10:14
-82	21	f	{"Color":"Black","Size":"M"}	880.00	1100.00	880.00	28	[]	2022-05-22 17:10:14	2022-05-22 17:10:14
-83	21	f	{"Color":"Nude","Size":"S"}	880.00	1100.00	880.00	18	[]	2022-05-22 17:10:14	2022-05-22 17:10:14
-84	21	f	{"Color":"Nude","Size":"M"}	880.00	1100.00	880.00	20	[]	2022-05-22 17:10:14	2022-05-22 17:10:14
+COPY public.product_variations (id, product_id, main_variation, attributes, price, regular_price, sale_price, stock_quantity, images, created_at, updated_at, stock_status, status) FROM stdin;
+1	1	t	{"Color":"Black"}	1850.00	1850.00	\N	25	[]	2026-02-12 17:10:14	2026-02-12 17:10:14	instock	publish
+2	1	f	{"Color":"Tan"}	1850.00	1850.00	\N	18	[]	2026-02-12 17:10:14	2026-02-12 17:10:14	instock	publish
+3	1	f	{"Color":"Brown"}	1850.00	1850.00	\N	12	[]	2026-02-12 17:10:14	2026-02-12 17:10:14	instock	publish
+4	2	t	{"Color":"Beige"}	637.50	750.00	637.50	40	[]	2025-12-18 17:10:14	2025-12-18 17:10:14	instock	publish
+5	2	f	{"Color":"Black"}	637.50	750.00	637.50	35	[]	2025-12-18 17:10:14	2025-12-18 17:10:14	instock	publish
+6	2	f	{"Color":"Red"}	637.50	750.00	637.50	20	[]	2025-12-18 17:10:14	2025-12-18 17:10:14	instock	publish
+7	3	t	{"Color":"Black"}	2200.00	2200.00	\N	15	[]	2025-08-16 17:10:14	2025-08-16 17:10:14	instock	publish
+8	3	f	{"Color":"Cream"}	2200.00	2200.00	\N	10	[]	2025-08-16 17:10:14	2025-08-16 17:10:14	instock	publish
+9	4	t	{"Color":"Navy"}	760.00	950.00	760.00	60	[]	2025-07-21 17:10:14	2025-07-21 17:10:14	instock	publish
+10	4	f	{"Color":"Khaki"}	760.00	950.00	760.00	45	[]	2025-07-21 17:10:14	2025-07-21 17:10:14	instock	publish
+11	4	f	{"Color":"Black"}	760.00	950.00	760.00	55	[]	2025-07-21 17:10:14	2025-07-21 17:10:14	instock	publish
+12	5	t	{"Size":"S"}	699.00	699.00	\N	30	[]	2025-01-29 17:10:14	2025-01-29 17:10:14	instock	publish
+13	5	f	{"Size":"M"}	699.00	699.00	\N	45	[]	2025-01-29 17:10:14	2025-01-29 17:10:14	instock	publish
+14	5	f	{"Size":"L"}	699.00	699.00	\N	35	[]	2025-01-29 17:10:14	2025-01-29 17:10:14	instock	publish
+15	5	f	{"Size":"XL"}	699.00	699.00	\N	20	[]	2025-01-29 17:10:14	2025-01-29 17:10:14	instock	publish
+16	6	t	{"Size":"XS"}	674.10	749.00	674.10	25	[]	2024-12-05 17:10:14	2024-12-05 17:10:14	instock	publish
+17	6	f	{"Size":"S"}	674.10	749.00	674.10	40	[]	2024-12-05 17:10:14	2024-12-05 17:10:14	instock	publish
+18	6	f	{"Size":"M"}	674.10	749.00	674.10	50	[]	2024-12-05 17:10:14	2024-12-05 17:10:14	instock	publish
+19	6	f	{"Size":"L"}	674.10	749.00	674.10	30	[]	2024-12-05 17:10:14	2024-12-05 17:10:14	instock	publish
+20	7	t	{"Size":"S"}	615.00	820.00	615.00	22	[]	2024-11-17 17:10:14	2024-11-17 17:10:14	instock	publish
+21	7	f	{"Size":"M"}	615.00	820.00	615.00	38	[]	2024-11-17 17:10:14	2024-11-17 17:10:14	instock	publish
+22	7	f	{"Size":"L"}	615.00	820.00	615.00	28	[]	2024-11-17 17:10:14	2024-11-17 17:10:14	instock	publish
+23	8	t	{"Size":"S"}	450.00	450.00	\N	35	[]	2024-09-12 17:10:14	2024-09-12 17:10:14	instock	publish
+24	8	f	{"Size":"M"}	450.00	450.00	\N	50	[]	2024-09-12 17:10:14	2024-09-12 17:10:14	instock	publish
+25	8	f	{"Size":"L"}	450.00	450.00	\N	40	[]	2024-09-12 17:10:14	2024-09-12 17:10:14	instock	publish
+26	8	f	{"Size":"XL"}	450.00	450.00	\N	25	[]	2024-09-12 17:10:14	2024-09-12 17:10:14	instock	publish
+27	8	f	{"Size":"XXL"}	450.00	450.00	\N	15	[]	2024-09-12 17:10:14	2024-09-12 17:10:14	instock	publish
+28	9	t	{"Color":"White","Size":"M"}	520.00	520.00	\N	30	[]	2024-06-06 17:10:14	2024-06-06 17:10:14	instock	publish
+29	9	f	{"Color":"Blue","Size":"M"}	520.00	520.00	\N	28	[]	2024-06-06 17:10:14	2024-06-06 17:10:14	instock	publish
+30	9	f	{"Color":"White","Size":"L"}	520.00	520.00	\N	25	[]	2024-06-06 17:10:14	2024-06-06 17:10:14	instock	publish
+31	9	f	{"Color":"Blue","Size":"L"}	520.00	520.00	\N	22	[]	2024-06-06 17:10:14	2024-06-06 17:10:14	instock	publish
+32	10	t	{"Color":"Navy","Size":"S"}	323.00	380.00	323.00	40	[]	2024-06-03 17:10:14	2024-06-03 17:10:14	instock	publish
+33	10	f	{"Color":"Navy","Size":"M"}	323.00	380.00	323.00	55	[]	2024-06-03 17:10:14	2024-06-03 17:10:14	instock	publish
+34	10	f	{"Color":"Red","Size":"M"}	323.00	380.00	323.00	35	[]	2024-06-03 17:10:14	2024-06-03 17:10:14	instock	publish
+35	10	f	{"Color":"White","Size":"L"}	323.00	380.00	323.00	30	[]	2024-06-03 17:10:14	2024-06-03 17:10:14	instock	publish
+36	11	t	{"Color":"Black","Size":"S"}	1250.00	1250.00	\N	18	[]	2024-02-14 17:10:14	2024-02-14 17:10:14	instock	publish
+37	11	f	{"Color":"Black","Size":"M"}	1250.00	1250.00	\N	22	[]	2024-02-14 17:10:14	2024-02-14 17:10:14	instock	publish
+38	11	f	{"Color":"Black","Size":"L"}	1250.00	1250.00	\N	15	[]	2024-02-14 17:10:14	2024-02-14 17:10:14	instock	publish
+39	11	f	{"Color":"Camel","Size":"M"}	1250.00	1250.00	\N	12	[]	2024-02-14 17:10:14	2024-02-14 17:10:14	instock	publish
+40	12	t	{"Color":"Navy","Size":"M"}	1512.00	1890.00	1512.00	10	[]	2023-12-10 17:10:14	2023-12-10 17:10:14	instock	publish
+41	12	f	{"Color":"Navy","Size":"L"}	1512.00	1890.00	1512.00	12	[]	2023-12-10 17:10:14	2023-12-10 17:10:14	instock	publish
+42	12	f	{"Color":"Grey","Size":"M"}	1512.00	1890.00	1512.00	8	[]	2023-12-10 17:10:14	2023-12-10 17:10:14	instock	publish
+43	12	f	{"Color":"Grey","Size":"L"}	1512.00	1890.00	1512.00	9	[]	2023-12-10 17:10:14	2023-12-10 17:10:14	instock	publish
+44	13	t	{"Color":"White","Size":"40"}	1150.00	1150.00	\N	20	[]	2023-11-07 17:10:14	2023-11-07 17:10:14	instock	publish
+45	13	f	{"Color":"White","Size":"41"}	1150.00	1150.00	\N	30	[]	2023-11-07 17:10:14	2023-11-07 17:10:14	instock	publish
+46	13	f	{"Color":"White","Size":"42"}	1150.00	1150.00	\N	28	[]	2023-11-07 17:10:14	2023-11-07 17:10:14	instock	publish
+47	13	f	{"Color":"Black","Size":"41"}	1150.00	1150.00	\N	25	[]	2023-11-07 17:10:14	2023-11-07 17:10:14	instock	publish
+48	13	f	{"Color":"Black","Size":"42"}	1150.00	1150.00	\N	22	[]	2023-11-07 17:10:14	2023-11-07 17:10:14	instock	publish
+49	14	t	{"Color":"Black","Size":"37"}	1332.00	1480.00	1332.00	15	[]	2023-11-06 17:10:14	2023-11-06 17:10:14	instock	publish
+50	14	f	{"Color":"Black","Size":"38"}	1332.00	1480.00	1332.00	20	[]	2023-11-06 17:10:14	2023-11-06 17:10:14	instock	publish
+51	14	f	{"Color":"Black","Size":"39"}	1332.00	1480.00	1332.00	18	[]	2023-11-06 17:10:14	2023-11-06 17:10:14	instock	publish
+52	14	f	{"Color":"Brown","Size":"38"}	1332.00	1480.00	1332.00	12	[]	2023-11-06 17:10:14	2023-11-06 17:10:14	instock	publish
+53	15	t	{"Color":"Black","Size":"41"}	2100.00	2100.00	\N	10	[]	2023-08-07 17:10:14	2023-08-07 17:10:14	instock	publish
+54	15	f	{"Color":"Black","Size":"42"}	2100.00	2100.00	\N	12	[]	2023-08-07 17:10:14	2023-08-07 17:10:14	instock	publish
+55	15	f	{"Color":"Brown","Size":"41"}	2100.00	2100.00	\N	8	[]	2023-08-07 17:10:14	2023-08-07 17:10:14	instock	publish
+56	15	f	{"Color":"Brown","Size":"42"}	2100.00	2100.00	\N	10	[]	2023-08-07 17:10:14	2023-08-07 17:10:14	instock	publish
+57	16	t	{"Color":"White","Size":"S"}	280.00	280.00	\N	60	[]	2023-06-18 17:10:14	2023-06-18 17:10:14	instock	publish
+58	16	f	{"Color":"White","Size":"M"}	280.00	280.00	\N	80	[]	2023-06-18 17:10:14	2023-06-18 17:10:14	instock	publish
+59	16	f	{"Color":"Black","Size":"M"}	280.00	280.00	\N	75	[]	2023-06-18 17:10:14	2023-06-18 17:10:14	instock	publish
+60	16	f	{"Color":"Black","Size":"L"}	280.00	280.00	\N	65	[]	2023-06-18 17:10:14	2023-06-18 17:10:14	instock	publish
+61	16	f	{"Color":"Grey","Size":"L"}	280.00	280.00	\N	50	[]	2023-06-18 17:10:14	2023-06-18 17:10:14	instock	publish
+62	17	t	{"Color":"Sand","Size":"S"}	455.00	650.00	455.00	30	[]	2023-03-09 17:10:14	2023-03-09 17:10:14	instock	publish
+63	17	f	{"Color":"Sand","Size":"M"}	455.00	650.00	455.00	45	[]	2023-03-09 17:10:14	2023-03-09 17:10:14	instock	publish
+64	17	f	{"Color":"Black","Size":"M"}	455.00	650.00	455.00	50	[]	2023-03-09 17:10:14	2023-03-09 17:10:14	instock	publish
+65	17	f	{"Color":"Black","Size":"L"}	455.00	650.00	455.00	40	[]	2023-03-09 17:10:14	2023-03-09 17:10:14	instock	publish
+66	17	f	{"Color":"Grey","Size":"XL"}	455.00	650.00	455.00	25	[]	2023-03-09 17:10:14	2023-03-09 17:10:14	instock	publish
+67	18	t	{"Color":"Navy\\/White","Size":"S"}	320.00	320.00	\N	35	[]	2022-10-24 17:10:14	2022-10-24 17:10:14	instock	publish
+68	18	f	{"Color":"Navy\\/White","Size":"M"}	320.00	320.00	\N	50	[]	2022-10-24 17:10:14	2022-10-24 17:10:14	instock	publish
+69	18	f	{"Color":"Red\\/White","Size":"M"}	320.00	320.00	\N	40	[]	2022-10-24 17:10:14	2022-10-24 17:10:14	instock	publish
+70	18	f	{"Color":"Red\\/White","Size":"L"}	320.00	320.00	\N	30	[]	2022-10-24 17:10:14	2022-10-24 17:10:14	instock	publish
+71	19	t	{"Color":"Khaki","Size":"S"}	550.00	550.00	\N	30	[]	2022-10-07 17:10:14	2022-10-07 17:10:14	instock	publish
+72	19	f	{"Color":"Khaki","Size":"M"}	550.00	550.00	\N	45	[]	2022-10-07 17:10:14	2022-10-07 17:10:14	instock	publish
+73	19	f	{"Color":"Khaki","Size":"L"}	550.00	550.00	\N	35	[]	2022-10-07 17:10:14	2022-10-07 17:10:14	instock	publish
+74	19	f	{"Color":"Navy","Size":"M"}	550.00	550.00	\N	40	[]	2022-10-07 17:10:14	2022-10-07 17:10:14	instock	publish
+75	19	f	{"Color":"Navy","Size":"L"}	550.00	550.00	\N	30	[]	2022-10-07 17:10:14	2022-10-07 17:10:14	instock	publish
+76	20	t	{"Color":"Multi","Size":"XS"}	890.00	890.00	\N	20	[]	2022-08-23 17:10:14	2022-08-23 17:10:14	instock	publish
+77	20	f	{"Color":"Multi","Size":"S"}	890.00	890.00	\N	35	[]	2022-08-23 17:10:14	2022-08-23 17:10:14	instock	publish
+78	20	f	{"Color":"Multi","Size":"M"}	890.00	890.00	\N	40	[]	2022-08-23 17:10:14	2022-08-23 17:10:14	instock	publish
+79	20	f	{"Color":"Multi","Size":"L"}	890.00	890.00	\N	25	[]	2022-08-23 17:10:14	2022-08-23 17:10:14	instock	publish
+80	21	t	{"Color":"Black","Size":"XS"}	880.00	1100.00	880.00	15	[]	2022-05-22 17:10:14	2022-05-22 17:10:14	instock	publish
+81	21	f	{"Color":"Black","Size":"S"}	880.00	1100.00	880.00	22	[]	2022-05-22 17:10:14	2022-05-22 17:10:14	instock	publish
+82	21	f	{"Color":"Black","Size":"M"}	880.00	1100.00	880.00	28	[]	2022-05-22 17:10:14	2022-05-22 17:10:14	instock	publish
+83	21	f	{"Color":"Nude","Size":"S"}	880.00	1100.00	880.00	18	[]	2022-05-22 17:10:14	2022-05-22 17:10:14	instock	publish
+84	21	f	{"Color":"Nude","Size":"M"}	880.00	1100.00	880.00	20	[]	2022-05-22 17:10:14	2022-05-22 17:10:14	instock	publish
 \.
 
 
@@ -2554,28 +2704,28 @@ COPY public.product_variations (id, product_id, main_variation, attributes, pric
 -- Data for Name: products_data; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.products_data (id, name, slug, search_text, permalink, date_created, date_created_gmt, date_modified, date_modified_gmt, type, status, featured, catalog_visibility, description, discount_percentage, short_description, sku, date_on_sale_from, date_on_sale_from_gmt, date_on_sale_to, date_on_sale_to_gmt, on_sale, purchasable, total_sales, virtual, downloadable, downloads, download_limit, download_expiry, external_url, button_text, manage_stock, stock_quantity, backorders, backorders_allowed, backordered, low_stock_amount, sold_individually, dimensions, shipping_required, shipping_taxable, shipping_class, shipping_class_id, reviews_allowed, average_rating, rating_count, upsell_ids, cross_sell_ids, parent_id, purchase_note, categories, tags, images, attributes, default_attributes, variations, grouped_products, menu_order, related_ids, meta_data, stock_status, has_options, has_variations, global_unique_id, better_featured_image, is_purchased, "attributesData", is_wallet_product, _links, lang, min_price, brand_id, max_price, created_at, updated_at, minimum_order_qty, max_orders_per_person, product_type, vendor_id, translations, acceptance_status, unit, whatsapp) FROM stdin;
-1	Classic Leather Tote Bag	classic-leather-tote-bag	classic leather tote bag premium full-grain leather tote perfect for everyday use. spacious interior with magnetic closure.		2026-02-12 17:10:14		2026-02-12 17:10:14		variable	publish	f		Premium full-grain leather tote perfect for everyday use. Spacious interior with magnetic closure.	0	Premium full-grain leather tote perfect for everyday use. Spacious interior with magnetic closure.	\N	\N	\N	\N	\N	f	t	142	f	f	[]	0	0	\N		t	55		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":23}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1584917865442-de89df76afd3?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	12		approved		
-2	Mini Crossbody Bag	mini-crossbody-bag	mini crossbody bag compact crossbody bag with adjustable strap. fits your phone, keys, and essentials.		2025-12-18 17:10:14		2025-12-18 17:10:14		variable	publish	f		Compact crossbody bag with adjustable strap. Fits your phone, keys, and essentials.	15	Compact crossbody bag with adjustable strap. Fits your phone, keys, and essentials.	\N	\N	\N	\N	\N	t	t	98	f	f	[]	0	0	\N		t	95		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":23}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1548036328-c9fa89d128fa?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	12		approved		
-3	Quilted Chain Shoulder Bag	quilted-chain-shoulder-bag	quilted chain shoulder bag elegant quilted bag with gold-tone chain strap. a timeless piece for any outfit.		2025-08-16 17:10:14		2025-08-16 17:10:14		variable	publish	f		Elegant quilted bag with gold-tone chain strap. A timeless piece for any outfit.	0	Elegant quilted bag with gold-tone chain strap. A timeless piece for any outfit.	\N	\N	\N	\N	\N	f	t	67	f	f	[]	0	0	\N		t	25		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":23}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1591561954555-607968c989ab?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	12		approved		
-4	Canvas Backpack	canvas-backpack	canvas backpack durable canvas backpack with laptop sleeve and multiple pockets. perfect for work or travel.		2025-07-21 17:10:14		2025-07-21 17:10:14		variable	publish	f		Durable canvas backpack with laptop sleeve and multiple pockets. Perfect for work or travel.	20	Durable canvas backpack with laptop sleeve and multiple pockets. Perfect for work or travel.	\N	\N	\N	\N	\N	t	t	210	f	f	[]	0	0	\N		t	160		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":23}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1553062407-98eeb64c6a62?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	12		approved		
-5	Slim Fit Blue Denim Jeans	slim-fit-blue-denim-jeans	slim fit blue denim jeans classic slim-fit jeans in mid-wash blue denim. stretch fabric for all-day comfort.		2025-01-29 17:10:14		2025-01-29 17:10:14		variable	publish	f		Classic slim-fit jeans in mid-wash blue denim. Stretch fabric for all-day comfort.	0	Classic slim-fit jeans in mid-wash blue denim. Stretch fabric for all-day comfort.	\N	\N	\N	\N	\N	f	t	325	f	f	[]	0	0	\N		t	130		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":29}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1542272454315-4c01d7abdf4a?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	17		approved		
-6	Black Skinny Jeans	black-skinny-jeans	black skinny jeans sleek black skinny jeans with a high-rise waist. a wardrobe essential for every season.		2024-12-05 17:10:14		2024-12-05 17:10:14		variable	publish	f		Sleek black skinny jeans with a high-rise waist. A wardrobe essential for every season.	10	Sleek black skinny jeans with a high-rise waist. A wardrobe essential for every season.	\N	\N	\N	\N	\N	t	t	280	f	f	[]	0	0	\N		t	145		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":29}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1541099649105-f69ad21f3246?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	17		approved		
-7	Distressed Boyfriend Jeans	distressed-boyfriend-jeans	distressed boyfriend jeans relaxed boyfriend fit with authentic distressed detailing. effortlessly cool streetwear look.		2024-11-17 17:10:14		2024-11-17 17:10:14		variable	publish	f		Relaxed boyfriend fit with authentic distressed detailing. Effortlessly cool streetwear look.	25	Relaxed boyfriend fit with authentic distressed detailing. Effortlessly cool streetwear look.	\N	\N	\N	\N	\N	t	t	189	f	f	[]	0	0	\N		t	88		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":29}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1580651315530-69c8e0026377?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	17		approved		
-8	Classic White Oxford Shirt	classic-white-oxford-shirt	classic white oxford shirt crisp white oxford shirt crafted from 100% cotton. timeless style suitable for work or weekend.		2024-09-12 17:10:14		2024-09-12 17:10:14		variable	publish	f		Crisp white Oxford shirt crafted from 100% cotton. Timeless style suitable for work or weekend.	0	Crisp white Oxford shirt crafted from 100% cotton. Timeless style suitable for work or weekend.	\N	\N	\N	\N	\N	f	t	175	f	f	[]	0	0	\N		t	165		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":19}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1598033129183-c4f50c736f10?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	10		approved		
-9	Linen Casual Shirt	linen-casual-shirt	linen casual shirt breathable linen shirt perfect for warm weather. relaxed fit with a button-down collar.		2024-06-06 17:10:14		2024-06-06 17:10:14		variable	publish	f		Breathable linen shirt perfect for warm weather. Relaxed fit with a button-down collar.	0	Breathable linen shirt perfect for warm weather. Relaxed fit with a button-down collar.	\N	\N	\N	\N	\N	f	t	134	f	f	[]	0	0	\N		t	105		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":19}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1607962837359-5e7e89f86776?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	10		approved		
-10	Polo Shirt	polo-shirt	polo shirt classic piqué polo shirt with ribbed collar and cuffs. available in vibrant colors.		2024-06-03 17:10:14		2024-06-03 17:10:14		variable	publish	f		Classic piqué polo shirt with ribbed collar and cuffs. Available in vibrant colors.	15	Classic piqué polo shirt with ribbed collar and cuffs. Available in vibrant colors.	\N	\N	\N	\N	\N	t	t	201	f	f	[]	0	0	\N		t	160		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":19}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1586363104862-3a5e2ab60d99?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	10		approved		
-11	Women's Tailored Blazer	womens-tailored-blazer	women's tailored blazer sharp tailored blazer with a modern slim fit. perfect for the office or a night out.		2024-02-14 17:10:14		2024-02-14 17:10:14		variable	publish	f		Sharp tailored blazer with a modern slim fit. Perfect for the office or a night out.	0	Sharp tailored blazer with a modern slim fit. Perfect for the office or a night out.	\N	\N	\N	\N	\N	f	t	88	f	f	[]	0	0	\N		t	67		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":25}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1594938298603-c8148c4dae35?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	16		approved		
-12	Men's Double-Breasted Blazer	mens-double-breasted-blazer	men's double-breasted blazer sophisticated double-breasted blazer in premium wool blend. a statement piece for any wardrobe.		2023-12-10 17:10:14		2023-12-10 17:10:14		variable	publish	f		Sophisticated double-breasted blazer in premium wool blend. A statement piece for any wardrobe.	20	Sophisticated double-breasted blazer in premium wool blend. A statement piece for any wardrobe.	\N	\N	\N	\N	\N	t	t	55	f	f	[]	0	0	\N		t	39		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":25}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1507003211169-0a1dd7228f2d?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	16		approved		
-13	Men's Classic Sneakers	mens-classic-sneakers	men's classic sneakers iconic low-top leather sneakers with cushioned sole. goes with anything, from jeans to chinos.		2023-11-07 17:10:14		2023-11-07 17:10:14		variable	publish	f		Iconic low-top leather sneakers with cushioned sole. Goes with anything, from jeans to chinos.	0	Iconic low-top leather sneakers with cushioned sole. Goes with anything, from jeans to chinos.	\N	\N	\N	\N	\N	f	t	412	f	f	[]	0	0	\N		t	125		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":28}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1542291026-7eec264c27ff?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	13		approved		
-14	Women's Ankle Boots	womens-ankle-boots	women's ankle boots sleek leather ankle boots with a block heel. versatile enough for day or night wear.		2023-11-06 17:10:14		2023-11-06 17:10:14		variable	publish	f		Sleek leather ankle boots with a block heel. Versatile enough for day or night wear.	10	Sleek leather ankle boots with a block heel. Versatile enough for day or night wear.	\N	\N	\N	\N	\N	t	t	167	f	f	[]	0	0	\N		t	65		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":28}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1543163521-1bf539c55dd2?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	13		approved		
-15	Formal Oxford Shoes	formal-oxford-shoes	formal oxford shoes hand-crafted leather oxford shoes with goodyear welt construction. built to last a lifetime.		2023-08-07 17:10:14		2023-08-07 17:10:14		variable	publish	f		Hand-crafted leather Oxford shoes with Goodyear welt construction. Built to last a lifetime.	0	Hand-crafted leather Oxford shoes with Goodyear welt construction. Built to last a lifetime.	\N	\N	\N	\N	\N	f	t	93	f	f	[]	0	0	\N		t	40		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":28}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1533867617858-e7b97e060509?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	13		approved		
-16	Graphic Print T-Shirt	graphic-print-tshirt	graphic print t-shirt bold graphic tee printed on 100% organic cotton. express your style with attitude.		2023-06-18 17:10:14		2023-06-18 17:10:14		variable	publish	f		Bold graphic tee printed on 100% organic cotton. Express your style with attitude.	0	Bold graphic tee printed on 100% organic cotton. Express your style with attitude.	\N	\N	\N	\N	\N	f	t	398	f	f	[]	0	0	\N		t	330		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":21}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1521572163474-6864f9cf17ab?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	14		approved		
-17	Oversized Hoodie	oversized-hoodie	oversized hoodie super-soft heavyweight fleece hoodie with a relaxed oversized fit. cozy all day long.		2023-03-09 17:10:14		2023-03-09 17:10:14		variable	publish	f		Super-soft heavyweight fleece hoodie with a relaxed oversized fit. Cozy all day long.	30	Super-soft heavyweight fleece hoodie with a relaxed oversized fit. Cozy all day long.	\N	\N	\N	\N	\N	t	t	244	f	f	[]	0	0	\N		t	190		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":21}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1556821840-3a63f15732ce?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	14		approved		
-18	Striped Long-Sleeve Tee	striped-long-sleeve-tee	striped long-sleeve tee classic breton stripes on a breathable long-sleeve tee. a french-inspired everyday essential.		2022-10-24 17:10:14		2022-10-24 17:10:14		variable	publish	f		Classic Breton stripes on a breathable long-sleeve tee. A French-inspired everyday essential.	0	Classic Breton stripes on a breathable long-sleeve tee. A French-inspired everyday essential.	\N	\N	\N	\N	\N	f	t	156	f	f	[]	0	0	\N		t	155		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":21}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1581655353564-df123a1eb820?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	14		approved		
-19	Slim-Fit Chino Trousers	slim-fit-chino-trousers	slim-fit chino trousers smart-casual chinos in stretch cotton twill. office-ready yet weekend-worthy.		2022-10-07 17:10:14		2022-10-07 17:10:14		variable	publish	f		Smart-casual chinos in stretch cotton twill. Office-ready yet weekend-worthy.	0	Smart-casual chinos in stretch cotton twill. Office-ready yet weekend-worthy.	\N	\N	\N	\N	\N	f	t	188	f	f	[]	0	0	\N		t	180		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":30}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1552902865-b72c031ac5ea?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	17		approved		
-20	Floral Wrap Dress	floral-wrap-dress	floral wrap dress feminine wrap dress in a vibrant floral print. v-neckline and adjustable tie waist for a flattering fit.		2022-08-23 17:10:14		2022-08-23 17:10:14		variable	publish	f		Feminine wrap dress in a vibrant floral print. V-neckline and adjustable tie waist for a flattering fit.	0	Feminine wrap dress in a vibrant floral print. V-neckline and adjustable tie waist for a flattering fit.	\N	\N	\N	\N	\N	f	t	223	f	f	[]	0	0	\N		t	120		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":26}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1595777457583-95e059d581b8?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	16		approved		
-21	Midi Slip Dress	midi-slip-dress	midi slip dress satin midi slip dress with thin adjustable straps. effortlessly elegant for any occasion.		2022-05-22 17:10:14		2022-05-22 17:10:14		variable	publish	f		Satin midi slip dress with thin adjustable straps. Effortlessly elegant for any occasion.	20	Satin midi slip dress with thin adjustable straps. Effortlessly elegant for any occasion.	\N	\N	\N	\N	\N	t	t	145	f	f	[]	0	0	\N		t	103		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":26}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1614170153058-7a8e04b58f76?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	16		approved		
+COPY public.products_data (id, name, slug, search_text, permalink, date_created, date_created_gmt, date_modified, date_modified_gmt, type, status, featured, catalog_visibility, description, discount_percentage, short_description, sku, date_on_sale_from, date_on_sale_from_gmt, date_on_sale_to, date_on_sale_to_gmt, on_sale, purchasable, total_sales, virtual, downloadable, downloads, download_limit, download_expiry, external_url, button_text, manage_stock, stock_quantity, backorders, backorders_allowed, backordered, low_stock_amount, sold_individually, dimensions, shipping_required, shipping_taxable, shipping_class, shipping_class_id, reviews_allowed, average_rating, rating_count, upsell_ids, cross_sell_ids, parent_id, purchase_note, categories, tags, images, attributes, default_attributes, variations, grouped_products, menu_order, related_ids, meta_data, stock_status, has_options, has_variations, global_unique_id, better_featured_image, is_purchased, "attributesData", is_wallet_product, _links, lang, min_price, brand_id, max_price, created_at, updated_at, minimum_order_qty, max_orders_per_person, product_type, vendor_id, translations, acceptance_status, unit, whatsapp, button_mode) FROM stdin;
+1	Classic Leather Tote Bag	classic-leather-tote-bag	classic leather tote bag premium full-grain leather tote perfect for everyday use. spacious interior with magnetic closure.		2026-02-12 17:10:14		2026-02-12 17:10:14		variable	publish	f		Premium full-grain leather tote perfect for everyday use. Spacious interior with magnetic closure.	0	Premium full-grain leather tote perfect for everyday use. Spacious interior with magnetic closure.	\N	\N	\N	\N	\N	f	t	142	f	f	[]	0	0	\N		t	55		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":23}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1584917865442-de89df76afd3?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	12		approved			both
+2	Mini Crossbody Bag	mini-crossbody-bag	mini crossbody bag compact crossbody bag with adjustable strap. fits your phone, keys, and essentials.		2025-12-18 17:10:14		2025-12-18 17:10:14		variable	publish	f		Compact crossbody bag with adjustable strap. Fits your phone, keys, and essentials.	15	Compact crossbody bag with adjustable strap. Fits your phone, keys, and essentials.	\N	\N	\N	\N	\N	t	t	98	f	f	[]	0	0	\N		t	95		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":23}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1548036328-c9fa89d128fa?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	12		approved			both
+3	Quilted Chain Shoulder Bag	quilted-chain-shoulder-bag	quilted chain shoulder bag elegant quilted bag with gold-tone chain strap. a timeless piece for any outfit.		2025-08-16 17:10:14		2025-08-16 17:10:14		variable	publish	f		Elegant quilted bag with gold-tone chain strap. A timeless piece for any outfit.	0	Elegant quilted bag with gold-tone chain strap. A timeless piece for any outfit.	\N	\N	\N	\N	\N	f	t	67	f	f	[]	0	0	\N		t	25		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":23}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1591561954555-607968c989ab?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	12		approved			both
+4	Canvas Backpack	canvas-backpack	canvas backpack durable canvas backpack with laptop sleeve and multiple pockets. perfect for work or travel.		2025-07-21 17:10:14		2025-07-21 17:10:14		variable	publish	f		Durable canvas backpack with laptop sleeve and multiple pockets. Perfect for work or travel.	20	Durable canvas backpack with laptop sleeve and multiple pockets. Perfect for work or travel.	\N	\N	\N	\N	\N	t	t	210	f	f	[]	0	0	\N		t	160		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":23}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1553062407-98eeb64c6a62?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	12		approved			both
+5	Slim Fit Blue Denim Jeans	slim-fit-blue-denim-jeans	slim fit blue denim jeans classic slim-fit jeans in mid-wash blue denim. stretch fabric for all-day comfort.		2025-01-29 17:10:14		2025-01-29 17:10:14		variable	publish	f		Classic slim-fit jeans in mid-wash blue denim. Stretch fabric for all-day comfort.	0	Classic slim-fit jeans in mid-wash blue denim. Stretch fabric for all-day comfort.	\N	\N	\N	\N	\N	f	t	325	f	f	[]	0	0	\N		t	130		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":29}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1542272454315-4c01d7abdf4a?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	17		approved			both
+6	Black Skinny Jeans	black-skinny-jeans	black skinny jeans sleek black skinny jeans with a high-rise waist. a wardrobe essential for every season.		2024-12-05 17:10:14		2024-12-05 17:10:14		variable	publish	f		Sleek black skinny jeans with a high-rise waist. A wardrobe essential for every season.	10	Sleek black skinny jeans with a high-rise waist. A wardrobe essential for every season.	\N	\N	\N	\N	\N	t	t	280	f	f	[]	0	0	\N		t	145		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":29}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1541099649105-f69ad21f3246?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	17		approved			both
+7	Distressed Boyfriend Jeans	distressed-boyfriend-jeans	distressed boyfriend jeans relaxed boyfriend fit with authentic distressed detailing. effortlessly cool streetwear look.		2024-11-17 17:10:14		2024-11-17 17:10:14		variable	publish	f		Relaxed boyfriend fit with authentic distressed detailing. Effortlessly cool streetwear look.	25	Relaxed boyfriend fit with authentic distressed detailing. Effortlessly cool streetwear look.	\N	\N	\N	\N	\N	t	t	189	f	f	[]	0	0	\N		t	88		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":29}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1580651315530-69c8e0026377?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	17		approved			both
+8	Classic White Oxford Shirt	classic-white-oxford-shirt	classic white oxford shirt crisp white oxford shirt crafted from 100% cotton. timeless style suitable for work or weekend.		2024-09-12 17:10:14		2024-09-12 17:10:14		variable	publish	f		Crisp white Oxford shirt crafted from 100% cotton. Timeless style suitable for work or weekend.	0	Crisp white Oxford shirt crafted from 100% cotton. Timeless style suitable for work or weekend.	\N	\N	\N	\N	\N	f	t	175	f	f	[]	0	0	\N		t	165		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":19}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1598033129183-c4f50c736f10?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	10		approved			both
+9	Linen Casual Shirt	linen-casual-shirt	linen casual shirt breathable linen shirt perfect for warm weather. relaxed fit with a button-down collar.		2024-06-06 17:10:14		2024-06-06 17:10:14		variable	publish	f		Breathable linen shirt perfect for warm weather. Relaxed fit with a button-down collar.	0	Breathable linen shirt perfect for warm weather. Relaxed fit with a button-down collar.	\N	\N	\N	\N	\N	f	t	134	f	f	[]	0	0	\N		t	105		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":19}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1607962837359-5e7e89f86776?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	10		approved			both
+10	Polo Shirt	polo-shirt	polo shirt classic piqué polo shirt with ribbed collar and cuffs. available in vibrant colors.		2024-06-03 17:10:14		2024-06-03 17:10:14		variable	publish	f		Classic piqué polo shirt with ribbed collar and cuffs. Available in vibrant colors.	15	Classic piqué polo shirt with ribbed collar and cuffs. Available in vibrant colors.	\N	\N	\N	\N	\N	t	t	201	f	f	[]	0	0	\N		t	160		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":19}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1586363104862-3a5e2ab60d99?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	10		approved			both
+11	Women's Tailored Blazer	womens-tailored-blazer	women's tailored blazer sharp tailored blazer with a modern slim fit. perfect for the office or a night out.		2024-02-14 17:10:14		2024-02-14 17:10:14		variable	publish	f		Sharp tailored blazer with a modern slim fit. Perfect for the office or a night out.	0	Sharp tailored blazer with a modern slim fit. Perfect for the office or a night out.	\N	\N	\N	\N	\N	f	t	88	f	f	[]	0	0	\N		t	67		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":25}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1594938298603-c8148c4dae35?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	16		approved			both
+12	Men's Double-Breasted Blazer	mens-double-breasted-blazer	men's double-breasted blazer sophisticated double-breasted blazer in premium wool blend. a statement piece for any wardrobe.		2023-12-10 17:10:14		2023-12-10 17:10:14		variable	publish	f		Sophisticated double-breasted blazer in premium wool blend. A statement piece for any wardrobe.	20	Sophisticated double-breasted blazer in premium wool blend. A statement piece for any wardrobe.	\N	\N	\N	\N	\N	t	t	55	f	f	[]	0	0	\N		t	39		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":25}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1507003211169-0a1dd7228f2d?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	16		approved			both
+13	Men's Classic Sneakers	mens-classic-sneakers	men's classic sneakers iconic low-top leather sneakers with cushioned sole. goes with anything, from jeans to chinos.		2023-11-07 17:10:14		2023-11-07 17:10:14		variable	publish	f		Iconic low-top leather sneakers with cushioned sole. Goes with anything, from jeans to chinos.	0	Iconic low-top leather sneakers with cushioned sole. Goes with anything, from jeans to chinos.	\N	\N	\N	\N	\N	f	t	412	f	f	[]	0	0	\N		t	125		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":28}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1542291026-7eec264c27ff?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	13		approved			both
+14	Women's Ankle Boots	womens-ankle-boots	women's ankle boots sleek leather ankle boots with a block heel. versatile enough for day or night wear.		2023-11-06 17:10:14		2023-11-06 17:10:14		variable	publish	f		Sleek leather ankle boots with a block heel. Versatile enough for day or night wear.	10	Sleek leather ankle boots with a block heel. Versatile enough for day or night wear.	\N	\N	\N	\N	\N	t	t	167	f	f	[]	0	0	\N		t	65		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":28}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1543163521-1bf539c55dd2?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	13		approved			both
+15	Formal Oxford Shoes	formal-oxford-shoes	formal oxford shoes hand-crafted leather oxford shoes with goodyear welt construction. built to last a lifetime.		2023-08-07 17:10:14		2023-08-07 17:10:14		variable	publish	f		Hand-crafted leather Oxford shoes with Goodyear welt construction. Built to last a lifetime.	0	Hand-crafted leather Oxford shoes with Goodyear welt construction. Built to last a lifetime.	\N	\N	\N	\N	\N	f	t	93	f	f	[]	0	0	\N		t	40		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":28}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1533867617858-e7b97e060509?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	13		approved			both
+16	Graphic Print T-Shirt	graphic-print-tshirt	graphic print t-shirt bold graphic tee printed on 100% organic cotton. express your style with attitude.		2023-06-18 17:10:14		2023-06-18 17:10:14		variable	publish	f		Bold graphic tee printed on 100% organic cotton. Express your style with attitude.	0	Bold graphic tee printed on 100% organic cotton. Express your style with attitude.	\N	\N	\N	\N	\N	f	t	398	f	f	[]	0	0	\N		t	330		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":21}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1521572163474-6864f9cf17ab?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	14		approved			both
+17	Oversized Hoodie	oversized-hoodie	oversized hoodie super-soft heavyweight fleece hoodie with a relaxed oversized fit. cozy all day long.		2023-03-09 17:10:14		2023-03-09 17:10:14		variable	publish	f		Super-soft heavyweight fleece hoodie with a relaxed oversized fit. Cozy all day long.	30	Super-soft heavyweight fleece hoodie with a relaxed oversized fit. Cozy all day long.	\N	\N	\N	\N	\N	t	t	244	f	f	[]	0	0	\N		t	190		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":21}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1556821840-3a63f15732ce?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	14		approved			both
+18	Striped Long-Sleeve Tee	striped-long-sleeve-tee	striped long-sleeve tee classic breton stripes on a breathable long-sleeve tee. a french-inspired everyday essential.		2022-10-24 17:10:14		2022-10-24 17:10:14		variable	publish	f		Classic Breton stripes on a breathable long-sleeve tee. A French-inspired everyday essential.	0	Classic Breton stripes on a breathable long-sleeve tee. A French-inspired everyday essential.	\N	\N	\N	\N	\N	f	t	156	f	f	[]	0	0	\N		t	155		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":21}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1581655353564-df123a1eb820?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	14		approved			both
+19	Slim-Fit Chino Trousers	slim-fit-chino-trousers	slim-fit chino trousers smart-casual chinos in stretch cotton twill. office-ready yet weekend-worthy.		2022-10-07 17:10:14		2022-10-07 17:10:14		variable	publish	f		Smart-casual chinos in stretch cotton twill. Office-ready yet weekend-worthy.	0	Smart-casual chinos in stretch cotton twill. Office-ready yet weekend-worthy.	\N	\N	\N	\N	\N	f	t	188	f	f	[]	0	0	\N		t	180		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":30}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1552902865-b72c031ac5ea?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	17		approved			both
+20	Floral Wrap Dress	floral-wrap-dress	floral wrap dress feminine wrap dress in a vibrant floral print. v-neckline and adjustable tie waist for a flattering fit.		2022-08-23 17:10:14		2022-08-23 17:10:14		variable	publish	f		Feminine wrap dress in a vibrant floral print. V-neckline and adjustable tie waist for a flattering fit.	0	Feminine wrap dress in a vibrant floral print. V-neckline and adjustable tie waist for a flattering fit.	\N	\N	\N	\N	\N	f	t	223	f	f	[]	0	0	\N		t	120		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":26}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1595777457583-95e059d581b8?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	16		approved			both
+21	Midi Slip Dress	midi-slip-dress	midi slip dress satin midi slip dress with thin adjustable straps. effortlessly elegant for any occasion.		2022-05-22 17:10:14		2022-05-22 17:10:14		variable	publish	f		Satin midi slip dress with thin adjustable straps. Effortlessly elegant for any occasion.	20	Satin midi slip dress with thin adjustable straps. Effortlessly elegant for any occasion.	\N	\N	\N	\N	\N	t	t	145	f	f	[]	0	0	\N		t	103		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":26}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1614170153058-7a8e04b58f76?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	16		approved			both
 \.
 
 
@@ -2583,7 +2733,7 @@ COPY public.products_data (id, name, slug, search_text, permalink, date_created,
 -- Data for Name: products_data_main; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.products_data_main (id, name, slug, permalink, date_created, date_created_gmt, date_modified, date_modified_gmt, type, status, featured, catalog_visibility, description, discount, short_description, sku, price, regular_price, sale_price, date_on_sale_from, date_on_sale_from_gmt, date_on_sale_to, date_on_sale_to_gmt, on_sale, purchasable, total_sales, virtual, downloadable, downloads, download_limit, download_expiry, external_url, button_text, manage_stock, stock_quantity, backorders, backorders_allowed, backordered, low_stock_amount, sold_individually, dimensions, shipping_required, shipping_taxable, shipping_class, shipping_class_id, reviews_allowed, average_rating, rating_count, upsell_ids, cross_sell_ids, parent_id, purchase_note, categories, tags, images, attributes, default_attributes, variations, grouped_products, menu_order, price_html, related_ids, meta_data, stock_status, has_options, post_password, global_unique_id, better_featured_image, is_purchased, "attributesData", is_wallet_product, _links, lang, min_price, brand_id, max_price, created_at, updated_at, minimum_order_qty, max_orders_per_person, product_type, vendor_id, translations, acceptance_status, unit) FROM stdin;
+COPY public.products_data_main (id, name, slug, permalink, date_created, date_created_gmt, date_modified, date_modified_gmt, type, status, featured, catalog_visibility, description, discount, short_description, sku, price, regular_price, sale_price, date_on_sale_from, date_on_sale_from_gmt, date_on_sale_to, date_on_sale_to_gmt, on_sale, purchasable, total_sales, virtual, downloadable, downloads, download_limit, download_expiry, external_url, button_text, manage_stock, stock_quantity, backorders, backorders_allowed, backordered, low_stock_amount, sold_individually, dimensions, shipping_required, shipping_taxable, shipping_class, shipping_class_id, reviews_allowed, average_rating, rating_count, upsell_ids, cross_sell_ids, parent_id, purchase_note, categories, tags, images, attributes, default_attributes, variations, grouped_products, menu_order, price_html, related_ids, meta_data, stock_status, has_options, post_password, global_unique_id, better_featured_image, is_purchased, "attributesData", is_wallet_product, _links, lang, min_price, brand_id, max_price, created_at, updated_at, minimum_order_qty, max_orders_per_person, product_type, vendor_id, translations, acceptance_status, unit, button_mode) FROM stdin;
 \.
 
 
@@ -2640,7 +2790,7 @@ COPY public.user_notes (id, user_id, date_created, note, customer_note, created_
 --
 
 COPY public.users (id, name, email, email_verified_at, password, remember_token, created_at, updated_at, user_login, username, user_nicename, display_name, first_name, last_name, url, avatar, phone, role, nicename, registered, firstname, lastname, description, capabilities, shipping, registration_method, is_phone_verified, is_blocked, provider, provider_id) FROM stdin;
-1	Admin	adminramoui@gmail.com	\N	$2y$12$IoSnZPF4/2zQ9lVavUstge6X8OUqEWEbP14c0ae4fcf1p64rNCcUO	\N	2026-05-06 17:10:02	2026-05-06 17:10:02	\N	\N	\N	\N	\N	\N	\N	\N		admin								\N	f	f	\N	\N
+1	Admin	adminramoui@gmail.com	2026-08-08 03:57:49	$2y$12$IoSnZPF4/2zQ9lVavUstge6X8OUqEWEbP14c0ae4fcf1p64rNCcUO	\N	2026-05-06 17:10:02	2026-08-08 04:06:23	\N	\N	\N	\N	Sara	Ehab	\N	\N	7865876587	["admin"]							{"first_name":"Sara","last_name":"Ehab","address":"Al Kufur","address_note":null,"city":"Al Kufur","state":"Minya","email":"adminramoui@gmail.com","phone":"7865876587","latitude":"28.445440824393827","longitude":"30.805906818883177"}	\N	f	f	\N	\N
 \.
 
 
@@ -2689,7 +2839,7 @@ SELECT pg_catalog.setval('public.app_config_id_seq', 1, false);
 -- Name: app_configs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.app_configs_id_seq', 2, true);
+SELECT pg_catalog.setval('public.app_configs_id_seq', 3, true);
 
 
 --
@@ -2717,7 +2867,7 @@ SELECT pg_catalog.setval('public.brands_id_seq', 1, false);
 -- Name: cart_items_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.cart_items_id_seq', 1, false);
+SELECT pg_catalog.setval('public.cart_items_id_seq', 2, true);
 
 
 --
@@ -2777,6 +2927,13 @@ SELECT pg_catalog.setval('public.getposttest_id_seq', 1, false);
 
 
 --
+-- Name: idempotency_keys_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.idempotency_keys_id_seq', 1, false);
+
+
+--
 -- Name: koto_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -2815,7 +2972,7 @@ SELECT pg_catalog.setval('public.links_logs_two_id_seq', 1, false);
 -- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.migrations_id_seq', 13, true);
+SELECT pg_catalog.setval('public.migrations_id_seq', 17, true);
 
 
 --
@@ -2829,14 +2986,14 @@ SELECT pg_catalog.setval('public.order_messages_id_seq', 1, false);
 -- Name: order_sub_orders_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.order_sub_orders_id_seq', 1, false);
+SELECT pg_catalog.setval('public.order_sub_orders_id_seq', 2, true);
 
 
 --
 -- Name: orders_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.orders_id_seq', 1, false);
+SELECT pg_catalog.setval('public.orders_id_seq', 2, true);
 
 
 --
@@ -2844,6 +3001,13 @@ SELECT pg_catalog.setval('public.orders_id_seq', 1, false);
 --
 
 SELECT pg_catalog.setval('public.otp_verifications_id_seq', 1, false);
+
+
+--
+-- Name: payment_receipts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.payment_receipts_id_seq', 6, true);
 
 
 --
@@ -3081,6 +3245,22 @@ ALTER TABLE ONLY public.getposttest
 
 
 --
+-- Name: idempotency_keys idempotency_keys_key_user_id_unique; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.idempotency_keys
+    ADD CONSTRAINT idempotency_keys_key_user_id_unique UNIQUE (key, user_id);
+
+
+--
+-- Name: idempotency_keys idempotency_keys_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.idempotency_keys
+    ADD CONSTRAINT idempotency_keys_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: koto koto_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -3166,6 +3346,14 @@ ALTER TABLE ONLY public.otp_verifications
 
 ALTER TABLE ONLY public.password_reset_tokens
     ADD CONSTRAINT password_reset_tokens_pkey PRIMARY KEY (email);
+
+
+--
+-- Name: payment_receipts payment_receipts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.payment_receipts
+    ADD CONSTRAINT payment_receipts_pkey PRIMARY KEY (id);
 
 
 --
@@ -3313,10 +3501,24 @@ ALTER TABLE ONLY public.wishlists
 
 
 --
+-- Name: idempotency_keys_created_at_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idempotency_keys_created_at_index ON public.idempotency_keys USING btree (created_at);
+
+
+--
 -- Name: otp_verifications_phone_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX otp_verifications_phone_index ON public.otp_verifications USING btree (phone);
+
+
+--
+-- Name: payment_receipts_order_id_status_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX payment_receipts_order_id_status_index ON public.payment_receipts USING btree (order_id, status);
 
 
 --
@@ -3344,5 +3546,5 @@ REVOKE USAGE ON SCHEMA public FROM PUBLIC;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict F2UtdlyqyrEYlyXc8xzcubQfamenOFpb3zJQmGUTx2aaMNthDMMwWO5BuTdGII8
+\unrestrict A0nWb1jxDLkCt1fx8isuRCTJbHxg38EisQS03piY7ecOdTje0HNCaN4CQAGtk5l
 
