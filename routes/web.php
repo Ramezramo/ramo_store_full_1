@@ -19,6 +19,9 @@ use App\Http\Controllers\Web\RefundRequestController;
 use App\Http\Controllers\Web\VendorRefundController;
 use App\Http\Controllers\Web\OtpAuthController;
 use App\Http\Controllers\Web\GoogleAuthController;
+use App\Http\Controllers\Web\PaymentReceiptController;
+use App\Http\Controllers\Web\PaymentReviewController;
+use App\Http\Controllers\Admin\PaymentMethodsController;
 
 Route::get('/', [WebController::class, 'home'])->name('home');
 Route::get('/shop', [WebController::class, 'shop'])->name('shop');
@@ -60,6 +63,7 @@ Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']
 use App\Http\Controllers\Web\GuestOrderController;
 Route::get('/my-order', [GuestOrderController::class, 'index'])->name('guest.order');
 Route::post('/my-order', [GuestOrderController::class, 'lookup'])->name('guest.order.lookup');
+Route::post('/my-order/{id}/payment-receipt', [PaymentReceiptController::class, 'uploadForGuest'])->name('guest.order.payment-receipt');
 
 use App\Http\Controllers\Web\EmailVerificationController;
 Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->name('email.verify.notice');
@@ -77,6 +81,7 @@ Route::middleware('auth')->prefix('account')->group(function () {
     Route::get('/orders', [AccountController::class, 'orders'])->name('account.orders');
     Route::get('/orders/{id}', [AccountController::class, 'orderDetail'])->name('account.order');
     Route::post('/orders/{id}/messages', [OrderMessageController::class, 'store'])->name('account.order.messages.store');
+    Route::post('/orders/{id}/payment-receipt', [PaymentReceiptController::class, 'uploadForAccount'])->name('account.order.payment-receipt');
     Route::get('/reviews', [AccountController::class, 'reviews'])->name('account.reviews');
     Route::get('/refunds', [RefundRequestController::class, 'index'])->name('account.refunds');
     Route::get('/refunds/create', [RefundRequestController::class, 'create'])->name('account.refunds.create');
@@ -110,6 +115,7 @@ Route::middleware('vendor.web.auth')->group(function () {
     Route::get('/seller/orders/{id}', [VendorOrderController::class, 'show'])->name('vendor.orders.show');
     Route::post('/seller/orders/{id}/status', [VendorOrderController::class, 'updateStatus'])->name('vendor.orders.status');
     Route::post('/seller/orders/{id}/reply', [VendorOrderController::class, 'reply'])->name('vendor.orders.reply');
+    Route::post('/seller/orders/{id}/payment-review', [PaymentReviewController::class, 'reviewAsVendor'])->name('vendor.orders.payment-review');
     Route::get('/seller/refunds', [VendorRefundController::class, 'index'])->name('vendor.refunds');
     Route::get('/seller/refunds/{id}', [VendorRefundController::class, 'show'])->name('vendor.refunds.show');
     Route::get('/seller/products', [VendorProductController::class, 'index'])->name('vendor.products');
@@ -183,6 +189,9 @@ Route::prefix('admin')->middleware(['auth', 'admin.auth'])->group(function () {
     Route::put('/auth-settings', [AuthSettingsController::class, 'update'])->name('admin.auth-settings.update');
     Route::get('/shipping-settings', [ShippingSettingsController::class, 'index'])->name('admin.shipping-settings');
     Route::put('/shipping-settings', [ShippingSettingsController::class, 'update'])->name('admin.shipping-settings.update');
+    Route::get('/payment-methods', [PaymentMethodsController::class, 'index'])->name('admin.payment-methods');
+    Route::put('/payment-methods', [PaymentMethodsController::class, 'update'])->name('admin.payment-methods.update');
+    Route::post('/orders/{id}/payment-review', [PaymentReviewController::class, 'reviewAsAdmin'])->name('admin.orders.payment-review');
     Route::get('/category-brand-requests', [AdminCategoryBrandController::class, 'index'])->name('admin.cbr');
     Route::patch('/category-brand-requests/{id}/approve', [AdminCategoryBrandController::class, 'approve'])->name('admin.cbr.approve');
     Route::patch('/category-brand-requests/{id}/reject', [AdminCategoryBrandController::class, 'reject'])->name('admin.cbr.reject');

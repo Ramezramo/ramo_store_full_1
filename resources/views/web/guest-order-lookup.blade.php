@@ -171,6 +171,12 @@
               <span>Payment</span>
               <span>{{ $order->payment_method_title ?? ucfirst($order->payment_method ?? 'N/A') }}</span>
             </div>
+            @if(in_array($order->payment_method ?? '', ['manual_wallet', 'manual_instapay']))
+              <div class="or-summary-row" style="font-size:12px;color:#9a3412">
+                <span>Payment status</span>
+                <strong>{{ ucwords(str_replace('_', ' ', $order->payment_status ?? 'pending_payment')) }}</strong>
+              </div>
+            @endif
           </div>
         </div>
 
@@ -194,6 +200,32 @@
           <div class="or-section-title">Your Note</div>
           <div class="or-note">{{ $order->customer_note }}</div>
         </div>
+        @endif
+
+        @if(in_array($order->payment_method ?? '', ['manual_wallet', 'manual_instapay']) && ($order->payment_status ?? '') !== 'confirmed')
+          @php
+            $guestPaymentConfig = \App\Helpers\PaymentConfig::enabledMethods();
+            $guestPaymentMethod = $guestPaymentConfig[$order->payment_method] ?? null;
+          @endphp
+          @if($guestPaymentMethod)
+          <div class="or-section" style="background:#fffaf5">
+            <div class="or-section-title" style="color:#9a3412">Upload payment receipt</div>
+            <p style="font-size:13px;color:#555;line-height:1.6;margin-bottom:10px">
+              Transfer <strong>{{ number_format($order->final_total, 2) }} EGP</strong> to <strong>{{ $guestPaymentMethod['destination'] }}</strong>, then upload the receipt below.
+            </p>
+            @if(!empty($guestPaymentMethod['link']))
+              <a href="{{ $guestPaymentMethod['link'] }}" target="_blank" rel="noopener" style="font-size:12px;color:#e85d26;display:inline-block;margin-bottom:10px">Open InstaPay link →</a>
+            @endif
+            <form method="POST" action="{{ route('guest.order.payment-receipt', $order->id) }}" enctype="multipart/form-data">
+              @csrf
+              <input type="hidden" name="email" value="{{ $billing['email'] ?? '' }}">
+              <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                <input type="file" name="receipt" accept="image/jpeg,image/png,image/webp" required style="font-size:12px">
+                <button class="track-submit" style="width:auto;padding:9px 14px;font-size:12px">Upload receipt</button>
+              </div>
+            </form>
+          </div>
+          @endif
         @endif
 
         {{-- Create Account CTA for guests --}}

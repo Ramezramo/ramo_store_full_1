@@ -51,6 +51,52 @@
   @endif
 </div>
 
+@if(in_array($order->payment_method, ['manual_wallet', 'manual_instapay']))
+<div class="order-detail-card" style="margin-top:16px;border:1.5px solid #fed7aa;background:#fffaf5">
+  <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
+    <div>
+      <div style="font-size:15px;font-weight:800">Payment verification</div>
+      <div style="font-size:13px;color:#6b7280;margin-top:4px">
+        Status:
+        <strong style="color:{{ $order->payment_status === 'confirmed' ? '#15803d' : ($order->payment_status === 'rejected' ? '#b91c1c' : '#b45309') }}">
+          {{ ucwords(str_replace('_', ' ', $order->payment_status ?? 'pending_payment')) }}
+        </strong>
+      </div>
+    </div>
+    @if($order->payment_receipt_path)
+      <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($order->payment_receipt_path) }}" target="_blank" rel="noopener" class="btn btn-outline" style="font-size:12px">View latest receipt</a>
+    @endif
+  </div>
+  @if($order->payment_status === 'rejected')
+    <div style="margin-top:12px;padding:10px 12px;border-radius:8px;background:#fef2f2;color:#991b1b;font-size:13px">
+      Receipt rejected{{ $order->payment_rejection_reason ? ': '.$order->payment_rejection_reason : '.' }} Upload a clearer receipt below.
+    </div>
+  @endif
+  @if($order->payment_status !== 'confirmed')
+    <form method="POST" action="{{ route('account.order.payment-receipt', $order->id) }}" enctype="multipart/form-data" style="margin-top:16px">
+      @csrf
+      <label style="display:block;font-size:12px;font-weight:700;color:#6b7280;margin-bottom:7px">Upload payment receipt (JPG, PNG or WEBP, up to 10MB)</label>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <input type="file" name="receipt" accept="image/jpeg,image/png,image/webp" required style="font-size:12px">
+        <button class="btn btn-dark" style="font-size:12px">Submit receipt</button>
+      </div>
+      @error('receipt')<div class="err" style="margin-top:6px">{{ $message }}</div>@enderror
+    </form>
+  @endif
+  @if(isset($paymentReceipts) && $paymentReceipts->count())
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid #fed7aa">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#92400e;margin-bottom:8px">Receipt history</div>
+      @foreach($paymentReceipts as $receipt)
+        <div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:7px 0;border-bottom:1px solid #ffedd5">
+          <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($receipt->file_path) }}" target="_blank" rel="noopener">{{ $receipt->original_name ?: 'Receipt #'.$receipt->id }}</a>
+          <span style="color:#6b7280">{{ ucfirst($receipt->status) }}</span>
+        </div>
+      @endforeach
+    </div>
+  @endif
+</div>
+@endif
+
 {{-- ── YOU SAVED BANNER ──────────────────────────────────────────── --}}
 @if(!$cancelled && $totalSavings > 0)
 <div style="margin-top:14px;background:linear-gradient(135deg,#dcfce7 0%,#f0fdf4 100%);border:1.5px solid #86efac;border-radius:14px;padding:16px 20px">

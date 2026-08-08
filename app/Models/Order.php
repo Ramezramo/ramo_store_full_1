@@ -39,6 +39,13 @@ class Order extends Model
         'shipping',
         'payment_method',
         'payment_method_title',
+        'payment_status',
+        'payment_receipt_path',
+        'payment_receipt_name',
+        'payment_receipt_uploaded_at',
+        'payment_reviewed_at',
+        'payment_reviewed_by',
+        'payment_rejection_reason',
         'transaction_id',
         'customer_ip_address',
         'customer_user_agent',
@@ -104,5 +111,7 @@ class Order extends Model
         'date_modified_gmt' => 'datetime',
         'date_completed_gmt' => 'datetime',
         'date_paid_gmt' => 'datetime',
+        'payment_receipt_uploaded_at' => 'datetime',
+        'payment_reviewed_at' => 'datetime',
     ];
 }

@@ -13,10 +13,43 @@
 
   <div class="order-detail-card">
     <div class="od-row"><span class="od-label">Status</span><span class="status-badge status-{{ $order->status }}">{{ ucfirst($order->status) }}</span></div>
+    @if(in_array($order->payment_method, ['manual_wallet', 'manual_instapay']))
+      <div class="od-row"><span class="od-label">Payment status</span><span class="status-badge" style="background:#fff7ed;color:#9a3412">{{ ucwords(str_replace('_', ' ', $order->payment_status ?? 'pending_payment')) }}</span></div>
+    @endif
     <div class="od-row"><span class="od-label">Payment</span><span>{{ $order->payment_method_title }}</span></div>
     <div class="od-row"><span class="od-label">Date</span><span>{{ \Carbon\Carbon::parse($order->date_created)->format('M d, Y h:i A') }}</span></div>
     <div class="od-row"><span class="od-label">Total</span><span class="od-total">{{ number_format($order->final_total, 2) }} EGP</span></div>
   </div>
+
+  @if(in_array($order->payment_method, ['manual_wallet', 'manual_instapay']) && isset($manualPaymentMethods[$order->payment_method]) && ($order->payment_status ?? '') !== 'confirmed')
+    @php
+      $paymentMethod = $manualPaymentMethods[$order->payment_method];
+      $successBilling = json_decode($order->billing ?? '{}', true) ?: [];
+    @endphp
+    <div class="order-detail-card" style="margin-top:16px;background:#fffaf5;border:1.5px solid #fed7aa">
+      <h3 style="font-size:15px;font-weight:800;margin-bottom:7px">Complete your payment</h3>
+      <p style="font-size:13px;color:#6b7280;line-height:1.6;margin-bottom:12px">
+        Transfer <strong>{{ number_format($order->final_total, 2) }} EGP</strong> using {{ $paymentMethod['title'] }} to:
+      </p>
+      <div style="padding:12px;background:#fff;border-radius:9px;font-size:15px;font-weight:800;color:#9a3412;word-break:break-word">
+        {{ $paymentMethod['destination'] }}
+        @if(!empty($paymentMethod['link']))
+          · <a href="{{ $paymentMethod['link'] }}" target="_blank" rel="noopener" style="font-size:12px;color:#e85d26">Open InstaPay link</a>
+        @endif
+      </div>
+      <p style="font-size:12px;color:#6b7280;margin:12px 0">After transferring, upload a screenshot or photo of the receipt:</p>
+      <form method="POST" action="{{ auth()->check() ? route('account.order.payment-receipt', $order->id) : route('guest.order.payment-receipt', $order->id) }}" enctype="multipart/form-data">
+        @csrf
+        @guest
+          <input type="hidden" name="email" value="{{ $successBilling['email'] ?? '' }}">
+        @endguest
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <input type="file" name="receipt" accept="image/jpeg,image/png,image/webp" required style="font-size:12px">
+          <button class="btn btn-dark" style="font-size:12px">Upload receipt</button>
+        </div>
+      </form>
+    </div>
+  @endif
 
   {{-- VENDOR SUB-ORDERS (if split) --}}
   @if(isset($subOrders) && $subOrders->count() > 1)

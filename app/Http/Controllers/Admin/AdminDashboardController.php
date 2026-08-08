@@ -131,7 +131,9 @@ class AdminDashboardController extends Controller
             ->orderBy('s.id')
             ->get();
 
-        return view('admin.order-detail', compact('order', 'customer', 'billing', 'shipping', 'lineItems', 'timeline', 'subOrders'));
+        $paymentReceipts = \App\Http\Controllers\Web\PaymentReceiptController::history($id);
+
+        return view('admin.order-detail', compact('order', 'customer', 'billing', 'shipping', 'lineItems', 'timeline', 'subOrders', 'paymentReceipts'));
     }
 
     public function updateOrderStatus(Request $request, int $id)

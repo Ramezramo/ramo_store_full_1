@@ -147,7 +147,8 @@ class AccountController extends Controller
 
         // Legacy: if no sub-orders, pass empty collection — view will fall back to lineItems
         $messages = collect(); // kept for backward compat if any view still uses it
+        $paymentReceipts = \App\Http\Controllers\Web\PaymentReceiptController::history((int) $id);
 
-        return view('web.account.order-detail', compact('order', 'lineItems', 'billing', 'subOrders', 'messages'));
+        return view('web.account.order-detail', compact('order', 'lineItems', 'billing', 'subOrders', 'messages', 'paymentReceipts'));
     }
 }

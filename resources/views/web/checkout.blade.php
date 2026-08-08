@@ -115,8 +115,20 @@
               </div>
             </label>
             @endforeach
+            @foreach($manualPaymentMethods as $val => $method)
+            <label class="pay-option {{ old('payment_method') === $val ? 'selected' : '' }}" data-val="{{ $val }}">
+              <input type="radio" name="payment_method" value="{{ $val }}" {{ old('payment_method') === $val ? 'checked' : '' }}>
+              <span class="pay-icon">{{ $val === 'manual_wallet' ? '📱' : '⚡' }}</span>
+              <div>
+                <div class="pay-title">{{ $method['title'] }}</div>
+                <div class="pay-desc">{{ $method['description'] }}</div>
+              </div>
+            </label>
+            @endforeach
           </div>
           @error('payment_method')<span class="err">{{ $message }}</span>@enderror
+          <div id="manual-payment-instructions" style="display:none;margin-top:14px;padding:14px 16px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;color:#9a3412;font-size:13px;line-height:1.6"></div>
+          <div style="font-size:12px;color:#6b7280;margin-top:10px">For Wallet or InstaPay, place the order first, transfer the amount, then upload your receipt from the order page.</div>
         </div>
 
         {{-- ORDER NOTES --}}
@@ -181,6 +193,19 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+  const manualMethods = @json($manualPaymentMethods);
+  const instructionBox = document.getElementById('manual-payment-instructions');
+  const paymentOptions = document.querySelectorAll('input[name="payment_method"]');
+  const updatePaymentInstructions = () => {
+    const selected = document.querySelector('input[name="payment_method"]:checked')?.value;
+    const method = manualMethods[selected];
+    if (!instructionBox) return;
+    if (!method) { instructionBox.style.display = 'none'; instructionBox.textContent = ''; return; }
+    instructionBox.style.display = 'block';
+    instructionBox.innerHTML = `<strong>${method.title}</strong><br>Transfer to: <strong>${method.destination}</strong>${method.link ? ` · <a href="${method.link}" target="_blank" rel="noopener">Open InstaPay link</a>` : ''}`;
+  };
+  paymentOptions.forEach((input) => input.addEventListener('change', updatePaymentInstructions));
+  updatePaymentInstructions();
   const useLocationBtn = document.getElementById('use-current-location-btn');
   const addressInput = document.querySelector('input[name="address"]');
   const cityInput = document.querySelector('input[name="city"]');

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Helpers\AuthConfig;
+use App\Helpers\PaymentConfig;
 use App\Http\Traits\CartTrait;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -40,7 +41,8 @@ class CheckoutController extends Controller
         $total      = max(0, $subtotal - $discount);
 
         $user = Auth::user();
-        return view('web.checkout', compact('cart', 'subtotal', 'discount', 'total', 'coupon', 'user', 'authConfig'));
+        $manualPaymentMethods = PaymentConfig::enabledMethods();
+        return view('web.checkout', compact('cart', 'subtotal', 'discount', 'total', 'coupon', 'user', 'authConfig', 'manualPaymentMethods'));
     }
 
     public function place(Request $r)
@@ -67,9 +69,18 @@ class CheckoutController extends Controller
             'latitude'       => 'nullable|numeric',
             'longitude'      => 'nullable|numeric',
             'save_address'   => 'nullable|boolean',
-            'payment_method' => 'required|in:cod,bank_transfer,vodafone_cash,fawry,wallet,credit_card',
+            'payment_method' => 'required|string',
             'notes'          => 'nullable|string|max:500',
         ]);
+
+        $manualPaymentMethods = PaymentConfig::enabledMethods();
+        $allowedPaymentMethods = array_merge(
+            ['cod', 'bank_transfer', 'vodafone_cash', 'fawry', 'wallet', 'credit_card'],
+            array_keys($manualPaymentMethods)
+        );
+        if (!in_array($r->payment_method, $allowedPaymentMethods, true)) {
+            return back()->withInput()->withErrors(['payment_method' => 'That payment method is not currently available.']);
+        }
 
         session(['checkout_save_address' => $r->boolean('save_address')]);
 
@@ -80,7 +91,10 @@ class CheckoutController extends Controller
             'fawry'          => 'Fawry',
             'wallet'         => 'Wallet',
             'credit_card'    => 'Credit Card',
+            'manual_wallet'  => 'Pay by Wallet',
+            'manual_instapay'=> 'Pay by InstaPay',
         ];
+        $isManualPayment = array_key_exists($r->payment_method, $manualPaymentMethods);
 
         // ── RE-VERIFY PRICES FROM DATABASE (never trust cart-stored prices) ──────
         $cartProductIds   = collect($cart)->pluck('product_id')->unique()->values()->all();
@@ -193,7 +207,8 @@ class CheckoutController extends Controller
 
         $orderId = DB::table('orders')->insertGetId([
             'customer_id'          => Auth::id(),
-            'status'               => 'pending',
+            'status'               => $isManualPayment ? 'pending' : 'pending',
+            'payment_status'       => $isManualPayment ? 'pending_payment' : 'confirmed',
             'currency'             => 'EGP',
             'currency_symbol'      => 'ج.م',
             'payment_method'       => $r->payment_method,
@@ -221,9 +236,9 @@ class CheckoutController extends Controller
             'updated_at'           => $now,
             'payment_url'          => '',
             'is_editable'          => true,
-            'needs_payment'        => $r->payment_method !== 'cod',
+            'needs_payment'        => $isManualPayment || $r->payment_method !== 'cod',
             'needs_processing'     => true,
-            'set_paid'             => false,
+            'set_paid'             => !$isManualPayment && $r->payment_method === 'cod',
             'number'               => 0,
             'timeline'             => '[]',
             'created_via'          => 'website',
@@ -308,6 +323,7 @@ class CheckoutController extends Controller
     {
         $order = DB::table('orders')->where('id', $orderId)->first();
         if (! $order) abort(404);
+        $manualPaymentMethods = PaymentConfig::enabledMethods();
 
         $lineItems = json_decode($order->line_items ?? '[]', true);
 
@@ -323,7 +339,7 @@ class CheckoutController extends Controller
                 return $sub;
             });
 
-        return view('web.order-success', compact('order', 'lineItems', 'subOrders'));
+        return view('web.order-success', compact('order', 'lineItems', 'subOrders', 'manualPaymentMethods'));
     }
 
     private function calcDiscount(float $subtotal, ?array $coupon): float

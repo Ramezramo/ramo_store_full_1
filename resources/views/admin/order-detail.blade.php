@@ -42,6 +42,44 @@
       </div>
     </div>
 
+    @if(in_array($order->payment_method, ['manual_wallet', 'manual_instapay']))
+    <div class="card">
+      <div class="card-title">Payment Verification</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+        <div><strong>{{ $order->payment_method_title }}</strong><div style="color:var(--muted);font-size:12px;margin-top:4px">Status: {{ ucwords(str_replace('_', ' ', $order->payment_status ?? 'pending_payment')) }}</div></div>
+        @if($order->payment_receipt_path)
+          <a class="btn btn-ghost btn-sm" href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($order->payment_receipt_path) }}" target="_blank" rel="noopener">Open receipt</a>
+        @endif
+      </div>
+      @if($order->payment_status === 'pending_verification')
+        <form method="POST" action="{{ route('admin.orders.payment-review', $order->id) }}" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          @csrf
+          <input type="hidden" name="decision" value="confirm">
+          <button class="btn btn-primary">Confirm payment</button>
+        </form>
+        <form method="POST" action="{{ route('admin.orders.payment-review', $order->id) }}" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px">
+          @csrf
+          <input type="hidden" name="decision" value="reject">
+          <input name="rejection_reason" required placeholder="Reason for rejection" style="flex:1;min-width:220px;padding:9px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text)">
+          <button class="btn btn-danger">Reject receipt</button>
+        </form>
+      @elseif($order->payment_status === 'rejected')
+        <div style="color:var(--red);font-size:13px">Rejected: {{ $order->payment_rejection_reason ?: 'Customer may upload a new receipt.' }}</div>
+      @endif
+      @if(isset($paymentReceipts) && $paymentReceipts->count())
+        <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px">
+          <div style="font-size:11px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Receipt history</div>
+          @foreach($paymentReceipts as $receipt)
+            <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px">
+              <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($receipt->file_path) }}" target="_blank" rel="noopener">{{ $receipt->original_name ?: 'Receipt #'.$receipt->id }}</a>
+              <span>{{ ucfirst($receipt->status) }}</span>
+            </div>
+          @endforeach
+        </div>
+      @endif
+    </div>
+    @endif
+
     {{-- Line items --}}
     <div class="card">
       <div class="card-title">Items Ordered</div>

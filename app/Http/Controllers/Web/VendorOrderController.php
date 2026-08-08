@@ -82,6 +82,11 @@ class VendorOrderController extends Controller
                 'o.billing as o_billing',
                 'o.shipping as o_shipping',
                 'o.payment_method_title as o_payment_title',
+                'o.payment_method as o_payment_method',
+                'o.payment_status as o_payment_status',
+                'o.payment_receipt_path as o_payment_receipt_path',
+                'o.payment_receipt_name as o_payment_receipt_name',
+                'o.payment_rejection_reason as o_payment_rejection_reason',
                 'o.created_at as o_created_at',
                 'o.customer_note as o_customer_note',
                 'o.final_total as o_final_total',
@@ -123,6 +128,7 @@ class VendorOrderController extends Controller
             })
             ->orderBy('m.id')
             ->get(['m.*', 'v.shop_name as vendor_shop_name']);
+        $paymentReceipts = PaymentReceiptController::history((int) $subOrder->parent_order_id);
 
         // Use $order as a compat wrapper for the view
         $order = (object) [
@@ -131,6 +137,11 @@ class VendorOrderController extends Controller
             'status'              => $subOrder->status,
             'created_at'          => $subOrder->o_created_at,
             'payment_method_title'=> $subOrder->o_payment_title,
+            'payment_method'      => $subOrder->o_payment_method,
+            'payment_status'      => $subOrder->o_payment_status,
+            'payment_receipt_path'=> $subOrder->o_payment_receipt_path,
+            'payment_receipt_name'=> $subOrder->o_payment_receipt_name,
+            'payment_rejection_reason' => $subOrder->o_payment_rejection_reason,
             'customer_note'       => $subOrder->o_customer_note,
             'final_total'         => $subOrder->o_final_total,
             'discount_total'      => $subOrder->o_discount_total,
@@ -138,7 +149,7 @@ class VendorOrderController extends Controller
         ];
 
         return view('web.vendor.orders.show', compact(
-            'order', 'subOrder', 'vendorItems', 'vendorTotal', 'billing', 'shipping', 'timeline', 'messages'
+            'order', 'subOrder', 'vendorItems', 'vendorTotal', 'billing', 'shipping', 'timeline', 'messages', 'paymentReceipts'
         ));
     }
 
