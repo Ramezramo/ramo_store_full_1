@@ -38,7 +38,24 @@
           · <a href="{{ $paymentMethod['link'] }}" target="_blank" rel="noopener" style="font-size:12px;color:#e85d26">Open InstaPay link</a>
         @endif
       </div>
-      <p style="font-size:12px;color:#6b7280;margin:12px 0">After transferring, upload a screenshot or photo of the receipt:</p>
+      @if($order->payment_receipt_path)
+        <div style="margin-top:14px;padding:12px 14px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:9px;color:#065f46">
+          <div style="font-size:13px;font-weight:800">✓ Receipt uploaded successfully</div>
+          <div style="font-size:12px;line-height:1.5;margin-top:4px">
+            Your receipt is <strong>pending verification</strong>.
+            @if($order->payment_receipt_name)
+              File: <strong>{{ $order->payment_receipt_name }}</strong>
+            @endif
+          </div>
+          <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($order->payment_receipt_path) }}"
+             target="_blank" rel="noopener" style="display:inline-block;margin-top:7px;font-size:12px;font-weight:700;color:#047857">
+            View uploaded receipt →
+          </a>
+        </div>
+      @endif
+      <p style="font-size:12px;color:#6b7280;margin:12px 0">
+        {{ $order->payment_receipt_path ? 'Need to replace the receipt? Choose a new image below:' : 'After transferring, upload a screenshot or photo of the receipt:' }}
+      </p>
       <form method="POST" action="{{ auth()->check() ? route('account.order.payment-receipt', $order->id) : route('guest.order.payment-receipt', $order->id) }}" enctype="multipart/form-data">
         @csrf
         @guest
