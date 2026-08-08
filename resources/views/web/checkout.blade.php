@@ -98,6 +98,7 @@
         {{-- PAYMENT --}}
         <div class="ck-section">
           <h3 class="ck-title">Payment Method</h3>
+          @php($selectedPaymentMethod = old('payment_method', 'cod'))
           <div class="pay-methods">
             @foreach([
               ['cod',           '💵', 'Cash on Delivery',  'Pay when your order arrives'],
@@ -106,8 +107,8 @@
               ['fawry',         '🏪', 'Fawry',             'Pay at any Fawry outlet'],
               ['credit_card',   '💳', 'Credit Card',       'Visa / Mastercard'],
             ] as [$val, $ico, $title, $desc])
-            <label class="pay-option {{ old('payment_method','cod') === $val ? 'selected' : '' }}" data-val="{{ $val }}">
-              <input type="radio" name="payment_method" value="{{ $val }}" {{ old('payment_method','cod') === $val ? 'checked' : '' }}>
+            <label class="pay-option {{ $selectedPaymentMethod === $val ? 'selected' : '' }}" data-val="{{ $val }}">
+              <input type="radio" name="payment_method" value="{{ $val }}" {{ $selectedPaymentMethod === $val ? 'checked' : '' }}>
               <span class="pay-icon">{{ $ico }}</span>
               <div>
                 <div class="pay-title">{{ $title }}</div>
@@ -116,8 +117,8 @@
             </label>
             @endforeach
             @foreach($manualPaymentMethods as $val => $method)
-            <label class="pay-option {{ old('payment_method') === $val ? 'selected' : '' }}" data-val="{{ $val }}">
-              <input type="radio" name="payment_method" value="{{ $val }}" {{ old('payment_method') === $val ? 'checked' : '' }}>
+            <label class="pay-option {{ $selectedPaymentMethod === $val ? 'selected' : '' }}" data-val="{{ $val }}">
+              <input type="radio" name="payment_method" value="{{ $val }}" {{ $selectedPaymentMethod === $val ? 'checked' : '' }}>
               <span class="pay-icon">{{ $val === 'manual_wallet' ? '📱' : '⚡' }}</span>
               <div>
                 <div class="pay-title">{{ $method['title'] }}</div>
@@ -199,6 +200,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const updatePaymentInstructions = () => {
     const selected = document.querySelector('input[name="payment_method"]:checked')?.value;
     const method = manualMethods[selected];
+    document.querySelectorAll('.pay-option').forEach((option) => {
+      option.classList.toggle('selected', option.querySelector('input')?.checked === true);
+    });
     if (!instructionBox) return;
     if (!method) { instructionBox.style.display = 'none'; instructionBox.textContent = ''; return; }
     instructionBox.style.display = 'block';
