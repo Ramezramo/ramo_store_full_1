@@ -46,7 +46,15 @@
     <div class="card">
       <div class="card-title">Payment Verification</div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px">
-        <div><strong>{{ $order->payment_method_title }}</strong><div style="color:var(--muted);font-size:12px;margin-top:4px">Status: {{ ucwords(str_replace('_', ' ', $order->payment_status ?? 'pending_payment')) }}</div></div>
+        <div>
+          <strong>{{ $order->payment_method_title }}</strong>
+          <div style="color:var(--muted);font-size:12px;margin-top:4px">
+            Status: {{ ucwords(str_replace('_', ' ', $order->payment_status ?? 'pending_payment')) }}
+          </div>
+          <div style="color:var(--muted);font-size:12px;margin-top:4px">
+            Customer paid {{ $order->currency_symbol }}{{ number_format($order->final_total, 2) }} using this method.
+          </div>
+        </div>
         @if($order->payment_receipt_path)
           <a class="btn btn-ghost btn-sm" href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($order->payment_receipt_path) }}" target="_blank" rel="noopener">Open receipt</a>
         @endif
@@ -68,11 +76,57 @@
       @endif
       @if(isset($paymentReceipts) && $paymentReceipts->count())
         <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px">
-          <div style="font-size:11px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Receipt history</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
+            <div>
+              <div style="font-size:11px;text-transform:uppercase;color:var(--muted)">Receipt history</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:4px">{{ $paymentReceipts->count() }} receipt{{ $paymentReceipts->count() === 1 ? '' : 's' }} uploaded for this order</div>
+            </div>
+            <span class="badge badge-blue">Latest shown first</span>
+          </div>
           @foreach($paymentReceipts as $receipt)
-            <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px">
-              <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($receipt->file_path) }}" target="_blank" rel="noopener">{{ $receipt->original_name ?: 'Receipt #'.$receipt->id }}</a>
-              <span>{{ ucfirst($receipt->status) }}</span>
+            @php
+              $receiptStatusClass = match($receipt->status) {
+                'confirmed' => 'badge-green',
+                'rejected' => 'badge-red',
+                default => 'badge-yellow',
+              };
+              $receiptMethod = match($receipt->payment_method) {
+                'manual_wallet' => 'Pay by Wallet',
+                'manual_instapay' => 'Pay by InstaPay',
+                default => ucwords(str_replace('_', ' ', $receipt->payment_method)),
+              };
+            @endphp
+            <div style="padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+                <div style="min-width:0">
+                  <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($receipt->file_path) }}" target="_blank" rel="noopener" style="font-weight:700;word-break:break-word">
+                    {{ $receipt->original_name ?: 'Receipt #'.$receipt->id }}
+                  </a>
+                  <div style="color:var(--muted);margin-top:5px">
+                    Uploaded {{ $receipt->uploaded_at ? \Carbon\Carbon::parse($receipt->uploaded_at)->format('d M Y, h:i A') : '—' }}
+                    · {{ $receiptMethod }}
+                  </div>
+                </div>
+                <span class="badge {{ $receiptStatusClass }}">{{ ucfirst($receipt->status) }}</span>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:12px;color:var(--muted);margin-top:7px">
+                <span>
+                  <strong style="color:var(--text)">Uploaded by:</strong>
+                  {{ $receipt->uploader_name ?: ($receipt->uploader_email ?: 'Guest checkout') }}
+                </span>
+                @if($receipt->reviewed_at)
+                  <span>
+                    <strong style="color:var(--text)">Reviewed:</strong>
+                    {{ \Carbon\Carbon::parse($receipt->reviewed_at)->format('d M Y, h:i A') }}
+                    @if($receipt->reviewer_name) by {{ $receipt->reviewer_name }} @endif
+                  </span>
+                @endif
+              </div>
+              @if($receipt->status === 'rejected' && $receipt->rejection_reason)
+                <div style="margin-top:8px;padding:8px 10px;border-radius:6px;background:rgba(239,68,68,.1);color:var(--red)">
+                  <strong>Rejection reason:</strong> {{ $receipt->rejection_reason }}
+                </div>
+              @endif
             </div>
           @endforeach
         </div>

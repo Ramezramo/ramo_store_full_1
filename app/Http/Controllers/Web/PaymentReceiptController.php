@@ -91,9 +91,18 @@ class PaymentReceiptController extends Controller
 
     public static function history(int $orderId)
     {
-        return DB::table('payment_receipts')
-            ->where('order_id', $orderId)
-            ->orderByDesc('id')
+        return DB::table('payment_receipts as receipts')
+            ->leftJoin('users as uploaders', 'uploaders.id', '=', 'receipts.uploaded_by')
+            ->leftJoin('users as reviewers', 'reviewers.id', '=', 'receipts.reviewed_by')
+            ->where('receipts.order_id', $orderId)
+            ->select([
+                'receipts.*',
+                'uploaders.name as uploader_name',
+                'uploaders.email as uploader_email',
+                'reviewers.name as reviewer_name',
+                'reviewers.email as reviewer_email',
+            ])
+            ->orderByDesc('receipts.id')
             ->get();
     }
 }
