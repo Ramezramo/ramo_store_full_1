@@ -17,11 +17,11 @@ html{scroll-behavior:smooth}
 body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;font-size:14px}
 a{color:inherit;text-decoration:none}
 button{cursor:pointer;font-family:inherit}
-.sidebar{width:240px;min-height:100vh;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:50}
+.sidebar{width:240px;height:100vh;min-height:100vh;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:50;overflow:hidden}
 .sidebar-logo{padding:20px 20px 16px;border-bottom:1px solid var(--border)}
 .sidebar-logo a{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:800;color:var(--text)}
 .sidebar-logo span{color:var(--accent)}
-.sidebar-nav{flex:1;padding:12px 0;overflow-y:auto}
+.sidebar-nav{flex:1;min-height:0;padding:12px 0;overflow-y:auto;overflow-x:hidden}
 .nav-section{padding:16px 16px 6px;font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;color:var(--muted);font-size:13.5px;font-weight:500;transition:.15s;position:relative}
 .nav-item:hover{color:var(--text);background:rgba(255,255,255,.04)}
