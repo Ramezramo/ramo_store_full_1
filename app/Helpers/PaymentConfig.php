@@ -2,7 +2,6 @@
 
 namespace App\Helpers;
 
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class PaymentConfig
@@ -27,12 +26,13 @@ class PaymentConfig
 
     public static function get(): array
     {
-        return Cache::remember('manual_payment_config', 300, function () {
-            $row = DB::table('app_configs')->where('config_key', 'manual_payment_methods')->first();
-            $stored = $row && $row->value ? (json_decode($row->value, true) ?: []) : [];
+        // Payment visibility and display data are admin-controlled. Read the
+        // current row directly so a change is visible on the next checkout
+        // request, even when another app process or local server is running.
+        $row = DB::table('app_configs')->where('config_key', 'manual_payment_methods')->first();
+        $stored = $row && $row->value ? (json_decode($row->value, true) ?: []) : [];
 
-            return array_merge(self::$defaults, $stored);
-        });
+        return array_merge(self::$defaults, $stored);
     }
 
     public static function save(array $data): void
@@ -59,7 +59,6 @@ class PaymentConfig
             ]));
         }
 
-        Cache::forget('manual_payment_config');
     }
 
     public static function enabledMethods(): array
