@@ -113,7 +113,7 @@
         @foreach($subOrders as $sub)
           @php
             $subStatus = \App\Http\Controllers\Web\OrderTrackingController::statusInfo($sub->status ?? 'pending');
-            $subSteps = ['pending', 'processing', 'shipped', 'completed'];
+            $subSteps = ['pending', 'processing', 'shipped', 'delivered'];
             $subIndex = array_search(strtolower($sub->status ?? 'pending'), $subSteps);
             $subIndex = $subIndex === false ? 0 : $subIndex;
             $subCancelled = in_array(strtolower($sub->status ?? ''), ['cancelled', 'refunded', 'failed']);
@@ -141,7 +141,7 @@
                   @endphp
                   <div class="or-store-step {{ $subDone ? 'done' : '' }}">
                     <span>{{ $subDone ? '✓' : ($i + 1) }}</span>
-                    <small>{{ $subStep === 'completed' ? 'Delivered' : $subStepInfo['label'] }}</small>
+                    <small>{{ $subStep === 'delivered' ? 'Delivered' : $subStepInfo['label'] }}</small>
                   </div>
                   @if($i < count($subSteps) - 1)
                     <div class="or-store-line {{ $i < $subIndex ? 'done' : '' }}"></div>

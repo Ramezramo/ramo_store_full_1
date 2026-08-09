@@ -15,7 +15,7 @@
 .dr-label{color:var(--mid);font-weight:500}
 .dr-value{color:var(--dark);font-weight:500}
 .badge{display:inline-block;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700}
-.s-pending{background:#fef3c7;color:#92400e}.s-processing{background:#dbeafe;color:#1e40af}.s-shipped{background:#f3e8ff;color:#6b21a8}.s-completed{background:#dcfce7;color:#166534}.s-cancelled{background:#fee2e2;color:#991b1b}.s-on-hold,.s-refunded{background:#f3f4f6;color:var(--mid)}
+.s-pending{background:#fef3c7;color:#92400e}.s-processing{background:#dbeafe;color:#1e40af}.s-shipped{background:#f3e8ff;color:#6b21a8}.s-delivered{background:#dcfce7;color:#166534}.s-cancelled,.s-returned{background:#fee2e2;color:#991b1b}.s-on-hold,.s-refunded{background:#f3f4f6;color:var(--mid)}
 .item-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f3f4f6}.item-row:last-child{border-bottom:none}
 .item-thumb{width:52px;height:52px;border-radius:8px;object-fit:cover;border:1px solid var(--light);flex-shrink:0;background:#f3f4f6;display:flex;align-items:center;justify-content:center}
 .item-info{flex:1;min-width:0}.item-name{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -63,7 +63,7 @@
       · {{ $order->payment_method_title }}
     </div>
   </div>
-  <span class="badge s-{{ $subOrder->status }}" style="font-size:13px;padding:5px 16px">{{ ucfirst($subOrder->status) }}</span>
+  <span class="badge s-{{ $subOrder->status }}" style="font-size:13px;padding:5px 16px">{{ $subOrder->status === 'delivered' ? 'Delivered' : ucfirst($subOrder->status) }}</span>
 </div>
 
 @if($subOrder->tracking_number)
@@ -112,7 +112,7 @@
 
 {{-- ── FULFILLMENT PROGRESS ───────────────────────────────────── --}}
 @php
-  $steps = ['pending'=>'Received','processing'=>'Processing','shipped'=>'Shipped','completed'=>'Delivered'];
+  $steps = ['pending'=>'Received','processing'=>'Processing','shipped'=>'Shipped','delivered'=>'Delivered'];
   $cancelled = in_array($subOrder->status, ['cancelled']);
   $stepKeys = array_keys($steps);
   $curIdx = array_search($subOrder->status, $stepKeys);
@@ -198,7 +198,7 @@
           @csrf
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <select name="status" class="sf-select">
-              @foreach(['processing'=>'Processing — Preparing order','shipped'=>'Shipped — Handed to courier','completed'=>'Completed — Delivered','cancelled'=>'Cancel this shipment'] as $val=>$lbl)
+              @foreach(['processing'=>'Processing — Preparing order','shipped'=>'Shipped — Handed to courier','delivered'=>'Delivered — Shipment received','cancelled'=>'Cancel this shipment'] as $val=>$lbl)
                 <option value="{{ $val }}" {{ $subOrder->status===$val?'selected':'' }}>{{ $lbl }}</option>
               @endforeach
             </select>

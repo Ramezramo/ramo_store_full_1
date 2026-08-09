@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Services\OrderStatusService;
 
 class PaymentReceiptController extends Controller
 {
@@ -84,6 +85,8 @@ class PaymentReceiptController extends Controller
                 'date_modified' => $now,
                 'updated_at' => $now,
             ]);
+
+            app(OrderStatusService::class)->sync($order->id);
         });
 
         return back()->with('success', 'Receipt uploaded. Your payment is now pending verification.');

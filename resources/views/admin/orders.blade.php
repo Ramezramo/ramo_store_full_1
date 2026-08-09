@@ -46,35 +46,32 @@
     </thead>
     <tbody>
     @forelse($orders as $order)
-      @php
-        $sc = match($order->status) {
-          'completed'           => 'badge-green',
+          @php
+            $displayStatus = $order->general_order_status ?? $order->status ?? 'pending';
+            $displayLabel = match($displayStatus) {
+              'partially_shipped' => 'Partially Shipped',
+              'partially_delivered' => 'Partially Delivered',
+              'partially_cancelled' => 'Partially Cancelled',
+              default => ucfirst($displayStatus),
+            };
+            $sc = match($displayStatus) {
+              'completed'           => 'badge-green',
           'pending'             => 'badge-yellow',
           'processing'          => 'badge-blue',
-          'shipped'             => 'badge-purple',
-          'cancelled', 'failed' => 'badge-red',
-          'refunded', 'on-hold' => 'badge-gray',
+              'shipped', 'partially_shipped' => 'badge-purple',
+              'partially_delivered'  => 'badge-blue',
+              'cancelled', 'partially_cancelled' => 'badge-red',
           default               => 'badge-gray',
         };
       @endphp
       <tr>
         <td style="font-weight:700">#{{ $order->id }}</td>
         <td style="color:var(--muted)">{{ $order->customer_id ?? '—' }}</td>
-        <td><span class="badge {{ $sc }}">{{ ucfirst($order->status) }}</span></td>
+        <td><span class="badge {{ $sc }}">{{ $displayLabel }}</span></td>
         <td style="color:var(--muted);font-size:12px">{{ $order->payment_method_title ?? '—' }}</td>
         <td style="font-weight:600">{{ $order->currency_symbol }}{{ number_format($order->final_total, 2) }}</td>
         <td style="color:var(--muted);font-size:12px;white-space:nowrap">{{ $order->date_created ? \Carbon\Carbon::parse($order->date_created)->format('d M Y') : '—' }}</td>
-        <td>
-          <form method="POST" action="{{ route('admin.orders.status', $order->id) }}" style="display:flex;gap:4px">
-            @csrf @method('PATCH')
-            <select name="status" style="padding:4px 6px;font-size:12px;height:28px">
-              @foreach(['pending','processing','shipped','on-hold','completed','cancelled','refunded','failed'] as $s)
-                <option value="{{ $s }}" {{ $order->status==$s?'selected':'' }}>{{ ucfirst($s) }}</option>
-              @endforeach
-            </select>
-            <button class="btn btn-ghost btn-sm">Save</button>
-          </form>
-        </td>
+        <td style="color:var(--muted);font-size:12px">Computed from payment &amp; shipments</td>
         <td><a href="{{ route('admin.orders.detail', $order->id) }}" class="btn btn-ghost btn-sm">View</a></td>
       </tr>
     @empty

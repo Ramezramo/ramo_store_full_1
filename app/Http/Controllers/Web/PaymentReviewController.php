@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Helpers\PaymentConfig;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Services\OrderStatusService;
 
 class PaymentReviewController extends Controller
 {
@@ -91,6 +92,8 @@ class PaymentReviewController extends Controller
                 'date_modified' => $now,
                 'updated_at' => $now,
             ]);
+
+            app(OrderStatusService::class)->sync($order->id);
         });
 
         return redirect($redirect ?: route('admin.orders.detail', $order->id))

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\OrderStatusService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -14,8 +15,8 @@ class AdminDashboardController extends Controller
             'total_users'    => DB::table('users')->count(),
             'blocked_users'  => DB::table('users')->where('is_blocked', true)->count(),
             'total_orders'   => DB::table('orders')->count(),
-            'pending_orders' => DB::table('orders')->where('status', 'pending')->count(),
-            'total_revenue'  => DB::table('orders')->whereNotIn('status', ['cancelled', 'refunded'])->sum('final_total'),
+            'pending_orders' => DB::table('orders')->whereIn('general_order_status', ['pending'])->count(),
+            'total_revenue'  => DB::table('orders')->whereNotIn('general_order_status', ['cancelled'])->sum('final_total'),
             'total_products'   => DB::table('products_data')->count(),
             'pending_products' => DB::table('products_data')->where('acceptance_status', 'pending')->count(),
             'total_vendors'  => DB::table('vendor_users')->count(),
@@ -103,17 +104,19 @@ class AdminDashboardController extends Controller
                   ->orWhereRaw('CAST(customer_id AS TEXT) LIKE ?', ['%'.$search.'%']);
             });
         }
-        if ($status) $query->where('status', $status);
+        if ($status) $query->where('general_order_status', $status);
 
         $orders = $query->paginate(20)->withQueryString();
 
-        $statuses = collect(['pending', 'processing', 'shipped', 'completed', 'cancelled', 'refunded', 'failed', 'on-hold']);
+        $statuses = collect(['pending', 'processing', 'partially_shipped', 'shipped', 'partially_delivered', 'completed', 'partially_cancelled', 'cancelled']);
 
         return view('admin.orders', compact('orders', 'search', 'status', 'statuses'));
     }
 
     public function orderDetail(int $id)
     {
+        $statusService = app(OrderStatusService::class);
+        $statusService->sync($id);
         $order = DB::table('orders')->where('id', $id)->first();
         if (!$order) abort(404);
 
@@ -131,29 +134,75 @@ class AdminDashboardController extends Controller
             ->orderBy('s.id')
             ->get();
 
+        $vendorStatuses = $subOrders->map(fn ($sub) => $statusService->normalizeVendorStatus($sub->vendor_status ?? $sub->status))->all();
+        $computedStatus = $order->general_order_status ?? $statusService->compute($order->payment_status ?? null, $vendorStatuses);
+        $vendorStatusCounts = collect($vendorStatuses)->countBy();
+
         $paymentReceipts = \App\Http\Controllers\Web\PaymentReceiptController::history($id);
 
-        return view('admin.order-detail', compact('order', 'customer', 'billing', 'shipping', 'lineItems', 'timeline', 'subOrders', 'paymentReceipts'));
+        return view('admin.order-detail', compact('order', 'customer', 'billing', 'shipping', 'lineItems', 'timeline', 'subOrders', 'paymentReceipts', 'computedStatus', 'vendorStatusCounts', 'statusService'));
     }
 
     public function updateOrderStatus(Request $request, int $id)
     {
-        $status = $request->input('status');
-        $allowed = ['pending', 'processing', 'on-hold', 'shipped', 'completed', 'cancelled', 'refunded', 'failed'];
-        if (!in_array($status, $allowed)) return back()->with('error', 'Invalid status.');
+        return back()->with('error', 'General order status is computed from payment and store shipment statuses. Use Force Override only for an exception.');
+    }
+
+    public function forceOverrideOrderStatus(Request $request, int $id)
+    {
+        $data = $request->validate([
+            'status' => 'required|in:pending,processing,partially_shipped,shipped,partially_delivered,completed,partially_cancelled,cancelled',
+            'reason' => 'required|string|max:1000',
+        ]);
+
+        $order = DB::table('orders')->where('id', $id)->first(['id', 'timeline']);
+        abort_if(!$order, 404);
+
+        $now = now();
+        $timeline = json_decode($order->timeline ?? '[]', true) ?: [];
+        $timeline[] = [
+            'status' => $data['status'],
+            'note' => 'General order status force-overridden to '.$data['status'].': '.$data['reason'],
+            'by' => 'admin:'.(auth()->id() ?? 'unknown'),
+            'at' => $now->toDateTimeString(),
+            'type' => 'general_status_override',
+        ];
 
         DB::table('orders')->where('id', $id)->update([
-            'status'        => $status,
-            'date_modified' => now(),
-            'updated_at'    => now(),
+            'general_order_status_override' => $data['status'],
+            'general_order_status_override_reason' => $data['reason'],
+            'general_order_status_override_by' => auth()->id(),
+            'general_order_status_override_at' => $now,
+            'status' => $data['status'],
+            'timeline' => json_encode($timeline),
+            'date_modified' => $now,
+            'updated_at' => $now,
         ]);
-        return back()->with('success', 'Order status updated to '.$status.'.');
+
+        return back()->with('success', 'Force override applied and logged.');
+    }
+
+    public function clearForceOverride(int $id)
+    {
+        $order = DB::table('orders')->where('id', $id)->first(['id']);
+        abort_if(!$order, 404);
+
+        app(OrderStatusService::class)->sync($id);
+        DB::table('orders')->where('id', $id)->update([
+            'general_order_status_override' => null,
+            'general_order_status_override_reason' => null,
+            'general_order_status_override_by' => null,
+            'general_order_status_override_at' => null,
+        ]);
+        app(OrderStatusService::class)->sync($id);
+
+        return back()->with('success', 'Force override cleared. Computed status restored.');
     }
 
     public function updateSubOrderStatus(Request $request, int $orderId, int $subOrderId)
     {
         $status = $request->input('status');
-        $allowed = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
+        $allowed = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'returned'];
 
         if (!in_array($status, $allowed, true)) {
             return back()->with('error', 'Invalid store status.');
@@ -180,6 +229,7 @@ class AdminDashboardController extends Controller
 
         $update = [
             'status'     => $status,
+            'vendor_status' => $status,
             'timeline'   => json_encode($timeline),
             'updated_at' => $now,
         ];
@@ -192,16 +242,14 @@ class AdminDashboardController extends Controller
         }
 
         DB::table('order_sub_orders')->where('id', $subOrderId)->update($update);
+        $computed = app(OrderStatusService::class)->sync($orderId);
 
-        // Deliberately do not update orders.status here. The general order
-        // status is controlled separately above; this status belongs to one
-        // store's shipment within a potentially split order.
         return back()->with('success', 'Store status updated to '.$this->statusLabel($status).'.');
     }
 
     private function statusLabel(string $status): string
     {
-        return $status === 'completed' ? 'Delivered' : ucfirst($status);
+        return $status === 'delivered' ? 'Delivered' : ucfirst($status);
     }
 
     // ── VENDORS ────────────────────────────────────────────────────
@@ -756,7 +804,7 @@ class AdminDashboardController extends Controller
             'total_orders'     => DB::table('orders')->count(),
             'total_users'      => DB::table('users')->count(),
             'avg_order_value'  => DB::table('orders')->avg('final_total') ?? 0,
-            'completed_orders' => DB::table('orders')->where('status', 'completed')->count(),
+            'completed_orders' => DB::table('orders')->where('general_order_status', 'completed')->count(),
             'cancelled_orders' => DB::table('orders')->whereIn('status', ['cancelled','refunded','failed'])->count(),
         ];
 

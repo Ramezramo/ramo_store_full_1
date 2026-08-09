@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Services\OrderStatusService;
 
 class VendorOrderController extends Controller
 {
@@ -60,7 +61,7 @@ class VendorOrderController extends Controller
             'pending'    => (clone $base)->where('status', 'pending')->count(),
             'processing' => (clone $base)->where('status', 'processing')->count(),
             'shipped'    => (clone $base)->where('status', 'shipped')->count(),
-            'completed'  => (clone $base)->where('status', 'completed')->count(),
+            'delivered'  => (clone $base)->whereIn('status', ['delivered', 'completed'])->count(),
         ];
 
         return view('web.vendor.orders.index', compact('orders', 'stats', 'statusFilter', 'search', 'paginator'));
@@ -167,8 +168,9 @@ class VendorOrderController extends Controller
 
         if (! $subOrder) abort(404);
 
-        $allowed   = ['processing', 'shipped', 'completed', 'cancelled'];
+        $allowed   = ['processing', 'shipped', 'delivered', 'cancelled', 'returned'];
         $newStatus = $request->input('status');
+        $newStatus = $newStatus === 'completed' ? 'delivered' : $newStatus;
         if (! in_array($newStatus, $allowed)) {
             return back()->with('error', 'Invalid status.');
         }
@@ -184,6 +186,7 @@ class VendorOrderController extends Controller
 
         $updateData = [
             'status'     => $newStatus,
+            'vendor_status' => $newStatus,
             'timeline'   => json_encode($timeline),
             'updated_at' => $now,
         ];
@@ -197,8 +200,7 @@ class VendorOrderController extends Controller
 
         DB::table('order_sub_orders')->where('id', $id)->update($updateData);
 
-        // Propagate parent order status: set to the "worst" sub-order status
-        $this->syncParentStatus($subOrder->parent_order_id);
+        app(OrderStatusService::class)->sync($subOrder->parent_order_id);
 
         return redirect()->route('vendor.orders.show', $id)
             ->with('success', 'Sub-order status updated to "'.ucfirst($newStatus).'".');
@@ -237,31 +239,4 @@ class VendorOrderController extends Controller
         return back()->with('success', 'Reply sent to customer.');
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // HELPER — sync parent order status from sub-orders
-    // ─────────────────────────────────────────────────────────────────────
-    private function syncParentStatus(int $parentOrderId): void
-    {
-        $statuses = DB::table('order_sub_orders')
-            ->where('parent_order_id', $parentOrderId)
-            ->pluck('status')
-            ->toArray();
-
-        if (empty($statuses)) return;
-
-        // Priority: cancelled < pending < processing < shipped < completed
-        $priority = ['cancelled'=>0,'pending'=>1,'processing'=>2,'shipped'=>3,'completed'=>4];
-        usort($statuses, fn($a, $b) => ($priority[$a] ?? 99) - ($priority[$b] ?? 99));
-        $lowestStatus = $statuses[0];
-
-        // If all completed → completed; if any cancelled but rest done → partial-complete → keep shipped
-        $allSame = count(array_unique($statuses)) === 1;
-        $parentStatus = $allSame ? $lowestStatus : $lowestStatus;
-
-        DB::table('orders')->where('id', $parentOrderId)->update([
-            'status'        => $parentStatus,
-            'date_modified' => now(),
-            'updated_at'    => now(),
-        ]);
-    }
 }

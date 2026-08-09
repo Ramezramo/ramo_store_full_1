@@ -129,6 +129,7 @@ class OrderTrackingController extends Controller
         'processing' => ['label' => 'Processing',       'color' => '#3b82f6', 'bg' => '#eff6ff', 'icon' => '🔄'],
         'on-hold'    => ['label' => 'On Hold',           'color' => '#f97316', 'bg' => '#fff7ed', 'icon' => '⏸'],
         'completed'  => ['label' => 'Delivered',         'color' => '#22c55e', 'bg' => '#f0fdf4', 'icon' => '✅'],
+        'delivered'  => ['label' => 'Delivered',         'color' => '#22c55e', 'bg' => '#f0fdf4', 'icon' => '✅'],
         'cancelled'  => ['label' => 'Cancelled',         'color' => '#ef4444', 'bg' => '#fef2f2', 'icon' => '❌'],
         'refunded'   => ['label' => 'Refunded',          'color' => '#8b5cf6', 'bg' => '#f5f3ff', 'icon' => '↩️'],
         'failed'     => ['label' => 'Payment Failed',    'color' => '#ef4444', 'bg' => '#fef2f2', 'icon' => '✗'],

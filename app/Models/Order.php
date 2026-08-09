@@ -20,6 +20,11 @@ class Order extends Model
         'parent_vendors_ids',
         'date_created',
         'date_modified',
+        'general_order_status',
+        'general_order_status_override',
+        'general_order_status_override_reason',
+        'general_order_status_override_by',
+        'general_order_status_override_at',
         'date_completed',
         'date_paid',
         'discount_total',
@@ -113,5 +118,6 @@ class Order extends Model
         'date_paid_gmt' => 'datetime',
         'payment_receipt_uploaded_at' => 'datetime',
         'payment_reviewed_at' => 'datetime',
+        'general_order_status_override_at' => 'datetime',
     ];
 }

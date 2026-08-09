@@ -13,32 +13,62 @@
   {{-- Left column --}}
   <div style="display:flex;flex-direction:column;gap:20px">
 
-    {{-- General order status & quick update --}}
+    {{-- Computed general order status --}}
     <div class="card">
-      <div class="card-title">General Order Status</div>
-      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div class="card-title">General Order Status <span style="font-size:11px;font-weight:500;color:var(--muted);text-transform:none;letter-spacing:0">(computed)</span></div>
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px">
         @php
-          $sc = match($order->status) {
+          $sc = match($computedStatus) {
             'completed'                       => 'badge-green',
             'pending'                         => 'badge-yellow',
             'processing'                      => 'badge-blue',
-            'shipped'                         => 'badge-purple',
-            'cancelled', 'failed'             => 'badge-red',
-            'refunded', 'on-hold'             => 'badge-gray',
+            'shipped', 'partially_shipped'    => 'badge-purple',
+            'partially_delivered'             => 'badge-blue',
+            'cancelled', 'partially_cancelled'=> 'badge-red',
             default                           => 'badge-gray',
           };
         @endphp
-        <span class="badge {{ $sc }}" style="font-size:14px;padding:6px 14px">{{ ucfirst($order->status) }}</span>
-
-        <form method="POST" action="{{ route('admin.orders.status', $order->id) }}" style="display:flex;gap:8px;align-items:center">
-          @csrf @method('PATCH')
-          <select name="status">
-            @foreach(['pending','processing','shipped','completed','cancelled','refunded','failed'] as $s)
-              <option value="{{ $s }}" {{ $order->status==$s?'selected':'' }}>{{ ucfirst($s) }}</option>
-            @endforeach
-          </select>
-          <button class="btn btn-primary">Update Status</button>
-        </form>
+        <span class="badge {{ $sc }}" style="font-size:14px;padding:6px 14px">{{ $statusService->label($computedStatus) }}</span>
+        @if($order->general_order_status_override)
+          <span class="badge badge-red" style="font-size:12px">Force Override Active</span>
+        @endif
+      </div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.6">
+        Payment: <strong style="color:var(--text)">{{ ucwords(str_replace('_', ' ', $order->payment_status ?? 'pending_verification')) }}</strong>
+        · {{ $subOrders->count() }} vendor{{ $subOrders->count() === 1 ? '' : 's' }}
+      </div>
+      @if($subOrders->count())
+        <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:12px">
+          @foreach($vendorStatusCounts as $vendorStatus => $count)
+            <span class="badge badge-gray">{{ $count }} × {{ $statusService->label($vendorStatus) }}</span>
+          @endforeach
+        </div>
+      @else
+        <div style="font-size:12px;color:var(--muted);margin-top:10px">No vendor shipments have been created for this order.</div>
+      @endif
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08)">
+        <div style="font-size:12px;font-weight:700;margin-bottom:8px">Force Override <span style="font-weight:400;color:var(--muted)">(exception only)</span></div>
+        @if($order->general_order_status_override)
+          <div style="font-size:12px;color:var(--muted);margin-bottom:9px">
+            {{ $statusService->label($order->general_order_status_override) }}:
+            {{ $order->general_order_status_override_reason }}
+          </div>
+          <form method="POST" action="{{ route('admin.orders.force-override.clear', $order->id) }}">
+            @csrf @method('DELETE')
+            <button class="btn btn-ghost btn-sm">Clear Override &amp; Restore Computed Status</button>
+          </form>
+        @else
+          <form method="POST" action="{{ route('admin.orders.force-override', $order->id) }}" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            @csrf @method('PATCH')
+            <select name="status" required>
+              @foreach(['pending','processing','partially_shipped','shipped','partially_delivered','completed','partially_cancelled','cancelled'] as $overrideStatus)
+                <option value="{{ $overrideStatus }}">{{ $statusService->label($overrideStatus) }}</option>
+              @endforeach
+            </select>
+            <input name="reason" required maxlength="1000" placeholder="Why is an override needed?" style="flex:1;min-width:220px;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+            <button class="btn btn-danger btn-sm">Apply Force Override</button>
+          </form>
+        @endif
       </div>
     </div>
 
@@ -200,17 +230,18 @@
     <div class="card">
       <div class="card-title">Store Shipment Statuses ({{ $subOrders->count() }})</div>
       <p style="color:var(--muted);font-size:12px;margin:-8px 0 14px">
-        Update each store independently. These statuses do not change the general order status above.
+        Update each store independently. The general order status recomputes automatically from these statuses and payment confirmation.
       </p>
       @foreach($subOrders as $sub)
         @php
           $subItems = json_decode($sub->line_items ?? '[]', true) ?: [];
-          $subSc = match($sub->status) {
-            'completed'           => 'badge-green',
+          $vendorStatus = $statusService->normalizeVendorStatus($sub->vendor_status ?? $sub->status);
+          $subSc = match($vendorStatus) {
+            'delivered'           => 'badge-green',
             'pending'             => 'badge-yellow',
             'processing'          => 'badge-blue',
             'shipped'             => 'badge-purple',
-            'cancelled', 'failed' => 'badge-red',
+            'cancelled', 'returned'=> 'badge-red',
             default               => 'badge-gray',
           };
         @endphp
@@ -221,7 +252,7 @@
               <span style="font-size:11px;color:var(--muted);margin-left:8px">Sub-order #{{ $sub->id }}</span>
             </div>
             <div style="display:flex;align-items:center;gap:10px">
-              <span class="badge {{ $subSc }}" style="font-size:12px">{{ ucfirst($sub->status) }}</span>
+              <span class="badge {{ $subSc }}" style="font-size:12px">{{ $statusService->label($vendorStatus) }}</span>
             </div>
           </div>
           <form method="POST" action="{{ route('admin.orders.sub-orders.status', ['orderId' => $order->id, 'subOrderId' => $sub->id]) }}"
@@ -229,9 +260,9 @@
             @csrf @method('PATCH')
             <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Store status</label>
             <select name="status" style="min-width:130px">
-              @foreach(['pending', 'processing', 'shipped', 'completed', 'cancelled'] as $storeStatus)
-                <option value="{{ $storeStatus }}" {{ $sub->status === $storeStatus ? 'selected' : '' }}>
-                  {{ $storeStatus === 'completed' ? 'Delivered' : ucfirst($storeStatus) }}
+              @foreach(['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'returned'] as $storeStatus)
+                <option value="{{ $storeStatus }}" {{ $vendorStatus === $storeStatus ? 'selected' : '' }}>
+                  {{ $statusService->label($storeStatus) }}
                 </option>
               @endforeach
             </select>

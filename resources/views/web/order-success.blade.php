@@ -12,7 +12,16 @@
   </div>
 
   <div class="order-detail-card">
-    <div class="od-row"><span class="od-label">Status</span><span class="status-badge status-{{ $order->status }}">{{ ucfirst($order->status) }}</span></div>
+    @php
+      $displayOrderStatus = $order->general_order_status ?? $order->status ?? 'pending';
+      $displayOrderLabel = match($displayOrderStatus) {
+        'partially_shipped' => 'Partially Shipped',
+        'partially_delivered' => 'Partially Delivered',
+        'partially_cancelled' => 'Partially Cancelled',
+        default => ucfirst($displayOrderStatus),
+      };
+    @endphp
+    <div class="od-row"><span class="od-label">Status</span><span class="status-badge status-{{ $displayOrderStatus }}">{{ $displayOrderLabel }}</span></div>
     @if(in_array($order->payment_method, ['manual_wallet', 'manual_instapay']))
       <div class="od-row"><span class="od-label">Payment status</span><span class="status-badge" style="background:#fff7ed;color:#9a3412">{{ ucwords(str_replace('_', ' ', $order->payment_status ?? 'pending_payment')) }}</span></div>
     @endif

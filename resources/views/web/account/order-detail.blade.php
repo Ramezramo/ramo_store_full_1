@@ -176,12 +176,12 @@
         'pending'    => 0,
         'processing' => 1,
         'shipped'    => 2,
-        'completed'  => 3,
+        'completed', 'delivered' => 3,
         default      => 0,
       };
       $subCancelled = in_array($sub->status, ['cancelled']);
       $subFillPct   = $subCancelled ? 0 : match($subStepIndex) { 0=>0,1=>33,2=>66,3=>100,default=>0 };
-      $subSteps     = ['pending'=>'Pending','processing'=>'Processing','shipped'=>'Shipped','completed'=>'Delivered'];
+      $subSteps     = ['pending'=>'Pending','processing'=>'Processing','shipped'=>'Shipped','delivered'=>'Delivered'];
     @endphp
 
     <div style="margin-top:20px;border:2px solid #e5e7eb;border-radius:16px;overflow:hidden">
@@ -200,7 +200,7 @@
             </div>
           @endif
         </div>
-        <span class="status-badge status-{{ $sub->status }}" style="font-size:12px">{{ ucfirst($sub->status) }}</span>
+        <span class="status-badge status-{{ $sub->status }}" style="font-size:12px">{{ $sub->status === 'delivered' ? 'Delivered' : ucfirst($sub->status) }}</span>
       </div>
 
       {{-- Sub-order progress bar --}}
@@ -302,7 +302,7 @@
       </div>
 
       {{-- Refund / Return CTA per sub-order --}}
-      @if(in_array($sub->status, ['completed','shipped','processing']))
+      @if(in_array($sub->status, ['delivered','completed','shipped','processing']))
         <div style="padding:12px 18px;background:#fff;border-top:1px solid #e5e7eb">
           <a href="{{ route('account.refunds.create', ['order_id' => $order->id]) }}" style="font-size:12px;color:#e85d26;text-decoration:none;font-weight:600">⚠ Request Refund / Return for this shipment →</a>
         </div>

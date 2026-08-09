@@ -18,7 +18,7 @@
 .ot tr:last-child td{border-bottom:none}
 .ot tr:hover td{background:#fafafa}
 .badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700}
-.s-pending{background:#fef3c7;color:#92400e}.s-processing{background:#dbeafe;color:#1e40af}.s-shipped{background:#f3e8ff;color:#6b21a8}.s-completed{background:#dcfce7;color:#166534}.s-cancelled{background:#fee2e2;color:#991b1b}.s-on-hold,.s-refunded,.s-failed{background:#f3f4f6;color:var(--mid)}
+.s-pending{background:#fef3c7;color:#92400e}.s-processing{background:#dbeafe;color:#1e40af}.s-shipped{background:#f3e8ff;color:#6b21a8}.s-delivered{background:#dcfce7;color:#166534}.s-cancelled,.s-returned{background:#fee2e2;color:#991b1b}.s-on-hold,.s-refunded,.s-failed{background:#f3f4f6;color:var(--mid)}
 .action-link{font-size:12px;font-weight:600;color:var(--orange);text-decoration:none}
 .action-link:hover{text-decoration:underline}
 .empty-state{text-align:center;padding:60px 20px;color:var(--mid)}
@@ -41,14 +41,14 @@
   <div class="stat-card" style="border-top:3px solid var(--yellow)"><div class="sc-num" style="color:var(--yellow)">{{ $stats['pending'] }}</div><div class="sc-label">Pending</div></div>
   <div class="stat-card" style="border-top:3px solid #3b82f6"><div class="sc-num" style="color:#3b82f6">{{ $stats['processing'] }}</div><div class="sc-label">Processing</div></div>
   <div class="stat-card" style="border-top:3px solid #8b5cf6"><div class="sc-num" style="color:#8b5cf6">{{ $stats['shipped'] }}</div><div class="sc-label">Shipped</div></div>
-  <div class="stat-card" style="border-top:3px solid var(--green)"><div class="sc-num" style="color:var(--green)">{{ $stats['completed'] }}</div><div class="sc-label">Completed</div></div>
+  <div class="stat-card" style="border-top:3px solid var(--green)"><div class="sc-num" style="color:var(--green)">{{ $stats['delivered'] }}</div><div class="sc-label">Delivered</div></div>
 </div>
 
 {{-- FILTERS --}}
 <form method="GET" action="{{ route('vendor.orders') }}" class="filter-bar">
   <select name="status" onchange="this.form.submit()">
     <option value="">All Statuses</option>
-    @foreach(['pending','processing','shipped','completed','cancelled'] as $s)
+    @foreach(['pending','processing','shipped','delivered','cancelled','returned'] as $s)
       <option value="{{ $s }}" {{ $statusFilter===$s?'selected':'' }}>{{ ucfirst($s) }}</option>
     @endforeach
   </select>
@@ -103,7 +103,7 @@
               @endif
             </td>
             <td style="font-weight:700;white-space:nowrap">{{ number_format($sub->vendor_total,2) }} EGP</td>
-            <td><span class="badge s-{{ $sub->status }}">{{ ucfirst($sub->status) }}</span></td>
+            <td><span class="badge s-{{ $sub->status }}">{{ $sub->status === 'delivered' ? 'Delivered' : ucfirst($sub->status) }}</span></td>
             <td style="color:var(--mid);font-size:12px;white-space:nowrap">{{ \Carbon\Carbon::parse($sub->created_at)->format('d M Y') }}</td>
             <td><a href="{{ route('vendor.orders.show', $sub->id) }}" class="action-link">View →</a></td>
           </tr>

@@ -62,7 +62,7 @@ class ReviewController extends Controller
         $verified = DB::table('orders')
             ->where('customer_id', Auth::id())
             ->whereRaw("line_items::text LIKE ?", ['%"product_id":' . $r->product_id . '%'])
-            ->where('status', 'completed')
+            ->whereIn('general_order_status', ['completed'])
             ->exists();
 
         $id = DB::table('product_reviews')->insertGetId([
@@ -102,7 +102,7 @@ class ReviewController extends Controller
         $verified = DB::table('orders')
             ->where('customer_id', Auth::id())
             ->whereRaw("line_items::text LIKE ?", ['%"product_id":' . $r->product_id . '%'])
-            ->where('status', 'completed')
+            ->whereIn('general_order_status', ['completed'])
             ->exists();
 
         DB::table('product_reviews')->insert([

@@ -209,7 +209,7 @@ class CheckoutController extends Controller
         $orderId = DB::table('orders')->insertGetId([
             'customer_id'          => Auth::id(),
             'status'               => $isManualPayment ? 'pending' : 'pending',
-            'payment_status'       => $isManualPayment ? 'pending_payment' : 'confirmed',
+            'payment_status'       => $isManualPayment ? 'pending_verification' : 'confirmed',
             'currency'             => 'EGP',
             'currency_symbol'      => 'ج.م',
             'payment_method'       => $r->payment_method,
@@ -299,6 +299,7 @@ class CheckoutController extends Controller
                 'vendor_id'       => ($vendorId === 'none') ? null : (int) $vendorId,
                 'customer_id'     => Auth::id(),
                 'status'          => 'pending',
+                'vendor_status'   => 'pending',
                 'line_items'      => json_encode($subLineItems),
                 'subtotal'        => $subSubtotal,
                 'discount_total'  => $subDiscount,
