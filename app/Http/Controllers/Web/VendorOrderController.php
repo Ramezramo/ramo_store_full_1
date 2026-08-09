@@ -168,7 +168,8 @@ class VendorOrderController extends Controller
 
         if (! $subOrder) abort(404);
 
-        $allowed   = ['processing', 'shipped', 'delivered', 'cancelled', 'returned'];
+        // Keep seller shipment states aligned with the admin order controls.
+        $allowed   = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'returned'];
         $newStatus = $request->input('status');
         $newStatus = $newStatus === 'completed' ? 'delivered' : $newStatus;
         if (! in_array($newStatus, $allowed)) {

@@ -198,7 +198,14 @@
           @csrf
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <select name="status" class="sf-select">
-              @foreach(['processing'=>'Processing — Preparing order','shipped'=>'Shipped — Handed to courier','delivered'=>'Delivered — Shipment received','cancelled'=>'Cancel this shipment'] as $val=>$lbl)
+              @foreach([
+                'pending' => 'Pending',
+                'processing' => 'Processing',
+                'shipped' => 'Shipped',
+                'delivered' => 'Delivered',
+                'cancelled' => 'Cancelled',
+                'returned' => 'Returned',
+              ] as $val=>$lbl)
                 <option value="{{ $val }}" {{ $subOrder->status===$val?'selected':'' }}>{{ $lbl }}</option>
               @endforeach
             </select>
