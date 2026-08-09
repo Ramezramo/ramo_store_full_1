@@ -99,7 +99,7 @@
     @endif
 
     {{-- Per-store shipment statuses --}}
-    @if(isset($subOrders) && $subOrders->count())
+    @if(isset($subOrders) && $subOrders->count() > 1)
     <div class="or-store-statuses">
       <div class="or-section-title">Store Shipments</div>
       <p class="or-store-intro">This order may arrive in separate packages. Each store has its own delivery status.</p>
