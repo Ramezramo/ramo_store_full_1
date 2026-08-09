@@ -51,11 +51,17 @@
   {{-- ── ORDER RESULT ── --}}
   @if(isset($order) && $order)
   @php
-    $status = \App\Http\Controllers\Web\OrderTrackingController::statusInfo($order->status ?? 'pending');
+    // A single-store order is fulfilled by that vendor, so show the
+    // vendor shipment status instead of the parent order status.
+    $singleStoreSubOrder = isset($subOrders) && $subOrders->count() === 1
+      ? $subOrders->first()
+      : null;
+    $displayStatus = $singleStoreSubOrder->status ?? $order->status ?? 'pending';
+    $status = \App\Http\Controllers\Web\OrderTrackingController::statusInfo($displayStatus);
     $steps  = ['pending','processing','shipped','completed'];
-    $curIdx = array_search(strtolower($order->status ?? 'pending'), $steps);
+    $curIdx = array_search(strtolower($displayStatus), $steps);
     if ($curIdx === false) $curIdx = 0;
-    $cancelled = in_array(strtolower($order->status ?? ''), ['cancelled','refunded','failed']);
+    $cancelled = in_array(strtolower($displayStatus), ['cancelled','refunded','failed']);
   @endphp
 
   <div class="order-result">
@@ -94,7 +100,7 @@
     @else
     <div class="or-cancelled-banner" style="background:{{ $status['bg'] }};color:{{ $status['color'] }}">
       {{ $status['icon'] }} This order has been <strong>{{ $status['label'] }}</strong>.
-      @if(strtolower($order->status) === 'refunded') A refund has been processed. @endif
+      @if(strtolower($displayStatus) === 'refunded') A refund has been processed. @endif
     </div>
     @endif
 
