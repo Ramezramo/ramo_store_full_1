@@ -829,7 +829,11 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
       {{-- Cart --}}
       <a href="{{ route('cart') }}" class="nav-icon-btn" title="Cart">
         🛒
-        @php $cCount = count(session('ramo_cart',[])); @endphp
+        @php
+          $cCount = Auth::check()
+            ? \Illuminate\Support\Facades\DB::table('cart_items')->where('user_id', Auth::id())->count()
+            : count(session('ramo_cart', []));
+        @endphp
         @if($cCount)<span class="nav-badge" id="cart-badge">{{ $cCount }}</span>@endif
       </a>
 
@@ -954,7 +958,11 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
       <a href="{{ route('shop') }}" class="{{ request()->routeIs('shop') ? 'active' : '' }}">🛍️ Shop</a>
       <a href="{{ route('cart') }}" class="{{ request()->routeIs('cart') ? 'active' : '' }}">
         🛒 Cart
-        @php $__mc = count(session('ramo_cart',[])); @endphp
+        @php
+          $__mc = Auth::check()
+            ? \Illuminate\Support\Facades\DB::table('cart_items')->where('user_id', Auth::id())->count()
+            : count(session('ramo_cart', []));
+        @endphp
         @if($__mc) <span style="background:var(--c-orange);color:#fff;font-size:11px;font-weight:800;padding:1px 7px;border-radius:50px;margin-left:4px">{{ $__mc }}</span> @endif
       </a>
       <a href="{{ route('wishlist') }}" class="{{ request()->routeIs('wishlist') ? 'active' : '' }}">♡ Wishlist</a>

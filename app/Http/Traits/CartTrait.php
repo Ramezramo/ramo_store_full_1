@@ -11,6 +11,16 @@ trait CartTrait
     protected function getCart(): array
     {
         if (Auth::check()) {
+            // Some authentication flows (OTP, Google OAuth, and email
+            // verification) log the user in without going through the
+            // password-login controller. Merge the guest cart here as a
+            // safety net so the cart cannot be lost during that handoff.
+            $guestCart = session('ramo_cart', []);
+            if (!empty($guestCart)) {
+                $this->mergeGuestCartToDb(Auth::id(), $guestCart);
+                session()->forget('ramo_cart');
+            }
+
             return $this->loadCartFromDb();
         }
         return session('ramo_cart', []);
