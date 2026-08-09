@@ -23,6 +23,8 @@ input.err{border-color:var(--red)}
 .remember-row{display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:13px;color:var(--mid)}
 .btn{width:100%;padding:12px;background:var(--orange);color:#fff;border:none;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer;transition:.15s}
 .btn:hover{background:var(--orange2)}
+.debug-fill-btn{width:100%;padding:10px 12px;background:transparent;color:var(--orange);border:1px solid var(--orange);border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;transition:.15s;margin-top:10px}
+.debug-fill-btn:hover{background:rgba(232,93,38,.08)}
 .links{text-align:center;margin-top:18px;font-size:13px;color:var(--mid);display:flex;flex-direction:column;gap:6px}
 .links a{color:var(--orange);font-weight:600}
 .warn-box{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--yellow)}
@@ -67,6 +69,14 @@ input.err{border-color:var(--red)}
       <label for="remember" style="font-size:13px;text-transform:none;letter-spacing:0;color:var(--mid)">Keep me signed in</label>
     </div>
     <button type="submit" class="btn">Sign In →</button>
+    @if(config('app.debug'))
+      <button
+        type="button"
+        class="debug-fill-btn"
+        id="debug-fill-vendor-credentials"
+        aria-label="Fill the debug seller email and password"
+      >Fill debug credentials</button>
+    @endif
   </form>
 
   <div class="links">
@@ -74,6 +84,15 @@ input.err{border-color:var(--red)}
     <div><a href="{{ route('home') }}">← Back to store</a></div>
   </div>
 </div>
+
+@if(config('app.debug'))
+  <script>
+    document.getElementById('debug-fill-vendor-credentials').addEventListener('click', function () {
+      document.querySelector('input[name="email"]').value = 'cairo.fashion@ramostore.com';
+      document.querySelector('input[name="password"]').value = 'vendor123456';
+    });
+  </script>
+@endif
 
 </body>
 </html>
