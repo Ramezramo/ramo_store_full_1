@@ -193,15 +193,61 @@
                   : '';
                 $qty = $item['quantity'] ?? $item['qty'] ?? 1;
                 $itemTotal = $item['subtotal'] ?? (($item['price'] ?? 0) * $qty);
+                $product = $productDetails->get((int) ($item['product_id'] ?? 0));
+                $variation = $variationDetails->get((int) ($item['variation_id'] ?? 0));
+                $productDescription = trim(strip_tags(
+                  $product->short_description ?? $product->description ?? ''
+                ));
+                $productStatus = $product
+                  ? trim(($product->status ?? '') . ' ' . ($product->acceptance_status ?? ''))
+                  : '';
               @endphp
               <tr>
                 <td>
-                  <div style="font-weight:600">{{ $item['name'] ?? 'Unknown' }}</div>
+                  <div style="display:flex;gap:10px;align-items:flex-start;min-width:220px">
+                    @if($product?->thumbnail_url)
+                      <img src="{{ $product->thumbnail_url }}" alt="{{ $item['name'] ?? 'Product' }}"
+                           style="width:52px;height:52px;object-fit:cover;border-radius:7px;background:rgba(255,255,255,.06);flex-shrink:0"
+                           onerror="this.style.display='none'">
+                    @endif
+                    <div style="min-width:0">
+                      @if($product)
+                        <a href="{{ route('product', $product->id) }}" target="_blank" rel="noopener"
+                           style="font-weight:700;color:var(--accent);text-decoration:none;display:block">
+                          {{ $product->name ?: ($item['name'] ?? 'Unknown') }} ↗
+                        </a>
+                      @else
+                        <div style="font-weight:600">{{ $item['name'] ?? 'Unknown' }}</div>
+                      @endif
+                      @if($productDescription)
+                        <div style="font-size:11px;color:var(--muted);line-height:1.45;margin-top:4px;max-width:360px">
+                          {{ \Illuminate\Support\Str::limit($productDescription, 150) }}
+                        </div>
+                      @endif
+                    </div>
+                  </div>
                   @if(!empty($item['sku']))
                     <div style="font-size:11px;color:var(--muted)">SKU: {{ $item['sku'] }}</div>
                   @endif
+                  @if($product && !empty($product->sku) && empty($item['sku']))
+                    <div style="font-size:11px;color:var(--muted)">SKU: {{ $product->sku }}</div>
+                  @endif
                   @if($item['variation_id'] ?? null)
                     <div style="font-size:11px;color:var(--muted)">Var #{{ $item['variation_id'] }}</div>
+                  @endif
+                  @if($product)
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:5px">
+                      @if($productStatus)
+                        <span style="font-size:10px;color:var(--muted);background:rgba(255,255,255,.07);border-radius:4px;padding:2px 5px">
+                          {{ str_replace('_', ' ', $productStatus) }}
+                        </span>
+                      @endif
+                      @if($product->stock_quantity !== null)
+                        <span style="font-size:10px;color:var(--muted);background:rgba(255,255,255,.07);border-radius:4px;padding:2px 5px">
+                          Stock: {{ $product->stock_quantity }}
+                        </span>
+                      @endif
+                    </div>
                   @endif
                 </td>
                 <td>
@@ -211,6 +257,22 @@
                         <span style="display:inline-block;background:rgba(255,255,255,.07);border-radius:4px;padding:1px 6px;margin:1px;font-size:11px">
                           <strong>{{ $k }}</strong>: {{ $v }}
                         </span>
+                      @endforeach
+                    </div>
+                  @elseif($variation && !empty($variation->attributes))
+                    <div style="font-size:12px;color:var(--muted);line-height:1.6">
+                      @foreach((array) $variation->attributes as $k => $v)
+                        @if(is_array($v))
+                          @foreach($v as $nestedKey => $nestedValue)
+                            <span style="display:inline-block;background:rgba(255,255,255,.07);border-radius:4px;padding:1px 6px;margin:1px;font-size:11px">
+                              <strong>{{ $nestedKey }}</strong>: {{ is_scalar($nestedValue) ? $nestedValue : json_encode($nestedValue) }}
+                            </span>
+                          @endforeach
+                        @else
+                          <span style="display:inline-block;background:rgba(255,255,255,.07);border-radius:4px;padding:1px 6px;margin:1px;font-size:11px">
+                            <strong>{{ $k }}</strong>: {{ $v }}
+                          </span>
+                        @endif
                       @endforeach
                     </div>
                   @else

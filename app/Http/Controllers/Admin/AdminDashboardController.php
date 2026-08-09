@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Constants\AppConstants;
 use App\Services\OrderStatusService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -127,6 +128,55 @@ class AdminDashboardController extends Controller
         $lineItems = $order->line_items ? json_decode($order->line_items, true) : [];
         $timeline  = $order->timeline   ? json_decode($order->timeline,   true) : [];
 
+        $productIds = collect($lineItems)
+            ->pluck('product_id')
+            ->filter(fn ($id) => is_numeric($id) && (int) $id > 0)
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+        $productDetails = collect();
+        $variationDetails = collect();
+
+        if ($productIds->isNotEmpty()) {
+            $productDetails = DB::table('products_data')
+                ->whereIn('id', $productIds->all())
+                ->get([
+                    'id', 'name', 'slug', 'description', 'short_description',
+                    'sku', 'images', 'stock_quantity', 'stock_status',
+                    'status', 'acceptance_status', 'vendor_id', 'unit',
+                ])
+                ->map(function ($product) {
+                    $product->thumbnail_url = AppConstants::productThumbnailUrl($product->images);
+                    return $product;
+                })
+                ->keyBy('id');
+
+            $variationIds = collect($lineItems)
+                ->pluck('variation_id')
+                ->filter(fn ($id) => is_numeric($id) && (int) $id > 0)
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values();
+
+            if ($variationIds->isNotEmpty()) {
+                $variationDetails = DB::table('product_variations')
+                    ->whereIn('id', $variationIds->all())
+                    ->get([
+                        'id', 'product_id', 'attributes', 'price',
+                        'regular_price', 'sale_price', 'stock_quantity',
+                    ])
+                    ->map(function ($variation) {
+                        $variation->attributes = is_string($variation->attributes)
+                            ? (json_decode($variation->attributes, true)
+                                ?? json_decode(stripslashes($variation->attributes), true)
+                                ?? [])
+                            : (array) $variation->attributes;
+                        return $variation;
+                    })
+                    ->keyBy('id');
+            }
+        }
+
         $subOrders = DB::table('order_sub_orders as s')
             ->where('s.parent_order_id', $id)
             ->leftJoin('vendor_users as v', 'v.id', '=', 's.vendor_id')
@@ -140,7 +190,12 @@ class AdminDashboardController extends Controller
 
         $paymentReceipts = \App\Http\Controllers\Web\PaymentReceiptController::history($id);
 
-        return view('admin.order-detail', compact('order', 'customer', 'billing', 'shipping', 'lineItems', 'timeline', 'subOrders', 'paymentReceipts', 'computedStatus', 'vendorStatusCounts', 'statusService'));
+        return view('admin.order-detail', compact(
+            'order', 'customer', 'billing', 'shipping', 'lineItems',
+            'productDetails', 'variationDetails', 'timeline', 'subOrders',
+            'paymentReceipts', 'computedStatus', 'vendorStatusCounts',
+            'statusService'
+        ));
     }
 
     public function updateOrderStatus(Request $request, int $id)
