@@ -41,8 +41,8 @@ class CheckoutController extends Controller
         $total      = max(0, $subtotal - $discount);
 
         $user = Auth::user();
-        $manualPaymentMethods = PaymentConfig::enabledMethods();
-        return view('web.checkout', compact('cart', 'subtotal', 'discount', 'total', 'coupon', 'user', 'authConfig', 'manualPaymentMethods'));
+        $paymentMethods = PaymentConfig::checkoutMethods();
+        return view('web.checkout', compact('cart', 'subtotal', 'discount', 'total', 'coupon', 'user', 'authConfig', 'paymentMethods'));
     }
 
     public function place(Request $r)
@@ -73,10 +73,11 @@ class CheckoutController extends Controller
             'notes'          => 'nullable|string|max:500',
         ]);
 
+        $paymentMethods       = PaymentConfig::checkoutMethods();
         $manualPaymentMethods = PaymentConfig::enabledMethods();
         $allowedPaymentMethods = array_merge(
-            ['cod', 'bank_transfer', 'vodafone_cash', 'fawry', 'wallet', 'credit_card'],
-            array_keys($manualPaymentMethods)
+            array_keys($paymentMethods),
+            ['wallet']
         );
         if (!in_array($r->payment_method, $allowedPaymentMethods, true)) {
             return back()->withInput()->withErrors(['payment_method' => 'That payment method is not currently available.']);

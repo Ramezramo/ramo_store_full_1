@@ -332,6 +332,10 @@ button{cursor:pointer;font-family:inherit}
 .pay-icon{font-size:22px;flex-shrink:0}
 .pay-title{font-size:14px;font-weight:700}
 .pay-desc{font-size:12px;color:var(--c-mid);margin-top:1px}
+.pay-data{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px;padding:8px 10px;border-radius:8px;background:#fff7ed;color:#9a3412;font-size:12px;line-height:1.4}
+.pay-data span{color:#b45309;font-weight:600}
+.pay-data strong{font-weight:800;overflow-wrap:anywhere}
+.pay-data a{color:#c2410c;font-weight:700;text-decoration:underline}
 .place-order-btn{width:100%;justify-content:center;border-radius:12px;padding:16px;font-size:16px}
 .ck-summary{background:var(--c-white);border:1.5px solid var(--c-light);border-radius:var(--radius-lg);padding:24px;position:sticky;top:84px}
 .ck-items{margin-bottom:20px;display:flex;flex-direction:column;gap:12px}

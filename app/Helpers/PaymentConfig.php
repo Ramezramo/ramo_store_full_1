@@ -8,6 +8,16 @@ use Illuminate\Support\Facades\DB;
 class PaymentConfig
 {
     private static array $defaults = [
+        'cod_enabled' => true,
+        'cod_data' => 'Pay when your order arrives',
+        'vodafone_cash_enabled' => true,
+        'vodafone_cash_data' => 'Send to 01xxxxxxxxx',
+        'bank_transfer_enabled' => true,
+        'bank_transfer_data' => 'Transfer to our bank account',
+        'fawry_enabled' => true,
+        'fawry_data' => 'Pay at any Fawry outlet',
+        'credit_card_enabled' => true,
+        'credit_card_data' => 'Visa / Mastercard',
         'wallet_enabled' => false,
         'wallet_number' => '',
         'instapay_enabled' => false,
@@ -63,6 +73,100 @@ class PaymentConfig
 
         if ($config['instapay_enabled'] && (trim($config['instapay_number']) !== '' || trim($config['instapay_link']) !== '')) {
             $methods['manual_instapay'] = self::detailsFor('manual_instapay', $config);
+        }
+
+        return $methods;
+    }
+
+    /**
+     * Return all payment methods enabled for the web checkout, in the
+     * configured customer-facing order. Manual methods remain first.
+     */
+    public static function checkoutMethods(): array
+    {
+        $config = self::get();
+        $methods = [];
+
+        if ($config['wallet_enabled'] && trim((string) $config['wallet_number']) !== '') {
+            $details = self::detailsFor('manual_wallet', $config);
+            $methods['manual_wallet'] = [
+                'icon' => '📱',
+                'title' => 'Pay by Wallet',
+                'description' => 'Transfer from any Egyptian mobile wallet',
+                'data' => $details['destination'] ?? '',
+                'data_label' => 'Transfer to',
+                'link' => null,
+            ];
+        }
+
+        if ($config['instapay_enabled'] && (trim((string) $config['instapay_number']) !== '' || trim((string) $config['instapay_link']) !== '')) {
+            $details = self::detailsFor('manual_instapay', $config);
+            $methods['manual_instapay'] = [
+                'icon' => '⚡',
+                'title' => 'Pay by InstaPay',
+                'description' => 'Transfer using InstaPay',
+                'data' => $details['destination'] ?? '',
+                'data_label' => 'Transfer to',
+                'link' => $details['link'] ?? null,
+            ];
+        }
+
+        $standard = [
+            'cod' => [
+                'icon' => '💵',
+                'title' => 'Cash on Delivery',
+                'description' => 'Pay when your order arrives',
+                'data_label' => 'Details',
+                'config_enabled' => 'cod_enabled',
+                'config_data' => 'cod_data',
+            ],
+            'vodafone_cash' => [
+                'icon' => '📱',
+                'title' => 'Vodafone Cash',
+                'description' => 'Send money from your Vodafone wallet',
+                'data_label' => 'Transfer to',
+                'config_enabled' => 'vodafone_cash_enabled',
+                'config_data' => 'vodafone_cash_data',
+            ],
+            'bank_transfer' => [
+                'icon' => '🏦',
+                'title' => 'Bank Transfer',
+                'description' => 'Transfer to our bank account',
+                'data_label' => 'Bank details',
+                'config_enabled' => 'bank_transfer_enabled',
+                'config_data' => 'bank_transfer_data',
+            ],
+            'fawry' => [
+                'icon' => '🏪',
+                'title' => 'Fawry',
+                'description' => 'Pay at any Fawry outlet',
+                'data_label' => 'Details',
+                'config_enabled' => 'fawry_enabled',
+                'config_data' => 'fawry_data',
+            ],
+            'credit_card' => [
+                'icon' => '💳',
+                'title' => 'Credit Card',
+                'description' => 'Visa / Mastercard',
+                'data_label' => 'Details',
+                'config_enabled' => 'credit_card_enabled',
+                'config_data' => 'credit_card_data',
+            ],
+        ];
+
+        foreach ($standard as $key => $method) {
+            if (!$config[$method['config_enabled']]) {
+                continue;
+            }
+
+            $methods[$key] = [
+                'icon' => $method['icon'],
+                'title' => $method['title'],
+                'description' => $method['description'],
+                'data' => trim((string) $config[$method['config_data']]),
+                'data_label' => $method['data_label'],
+                'link' => null,
+            ];
         }
 
         return $methods;
