@@ -14,7 +14,7 @@
     <select name="status">
       <option value="">All Statuses</option>
       @foreach($statuses as $s)
-        <option value="{{ $s }}" {{ $status==$s?'selected':'' }}>{{ ucfirst($s) }}</option>
+        <option value="{{ $s }}" {{ $status==$s?'selected':'' }}>{{ app(\App\Services\OrderStatusService::class)->label($s) }}</option>
       @endforeach
     </select>
   </div>
@@ -58,7 +58,8 @@
               'completed'           => 'badge-green',
           'pending'             => 'badge-yellow',
           'processing'          => 'badge-blue',
-              'shipped', 'partially_shipped' => 'badge-purple',
+              'shipped'             => 'badge-purple',
+              'partially_shipped'   => 'badge-orange',
               'partially_delivered'  => 'badge-blue',
               'cancelled', 'partially_cancelled' => 'badge-red',
           default               => 'badge-gray',

@@ -29,7 +29,7 @@
 <div class="acc-section-title" style="margin-bottom:20px">Order #{{ $order->id }}</div>
 
 @if($cancelled)
-  <div class="acc-alert acc-alert-error" style="margin-bottom:24px">This order has been <strong>{{ ucfirst($order->status) }}</strong>.</div>
+  <div class="acc-alert acc-alert-error" style="margin-bottom:24px">This order has been <strong>{{ app(\App\Services\OrderStatusService::class)->label($order->status) }}</strong>.</div>
 @endif
 
 @if(session('success'))
@@ -42,7 +42,7 @@
 {{-- ── ORDER META ────────────────────────────────────────────────── --}}
 <div class="order-detail-card">
   <div class="od-row"><span class="od-label">Order #</span><strong>#{{ $order->id }}</strong></div>
-  <div class="od-row"><span class="od-label">Status</span><span class="status-badge status-{{ $order->status }}">{{ ucfirst($order->status) }}</span></div>
+  <div class="od-row"><span class="od-label">Status</span><span class="status-badge status-{{ $order->status }}">{{ app(\App\Services\OrderStatusService::class)->label($order->status) }}</span></div>
   <div class="od-row"><span class="od-label">Date</span><span>{{ \Carbon\Carbon::parse($order->date_created)->format('M d, Y h:i A') }}</span></div>
   <div class="od-row"><span class="od-label">Payment</span><span>{{ $order->payment_method_title }}</span></div>
   <div class="od-row"><span class="od-label">Total Paid</span><strong style="color:#e85d26">{{ number_format($order->final_total, 2) }} EGP</strong></div>
@@ -200,7 +200,7 @@
             </div>
           @endif
         </div>
-        <span class="status-badge status-{{ $sub->status }}" style="font-size:12px">{{ $sub->status === 'delivered' ? 'Delivered' : ucfirst($sub->status) }}</span>
+        <span class="status-badge status-{{ $sub->status }}" style="font-size:12px">{{ app(\App\Services\OrderStatusService::class)->label($sub->status) }}</span>
       </div>
 
       {{-- Sub-order progress bar --}}

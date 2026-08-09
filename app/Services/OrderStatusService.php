@@ -142,7 +142,7 @@ class OrderStatusService
             'partially_shipped' => 'Partially Shipped',
             'partially_delivered' => 'Partially Delivered',
             'partially_cancelled' => 'Partially Cancelled',
-            default => ucfirst($status),
+            default => ucwords(str_replace(['_', '-'], ' ', $status)),
         };
     }
 }

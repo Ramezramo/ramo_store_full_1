@@ -19,11 +19,12 @@
         @php
           $sc = match($order->status) {
             'completed' => 'badge-green', 'processing' => 'badge-blue',
-            'shipped' => 'badge-purple',
+            'shipped' => 'badge-purple', 'partially_shipped' => 'badge-orange',
+            'partially_delivered' => 'badge-blue', 'partially_cancelled' => 'badge-red',
             'cancelled','refunded' => 'badge-red', default => 'badge-yellow'
           };
         @endphp
-        <span class="badge {{ $sc }}" style="font-size:13px;padding:5px 14px">{{ $order->status }}</span>
+        <span class="badge {{ $sc }}" style="font-size:13px;padding:5px 14px">{{ app(\App\Services\OrderStatusService::class)->label($order->status) }}</span>
       </div>
       <div style="padding:20px">
         <div class="detail-grid">

@@ -17,7 +17,7 @@
       <tr>
         <td><strong>#{{ $order->id }}</strong></td>
         <td>{{ \Carbon\Carbon::parse($order->date_created)->format('M d, Y') }}</td>
-        <td><span class="status-badge status-{{ $order->status }}">{{ ucfirst($order->status) }}</span></td>
+        <td><span class="status-badge status-{{ $order->status }}">{{ app(\App\Services\OrderStatusService::class)->label($order->status) }}</span></td>
         <td>{{ $order->payment_method_title }}</td>
         <td><strong>{{ number_format($order->final_total, 2) }} EGP</strong></td>
         <td><a href="{{ route('account.order', $order->id) }}" class="btn btn-outline" style="font-size:12px;padding:6px 14px">View</a></td>

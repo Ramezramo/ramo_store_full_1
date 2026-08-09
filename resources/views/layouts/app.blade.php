@@ -375,6 +375,9 @@ button{cursor:pointer;font-family:inherit}
 .status-badge{display:inline-block;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:50px;text-transform:capitalize}
 .status-pending{background:#fff9e6;color:#b7860a}
 .status-processing{background:#e6f0ff;color:#1a56db}
+.status-partially_shipped{background:#fff7ed;color:#c2410c}
+.status-partially_delivered{background:#eff6ff;color:#2563eb}
+.status-partially_cancelled{background:#fef2f2;color:#b91c1c}
 .status-shipped{background:#f5f0ff;color:#7c3aed}
 .status-completed{background:#eefbee;color:#22a35c}
 .status-cancelled{background:#fff0f0;color:#e02020}

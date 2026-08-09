@@ -22,7 +22,8 @@
             'completed'                       => 'badge-green',
             'pending'                         => 'badge-yellow',
             'processing'                      => 'badge-blue',
-            'shipped', 'partially_shipped'    => 'badge-purple',
+            'shipped'                         => 'badge-purple',
+            'partially_shipped'               => 'badge-orange',
             'partially_delivered'             => 'badge-blue',
             'cancelled', 'partially_cancelled'=> 'badge-red',
             default                           => 'badge-gray',
@@ -50,8 +51,12 @@
         <div style="font-size:12px;font-weight:700;margin-bottom:8px">Force Override <span style="font-weight:400;color:var(--muted)">(exception only)</span></div>
         @if($order->general_order_status_override)
           <div style="font-size:12px;color:var(--muted);margin-bottom:9px">
-            {{ $statusService->label($order->general_order_status_override) }}:
-            {{ $order->general_order_status_override_reason }}
+            {{ $statusService->label($order->general_order_status_override) }}
+            @if($order->general_order_status_override_reason)
+              <span style="color:var(--text)">— {{ $order->general_order_status_override_reason }}</span>
+            @else
+              <span>— No reason provided</span>
+            @endif
           </div>
           <form method="POST" action="{{ route('admin.orders.force-override.clear', $order->id) }}">
             @csrf @method('DELETE')
@@ -65,7 +70,7 @@
                 <option value="{{ $overrideStatus }}">{{ $statusService->label($overrideStatus) }}</option>
               @endforeach
             </select>
-            <input name="reason" required maxlength="1000" placeholder="Why is an override needed?" style="flex:1;min-width:220px;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+            <input name="reason" maxlength="1000" placeholder="Why is an override needed? (optional)" style="flex:1;min-width:220px;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
             <button class="btn btn-danger btn-sm">Apply Force Override</button>
           </form>
         @endif

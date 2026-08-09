@@ -12,11 +12,12 @@
         @php
           $sc = match($s->status) {
             'completed' => 'badge-green', 'processing' => 'badge-blue',
-            'shipped' => 'badge-purple',
+            'shipped' => 'badge-purple', 'partially_shipped' => 'badge-orange',
+            'partially_delivered' => 'badge-blue', 'partially_cancelled' => 'badge-red',
             'cancelled','refunded' => 'badge-red', default => 'badge-yellow'
           };
         @endphp
-        <span class="badge {{ $sc }}">{{ $s->status }}: {{ $s->cnt }}</span>
+        <span class="badge {{ $sc }}">{{ app(\App\Services\OrderStatusService::class)->label($s->status) }}: {{ $s->cnt }}</span>
       @endforeach
     </div>
   </div>
@@ -64,7 +65,7 @@
         <tr>
           <td><a href="{{ route('admin.orders.show', $order->id) }}" style="color:var(--accent);font-weight:700">#{{ $order->id }}</a></td>
           <td style="color:var(--muted)">{{ $order->customer_id ? 'User #'.$order->customer_id : 'Guest' }}</td>
-          <td><span class="badge {{ $sc }}">{{ $order->status }}</span></td>
+           <td><span class="badge {{ $sc }}">{{ app(\App\Services\OrderStatusService::class)->label($order->status) }}</span></td>
           <td style="color:var(--muted)">{{ $order->payment_method_title ?: '—' }}</td>
           <td style="font-weight:600">{{ number_format($order->final_total, 2) }} {{ $order->currency_symbol }}</td>
           <td style="color:var(--muted)">{{ $order->date_created ? date('M d, Y', strtotime($order->date_created)) : '—' }}</td>

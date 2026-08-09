@@ -152,7 +152,7 @@ class AdminDashboardController extends Controller
     {
         $data = $request->validate([
             'status' => 'required|in:pending,processing,partially_shipped,shipped,partially_delivered,completed,partially_cancelled,cancelled',
-            'reason' => 'required|string|max:1000',
+            'reason' => 'nullable|string|max:1000',
         ]);
 
         $order = DB::table('orders')->where('id', $id)->first(['id', 'timeline']);
@@ -162,7 +162,8 @@ class AdminDashboardController extends Controller
         $timeline = json_decode($order->timeline ?? '[]', true) ?: [];
         $timeline[] = [
             'status' => $data['status'],
-            'note' => 'General order status force-overridden to '.$data['status'].': '.$data['reason'],
+            'note' => 'General order status force-overridden to '.$data['status']
+                .(!empty($data['reason']) ? ': '.$data['reason'] : '.'),
             'by' => 'admin:'.(auth()->id() ?? 'unknown'),
             'at' => $now->toDateTimeString(),
             'type' => 'general_status_override',
