@@ -47,7 +47,7 @@ class AccountController extends Controller
 
         $resolvedEmail = $request->filled('email')
             ? $request->email
-            : $user->email;
+            : ($hasPlaceholderEmail ? null : $user->email);
 
         $data = [
             'first_name' => $request->first_name,

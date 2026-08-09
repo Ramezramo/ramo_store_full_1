@@ -234,7 +234,6 @@ class OtpAuthController extends Controller
         $firstName = $parts[0];
         $lastName  = $parts[1] ?? '';
 
-        $resolvedEmail    = $email ?: 'otp_' . preg_replace('/[^0-9]/', '', $phone) . '@ramostore.local';
         $unusablePassword = \Illuminate\Support\Facades\Hash::make(Str::random(32));
 
         return User::create([
@@ -243,7 +242,9 @@ class OtpAuthController extends Controller
             'last_name'           => $lastName,
             'firstname'           => $firstName,
             'lastname'            => $lastName,
-            'email'               => $resolvedEmail,
+            // Phone OTP accounts do not need an email address. Keep it null
+            // until the customer chooses to add one from their profile.
+            'email'               => $email ?: null,
             'password'            => $unusablePassword,
             'phone'               => $phone,
             'role'                => json_encode(['customer']),

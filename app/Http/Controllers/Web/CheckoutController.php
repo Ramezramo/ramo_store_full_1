@@ -41,8 +41,15 @@ class CheckoutController extends Controller
         $total      = max(0, $subtotal - $discount);
 
         $user = Auth::user();
+        $savedAddress = [];
+        if ($user && !empty($user->shipping)) {
+            $savedAddress = json_decode($user->shipping, true)
+                ?? json_decode(stripslashes($user->shipping), true)
+                ?? [];
+            $savedAddress = is_array($savedAddress) ? $savedAddress : [];
+        }
         $paymentMethods = PaymentConfig::checkoutMethods();
-        return view('web.checkout', compact('cart', 'subtotal', 'discount', 'total', 'coupon', 'user', 'authConfig', 'paymentMethods'));
+        return view('web.checkout', compact('cart', 'subtotal', 'discount', 'total', 'coupon', 'user', 'savedAddress', 'authConfig', 'paymentMethods'));
     }
 
     public function place(Request $r)
@@ -60,7 +67,7 @@ class CheckoutController extends Controller
         $r->validate([
             'first_name'     => 'required|string|max:100',
             'last_name'      => 'required|string|max:100',
-            'email'          => 'required|email|max:255',
+            'email'          => 'nullable|email|max:255',
             'phone'          => 'required|string|max:20',
             'address'        => 'required|string|max:255',
             'city'           => 'required|string|max:100',
@@ -176,12 +183,14 @@ class CheckoutController extends Controller
                 'last_name'  => $r->last_name,
                 'phone'      => $r->phone,
             ];
-            if (Schema::hasColumn('users', 'shipping')) {
+            if ($r->boolean('save_address') && Schema::hasColumn('users', 'shipping')) {
                 $userUpdates['shipping'] = json_encode($shipping);
             }
-            foreach (['address', 'city', 'state', 'address_note', 'latitude', 'longitude'] as $field) {
-                if (Schema::hasColumn('users', $field)) {
-                    $userUpdates[$field] = $r->input($field);
+            if ($r->boolean('save_address')) {
+                foreach (['address', 'city', 'state', 'address_note', 'latitude', 'longitude'] as $field) {
+                    if (Schema::hasColumn('users', $field)) {
+                        $userUpdates[$field] = $r->input($field);
+                    }
                 }
             }
             if ($user instanceof User) {

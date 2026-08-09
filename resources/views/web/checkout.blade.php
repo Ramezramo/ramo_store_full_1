@@ -34,8 +34,8 @@
             </div>
           </div>
           <div class="form-group">
-            <label>Email Address *</label>
-            <input type="email" name="email" value="{{ old('email', $user->email ?? '') }}" required>
+            <label>Email Address <span style="color:#999;font-weight:400;font-size:12px">(optional)</span></label>
+            <input type="email" name="email" value="{{ old('email', ($user && !str_ends_with($user->email ?? '', '@ramostore.local')) ? ($user->email ?? '') : '') }}" placeholder="you@example.com">
             @error('email')<span class="err">{{ $message }}</span>@enderror
           </div>
           <div class="form-group">
@@ -63,21 +63,21 @@
           </div>
           <div class="form-group">
             <label>Street Address *</label>
-            <input type="text" name="address" value="{{ old('address') }}" required>
+            <input type="text" name="address" value="{{ old('address', $savedAddress['address'] ?? '') }}" required>
             @error('address')<span class="err">{{ $message }}</span>@enderror
           </div>
           <div class="form-grid-2">
             <div class="form-group">
               <label>City *</label>
-              <input type="text" name="city" value="{{ old('city') }}" required>
+              <input type="text" name="city" value="{{ old('city', $savedAddress['city'] ?? '') }}" required>
               @error('city')<span class="err">{{ $message }}</span>@enderror
             </div>
             <div class="form-group">
               <label>State / Governorate *</label>
-              <select name="state" required>
+                <select name="state" required>
                 <option value="">Select governorate</option>
                 @foreach(['Cairo','Giza','Alexandria','Aswan','Asyut','Beheira','Beni Suef','Dakahlia','Damietta','Faiyum','Gharbia','Ismailia','Kafr El Sheikh','Luxor','Matrouh','Minya','Monufia','New Valley','North Sinai','Port Said','Qalyubia','Qena','Red Sea','Sharqia','Sohag','South Sinai','Suez'] as $gov)
-                  <option value="{{ $gov }}" {{ old('state') === $gov ? 'selected' : '' }}>{{ $gov }}</option>
+                  <option value="{{ $gov }}" {{ old('state', $savedAddress['state'] ?? '') === $gov ? 'selected' : '' }}>{{ $gov }}</option>
                 @endforeach
               </select>
               @error('state')<span class="err">{{ $message }}</span>@enderror
@@ -85,10 +85,10 @@
           </div>
           <div class="form-group">
             <label>Apartment / Floor / Additional details</label>
-            <textarea name="address_note" rows="2" placeholder="Apartment / Floor / Additional details">{{ old('address_note') }}</textarea>
+            <textarea name="address_note" rows="2" placeholder="Apartment / Floor / Additional details">{{ old('address_note', $savedAddress['address_note'] ?? '') }}</textarea>
           </div>
-          <input type="hidden" name="latitude" id="checkout-latitude" value="{{ old('latitude', $user->latitude ?? '') }}">
-          <input type="hidden" name="longitude" id="checkout-longitude" value="{{ old('longitude', $user->longitude ?? '') }}">
+          <input type="hidden" name="latitude" id="checkout-latitude" value="{{ old('latitude', $savedAddress['latitude'] ?? ($user->latitude ?? '')) }}">
+          <input type="hidden" name="longitude" id="checkout-longitude" value="{{ old('longitude', $savedAddress['longitude'] ?? ($user->longitude ?? '')) }}">
           <div class="form-group" style="display:flex;align-items:center;gap:10px">
             <input type="checkbox" name="save_address" value="1" id="save-address" {{ old('save_address', session('checkout_save_address', true)) ? 'checked' : '' }}>
             <label for="save-address" style="margin:0">Save this address for future use</label>
