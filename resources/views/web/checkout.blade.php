@@ -98,8 +98,22 @@
         {{-- PAYMENT --}}
         <div class="ck-section">
           <h3 class="ck-title">Payment Method</h3>
-          @php($selectedPaymentMethod = old('payment_method', 'cod'))
+          @php
+            // Manual methods are intentionally placed first. Their visibility
+            // and destination details come from the admin payment settings.
+            $selectedPaymentMethod = old('payment_method', array_key_first($manualPaymentMethods) ?: 'cod');
+          @endphp
           <div class="pay-methods">
+            @foreach($manualPaymentMethods as $val => $method)
+            <label class="pay-option {{ $selectedPaymentMethod === $val ? 'selected' : '' }}" data-val="{{ $val }}">
+              <input type="radio" name="payment_method" value="{{ $val }}" {{ $selectedPaymentMethod === $val ? 'checked' : '' }}>
+              <span class="pay-icon">{{ $val === 'manual_wallet' ? '📱' : '⚡' }}</span>
+              <div>
+                <div class="pay-title">{{ $method['title'] }}</div>
+                <div class="pay-desc">{{ $method['description'] }}</div>
+              </div>
+            </label>
+            @endforeach
             @foreach([
               ['cod',           '💵', 'Cash on Delivery',  'Pay when your order arrives'],
               ['vodafone_cash', '📱', 'Vodafone Cash',     'Send to 01xxxxxxxxx'],
@@ -113,16 +127,6 @@
               <div>
                 <div class="pay-title">{{ $title }}</div>
                 <div class="pay-desc">{{ $desc }}</div>
-              </div>
-            </label>
-            @endforeach
-            @foreach($manualPaymentMethods as $val => $method)
-            <label class="pay-option {{ $selectedPaymentMethod === $val ? 'selected' : '' }}" data-val="{{ $val }}">
-              <input type="radio" name="payment_method" value="{{ $val }}" {{ $selectedPaymentMethod === $val ? 'checked' : '' }}>
-              <span class="pay-icon">{{ $val === 'manual_wallet' ? '📱' : '⚡' }}</span>
-              <div>
-                <div class="pay-title">{{ $method['title'] }}</div>
-                <div class="pay-desc">{{ $method['description'] }}</div>
               </div>
             </label>
             @endforeach
