@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict A0nWb1jxDLkCt1fx8isuRCTJbHxg38EisQS03piY7ecOdTje0HNCaN4CQAGtk5l
+\restrict SL5OqA85oaHv0PjnUbzNiBRjVqWx7kBO9AV58ay8A9ZDYPKNkAYBX1nvqPNqIt0
 
 -- Dumped from database version 16.10
 -- Dumped by pg_dump version 16.10
@@ -981,7 +981,8 @@ CREATE TABLE public.order_sub_orders (
     timeline text,
     notes text,
     created_at timestamp(0) without time zone,
-    updated_at timestamp(0) without time zone
+    updated_at timestamp(0) without time zone,
+    vendor_status character varying(40) DEFAULT 'pending'::character varying NOT NULL
 );
 
 
@@ -1076,7 +1077,12 @@ CREATE TABLE public.orders (
     payment_receipt_uploaded_at timestamp(0) without time zone,
     payment_reviewed_at timestamp(0) without time zone,
     payment_reviewed_by bigint,
-    payment_rejection_reason text
+    payment_rejection_reason text,
+    general_order_status character varying(40) DEFAULT 'pending'::character varying NOT NULL,
+    general_order_status_override character varying(40),
+    general_order_status_override_reason text,
+    general_order_status_override_by bigint,
+    general_order_status_override_at timestamp(0) without time zone
 );
 
 
@@ -2502,6 +2508,7 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 15	2026_05_12_000002_create_idempotency_keys_table	2
 16	2026_07_11_131407_add_button_mode_to_products_data	2
 17	2026_08_08_000001_add_manual_payment_verification	2
+18	2026_08_09_000001_add_computed_order_statuses	3
 \.
 
 
@@ -2517,9 +2524,9 @@ COPY public.order_messages (id, order_id, customer_id, vendor_id, sender_type, m
 -- Data for Name: order_sub_orders; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.order_sub_orders (id, parent_order_id, vendor_id, customer_id, status, line_items, subtotal, discount_total, total, tracking_number, tracking_carrier, timeline, notes, created_at, updated_at) FROM stdin;
-1	1	12	1	pending	[{"product_id":4,"variation_id":9,"name":"Canvas Backpack","sku":null,"quantity":1,"price":760,"subtotal":760,"attributes":{"Color":"Navy"}}]	760.00	0.00	760.00	\N	\N	[]	\N	2026-08-08 04:04:32	2026-08-08 04:04:32
-2	2	16	1	pending	[{"product_id":20,"variation_id":null,"name":"Floral Wrap Dress","sku":null,"quantity":1,"price":890,"subtotal":890,"attributes":[]}]	890.00	0.00	890.00	\N	\N	[]	\N	2026-08-08 04:06:23	2026-08-08 04:06:23
+COPY public.order_sub_orders (id, parent_order_id, vendor_id, customer_id, status, line_items, subtotal, discount_total, total, tracking_number, tracking_carrier, timeline, notes, created_at, updated_at, vendor_status) FROM stdin;
+2	2	16	1	pending	[{"product_id":20,"variation_id":null,"name":"Floral Wrap Dress","sku":null,"quantity":1,"price":890,"subtotal":890,"attributes":[]}]	890.00	0.00	890.00	\N	\N	[]	\N	2026-08-08 04:06:23	2026-08-08 04:06:23	pending
+1	1	12	1	returned	[{"product_id":4,"variation_id":9,"name":"Canvas Backpack","sku":null,"quantity":1,"price":760,"subtotal":760,"attributes":{"Color":"Navy"}}]	760.00	0.00	760.00	\N	\N	[{"status":"shipped","note":"","by":"admin:1","at":"2026-08-09 09:49:47"},{"status":"delivered","note":"","by":"admin:1","at":"2026-08-09 09:50:00"},{"status":"returned","note":"","by":"admin:1","at":"2026-08-09 09:50:11"}]	\N	2026-08-08 04:04:32	2026-08-09 09:50:11	returned
 \.
 
 
@@ -2527,9 +2534,9 @@ COPY public.order_sub_orders (id, parent_order_id, vendor_id, customer_id, statu
 -- Data for Name: orders; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.orders (id, parent_id, parent_vendors_ids, parent_vendors_data, status, currency, version, prices_include_tax, date_created, date_modified, discount_total, discount_tax, shipping_total, shipping_tax, cart_tax, coupon_code, final_total, original_total, coupon_applied, total_tax, customer_id, order_key, billing, shipping, payment_method, payment_method_title, transaction_id, customer_ip_address, customer_user_agent, created_via, customer_note, date_completed, date_paid, cart_hash, meta_data, line_items, tax_lines, shipping_lines, fee_lines, coupon_lines, refunds, payment_url, is_editable, needs_payment, needs_processing, bacs_info, currency_symbol, _links, date_created_gmt, date_modified_gmt, date_completed_gmt, date_paid_gmt, set_paid, number, timeline, updated_at, created_at, payment_status, payment_receipt_path, payment_receipt_name, payment_receipt_uploaded_at, payment_reviewed_at, payment_reviewed_by, payment_rejection_reason) FROM stdin;
-1	0	\N	\N	pending	EGP	\N	f	2026-08-08 04:04:32	2026-08-08 04:05:49	0.00	0.00	0.00	0.00	0.00	\N	760.00	760	0	0.00	1	wc_RDL3pTG00L8EvYMMmudN	{"first_name":"Sara","last_name":"Ehab","email":"adminramoui@gmail.com","phone":"7865876587","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.44544960931289","longitude":"30.80587494633731"}	{"first_name":"Sara","last_name":"Ehab","email":"adminramoui@gmail.com","phone":"7865876587","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.44544960931289","longitude":"30.80587494633731"}	manual_wallet	Pay by Wallet	\N	10.56.4.51	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36	website		\N	\N	11287c40829e028b61ec6d73ec1b074d	\N	[{"product_id":4,"variation_id":9,"name":"Canvas Backpack","sku":null,"quantity":1,"price":760,"subtotal":760,"attributes":{"Color":"Navy"}}]	\N	\N	\N	\N	\N		t	t	t	\N	ج.م	\N	2026-08-08 04:04:32	2026-08-08 04:04:32			f	1	[{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-08 04:05:27"},{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-08 04:05:49"}]	2026-08-08 04:05:49	2026-08-08 04:04:32	pending_verification	payment-receipts/eo5R4QKHI4TWNOQHlWaL2RlVxjDHfTG4TDtmVoQW.png	Screenshot (3).png	2026-08-08 04:05:49	\N	\N	\N
-2	0	\N	\N	shipped	EGP	\N	f	2026-08-08 04:06:23	2026-08-08 04:14:58	0.00	0.00	0.00	0.00	0.00	\N	890.00	890	0	0.00	1	wc_1gUBnyOU3kLaME5jPMMK	{"first_name":"Sara","last_name":"Ehab","email":"adminramoui@gmail.com","phone":"7865876587","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.445440824393827","longitude":"30.805906818883177"}	{"first_name":"Sara","last_name":"Ehab","email":"adminramoui@gmail.com","phone":"7865876587","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.445440824393827","longitude":"30.805906818883177"}	manual_wallet	Pay by Wallet	\N	10.56.4.51	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36	website		\N	2026-08-08 04:14:49	6bcb195325a706e72a319e5582cb3d38	\N	[{"product_id":20,"variation_id":null,"name":"Floral Wrap Dress","sku":null,"quantity":1,"price":890,"subtotal":890,"attributes":[]}]	\N	\N	\N	\N	\N		t	f	t	\N	ج.م	\N	2026-08-08 04:06:23	2026-08-08 04:06:23		2026-08-08 04:14:49	t	2	[{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-08 04:06:33"},{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-08 04:09:06"},{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-08 04:09:19"},{"status":"rejected","note":"Payment receipt rejected: Blurred","by":"admin:1","at":"2026-08-08 04:12:43"},{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-08 04:14:38"},{"status":"confirmed","note":"Payment receipt approved.","by":"admin:1","at":"2026-08-08 04:14:49"}]	2026-08-08 04:14:58	2026-08-08 04:06:23	confirmed	payment-receipts/HUbhyU0YazbFgvWf4EY8GuAaggWwHTvEYIArJTDG.png	Screenshot (7).png	2026-08-08 04:14:38	2026-08-08 04:14:49	1	\N
+COPY public.orders (id, parent_id, parent_vendors_ids, parent_vendors_data, status, currency, version, prices_include_tax, date_created, date_modified, discount_total, discount_tax, shipping_total, shipping_tax, cart_tax, coupon_code, final_total, original_total, coupon_applied, total_tax, customer_id, order_key, billing, shipping, payment_method, payment_method_title, transaction_id, customer_ip_address, customer_user_agent, created_via, customer_note, date_completed, date_paid, cart_hash, meta_data, line_items, tax_lines, shipping_lines, fee_lines, coupon_lines, refunds, payment_url, is_editable, needs_payment, needs_processing, bacs_info, currency_symbol, _links, date_created_gmt, date_modified_gmt, date_completed_gmt, date_paid_gmt, set_paid, number, timeline, updated_at, created_at, payment_status, payment_receipt_path, payment_receipt_name, payment_receipt_uploaded_at, payment_reviewed_at, payment_reviewed_by, payment_rejection_reason, general_order_status, general_order_status_override, general_order_status_override_reason, general_order_status_override_by, general_order_status_override_at) FROM stdin;
+2	0	\N	\N	pending	EGP	\N	f	2026-08-08 04:06:23	2026-08-08 04:14:58	0.00	0.00	0.00	0.00	0.00	\N	890.00	890	0	0.00	1	wc_1gUBnyOU3kLaME5jPMMK	{"first_name":"Sara","last_name":"Ehab","email":"adminramoui@gmail.com","phone":"7865876587","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.445440824393827","longitude":"30.805906818883177"}	{"first_name":"Sara","last_name":"Ehab","email":"adminramoui@gmail.com","phone":"7865876587","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.445440824393827","longitude":"30.805906818883177"}	manual_wallet	Pay by Wallet	\N	10.56.4.51	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36	website		\N	2026-08-08 04:14:49	6bcb195325a706e72a319e5582cb3d38	\N	[{"product_id":20,"variation_id":null,"name":"Floral Wrap Dress","sku":null,"quantity":1,"price":890,"subtotal":890,"attributes":[]}]	\N	\N	\N	\N	\N		t	f	t	\N	ج.م	\N	2026-08-08 04:06:23	2026-08-08 04:06:23		2026-08-08 04:14:49	t	2	[{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-08 04:06:33"},{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-08 04:09:06"},{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-08 04:09:19"},{"status":"rejected","note":"Payment receipt rejected: Blurred","by":"admin:1","at":"2026-08-08 04:12:43"},{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-08 04:14:38"},{"status":"confirmed","note":"Payment receipt approved.","by":"admin:1","at":"2026-08-08 04:14:49"}]	2026-08-08 04:14:58	2026-08-08 04:06:23	confirmed	payment-receipts/HUbhyU0YazbFgvWf4EY8GuAaggWwHTvEYIArJTDG.png	Screenshot (7).png	2026-08-08 04:14:38	2026-08-08 04:14:49	1	\N	pending	\N	\N	\N	\N
+1	0	\N	\N	completed	EGP	\N	f	2026-08-08 04:04:32	2026-08-09 09:51:04	0.00	0.00	0.00	0.00	0.00	\N	760.00	760	0	0.00	1	wc_RDL3pTG00L8EvYMMmudN	{"first_name":"Sara","last_name":"Ehab","email":"adminramoui@gmail.com","phone":"7865876587","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.44544960931289","longitude":"30.80587494633731"}	{"first_name":"Sara","last_name":"Ehab","email":"adminramoui@gmail.com","phone":"7865876587","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.44544960931289","longitude":"30.80587494633731"}	manual_wallet	Pay by Wallet	\N	10.56.4.51	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36	website		\N	\N	11287c40829e028b61ec6d73ec1b074d	\N	[{"product_id":4,"variation_id":9,"name":"Canvas Backpack","sku":null,"quantity":1,"price":760,"subtotal":760,"attributes":{"Color":"Navy"}}]	\N	\N	\N	\N	\N		t	t	t	\N	ج.م	\N	2026-08-08 04:04:32	2026-08-08 04:04:32			f	1	[{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-08 04:05:27"},{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-08 04:05:49"},{"status":"processing","note":"General order status force-overridden to processing: klj","by":"admin:1","at":"2026-08-09 09:48:33","type":"general_status_override"},{"status":"partially_shipped","note":"General order status force-overridden to partially_shipped: klj","by":"admin:1","at":"2026-08-09 09:49:14","type":"general_status_override"},{"status":"partially_delivered","note":"General order status force-overridden to partially_delivered: klj","by":"admin:1","at":"2026-08-09 09:50:40","type":"general_status_override"},{"status":"completed","note":"General order status force-overridden to completed: klj","by":"admin:1","at":"2026-08-09 09:51:04","type":"general_status_override"}]	2026-08-09 09:51:04	2026-08-08 04:04:32	pending_verification	payment-receipts/eo5R4QKHI4TWNOQHlWaL2RlVxjDHfTG4TDtmVoQW.png	Screenshot (3).png	2026-08-08 04:05:49	\N	\N	\N	pending	completed	klj	1	2026-08-09 09:51:04
 \.
 
 
@@ -2972,7 +2979,7 @@ SELECT pg_catalog.setval('public.links_logs_two_id_seq', 1, false);
 -- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.migrations_id_seq', 17, true);
+SELECT pg_catalog.setval('public.migrations_id_seq', 18, true);
 
 
 --
@@ -3546,5 +3553,5 @@ REVOKE USAGE ON SCHEMA public FROM PUBLIC;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict A0nWb1jxDLkCt1fx8isuRCTJbHxg38EisQS03piY7ecOdTje0HNCaN4CQAGtk5l
+\unrestrict SL5OqA85oaHv0PjnUbzNiBRjVqWx7kBO9AV58ay8A9ZDYPKNkAYBX1nvqPNqIt0
 
