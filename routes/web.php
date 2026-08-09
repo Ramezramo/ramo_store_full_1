@@ -147,6 +147,7 @@ Route::prefix('admin')->middleware(['auth', 'admin.auth'])->group(function () {
     Route::get('/orders', [AdminDashboardController::class, 'orders'])->name('admin.orders');
     Route::get('/orders/{id}', [AdminDashboardController::class, 'orderDetail'])->name('admin.orders.detail');
     Route::patch('/orders/{id}/status', [AdminDashboardController::class, 'updateOrderStatus'])->name('admin.orders.status');
+     Route::patch('/orders/{orderId}/sub-orders/{subOrderId}/status', [AdminDashboardController::class, 'updateSubOrderStatus'])->name('admin.orders.sub-orders.status');
     Route::get('/vendors', [AdminDashboardController::class, 'vendors'])->name('admin.vendors');
     Route::get('/vendors/{id}', [AdminDashboardController::class, 'vendorShow'])->name('admin.vendors.show');
     Route::patch('/vendors/{id}/approve', [AdminDashboardController::class, 'approveVendor'])->name('admin.vendors.approve');

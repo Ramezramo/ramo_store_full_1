@@ -98,6 +98,73 @@
     </div>
     @endif
 
+    {{-- Per-store shipment statuses --}}
+    @if(isset($subOrders) && $subOrders->count())
+    <div class="or-store-statuses">
+      <div class="or-section-title">Store Shipments</div>
+      <p class="or-store-intro">This order may arrive in separate packages. Each store has its own delivery status.</p>
+      <div class="or-store-list">
+        @foreach($subOrders as $sub)
+          @php
+            $subStatus = \App\Http\Controllers\Web\OrderTrackingController::statusInfo($sub->status ?? 'pending');
+            $subSteps = ['pending', 'processing', 'shipped', 'completed'];
+            $subIndex = array_search(strtolower($sub->status ?? 'pending'), $subSteps);
+            $subIndex = $subIndex === false ? 0 : $subIndex;
+            $subCancelled = in_array(strtolower($sub->status ?? ''), ['cancelled', 'refunded', 'failed']);
+          @endphp
+          <div class="or-store-card">
+            <div class="or-store-head">
+              <div>
+                <strong>{{ $sub->vendor_shop_name ?: 'Store' }}</strong>
+                <span>Sub-order #{{ $sub->id }}</span>
+              </div>
+              <span class="or-store-pill" style="background:{{ $subStatus['bg'] }};color:{{ $subStatus['color'] }}">
+                {{ $subStatus['icon'] }} {{ $subStatus['label'] }}
+              </span>
+            </div>
+            @if($subCancelled)
+              <div class="or-store-cancelled" style="color:{{ $subStatus['color'] }}">
+                {{ $subStatus['icon'] }} This store shipment has been {{ strtolower($subStatus['label']) }}.
+              </div>
+            @else
+              <div class="or-store-progress">
+                @foreach($subSteps as $i => $subStep)
+                  @php
+                    $subStepInfo = \App\Http\Controllers\Web\OrderTrackingController::statusInfo($subStep);
+                    $subDone = $i <= $subIndex;
+                  @endphp
+                  <div class="or-store-step {{ $subDone ? 'done' : '' }}">
+                    <span>{{ $subDone ? '✓' : ($i + 1) }}</span>
+                    <small>{{ $subStep === 'completed' ? 'Delivered' : $subStepInfo['label'] }}</small>
+                  </div>
+                  @if($i < count($subSteps) - 1)
+                    <div class="or-store-line {{ $i < $subIndex ? 'done' : '' }}"></div>
+                  @endif
+                @endforeach
+              </div>
+            @endif
+            @if($sub->tracking_number)
+              <div class="or-store-tracking">
+                Tracking: <strong>{{ $sub->tracking_number }}</strong>
+                @if($sub->tracking_carrier) via {{ $sub->tracking_carrier }} @endif
+              </div>
+            @endif
+            @if(!empty($sub->items))
+              <div class="or-store-items">
+                @foreach($sub->items as $subItem)
+                  <div>
+                    <span>{{ $subItem['name'] ?? 'Item' }} × {{ $subItem['quantity'] ?? 1 }}</span>
+                    <strong>{{ number_format($subItem['subtotal'] ?? 0, 2) }} EGP</strong>
+                  </div>
+                @endforeach
+              </div>
+            @endif
+          </div>
+        @endforeach
+      </div>
+    </div>
+    @endif
+
     <div class="or-body">
 
       {{-- Order Items --}}
@@ -245,6 +312,30 @@
 .or-step-line.done{background:var(--c-dark)}
 .or-cancelled-banner{margin:20px 28px;border-radius:10px;padding:14px 18px;font-size:14px;display:flex;align-items:center;gap:8px}
 
+/* Per-store shipments */
+.or-store-statuses{padding:24px 28px;border-bottom:1.5px solid var(--c-light)}
+.or-store-intro{font-size:13px;color:var(--c-mid);margin:-8px 0 16px}
+.or-store-list{display:flex;flex-direction:column;gap:12px}
+.or-store-card{border:1.5px solid var(--c-light);border-radius:12px;padding:15px;background:var(--c-bg)}
+.or-store-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.or-store-head strong{font-size:14px}
+.or-store-head span:not(.or-store-pill){display:block;color:var(--c-mid);font-size:11px;margin-top:3px}
+.or-store-pill{display:inline-flex!important;align-items:center;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700}
+.or-store-progress{display:flex;align-items:flex-start;margin:18px 0 8px}
+.or-store-step{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:68px}
+.or-store-step span{width:24px;height:24px;border:2px solid var(--c-light);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--c-mid);font-size:11px;font-weight:700;background:var(--c-white)}
+.or-store-step.done span{background:var(--c-dark);border-color:var(--c-dark);color:#fff}
+.or-store-step small{font-size:10px;color:var(--c-mid);text-align:center;line-height:1.2}
+.or-store-step.done small{color:var(--c-dark);font-weight:700}
+.or-store-line{height:2px;flex:1;background:var(--c-light);margin-top:11px}
+.or-store-line.done{background:var(--c-dark)}
+.or-store-cancelled{font-size:13px;font-weight:600;padding-top:14px}
+.or-store-tracking{font-size:12px;color:var(--c-mid);padding-top:10px;border-top:1px solid var(--c-light)}
+.or-store-tracking strong{color:var(--c-dark);font-family:monospace}
+.or-store-items{border-top:1px solid var(--c-light);margin-top:10px;padding-top:8px;display:flex;flex-direction:column;gap:5px}
+.or-store-items div{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--c-mid)}
+.or-store-items strong{color:var(--c-dark);white-space:nowrap}
+
 /* Body layout */
 .or-body{display:grid;grid-template-columns:1fr 280px;gap:0;align-items:start}
 .or-section{padding:24px 28px;border-bottom:1.5px solid var(--c-light)}
@@ -287,6 +378,8 @@
   .or-right-col{border-left:none;border-top:1.5px solid var(--c-light)}
   .or-progress{gap:0;overflow-x:auto;padding-bottom:8px;justify-content:flex-start}
   .or-step{min-width:80px}
+  .or-store-progress{overflow-x:auto;padding-bottom:4px}
+  .or-store-step{min-width:64px}
   .track-form-card{padding:28px 20px}
 }
 </style>

@@ -80,6 +80,29 @@ class OrderTrackingController extends Controller
         }
         unset($item);
 
+        // Each vendor shipment has its own status. Keep this separate from
+        // the general order status shown in the header and progress tracker.
+        $subOrders = DB::table('order_sub_orders as s')
+            ->where('s.parent_order_id', $orderId)
+            ->leftJoin('vendor_users as v', 'v.id', '=', 's.vendor_id')
+            ->select(['s.*', 'v.shop_name as vendor_shop_name'])
+            ->orderBy('s.id')
+            ->get()
+            ->map(function ($sub) use ($products) {
+                $sub->items = json_decode($sub->line_items ?? '[]', true);
+                $sub->items = is_array($sub->items) ? $sub->items : [];
+
+                foreach ($sub->items as &$item) {
+                    $product = $products->get($item['product_id'] ?? null);
+                    $item['thumbnail'] = ($product && $product->images)
+                        ? \App\Constants\AppConstants::productThumbnailUrl($product->images)
+                        : null;
+                }
+                unset($item);
+
+                return $sub;
+            });
+
         // Shipping address
         $shipping = [];
         if ($order->shipping) {
@@ -96,6 +119,7 @@ class OrderTrackingController extends Controller
             'billing'   => $billing,
             'shipping'  => $shipping,
             'lineItems' => $lineItems,
+            'subOrders' => $subOrders,
             'error'     => null,
         ]);
     }

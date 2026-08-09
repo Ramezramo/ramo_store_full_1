@@ -13,9 +13,9 @@
   {{-- Left column --}}
   <div style="display:flex;flex-direction:column;gap:20px">
 
-    {{-- Status & quick update --}}
+    {{-- General order status & quick update --}}
     <div class="card">
-      <div class="card-title">Order Status</div>
+      <div class="card-title">General Order Status</div>
       <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
         @php
           $sc = match($order->status) {
@@ -198,7 +198,10 @@
     {{-- Sub-orders --}}
     @if(isset($subOrders) && $subOrders->count() > 0)
     <div class="card">
-      <div class="card-title">Vendor Sub-Orders ({{ $subOrders->count() }})</div>
+      <div class="card-title">Store Shipment Statuses ({{ $subOrders->count() }})</div>
+      <p style="color:var(--muted);font-size:12px;margin:-8px 0 14px">
+        Update each store independently. These statuses do not change the general order status above.
+      </p>
       @foreach($subOrders as $sub)
         @php
           $subItems = json_decode($sub->line_items ?? '[]', true) ?: [];
@@ -221,6 +224,23 @@
               <span class="badge {{ $subSc }}" style="font-size:12px">{{ ucfirst($sub->status) }}</span>
             </div>
           </div>
+          <form method="POST" action="{{ route('admin.orders.sub-orders.status', ['orderId' => $order->id, 'subOrderId' => $sub->id]) }}"
+                style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0 12px;padding:10px;background:rgba(255,255,255,.04);border-radius:8px">
+            @csrf @method('PATCH')
+            <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Store status</label>
+            <select name="status" style="min-width:130px">
+              @foreach(['pending', 'processing', 'shipped', 'completed', 'cancelled'] as $storeStatus)
+                <option value="{{ $storeStatus }}" {{ $sub->status === $storeStatus ? 'selected' : '' }}>
+                  {{ $storeStatus === 'completed' ? 'Delivered' : ucfirst($storeStatus) }}
+                </option>
+              @endforeach
+            </select>
+            <input type="text" name="tracking_number" value="{{ $sub->tracking_number ?? '' }}" placeholder="Tracking number"
+                   style="min-width:150px;flex:1;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+            <input type="text" name="tracking_carrier" value="{{ $sub->tracking_carrier ?? '' }}" placeholder="Carrier"
+                   style="width:110px;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+            <button class="btn btn-primary btn-sm">Update Store</button>
+          </form>
           @foreach($subItems as $si)
             <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05)">
               <span style="color:var(--muted)">{{ $si['name'] }} × {{ $si['quantity'] }}</span>

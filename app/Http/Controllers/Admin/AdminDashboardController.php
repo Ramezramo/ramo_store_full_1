@@ -150,6 +150,60 @@ class AdminDashboardController extends Controller
         return back()->with('success', 'Order status updated to '.$status.'.');
     }
 
+    public function updateSubOrderStatus(Request $request, int $orderId, int $subOrderId)
+    {
+        $status = $request->input('status');
+        $allowed = ['pending', 'processing', 'shipped', 'completed', 'cancelled'];
+
+        if (!in_array($status, $allowed, true)) {
+            return back()->with('error', 'Invalid store status.');
+        }
+
+        $subOrder = DB::table('order_sub_orders')
+            ->where('id', $subOrderId)
+            ->where('parent_order_id', $orderId)
+            ->first();
+
+        if (!$subOrder) {
+            abort(404);
+        }
+
+        $now = now();
+        $timeline = json_decode($subOrder->timeline ?? '[]', true);
+        $timeline = is_array($timeline) ? $timeline : [];
+        $timeline[] = [
+            'status' => $status,
+            'note'   => $request->input('note', ''),
+            'by'     => 'admin:'.(auth()->id() ?? 'unknown'),
+            'at'     => $now->toDateTimeString(),
+        ];
+
+        $update = [
+            'status'     => $status,
+            'timeline'   => json_encode($timeline),
+            'updated_at' => $now,
+        ];
+
+        if ($request->filled('tracking_number')) {
+            $update['tracking_number'] = trim($request->input('tracking_number'));
+        }
+        if ($request->filled('tracking_carrier')) {
+            $update['tracking_carrier'] = trim($request->input('tracking_carrier'));
+        }
+
+        DB::table('order_sub_orders')->where('id', $subOrderId)->update($update);
+
+        // Deliberately do not update orders.status here. The general order
+        // status is controlled separately above; this status belongs to one
+        // store's shipment within a potentially split order.
+        return back()->with('success', 'Store status updated to '.$this->statusLabel($status).'.');
+    }
+
+    private function statusLabel(string $status): string
+    {
+        return $status === 'completed' ? 'Delivered' : ucfirst($status);
+    }
+
     // ── VENDORS ────────────────────────────────────────────────────
     public function vendors(Request $request)
     {
