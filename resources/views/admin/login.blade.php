@@ -89,6 +89,23 @@
   }
   .btn:hover { background: #5a52e0; }
   .btn:active { transform: scale(.98); }
+  .debug-fill-btn {
+    width: 100%;
+    padding: 10px 13px;
+    background: transparent;
+    color: #a5b4fc;
+    border: 1px solid #4338ca;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .2s, border-color .2s;
+    margin-top: 10px;
+  }
+  .debug-fill-btn:hover {
+    background: rgba(108,99,255,.12);
+    border-color: #6c63ff;
+  }
   .back-link {
     display: block;
     text-align: center;
@@ -127,9 +144,25 @@
       <input type="password" name="password" placeholder="••••••••" required>
     </div>
     <button type="submit" class="btn">Sign in to Admin</button>
+    @if(config('app.debug'))
+      <button
+        type="button"
+        class="debug-fill-btn"
+        id="debug-fill-admin-credentials"
+        aria-label="Fill the debug admin email and password"
+      >Fill debug credentials</button>
+    @endif
   </form>
 
   <a href="{{ route('home') }}" class="back-link">← Back to store</a>
 </div>
+@if(config('app.debug'))
+  <script>
+    document.getElementById('debug-fill-admin-credentials').addEventListener('click', function () {
+      document.querySelector('input[name="email"]').value = 'adminramoui@gmail.com';
+      document.querySelector('input[name="password"]').value = 'admin123456';
+    });
+  </script>
+@endif
 </body>
 </html>
