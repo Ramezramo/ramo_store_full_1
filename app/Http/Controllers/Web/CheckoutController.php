@@ -336,7 +336,7 @@ class CheckoutController extends Controller
         if (! $order) abort(404);
         $manualPaymentMethods = PaymentConfig::enabledMethods();
 
-        $lineItems = json_decode($order->line_items ?? '[]', true);
+        $lineItems = json_decode($order->line_items ?? '[]', true) ?: [];
 
         // Load sub-orders for vendor grouping display
         $subOrders = DB::table('order_sub_orders as s')
@@ -349,6 +349,35 @@ class CheckoutController extends Controller
                 $sub->items = json_decode($sub->line_items ?? '[]', true) ?: [];
                 return $sub;
             });
+
+        // Line items are stored as a snapshot and don't include images, so
+        // resolve thumbnails from the products table at render time. This also
+        // backfills images for orders placed before this was added.
+        $productIds = collect($lineItems)->pluck('product_id')
+            ->merge($subOrders->flatMap(fn ($sub) => collect($sub->items)->pluck('product_id')))
+            ->filter()
+            ->unique()
+            ->values();
+
+        $thumbnails = $productIds->isEmpty()
+            ? collect()
+            : DB::table('products_data')
+                ->whereIn('id', $productIds)
+                ->pluck('images', 'id')
+                ->map(fn ($images) => \App\Constants\AppConstants::productThumbnailUrl($images));
+
+        $attachImages = function (array $items) use ($thumbnails) {
+            return array_map(function ($item) use ($thumbnails) {
+                $item['image'] = $thumbnails[$item['product_id'] ?? null] ?? null;
+                return $item;
+            }, $items);
+        };
+
+        $lineItems = $attachImages($lineItems);
+        $subOrders = $subOrders->map(function ($sub) use ($attachImages) {
+            $sub->items = $attachImages($sub->items);
+            return $sub;
+        });
 
         return view('web.order-success', compact('order', 'lineItems', 'subOrders', 'manualPaymentMethods'));
     }

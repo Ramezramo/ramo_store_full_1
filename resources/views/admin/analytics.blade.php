@@ -91,7 +91,7 @@
         @forelse($top_products as $p)
           <tr>
             <td style="font-weight:600;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $p->name }}</td>
-            <td>{{ number_format($p->price) }}</td>
+            <td>@if($p->max_price !== null && $p->max_price > $p->min_price){{ number_format($p->min_price) }} – {{ number_format($p->max_price) }}@else{{ number_format($p->min_price) }}@endif</td>
             <td><span class="badge {{ $p->stock_status === 'instock' ? 'badge-green' : 'badge-red' }}">{{ $p->stock_status === 'instock' ? 'In Stock' : 'Out' }}</span></td>
             <td><span class="badge {{ $p->acceptance_status === 'approved' ? 'badge-green' : ($p->acceptance_status === 'pending' ? 'badge-yellow' : 'badge-red') }}">{{ ucfirst($p->acceptance_status) }}</span></td>
           </tr>

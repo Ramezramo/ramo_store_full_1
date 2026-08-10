@@ -111,6 +111,11 @@
       <h3 style="font-size:15px;font-weight:700;margin-bottom:16px">Items Ordered</h3>
       @foreach($subOrders->first()->items as $item)
         <div class="order-item-row">
+          @if(!empty($item['image']))
+            <img class="order-item-thumb" src="{{ $item['image'] }}" alt="{{ $item['name'] }}" loading="lazy">
+          @else
+            <div class="order-item-thumb-fallback" aria-hidden="true">🛍️</div>
+          @endif
           <div class="order-item-info">
             <span class="order-item-name">{{ $item['name'] }}</span>
             @if(!empty($item['attributes']))<span class="order-item-attr">@foreach($item['attributes'] as $k=>$v) {{ $k }}: {{ $v }} @endforeach</span>@endif
@@ -126,6 +131,11 @@
       <h3 style="font-size:15px;font-weight:700;margin-bottom:16px">Items Ordered</h3>
       @foreach($lineItems as $item)
         <div class="order-item-row">
+          @if(!empty($item['image']))
+            <img class="order-item-thumb" src="{{ $item['image'] }}" alt="{{ $item['name'] }}" loading="lazy">
+          @else
+            <div class="order-item-thumb-fallback" aria-hidden="true">🛍️</div>
+          @endif
           <div class="order-item-info">
             <span class="order-item-name">{{ $item['name'] }}</span>
             @if(!empty($item['attributes']))<span class="order-item-attr">@foreach($item['attributes'] as $k=>$v) {{ $k }}: {{ $v }} @endforeach</span>@endif

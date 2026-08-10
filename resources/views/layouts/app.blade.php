@@ -364,6 +364,8 @@ button{cursor:pointer;font-family:inherit}
 .od-total{font-size:20px;font-weight:800;color:var(--c-orange)}
 .order-item-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--c-light)}
 .order-item-row:last-child{border-bottom:none}
+.order-item-thumb{width:52px;height:52px;flex-shrink:0;border-radius:8px;object-fit:cover;background:var(--c-light);border:1px solid var(--c-light)}
+.order-item-thumb-fallback{width:52px;height:52px;flex-shrink:0;border-radius:8px;background:var(--c-light);border:1px solid var(--c-light);display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1}
 .order-item-info{flex:1;min-width:0}
 .order-item-name{font-size:14px;font-weight:600;display:block;margin-bottom:2px}
 .order-item-attr{font-size:12px;color:var(--c-mid)}

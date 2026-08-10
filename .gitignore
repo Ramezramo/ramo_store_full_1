@@ -69,3 +69,8 @@ Thumbs.db
 
 # Uploaded user/chat assets (not project source)
 /attached_assets/
+
+# Local environment (never commit)
+.env
+.env.backup
+.env.local

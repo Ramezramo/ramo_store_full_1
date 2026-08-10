@@ -920,10 +920,10 @@ class AdminDashboardController extends Controller
             ->leftJoin('vendor_users', 'coupons.vendor_id', '=', 'vendor_users.id')
             ->orderByDesc('coupons.id')
             ->select('coupons.*', 'vendor_users.shop_name as vendor_shop_name');
-        if ($search) $query->whereRaw('LOWER(code) LIKE ?', ['%'.strtolower($search).'%']);
-        if ($status) $query->where('status', $status);
-        if ($vendor === 'global') $query->whereNull('vendor_id');
-        if (is_numeric($vendor)) $query->where('vendor_id', (int) $vendor);
+        if ($search) $query->whereRaw('LOWER(coupons.code) LIKE ?', ['%'.strtolower($search).'%']);
+        if ($status) $query->where('coupons.status', $status);
+        if ($vendor === 'global') $query->whereNull('coupons.vendor_id');
+        if (is_numeric($vendor)) $query->where('coupons.vendor_id', (int) $vendor);
 
         $coupons = $query->paginate(20)->withQueryString();
         $vendors = DB::table('vendor_users')->orderBy('shop_name')->get(['id', 'shop_name']);

@@ -30,6 +30,12 @@ button{cursor:pointer;font-family:inherit}
 .nav-item svg{width:16px;height:16px;flex-shrink:0}
 .nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;padding:1px 6px;border-radius:20px;font-weight:700}
 .nav-badge.yellow{background:var(--yellow);color:#000}
+.nav-counts{margin-left:auto;display:flex;align-items:center;gap:5px;flex-shrink:0}
+.nav-count{background:rgba(255,255,255,.07);color:var(--muted);font-size:10.5px;line-height:1;padding:3px 7px;border-radius:20px;font-weight:700;font-variant-numeric:tabular-nums}
+.nav-item:hover .nav-count{background:rgba(255,255,255,.12);color:var(--text)}
+.nav-item.active .nav-count{background:rgba(232,93,38,.22);color:var(--accent)}
+.nav-count.pending{background:rgba(239,68,68,.18);color:#fca5a5}
+.nav-item.active .nav-count.pending,.nav-item:hover .nav-count.pending{background:rgba(239,68,68,.28);color:#fecaca}
 .sidebar-bottom{padding:16px;border-top:1px solid var(--border)}
 .sidebar-user{display:flex;align-items:center;gap:10px}
 .sidebar-user-avatar{width:32px;height:32px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
@@ -124,44 +130,47 @@ select option{background:var(--card)}
     <a href="{{ route('admin.users') }}" class="nav-item {{ request()->routeIs('admin.users') ? 'active' : '' }}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
       Users
+      @include('admin.partials.nav-count', ['key' => 'users'])
     </a>
     <a href="{{ route('admin.orders') }}" class="nav-item {{ request()->routeIs('admin.orders*') ? 'active' : '' }}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
       Orders
+      @include('admin.partials.nav-count', ['key' => 'orders'])
     </a>
     <a href="{{ route('admin.vendors') }}" class="nav-item {{ request()->routeIs('admin.vendors*') ? 'active' : '' }}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       Vendors
-      @php $pendingVendors = \DB::table('vendor_users')->where('status','pending')->count(); @endphp
-      @if($pendingVendors > 0)<span class="nav-badge yellow">{{ $pendingVendors }}</span>@endif
+      @include('admin.partials.nav-count', ['key' => 'vendors'])
     </a>
     <a href="{{ route('admin.products') }}" class="nav-item {{ request()->routeIs('admin.products') ? 'active' : '' }}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
       Products
+      @include('admin.partials.nav-count', ['key' => 'products'])
     </a>
     <a href="{{ route('admin.devices') }}" class="nav-item {{ request()->routeIs('admin.devices') ? 'active' : '' }}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
       Devices
+      @include('admin.partials.nav-count', ['key' => 'devices'])
     </a>
     <a href="{{ route('admin.coupons') }}" class="nav-item {{ request()->routeIs('admin.coupons') ? 'active' : '' }}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
       Coupons
+      @include('admin.partials.nav-count', ['key' => 'coupons'])
     </a>
     <a href="{{ route('admin.refunds') }}" class="nav-item {{ request()->routeIs('admin.refunds*') ? 'active' : '' }}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
       Refunds
-      @php $pendingRefunds = \DB::table('refund_requests')->where('status','pending')->count(); @endphp
-      @if($pendingRefunds > 0)<span class="nav-badge">{{ $pendingRefunds }}</span>@endif
+      @include('admin.partials.nav-count', ['key' => 'refunds'])
     </a>
     <a href="{{ route('admin.reviews') }}" class="nav-item {{ request()->routeIs('admin.reviews') ? 'active' : '' }}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
       Reviews
+      @include('admin.partials.nav-count', ['key' => 'reviews'])
     </a>
     <a href="{{ route('admin.cbr') }}" class="nav-item {{ request()->routeIs('admin.cbr') ? 'active' : '' }}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2z"/><path d="M7 7h.01"/></svg>
       Cat & Brand Requests
-      @php $pendingCbr = \DB::table('category_brand_requests')->where('status','pending')->count(); @endphp
-      @if($pendingCbr > 0)<span class="nav-badge yellow">{{ $pendingCbr }}</span>@endif
+      @include('admin.partials.nav-count', ['key' => 'requests'])
     </a>
     <div class="nav-section">Content & Analytics</div>
     <a href="{{ route('admin.timeline') }}" class="nav-item {{ request()->routeIs('admin.timeline') ? 'active' : '' }}">

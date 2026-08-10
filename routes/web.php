@@ -137,7 +137,7 @@ Route::get('/admin/login', [AuthWebController::class, 'showAdminLogin'])->name('
 Route::post('/admin/login', [AuthWebController::class, 'adminLogin'])->name('admin.login.post');
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminCategoryBrandController;
-Route::prefix('admin')->middleware(['auth', 'admin.auth'])->group(function () {
+Route::prefix('admin')->middleware(['auth', 'admin.auth', \App\Http\Middleware\RefreshAdminSidebarCounts::class])->group(function () {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/users', [AdminDashboardController::class, 'users'])->name('admin.users');
     Route::patch('/users/{id}/block', [AdminDashboardController::class, 'blockUser'])->name('admin.users.block');
