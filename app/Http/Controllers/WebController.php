@@ -304,7 +304,10 @@ class WebController extends Controller
 
     public function shop(Request $request)
     {
-        $flashSale = FlashSaleService::getActive();
+        // Keep the navigation/filter shell fast. Product data is loaded by the
+        // browser immediately after the shell paints via the AJAX branch below.
+        $isProductRequest = $request->ajax();
+        $flashSale = $isProductRequest ? FlashSaleService::getActive() : null;
         $query = $this->baseProductQuery();
 
         // Build category hierarchy for sidebar
@@ -364,11 +367,10 @@ class WebController extends Controller
         elseif ($request->sort === 'price_desc') $query->orderBy('price', 'desc');
         else $query->orderBy('p.id', 'desc');
 
-        $rawProducts = $query->paginate(16)->withQueryString();
-        $products    = $rawProducts->through(fn($p) => $this->parseProduct($p, $flashSale));
-
         // AJAX / infinite-scroll request — return JSON with rendered card HTML
-        if ($request->ajax()) {
+        if ($isProductRequest) {
+            $rawProducts = $query->paginate(16)->withQueryString();
+            $products    = $rawProducts->through(fn($p) => $this->parseProduct($p, $flashSale));
             $html = '';
             foreach ($products as $p) {
                 $html .= view('web.partials.product-card', [
@@ -380,6 +382,7 @@ class WebController extends Controller
                 'html'     => $html,
                 'hasMore'  => $products->hasMorePages(),
                 'nextPage' => $products->currentPage() + 1,
+                'total'    => $products->total(),
             ]);
         }
 
@@ -397,15 +400,17 @@ class WebController extends Controller
         $activeBrandName = $request->filled('brand') ? $request->brand : null;
         $allBrands = DB::table('brands')->orderBy('name')->get();
 
+        // Deliberately leave $products null here. Rendering product cards in the
+        // initial response was the main reason the shop felt stuck before paint.
+        $products = null;
+
         return response()
             ->view('web.shop', compact(
                 'products', 'parentCats', 'childCats',
                 'activeCategoryId', 'activeParentId', 'catCounts',
                 'activeBrandName', 'allBrands'
             ))
-            ->header('Clear-Site-Data', '"cache"')
-            ->header('Cache-Control', 'no-store, no-cache, must-revalidate')
-            ->header('Pragma', 'no-cache');
+            ->header('Cache-Control', 'private, no-cache');
     }
 
     public function product($id)

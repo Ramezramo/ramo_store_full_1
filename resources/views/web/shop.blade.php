@@ -359,7 +359,7 @@
           <a href="{{ route('shop', array_filter(request()->except('category','page'))) }}"
              class="cat-all-pill {{ !$activeCategoryId ? 'active' : '' }}">
             <span>All Products</span>
-            <span class="cat-count-badge">{{ $products->total() }}</span>
+            <span class="cat-count-badge" id="shop-total-sidebar">…</span>
           </a>
 
           <hr class="widget-divider" style="margin:8px 0">
@@ -495,7 +495,7 @@
     <div>
       <div class="shop-toolbar">
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <span class="result-count">{{ $products->total() }} product{{ $products->total()!=1?'s':'' }}</span>
+          <span class="result-count" id="shop-result-count">Loading products…</span>
           @if($activeCategoryId && isset($activeCatName) && $activeCatName)
             <span class="active-cat-strip">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
@@ -528,33 +528,32 @@
         </div>
       </div>
 
-      @if($products->count())
-        <div class="product-grid" id="infinite-product-grid">
-          @foreach($products as $p)
-            @include('web.partials.product-card', ['p' => $p, 'cardVariations' => []])
-          @endforeach
-        </div>
-
-        {{-- Infinite scroll sentinel & loader --}}
-        <div id="scroll-sentinel" style="height:1px;margin-top:8px"></div>
-        <div id="scroll-loader" style="display:none;text-align:center;padding:24px 0">
-          <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--c-mid)">
+      <div class="product-grid" id="infinite-product-grid" aria-live="polite">
+        <div id="product-loading-state" style="grid-column:1/-1;text-align:center;padding:48px 20px;color:var(--c-mid)">
+          <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px">
             <svg style="animation:spin .8s linear infinite" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
-            Loading more products…
+            Loading products…
           </span>
         </div>
-        <div id="scroll-end" style="display:none;text-align:center;padding:20px 0;font-size:13px;color:var(--c-mid)">
-          You've seen all {{ $products->total() }} products
-        </div>
+      </div>
+      <div id="product-empty-state" class="empty" style="display:none">
+        <div class="empty-icon">🔍</div>
+        <h3>No products found</h3>
+        <p>Try a different search term or browse all categories.</p>
+        <a href="{{ route('shop') }}" class="btn btn-dark" style="margin-top:20px">Clear filters</a>
+      </div>
 
-      @else
-        <div class="empty">
-          <div class="empty-icon">🔍</div>
-          <h3>No products found</h3>
-          <p>Try a different search term or browse all categories.</p>
-          <a href="{{ route('shop') }}" class="btn btn-dark" style="margin-top:20px">Clear filters</a>
-        </div>
-      @endif
+      {{-- Infinite scroll sentinel & loader --}}
+      <div id="scroll-sentinel" style="height:1px;margin-top:8px"></div>
+      <div id="scroll-loader" style="display:none;text-align:center;padding:24px 0">
+        <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--c-mid)">
+          <svg style="animation:spin .8s linear infinite" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+          Loading more products…
+        </span>
+      </div>
+      <div id="scroll-end" style="display:none;text-align:center;padding:20px 0;font-size:13px;color:var(--c-mid)">
+        You've seen all products
+      </div>
     </div>
 
   </div>
@@ -619,8 +618,12 @@ function toggleShopFilter() {
 
   if (!grid || !sentinel) return;
 
-  let nextPage    = {{ $products->hasMorePages() ? $products->currentPage() + 1 : 'null' }};
+  let nextPage    = null;
   let loading     = false;
+  const resultCount = document.getElementById('shop-result-count');
+  const sidebarTotal = document.getElementById('shop-total-sidebar');
+  const loadingState = document.getElementById('product-loading-state');
+  const emptyState = document.getElementById('product-empty-state');
 
   /* Build base URL from current page URL (strip ?page=…) */
   function buildUrl(page) {
@@ -629,18 +632,27 @@ function toggleShopFilter() {
     return url.toString();
   }
 
-  function loadMore() {
-    if (loading || nextPage === null) return;
+  function loadPage(page, replace = false) {
+    if (loading) return;
     loading = true;
-    loader.style.display = 'block';
+    if (!replace) loader.style.display = 'block';
 
-    fetch(buildUrl(nextPage), {
+    fetch(buildUrl(page), {
       headers: { 'X-Requested-With': 'XMLHttpRequest' }
     })
       .then(r => r.json())
       .then(data => {
-        /* Append new cards */
-        grid.insertAdjacentHTML('beforeend', data.html);
+        if (replace) {
+          grid.innerHTML = data.html || '';
+          if (loadingState) loadingState.remove();
+          if (resultCount) {
+            resultCount.textContent = `${data.total} product${data.total !== 1 ? 's' : ''}`;
+          }
+          if (sidebarTotal) sidebarTotal.textContent = data.total;
+          if (emptyState) emptyState.style.display = data.html ? 'none' : 'block';
+        } else {
+          grid.insertAdjacentHTML('beforeend', data.html);
+        }
 
         if (data.hasMore) {
           nextPage = data.nextPage;
@@ -656,19 +668,24 @@ function toggleShopFilter() {
       .catch(() => {
         loader.style.display = 'none';
         loading = false;
+        if (replace) {
+          if (loadingState) loadingState.innerHTML = '<span style="color:var(--c-mid)">Products could not be loaded. Please refresh and try again.</span>';
+          if (resultCount) resultCount.textContent = 'Products unavailable';
+        }
       });
+  }
+
+  function loadMore() {
+    if (nextPage !== null) loadPage(nextPage);
   }
 
   const observer = new IntersectionObserver(function (entries) {
     if (entries[0].isIntersecting) loadMore();
   }, { rootMargin: '200px' });
 
-  if (nextPage !== null) {
-    observer.observe(sentinel);
-  } else {
-    /* Already showing all products on first load */
-    endMsg.style.display = 'block';
-  }
+  // Fetch products only after the complete page shell is available to the user.
+  loadPage(1, true);
+  observer.observe(sentinel);
 })();
 </script>
 
@@ -678,11 +695,4 @@ function toggleShopFilter() {
 </style>
 @endpush
 
-<script>
-/* Tell any active service worker to clear its page cache immediately,
-   so stale shop HTML doesn't block CSS updates from reaching the user. */
-if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-  navigator.serviceWorker.controller.postMessage('clear');
-}
-</script>
 @endpush
