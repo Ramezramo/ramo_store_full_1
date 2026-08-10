@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict GvOWDel2G1TDKelB2HVapLEQUzNjXVhriZ5KkF5uk5p4dZPsAzvqL4mqcBrIkg5
+\restrict qgnPqteofXgJ62x7EHKjcJZ0Kg38Aa2Cg7n80hGSHdbocbkfZpbZ1N1Va9o8afr
 
 -- Dumped from database version 16.10
 -- Dumped by pg_dump version 16.10
@@ -2318,7 +2318,7 @@ COPY public.app_configs (id, config_key, config_group, lang, value, label, descr
 4	auth_settings	auth	\N	{"email_login":false,"google_login":false,"phone_otp_login":true,"guest_checkout":false,"auto_register_google":true,"auto_register_otp":true,"require_name_on_register":true,"require_email_on_register":false,"require_email_verification":false,"otp_length":6,"otp_expiry_minutes":5,"max_otp_attempts":3,"resend_cooldown_seconds":60,"max_resends_per_hour":3,"max_login_attempts":5,"lockout_duration_minutes":15,"session_expiry_hours":24}	Auth Settings	Login methods and security configuration	f	0	2026-08-09 14:18:55
 5	shipping_settings	shipping	\N	{"free_shipping_enabled":false,"free_shipping_threshold":1000,"standard_shipping_fee":100}	Shipping Settings	Free shipping threshold and standard shipping fee	f	0	2026-08-09 14:53:16
 3	manual_payment_methods	payment	\N	{"cod_enabled":false,"cod_data":"Pay when your order arrives","vodafone_cash_enabled":false,"vodafone_cash_data":"Send to 01xxxxxxxxx","bank_transfer_enabled":false,"bank_transfer_data":"Transfer to our bank account","fawry_enabled":false,"fawry_data":"Pay at any Fawry outlet","credit_card_enabled":false,"credit_card_data":"Visa \\/ Mastercard","wallet_enabled":true,"wallet_number":"010065464565","instapay_enabled":true,"instapay_number":"010065464565","instapay_link":"https:\\/\\/ipn.eg\\/S\\/ramezasaad500\\/instapay\\/7lyGc3"}	Manual Payment Methods	Wallet and InstaPay transfer instructions for website orders	f	0	2026-08-09 14:55:55
-1	horizon_layout	layout	en	[{"layout":"logo","showMenu":true,"showSearch":true,"showLogo":true,"showliked":true,"hidden":false},{"layout":"category","type":"icon","wrap":false,"size":1,"radius":50,"items":[{"category":18,"label":"Phones","image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/phones_image.jpg","colors":["#3CC2BF","#3CC2BF"]},{"category":23,"label":"Bag","image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/bag_image_.jpg","colors":["#3E6AB5","#3E6AB5"]},{"category":25,"label":"Blazers","image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/women_blazers.webp","colors":["#53A2CC","#53A2CC"]},{"category":28,"label":"Shoes","image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/sheos.jpg","colors":["#53688A","#53688A"]},{"category":29,"label":"Jeans","image":"https://us.dockers.com/cdn/shop/files/Monte-Mid-Rise-Jeans-Relaxed-Fit-alt5-A64720005_360x450_crop_center.png?v=1741351564","colors":["#43506A","#43506A"]},{"category":30,"label":"Jeans Man","image":"https://images.squarespace-cdn.com/content/v1/58add8dd6a49639a87822092/1654105465923-95DJO7H19YLTGOSB4CLO/how-to-style-mens-jeans.jpg?format=750w","colors":["#12B58C","#12B58C"]}],"hidden":false},{"layout":"saleImages","category":null,"headerText":"Shop by Look","maxItemsToShow":8,"productWidth":200,"productConfig":{"imageRatio":1.4,"borderRadius":10},"hidden":false,"imageHeight":240,"responsive":{"mobile":{"productWidth":190,"imageHeight":80}}},{"layout":"brands"},{"layout":"bannerImage","isSlider":true,"autoPlay":true,"showNumber":false,"design":"default","showBackGround":true,"radius":10,"items":[{"category":29,"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/HP-Banner.webp","padding":7},{"product":30,"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/Campaign-LP-04.webp","padding":7,"category":18},{"category":28,"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/Campaign-LP-07.webp","padding":7}],"bannerHeight":260},{"name":"Man Collections","layout":"twoColumn","headerText":"On Sale Today ⚡️","productWidth":200,"maxItemsToShow":7,"category":23,"addToCartButtonStyle":{"style":"iconed","backgroundColor":"#E0E0E0","textColor":"#3D3D3D"},"productConfig":{"borderRadius":12.5,"hMargin":10,"vMargin":6,"showHeart":true,"imageRatio":1.5,"layout":"grid"},"responsive":{"mobile":{"imageHeight":100,"productWidth":130}}},{"layout":"bannerImage","design":"static","fit":"fitWidth","marginLeft":0,"marginRight":0,"marginTop":20,"marginBottom":0,"height":0.15,"items":[{"product":30,"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/kobunatkhasm.png","padding":7}],"bannerHeight":280,"radius":7},{"name":"SuperMarket Stars","layout":"seupermarketstars","category":18},{"name":"Brands","layout":"brands","category":21},{"layout":"topVendors","headerText":"Top Sellers","maxItemsToShow":6,"sortBy":"products"},{"layout":"seupermarketstars","name":"Featured","category":26},{"layout":"coupons","headerText":"This Week's Deals","subLabel":"Use code at checkout","maxItemsToShow":6,"sortBy":"amount","showExpiredFallback":true,"hideWhenEmpty":true}]	Homepage Layout (EN)	\N	t	0	2026-08-09 15:00:42
+1	horizon_layout	layout	en	[{"layout":"logo","showMenu":true,"showSearch":true,"showLogo":true,"showliked":true,"hidden":false},{"layout":"category","type":"icon","wrap":false,"size":1,"radius":50,"items":[{"category":18,"label":"Phones","image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/phones_image.jpg","colors":["#3CC2BF","#3CC2BF"]},{"category":23,"label":"Bag","image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/bag_image_.jpg","colors":["#3E6AB5","#3E6AB5"]},{"category":25,"label":"Blazers","image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/women_blazers.webp","colors":["#53A2CC","#53A2CC"]},{"category":28,"label":"Shoes","image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/sheos.jpg","colors":["#53688A","#53688A"]},{"category":29,"label":"Jeans","image":"https://us.dockers.com/cdn/shop/files/Monte-Mid-Rise-Jeans-Relaxed-Fit-alt5-A64720005_360x450_crop_center.png?v=1741351564","colors":["#43506A","#43506A"]},{"category":30,"label":"Jeans Man","image":"https://images.squarespace-cdn.com/content/v1/58add8dd6a49639a87822092/1654105465923-95DJO7H19YLTGOSB4CLO/how-to-style-mens-jeans.jpg?format=750w","colors":["#12B58C","#12B58C"]}],"hidden":false},{"layout":"saleImages","category":null,"headerText":"Shop by Look","maxItemsToShow":8,"productWidth":200,"productConfig":{"imageRatio":1.4,"borderRadius":10},"hidden":false,"imageHeight":240,"responsive":{"mobile":{"productWidth":190,"imageHeight":160}}},{"layout":"brands"},{"layout":"bannerImage","isSlider":true,"autoPlay":true,"showNumber":false,"design":"default","showBackGround":true,"radius":10,"items":[{"category":29,"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/HP-Banner.webp","padding":7},{"product":30,"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/Campaign-LP-04.webp","padding":7,"category":18},{"category":28,"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/Campaign-LP-07.webp","padding":7}],"bannerHeight":260},{"name":"Man Collections","layout":"twoColumn","headerText":"On Sale Today ⚡️","productWidth":200,"maxItemsToShow":7,"category":23,"addToCartButtonStyle":{"style":"iconed","backgroundColor":"#E0E0E0","textColor":"#3D3D3D"},"productConfig":{"borderRadius":12.5,"hMargin":10,"vMargin":6,"showHeart":true,"imageRatio":1.5,"layout":"grid"},"responsive":{"mobile":{"imageHeight":100,"productWidth":130}}},{"layout":"bannerImage","design":"static","fit":"fitWidth","marginLeft":0,"marginRight":0,"marginTop":20,"marginBottom":0,"height":0.15,"items":[{"product":30,"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/kobunatkhasm.png","padding":7}],"bannerHeight":280,"radius":7},{"name":"SuperMarket Stars","layout":"seupermarketstars","category":18},{"name":"Brands","layout":"brands","category":21},{"layout":"topVendors","headerText":"Top Sellers","maxItemsToShow":6,"sortBy":"products"},{"layout":"seupermarketstars","name":"Featured","category":26},{"layout":"coupons","headerText":"This Week's Deals","subLabel":"Use code at checkout","maxItemsToShow":6,"sortBy":"amount","showExpiredFallback":true,"hideWhenEmpty":true}]	Homepage Layout (EN)	\N	t	0	2026-08-10 04:40:37
 \.
 
 
@@ -2544,6 +2544,8 @@ COPY public.order_sub_orders (id, parent_order_id, vendor_id, customer_id, statu
 5	5	3	3	delivered	[{"product_id":22,"variation_id":null,"name":"Luxe Velvet Jeans \\u2014 Olive","sku":null,"quantity":1,"price":2526,"subtotal":2526,"attributes":[]}]	2526.00	0.00	2526.00	\N	\N	[{"status":"returned","note":null,"by":"vendor:3","at":"2026-08-09 14:47:12"},{"status":"delivered","note":null,"by":"vendor:3","at":"2026-08-09 14:48:06"}]	\N	2026-08-09 14:42:02	2026-08-09 14:48:06	delivered
 6	6	16	5	pending	[{"product_id":20,"variation_id":null,"name":"Floral Wrap Dress","sku":null,"quantity":1,"price":890,"subtotal":890,"attributes":[]}]	890.00	0.00	890.00	\N	\N	[]	\N	2026-08-09 15:04:29	2026-08-09 15:04:29	pending
 7	7	3	5	shipped	[{"product_id":22,"variation_id":null,"name":"Luxe Velvet Jeans \\u2014 Olive","sku":null,"quantity":1,"price":2526,"subtotal":2526,"attributes":[]}]	2526.00	0.00	2526.00	\N	\N	[{"status":"processing","note":null,"by":"vendor:3","at":"2026-08-09 15:08:04"},{"status":"shipped","note":null,"by":"vendor:3","at":"2026-08-09 15:08:25"}]	\N	2026-08-09 15:06:57	2026-08-09 15:08:25	shipped
+8	8	12	6	pending	[{"product_id":1,"variation_id":null,"name":"Classic Leather Tote Bag","sku":null,"quantity":1,"price":1850,"subtotal":1850,"attributes":[]}]	1850.00	0.00	1850.00	\N	\N	[]	\N	2026-08-10 04:34:02	2026-08-10 04:34:02	pending
+9	9	12	7	pending	[{"product_id":3,"variation_id":null,"name":"Quilted Chain Shoulder Bag","sku":null,"quantity":1,"price":2200,"subtotal":2200,"attributes":[]}]	2200.00	0.00	2200.00	\N	\N	[]	\N	2026-08-10 04:37:19	2026-08-10 04:37:19	pending
 \.
 
 
@@ -2559,6 +2561,8 @@ COPY public.orders (id, parent_id, parent_vendors_ids, parent_vendors_data, stat
 3	0	\N	\N	shipped	EGP	\N	f	2026-08-09 14:25:25	2026-08-09 14:32:49	0.00	0.00	0.00	0.00	0.00	\N	615.00	615	0	0.00	3	wc_mTDP3AzuN9QY3wn6shr3	{"first_name":"Ramona","last_name":"hgg","email":null,"phone":"+3453454555","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.44544435121235","longitude":"30.805890948199856"}	{"first_name":"Ramona","last_name":"hgg","email":null,"phone":"+3453454555","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.44544435121235","longitude":"30.805890948199856"}	manual_wallet	Pay by Wallet	\N	10.48.0.234	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36	website		\N	\N	4b678843897198843d3ff64bafdd657a	\N	[{"product_id":7,"variation_id":null,"name":"Distressed Boyfriend Jeans","sku":null,"quantity":1,"price":615,"subtotal":615,"attributes":[]}]	\N	\N	\N	\N	\N		t	t	t	\N	ج.م	\N	2026-08-09 14:25:25	2026-08-09 14:25:25			f	3	[{"status":"processing","note":"General order status force-overridden to processing.","by":"admin:1","at":"2026-08-09 14:32:06","type":"general_status_override"},{"status":"partially_delivered","note":"General order status force-overridden to partially_delivered.","by":"admin:1","at":"2026-08-09 14:32:17","type":"general_status_override"},{"status":"shipped","note":"General order status force-overridden to shipped.","by":"admin:1","at":"2026-08-09 14:32:49","type":"general_status_override"}]	2026-08-09 14:32:49	2026-08-09 14:25:25	pending_verification	\N	\N	\N	\N	\N	\N	pending	shipped	\N	1	2026-08-09 14:32:49
 4	0	\N	\N	shipped	EGP	\N	f	2026-08-09 14:26:24	2026-08-09 14:34:12	0.00	0.00	0.00	0.00	0.00	\N	890.00	890	0	0.00	3	wc_VpPIDJkTCdCi0q91ojv8	{"first_name":"Ramona","last_name":"hgg","email":null,"phone":"+3453454555","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.44544435121235","longitude":"30.805890948199856"}	{"first_name":"Ramona","last_name":"hgg","email":null,"phone":"+3453454555","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.44544435121235","longitude":"30.805890948199856"}	manual_wallet	Pay by Wallet	\N	10.48.0.234	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36	website		\N	2026-08-09 14:29:07	6bcb195325a706e72a319e5582cb3d38	\N	[{"product_id":20,"variation_id":null,"name":"Floral Wrap Dress","sku":null,"quantity":1,"price":890,"subtotal":890,"attributes":[]}]	\N	\N	\N	\N	\N		t	f	t	\N	ج.م	\N	2026-08-09 14:26:24	2026-08-09 14:26:24		2026-08-09 14:29:07	t	4	[{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-09 14:26:49"},{"status":"processing","note":"General order status force-overridden to processing.","by":"admin:1","at":"2026-08-09 14:27:17","type":"general_status_override"},{"status":"confirmed","note":"Payment receipt approved.","by":"admin:1","at":"2026-08-09 14:29:07"},{"status":"processing","note":"General order status force-overridden to processing.","by":"admin:1","at":"2026-08-09 14:29:31","type":"general_status_override"},{"status":"partially_shipped","note":"General order status force-overridden to partially_shipped.","by":"admin:1","at":"2026-08-09 14:30:49","type":"general_status_override"},{"status":"partially_shipped","note":"General order status force-overridden to partially_shipped.","by":"admin:1","at":"2026-08-09 14:31:12","type":"general_status_override"},{"status":"shipped","note":"General order status force-overridden to shipped.","by":"admin:1","at":"2026-08-09 14:33:26","type":"general_status_override"}]	2026-08-09 14:34:12	2026-08-09 14:26:24	confirmed	payment-receipts/twS6B1DlW3IZc5BTkMtRWKDMrH6rb1uV87bSrUGq.png	Screenshot (2).png	2026-08-09 14:26:49	2026-08-09 14:29:07	1	\N	pending	shipped	\N	1	2026-08-09 14:33:26
 5	0	\N	\N	processing	EGP	\N	f	2026-08-09 14:42:02	2026-08-09 14:48:06	0.00	0.00	0.00	0.00	0.00	\N	2526.00	2526	0	0.00	3	wc_jlJ8Bciasb7mjRyl0acH	{"first_name":"Ramona","last_name":"hgg","email":null,"phone":"+3453454555","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.44544435121235","longitude":"30.805890948199856"}	{"first_name":"Ramona","last_name":"hgg","email":null,"phone":"+3453454555","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.44544435121235","longitude":"30.805890948199856"}	manual_wallet	Pay by Wallet	\N	10.48.26.141	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36	website		\N	2026-08-09 14:42:39	c449c9fc0bb6a74c094b8b7a725f88de	\N	[{"product_id":22,"variation_id":null,"name":"Luxe Velvet Jeans \\u2014 Olive","sku":null,"quantity":1,"price":2526,"subtotal":2526,"attributes":[]}]	\N	\N	\N	\N	\N		t	f	t	\N	ج.م	\N	2026-08-09 14:42:02	2026-08-09 14:42:02		2026-08-09 14:42:39	t	5	[{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-09 14:42:11"},{"status":"confirmed","note":"Payment receipt approved.","by":"admin:1","at":"2026-08-09 14:42:39"},{"status":"processing","note":"General order status force-overridden to processing.","by":"admin:1","at":"2026-08-09 14:42:48","type":"general_status_override"}]	2026-08-09 14:48:06	2026-08-09 14:42:02	confirmed	payment-receipts/fLb892cnsOb316DxUId7cNACVA3SMYHjtHighatd.png	Screenshot (7).png	2026-08-09 14:42:11	2026-08-09 14:42:39	1	\N	completed	processing	\N	1	2026-08-09 14:42:48
+9	0	\N	\N	pending	EGP	\N	f	2026-08-10 04:37:19	2026-08-10 04:37:19	0.00	0.00	0.00	0.00	0.00	\N	2200.00	2200	0	0.00	7	wc_oepGwXR6mw5fFCiXzz2q	{"first_name":"Ramez","last_name":"Malak","email":null,"phone":"+200885255566","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.4457688","longitude":"30.8046002"}	{"first_name":"Ramez","last_name":"Malak","email":null,"phone":"+200885255566","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.4457688","longitude":"30.8046002"}	manual_instapay	Pay by InstaPay	\N	10.28.20.184	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Mobile Safari/537.36	website		\N	\N	6c3ffbdb6b72eac0fa0d4b34addc84ae	\N	[{"product_id":3,"variation_id":null,"name":"Quilted Chain Shoulder Bag","sku":null,"quantity":1,"price":2200,"subtotal":2200,"attributes":[]}]	\N	\N	\N	\N	\N		t	t	t	\N	ج.م	\N	2026-08-10 04:37:19	2026-08-10 04:37:19			f	9	[]	2026-08-10 04:37:19	2026-08-10 04:37:19	pending_verification	\N	\N	\N	\N	\N	\N	pending	\N	\N	\N	\N
+8	0	\N	\N	pending	EGP	\N	f	2026-08-10 04:34:02	2026-08-10 04:34:55	0.00	0.00	0.00	0.00	0.00	\N	1850.00	1850	0	0.00	6	wc_X2GEH2scvThgGMRVxYaG	{"first_name":"Ramo","last_name":"Ramez","email":null,"phone":"+200196464666","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.4457836","longitude":"30.8046024"}	{"first_name":"Ramo","last_name":"Ramez","email":null,"phone":"+200196464666","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.4457836","longitude":"30.8046024"}	manual_instapay	Pay by InstaPay	\N	10.28.8.185	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Mobile Safari/537.36	website		\N	\N	7159e64201fe43c2be043d0d73a77314	\N	[{"product_id":1,"variation_id":null,"name":"Classic Leather Tote Bag","sku":null,"quantity":1,"price":1850,"subtotal":1850,"attributes":[]}]	\N	\N	\N	\N	\N		t	t	t	\N	ج.م	\N	2026-08-10 04:34:02	2026-08-10 04:34:02			f	8	[{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-10 04:34:55"}]	2026-08-10 04:34:55	2026-08-10 04:34:02	pending_verification	payment-receipts/gK07XR4w2DItYrO42ulj66D67V0RGSOToe2TdUCV.png	Screenshot_20260808-194630.png	2026-08-10 04:34:55	\N	\N	\N	pending	\N	\N	\N	\N
 \.
 
 
@@ -2571,6 +2575,9 @@ COPY public.otp_verifications (id, phone, otp_code, expires_at, attempts, resend
 2	+3453454555	180770	2026-08-09 14:29:39	0	0	\N	t	2026-08-09 14:24:39	2026-08-09 14:24:44
 3	+76587657876	921205	2026-08-09 15:06:28	0	0	\N	t	2026-08-09 15:01:28	2026-08-09 15:01:42
 4	+201002722375	905454	2026-08-09 15:08:36	0	0	\N	t	2026-08-09 15:03:36	2026-08-09 15:03:48
+5	+200196464666	876163	2026-08-10 04:38:15	0	0	\N	t	2026-08-10 04:33:15	2026-08-10 04:33:22
+6	+200885255566	192005	2026-08-10 04:41:37	0	0	\N	t	2026-08-10 04:36:37	2026-08-10 04:36:47
+7	+200885255566	208198	2026-08-10 04:42:59	0	0	\N	t	2026-08-10 04:37:59	2026-08-10 04:38:08
 \.
 
 
@@ -2597,6 +2604,7 @@ COPY public.payment_receipts (id, order_id, payment_method, file_path, original_
 8	5	manual_wallet	payment-receipts/fLb892cnsOb316DxUId7cNACVA3SMYHjtHighatd.png	Screenshot (7).png	confirmed	\N	3	1	2026-08-09 14:42:11	2026-08-09 14:42:39	2026-08-09 14:42:11	2026-08-09 14:42:39
 9	6	manual_wallet	payment-receipts/daKsZCitLJCWmHy5IsHEUn4VN3lzIRPQMcWnUPEg.png	Screenshot_20260809-060354.png	confirmed	\N	5	1	2026-08-09 15:04:45	2026-08-09 15:05:24	2026-08-09 15:04:45	2026-08-09 15:05:24
 10	7	manual_wallet	payment-receipts/T947R4miyFd76ObAJHJJfelr6BJLdrwgHMaIX6Mh.png	Screenshot_20260809-060354.png	confirmed	\N	5	3	2026-08-09 15:07:30	2026-08-09 15:07:32	2026-08-09 15:07:30	2026-08-09 15:07:32
+11	8	manual_instapay	payment-receipts/gK07XR4w2DItYrO42ulj66D67V0RGSOToe2TdUCV.png	Screenshot_20260808-194630.png	pending	\N	6	\N	2026-08-10 04:34:55	\N	2026-08-10 04:34:55	2026-08-10 04:34:55
 \.
 
 
@@ -2836,6 +2844,8 @@ COPY public.users (id, name, email, email_verified_at, password, remember_token,
 3	Ramona hgg	\N	\N	$2y$12$fbE.7MBzZ7UhgnRBG/2XMOrU6Sa1s0gG.T3i4oblUsABpbkCTgjOC	\N	2026-08-09 14:24:56	2026-08-09 14:25:25	\N	\N	\N	\N	Ramona	hgg	\N	\N	+3453454555	["customer"]	ramona-hgg-4555	2026-08-09 14:24:56	Ramona	hgg		{"customer":true}	{"first_name":"Ramona","last_name":"hgg","address":"Al Kufur","address_note":null,"city":"Al Kufur","state":"Minya","email":null,"phone":"+3453454555","latitude":"28.44544435121235","longitude":"30.805890948199856"}	phone_otp	t	f	\N	\N
 4	jhgjkhg	\N	\N	$2y$12$5og.pwYI8RgIsGqTI.O0e.NdTne.6pyq.xhB6A3L6fQNhwx5KCghu	\N	2026-08-09 15:01:49	2026-08-09 15:01:49	\N	\N	\N	\N	jhgjkhg		\N	\N	+76587657876	["customer"]	jhgjkhg-7876	2026-08-09 15:01:49	jhgjkhg			{"customer":true}	[]	phone_otp	t	f	\N	\N
 5	Ramez Malak	\N	\N	$2y$12$1Uu.SRqoEfjzBD7w4qSVXO4pljtc5cwbqKLX9pgmW4sHvKJXkrgfm	\N	2026-08-09 15:04:00	2026-08-09 15:04:29	\N	\N	\N	\N	Ramez	Malak	\N	\N	+201002722375	["customer"]	ramez-malak-2375	2026-08-09 15:04:00	Ramez	Malak		{"customer":true}	{"first_name":"Ramez","last_name":"Malak","address":"Al Kufur","address_note":null,"city":"Al Kufur","state":"Minya","email":null,"phone":"+201002722375","latitude":"28.4457762","longitude":"30.804594"}	phone_otp	t	f	\N	\N
+6	Ramo	\N	\N	$2y$12$lC.ojYc6/k6Zs2ch/FUhU./fovlKVD1yVJOls7uTBmnKvRbA1uDXG	\N	2026-08-10 04:33:30	2026-08-10 04:34:02	\N	\N	\N	\N	Ramo	Ramez	\N	\N	+200196464666	["customer"]	ramo-4666	2026-08-10 04:33:30	Ramo			{"customer":true}	{"first_name":"Ramo","last_name":"Ramez","address":"Al Kufur","address_note":null,"city":"Al Kufur","state":"Minya","email":null,"phone":"+200196464666","latitude":"28.4457836","longitude":"30.8046024"}	phone_otp	t	f	\N	\N
+7	Ramez Malak	\N	\N	$2y$12$0neRnrwZtGMtDuSZqEsK.uPtY6TdEMZSR/YID5z8ORuwR.jRG0R5.	\N	2026-08-10 04:36:54	2026-08-10 04:37:19	\N	\N	\N	\N	Ramez	Malak	\N	\N	+200885255566	["customer"]	ramez-malak-5566	2026-08-10 04:36:54	Ramez	Malak		{"customer":true}	{"first_name":"Ramez","last_name":"Malak","address":"Al Kufur","address_note":null,"city":"Al Kufur","state":"Minya","email":null,"phone":"+200885255566","latitude":"28.4457688","longitude":"30.8046002"}	phone_otp	t	f	\N	\N
 \.
 
 
@@ -2912,7 +2922,7 @@ SELECT pg_catalog.setval('public.brands_id_seq', 1, false);
 -- Name: cart_items_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.cart_items_id_seq', 28, true);
+SELECT pg_catalog.setval('public.cart_items_id_seq', 30, true);
 
 
 --
@@ -3031,28 +3041,28 @@ SELECT pg_catalog.setval('public.order_messages_id_seq', 3, true);
 -- Name: order_sub_orders_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.order_sub_orders_id_seq', 7, true);
+SELECT pg_catalog.setval('public.order_sub_orders_id_seq', 9, true);
 
 
 --
 -- Name: orders_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.orders_id_seq', 7, true);
+SELECT pg_catalog.setval('public.orders_id_seq', 9, true);
 
 
 --
 -- Name: otp_verifications_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.otp_verifications_id_seq', 4, true);
+SELECT pg_catalog.setval('public.otp_verifications_id_seq', 7, true);
 
 
 --
 -- Name: payment_receipts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.payment_receipts_id_seq', 10, true);
+SELECT pg_catalog.setval('public.payment_receipts_id_seq', 11, true);
 
 
 --
@@ -3129,7 +3139,7 @@ SELECT pg_catalog.setval('public.user_notes_id_seq', 1, false);
 -- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.users_id_seq', 5, true);
+SELECT pg_catalog.setval('public.users_id_seq', 7, true);
 
 
 --
@@ -3591,5 +3601,5 @@ REVOKE USAGE ON SCHEMA public FROM PUBLIC;
 -- PostgreSQL database dump complete
 --
 
-\unrestrict GvOWDel2G1TDKelB2HVapLEQUzNjXVhriZ5KkF5uk5p4dZPsAzvqL4mqcBrIkg5
+\unrestrict qgnPqteofXgJ62x7EHKjcJZ0Kg38Aa2Cg7n80hGSHdbocbkfZpbZ1N1Va9o8afr
 
