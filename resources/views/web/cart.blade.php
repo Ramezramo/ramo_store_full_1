@@ -1,6 +1,55 @@
 @extends('layouts.app')
 @section('title', 'Cart — Ramo Store')
 
+@push('styles')
+<style>
+/* Cart phone layout: compact cards, clear hierarchy, and no horizontal overflow. */
+@media (max-width: 600px) {
+  .cart-page-shell{max-width:100%;}
+  .cart-back-link{margin:2px 0 14px;font-size:13px;}
+  .cart-title-row{gap:9px;margin-bottom:18px;align-items:center;}
+  .cart-title{font-size:25px;letter-spacing:-.5px;}
+  .cart-count-badge{font-size:12px;background:var(--c-tag);border-radius:99px;padding:5px 9px;}
+  .cart-layout{display:flex;flex-direction:column;gap:16px;}
+  #cart-items-wrap{display:flex;flex-direction:column;gap:10px;}
+  .cart-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 8px;align-items:center;padding:14px;border:1px solid #e8e8e8;border-radius:16px;background:#fff;box-shadow:0 4px 16px rgba(24,24,24,.045);}
+  .cart-prod{grid-column:1 / -1;width:100%;gap:12px;min-width:0;}
+  .cart-prod img,.cart-img-placeholder{width:78px;height:78px;border-radius:12px;}
+  .cart-img-placeholder{font-size:28px;}
+  .cart-prod-info{padding:0 28px 0 0;min-width:0;}
+  .cart-name{font-size:14px;line-height:1.32;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .cart-attr-pills{gap:4px;margin-bottom:0;max-height:25px;overflow:hidden;}
+  .cart-attr-pill{font-size:10px;padding:3px 7px;}
+  .cart-row-actions{grid-column:1;grid-row:2;display:flex;align-items:center;gap:8px;margin:0;min-width:0;}
+  .qty-pill{height:34px;}
+  .qty-pill button{width:30px;height:32px;}
+  .qty-pill input{width:30px;height:32px;font-size:13px;}
+  .cart-unit-price{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cart-row-price{grid-column:2;grid-row:2;min-width:0;padding:0;margin:0;text-align:right;align-self:center;}
+  .cart-sub{font-size:14px;white-space:nowrap;}
+  .cart-sub-old{font-size:10px;}
+  .cart-remove-btn{top:11px;right:11px;width:27px;height:27px;border-radius:8px;}
+  .cart-remove-btn svg{width:13px;height:13px;}
+  .cart-actions{gap:8px;margin-top:4px;display:grid;grid-template-columns:1fr 1fr;}
+  .cart-actions .btn,.cart-clear-btn{width:100%;padding:11px 8px;font-size:11.5px;white-space:nowrap;}
+  .cart-summary{order:2;position:static;width:100%;padding:16px;border-radius:18px;border:1px solid #e8e8e8;box-shadow:0 5px 20px rgba(24,24,24,.055);}
+  .cart-summary-header{margin-bottom:15px;}
+  .cart-summary-header h3{font-size:16px;}
+  .cart-summary-badge{font-size:11px;padding:4px 9px;}
+  .coupon-box{min-height:42px;padding:5px 5px 5px 11px;margin-bottom:12px;border-radius:11px;}
+  .coupon-input{font-size:12px;min-width:0;}
+  .coupon-apply-btn{padding:9px 13px;font-size:11px;border-radius:8px;}
+  .summary-row{font-size:12px;margin-bottom:10px;}
+  .summary-divider{margin:11px 0;}
+  .total-row{font-size:14px;padding:12px 13px;margin-left:-4px;margin-right:-4px;border-radius:11px;}
+  .total-row span:last-child{font-size:17px;}
+  .checkout-btn{min-height:48px;margin-top:13px;border-radius:12px;font-size:13px;}
+  .payment-icons{gap:5px;margin-top:11px;}
+  .payment-chip{font-size:9.5px;padding:4px 6px;}
+}
+</style>
+@endpush
+
 @section('content')
 <div id="cart-loading-overlay" class="cart-loading-overlay"><div class="cart-spinner"></div></div>
 <div class="page">
