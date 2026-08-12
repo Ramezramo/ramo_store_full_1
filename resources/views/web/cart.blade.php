@@ -83,12 +83,13 @@
 .cart-total-row{display:flex;align-items:center;justify-content:space-between;gap:15px;color:var(--c-dark);font-size:15px;font-weight:850;background:var(--c-tag);border-radius:12px;padding:13px;margin-top:2px;}
 .cart-total-row strong{font-size:18px;}
 .cart-summary-note{font-size:10.5px;line-height:1.45;color:var(--c-mid);margin:12px 0 0;}
+.cart-summary-checkout{width:100%;margin-top:16px;}
 .cart-empty-state{max-width:470px;margin:42px auto 0;padding:54px 24px;text-align:center;background:var(--c-white);border:1px solid var(--c-light);border-radius:22px;box-shadow:0 6px 24px rgba(24,24,24,.045);}
 .cart-empty-icon{width:74px;height:74px;display:grid;place-items:center;margin:0 auto 16px;border-radius:22px;background:var(--c-tag);color:var(--c-orange);font-size:34px;}
 .cart-empty-state h2{margin:0 0 7px;font-size:22px;color:var(--c-dark);}
 .cart-empty-state p{margin:0;color:var(--c-mid);font-size:13px;}
 .cart-empty-state .btn{margin-top:22px;border-radius:11px;padding:12px 20px;}
-.cart-checkout-bar{max-width:1180px;margin:18px auto 0;padding:15px 18px;border:1px solid var(--c-light);border-radius:17px;background:rgba(255,255,255,.96);display:flex;align-items:center;justify-content:space-between;gap:18px;box-shadow:0 7px 24px rgba(24,24,24,.07);}
+.cart-checkout-bar{max-width:1180px;margin:18px auto 0;padding:15px 18px;border:1px solid var(--c-light);border-radius:17px;background:rgba(255,255,255,.96);display:none;align-items:center;justify-content:space-between;gap:18px;box-shadow:0 7px 24px rgba(24,24,24,.07);}
 .cart-checkout-total{display:flex;flex-direction:column;gap:3px;min-width:0;}
 .cart-checkout-total span{font-size:11px;color:var(--c-mid);}
 .cart-checkout-total strong{font-size:18px;color:var(--c-dark);white-space:nowrap;}
@@ -130,7 +131,8 @@
   .cart-items-actions form{flex:0 0 auto;}
   .cart-summary-panel{padding:15px;}
   .cart-summary-panel h2{font-size:15px;}
-  .cart-checkout-bar{position:fixed;left:0;right:0;bottom:58px;z-index:9998;margin:0;padding:10px 14px calc(10px + env(safe-area-inset-bottom));border-radius:16px 16px 0 0;border-left:0;border-right:0;border-bottom:0;box-shadow:0 -6px 24px rgba(24,24,24,.13);}
+  .cart-summary-checkout{display:none;}
+  .cart-checkout-bar{position:fixed;left:0;right:0;bottom:58px;z-index:9998;margin:0;padding:10px 14px calc(10px + env(safe-area-inset-bottom));border-radius:16px 16px 0 0;border-left:0;border-right:0;border-bottom:0;box-shadow:0 -6px 24px rgba(24,24,24,.13);display:flex;}
   .cart-checkout-total strong{font-size:16px;}
   .cart-checkout-button{min-width:0;flex:1;min-height:50px;font-size:13px;border-radius:12px;}
   .cart-empty-state{margin:12px auto 0;padding:52px 20px;border-radius:18px;}
@@ -271,6 +273,7 @@
           <hr class="cart-summary-divider">
           <div class="cart-total-row"><span>Total</span><strong id="cart-total">{{ number_format($total, 2) }} EGP</strong></div>
           <p class="cart-summary-note">Final taxes and delivery details are confirmed during checkout.</p>
+          <a href="{{ route('checkout') }}" class="cart-checkout-button cart-summary-checkout">Checkout <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
         </aside>
       </div>
 
