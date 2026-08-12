@@ -61,7 +61,17 @@ class AppConstants
         if ($override) {
             return rtrim($override, '/') . '/';
         }
-        return rtrim(static::domain() . static::IMAGE_PATH, '/') . '/';
+        $domain = static::domain();
+        $host = strtolower((string) (parse_url($domain, PHP_URL_HOST) ?? ''));
+
+        // A local APP_URL is useful for the server, but must never be emitted
+        // into public HTML. Use a same-origin relative storage path instead so
+        // mobile browsers do not attempt a Local Network Access request.
+        if ($host && static::isLocalNetworkHost($host)) {
+            return rtrim(static::IMAGE_PATH, '/') . '/';
+        }
+
+        return rtrim($domain . static::IMAGE_PATH, '/') . '/';
     }
 
     /**
@@ -78,9 +88,47 @@ class AppConstants
             return null;
         }
         if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
-            return $path;
+            return static::normalizeLegacyLocalUrl($path);
         }
         return static::imageBase() . ltrim(str_replace('\\', '/', $path), '/');
+    }
+
+    /**
+     * Turn an old localhost/private-network image URL into a same-origin path.
+     *
+     * Product and store assets imported from local development can contain URLs
+     * such as http://127.0.0.1:5000/storage/… . Loading those from the public
+     * storefront causes Chrome on Android to request Local Network Access.
+     * Storage is served by this application, so retaining only the path keeps
+     * the request on the current public origin and avoids that permission.
+     */
+    private static function normalizeLegacyLocalUrl(string $url): string
+    {
+        $parts = parse_url($url);
+        $host = strtolower((string) ($parts['host'] ?? ''));
+
+        if (!$host || !static::isLocalNetworkHost($host)) {
+            return $url;
+        }
+
+        $path = '/' . ltrim((string) ($parts['path'] ?? '/'), '/');
+        $query = isset($parts['query']) ? '?' . $parts['query'] : '';
+
+        return $path . $query;
+    }
+
+    /** Determine whether a URL host is loopback or a private-network address. */
+    private static function isLocalNetworkHost(string $host): bool
+    {
+        if (in_array($host, ['localhost', '::1'], true) || str_ends_with($host, '.localhost')) {
+            return true;
+        }
+
+        return $host === '127.0.0.1'
+            || str_starts_with($host, '127.')
+            || str_starts_with($host, '10.')
+            || str_starts_with($host, '192.168.')
+            || (bool) preg_match('/^172\\.(1[6-9]|2[0-9]|3[0-1])\\./', $host);
     }
 
     /**
