@@ -396,11 +396,7 @@
         $cardHeight     = max(0, (int)($sec['cardHeight'] ?? 0));
         $imageWidth     = max(0, (int)($sec['imageWidth'] ?? 0));
         $elementSpacing = max(0, min(40, (int)($sec['elementSpacing'] ?? 0)));
-        $cardStyle      = implode(';', array_filter([
-          $cardHeight > 0 ? "--pc-card-height:{$cardHeight}px" : null,
-          $imageWidth > 0 ? "--pc-image-width:{$imageWidth}px" : null,
-          "--pc-image-height:{$imgHeight}px", "--pc-element-spacing:{$elementSpacing}px",
-        ]));
+        $cardStyle      = '--pc-card-height:var(--tl-card-h,'.($cardHeight > 0 ? $cardHeight.'px' : 'auto').');--pc-image-width:var(--tl-img-w,'.($imageWidth > 0 ? $imageWidth.'px' : '100%').');--pc-image-height:var(--tl-img-h,'.$imgHeight.'px);--pc-element-spacing:var(--tl-element-spacing,'.$elementSpacing.'px)';
         $secId          = 'sg-'.$si;
         $uniformHeight  = !empty($sec['uniformHeight']);
         $cardOptions = [
@@ -463,11 +459,7 @@
         $cardHeight = max(0, (int)($sec['cardHeight'] ?? 0));
         $imageWidth = max(0, (int)($sec['imageWidth'] ?? 0));
         $elementSpacing = max(0, min(40, (int)($sec['elementSpacing'] ?? 0)));
-        $cardStyle  = implode(';', array_filter([
-          $cardHeight > 0 ? "--pc-card-height:{$cardHeight}px" : null,
-          $imageWidth > 0 ? "--pc-image-width:{$imageWidth}px" : null,
-          "--pc-image-height:{$imgHeight}px", "--pc-element-spacing:{$elementSpacing}px",
-        ]));
+        $cardStyle  = '--pc-card-height:var(--tl-card-h,'.($cardHeight > 0 ? $cardHeight.'px' : 'auto').');--pc-image-width:var(--tl-img-w,'.($imageWidth > 0 ? $imageWidth.'px' : '100%').');--pc-image-height:var(--tl-img-h,'.$imgHeight.'px);--pc-element-spacing:var(--tl-element-spacing,'.$elementSpacing.'px)';
         $secId      = 'sg-'.$si;
         $cardOptions = [
           'cardStyle'     => $cardStyle,

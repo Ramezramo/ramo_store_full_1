@@ -96,13 +96,13 @@
   $displayName = $coNameLimit > 0 ? Str::limit($p->name, $coNameLimit) : $p->name;
 @endphp
 
-<div class="product-card" id="{{ $coIdPrefix }}-{{ $pid }}"{{ $cardStyle ? ' style="'.$cardStyle.'"' : '' }}
+<div class="product-card" id="{{ $coIdPrefix }}-{{ $pid }}" @if($cardStyle) style="{{ $cardStyle }}" @endif
      data-pid="{{ $pid }}"
      data-base-img="{{ $displayImg }}"
      data-base-price="{{ $basePrice }}"
      data-vars='@json($jsVars)'>
 
-  <a href="{{ route('product', $pid) }}" class="product-card-img"{{ $imgStyle ? ' style="'.$imgStyle.'"' : '' }}>
+  <a href="{{ route('product', $pid) }}" class="product-card-img" @if($imgStyle) style="{{ $imgStyle }}" @endif>
     @if($displayImg)
       <img src="{{ $displayImg }}" alt="{{ $p->name }}" loading="lazy" id="pc-img-{{ $pid }}"
            onerror="this.onerror=null;this.style.display='none';this.parentElement.querySelector('.pc-img-fallback')?.style.setProperty('display','flex')">
@@ -124,8 +124,8 @@
     @endif
   </a>
 
-  <div class="product-card-body"{{ $bodyPad ? ' style="'.$bodyPad.'"' : '' }}>
-    <a href="{{ route('product', $pid) }}" class="product-card-name"{{ $nameStyle ? ' style="'.$nameStyle.'"' : '' }}>
+  <div class="product-card-body" @if($bodyPad) style="{{ $bodyPad }}" @endif>
+    <a href="{{ route('product', $pid) }}" class="product-card-name" @if($nameStyle) style="{{ $nameStyle }}" @endif>
       @if(!empty($cardNameHtml))
         {!! $cardNameHtml !!}
       @else
