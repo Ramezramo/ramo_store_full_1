@@ -337,15 +337,11 @@
         $cardRadius  = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 12;
         $cardHeight  = max(0, (int)($sec['cardHeight'] ?? 0));
         $imageWidth  = max(0, (int)($sec['imageWidth'] ?? 0));
-        $nameGap     = max(0, min(15, (int)($sec['nameGap'] ?? 0)));
-        $optionsGap  = max(0, min(15, (int)($sec['optionsGap'] ?? 0)));
-        $buttonGap   = max(0, min(15, (int)($sec['buttonGap'] ?? 0)));
-        $imageGap    = max(0, min(15, (int)($sec['imageGap'] ?? 0)));
+        $elementSpacing = max(1, min(15, (int)($sec['elementSpacing'] ?? 1)));
         $cardStyle   = implode(';', array_filter([
           $cardHeight > 0 ? "--pc-card-height:{$cardHeight}px" : null,
           $imageWidth > 0 ? "--pc-image-width:{$imageWidth}px" : null,
-          "--pc-image-height:{$imgHeight}px", "--pc-name-gap:{$nameGap}px",
-          "--pc-options-gap:{$optionsGap}px", "--pc-button-gap:{$buttonGap}px", "--pc-image-gap:{$imageGap}px",
+          "--pc-image-height:{$imgHeight}px", "--pc-element-spacing:{$elementSpacing}px",
         ]));
         $secId       = 'sg-'.$si;
         $cardOptions = [
@@ -397,15 +393,11 @@
         $cardRadius     = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 10;
         $cardHeight     = max(0, (int)($sec['cardHeight'] ?? 0));
         $imageWidth     = max(0, (int)($sec['imageWidth'] ?? 0));
-        $nameGap        = max(0, min(15, (int)($sec['nameGap'] ?? 0)));
-        $optionsGap     = max(0, min(15, (int)($sec['optionsGap'] ?? 0)));
-        $buttonGap      = max(0, min(15, (int)($sec['buttonGap'] ?? 0)));
-        $imageGap       = max(0, min(15, (int)($sec['imageGap'] ?? 0)));
+        $elementSpacing = max(1, min(15, (int)($sec['elementSpacing'] ?? 1)));
         $cardStyle      = implode(';', array_filter([
           $cardHeight > 0 ? "--pc-card-height:{$cardHeight}px" : null,
           $imageWidth > 0 ? "--pc-image-width:{$imageWidth}px" : null,
-          "--pc-image-height:{$imgHeight}px", "--pc-name-gap:{$nameGap}px",
-          "--pc-options-gap:{$optionsGap}px", "--pc-button-gap:{$buttonGap}px", "--pc-image-gap:{$imageGap}px",
+          "--pc-image-height:{$imgHeight}px", "--pc-element-spacing:{$elementSpacing}px",
         ]));
         $secId          = 'sg-'.$si;
         $uniformHeight  = !empty($sec['uniformHeight']);
@@ -468,15 +460,11 @@
         $cardRadius = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 10;
         $cardHeight = max(0, (int)($sec['cardHeight'] ?? 0));
         $imageWidth = max(0, (int)($sec['imageWidth'] ?? 0));
-        $nameGap    = max(0, min(15, (int)($sec['nameGap'] ?? 0)));
-        $optionsGap = max(0, min(15, (int)($sec['optionsGap'] ?? 0)));
-        $buttonGap  = max(0, min(15, (int)($sec['buttonGap'] ?? 0)));
-        $imageGap   = max(0, min(15, (int)($sec['imageGap'] ?? 0)));
+        $elementSpacing = max(1, min(15, (int)($sec['elementSpacing'] ?? 1)));
         $cardStyle  = implode(';', array_filter([
           $cardHeight > 0 ? "--pc-card-height:{$cardHeight}px" : null,
           $imageWidth > 0 ? "--pc-image-width:{$imageWidth}px" : null,
-          "--pc-image-height:{$imgHeight}px", "--pc-name-gap:{$nameGap}px",
-          "--pc-options-gap:{$optionsGap}px", "--pc-button-gap:{$buttonGap}px", "--pc-image-gap:{$imageGap}px",
+          "--pc-image-height:{$imgHeight}px", "--pc-element-spacing:{$elementSpacing}px",
         ]));
         $secId      = 'sg-'.$si;
         $cardOptions = [
