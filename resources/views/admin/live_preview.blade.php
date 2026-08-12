@@ -380,7 +380,7 @@ function buildEditor(sec, idx) {
       <div class="form-group"><label>Card Width (px)</label><input type="number" value="${sec.productWidth||defWidth}" min="80" max="500" step="10" onchange="updateField(${idx},'productWidth',parseInt(this.value)||defWidth)"></div>
       <div class="form-group"><label>Image Height (px)</label><input type="number" value="${sec.imageHeight||defHeight}" min="60" max="800" step="1" onchange="updateField(${idx},'imageHeight',parseInt(this.value)||defHeight)"></div>
       <div class="form-group"><label>Card Height (px)</label><input type="number" value="${sec.cardHeight||0}" min="0" max="1000" step="1" onchange="updateField(${idx},'cardHeight',parseInt(this.value)||0)" placeholder="Auto"></div>
-      <div class="form-group"><label>Image Width (px)</label><input type="number" value="${sec.imageWidth||0}" min="0" max="500" step="1" onchange="updateField(${idx},'imageWidth',parseInt(this.value)||0)" placeholder="Full width"></div>
+      <div class="form-group"><label>Image Width (px) <span style="font-size:10px;opacity:.62;font-weight:400">0 = full card width</span></label><div style="display:flex;gap:6px;align-items:center"><input type="number" value="${sec.imageWidth||0}" min="0" max="500" step="1" onchange="updateField(${idx},'imageWidth',parseInt(this.value)||0)" placeholder="Full width"><button type="button" class="btn btn-sm" style="white-space:nowrap" onclick="updateField(${idx},'imageWidth',0);this.previousElementSibling.value=0">Full width</button></div></div>
       <div class="form-group"><label>Element Spacing (px)</label><input type="number" value="${sec.elementSpacing!=null?sec.elementSpacing:0}" min="0" max="40" step="1" onchange="updateField(${idx},'elementSpacing',Math.max(0,Math.min(40,parseInt(this.value)||0)))"></div>
       <div class="form-group"><label>Corner Radius (px)</label><input type="number" value="${sec.cardBorderRadius!=null?sec.cardBorderRadius:10}" min="0" max="40" step="1" onchange="updateField(${idx},'cardBorderRadius',parseInt(this.value))"></div>
     </div>
@@ -653,6 +653,11 @@ function updateDimField(idx, platform, key, value) {
   sections[idx].responsive[platform][key] = value;
 }
 
+function resetDimField(idx, platform, key, input) {
+  updateDimField(idx, platform, key, 0);
+  if (input) input.value = 0;
+}
+
 function buildDimEditor(sec, idx) {
   const type = sec.layout;
 
@@ -723,6 +728,8 @@ function buildDimEditor(sec, idx) {
       if (f.type === 'select') {
         const opts = f.options.map(o => `<option value="${o.v}" ${val==o.v?'selected':''}>${o.l}</option>`).join('');
         return `<div class="form-group"><label>${f.label}</label><select onchange="updateDimField(${idx},'${platform}','${f.key}',${f.type==='number'?'parseInt(this.value)':'this.value'})">${opts}</select></div>`;
+      } else if (f.key === 'imageWidth') {
+        return `<div class="form-group"><label>${f.label} <span style="font-size:10px;opacity:.62;font-weight:400">0 = full card width</span></label><div style="display:flex;gap:6px;align-items:center"><input type="number" value="${val}" min="${f.min}" max="${f.max}" step="${f.step||1}" onchange="updateDimField(${idx},'${platform}','${f.key}',parseFloat(this.value)||0)"><button type="button" class="btn btn-sm" style="white-space:nowrap" onclick="resetDimField(${idx},'${platform}','${f.key}',this.previousElementSibling)">Full width</button></div></div>`;
       } else {
         return `<div class="form-group"><label>${f.label}</label><input type="number" value="${val}" min="${f.min}" max="${f.max}" step="${f.step||1}" onchange="updateDimField(${idx},'${platform}','${f.key}',parseFloat(this.value)||${f.def})"></div>`;
       }

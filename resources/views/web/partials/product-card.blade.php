@@ -246,7 +246,7 @@
 
 @once
 <style>
-.product-card{height:var(--pc-card-height,auto)}
+.product-card{min-height:var(--pc-card-height,auto)}
 /* The editor's Element Spacing value controls every vertical gap. At 0px these rules
    also neutralise the original product-card margins and top/bottom body padding. */
 .product-card .product-card-img{width:var(--pc-image-width,100%);height:var(--pc-image-height,auto);max-width:100%;align-self:center;margin-bottom:var(--pc-element-spacing,0px)}
