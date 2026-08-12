@@ -377,8 +377,14 @@ function buildEditor(sec, idx) {
       <div class="form-group"><label>Section Title</label><input type="text" value="${escAttr(sec.headerText||sec.name||'')}" onchange="updateField(${idx},'headerText',this.value)" placeholder="e.g. On Sale Today"></div>
       <div class="form-group"><label>Category</label><select onchange="updateField(${idx},'category',parseInt(this.value))"><option value="">All Products</option>${catOptions(sec.category)}</select></div>
       <div class="form-group"><label>Max Items</label><input type="number" value="${sec.maxItemsToShow||8}" min="1" max="20" onchange="updateField(${idx},'maxItemsToShow',parseInt(this.value))"></div>
-      <div class="form-group"><label>Image Width (px)</label><input type="number" value="${sec.productWidth||defWidth}" min="80" max="500" step="10" onchange="updateField(${idx},'productWidth',parseInt(this.value)||defWidth)"></div>
-      <div class="form-group"><label>Image Height (px)</label><input type="number" value="${sec.imageHeight||defHeight}" min="60" max="800" step="10" onchange="updateField(${idx},'imageHeight',parseInt(this.value)||defHeight)"></div>
+      <div class="form-group"><label>Card Width (px)</label><input type="number" value="${sec.productWidth||defWidth}" min="80" max="500" step="10" onchange="updateField(${idx},'productWidth',parseInt(this.value)||defWidth)"></div>
+      <div class="form-group"><label>Image Height (px)</label><input type="number" value="${sec.imageHeight||defHeight}" min="60" max="800" step="1" onchange="updateField(${idx},'imageHeight',parseInt(this.value)||defHeight)"></div>
+      <div class="form-group"><label>Card Height (px)</label><input type="number" value="${sec.cardHeight||0}" min="0" max="1000" step="1" onchange="updateField(${idx},'cardHeight',parseInt(this.value)||0)" placeholder="Auto"></div>
+      <div class="form-group"><label>Image Width (px)</label><input type="number" value="${sec.imageWidth||0}" min="0" max="500" step="1" onchange="updateField(${idx},'imageWidth',parseInt(this.value)||0)" placeholder="Full width"></div>
+      <div class="form-group"><label>Name → Options Gap (px)</label><input type="number" value="${sec.nameGap!=null?sec.nameGap:0}" min="0" max="15" step="1" onchange="updateField(${idx},'nameGap',parseInt(this.value)||0)"></div>
+      <div class="form-group"><label>Options → Price Gap (px)</label><input type="number" value="${sec.optionsGap!=null?sec.optionsGap:0}" min="0" max="15" step="1" onchange="updateField(${idx},'optionsGap',parseInt(this.value)||0)"></div>
+      <div class="form-group"><label>Price → Buttons Gap (px)</label><input type="number" value="${sec.buttonGap!=null?sec.buttonGap:0}" min="0" max="15" step="1" onchange="updateField(${idx},'buttonGap',parseInt(this.value)||0)"></div>
+      <div class="form-group"><label>Card → Image Gap (px)</label><input type="number" value="${sec.imageGap!=null?sec.imageGap:0}" min="0" max="15" step="1" onchange="updateField(${idx},'imageGap',parseInt(this.value)||0)"></div>
       <div class="form-group"><label>Corner Radius (px)</label><input type="number" value="${sec.cardBorderRadius!=null?sec.cardBorderRadius:10}" min="0" max="40" step="1" onchange="updateField(${idx},'cardBorderRadius',parseInt(this.value))"></div>
     </div>
     <div style="font-size:12px;font-weight:700;color:var(--muted);margin:12px 0 8px;text-transform:uppercase;letter-spacing:.5px;border-top:1px solid rgba(255,255,255,.07);padding-top:12px">Card Elements</div>
@@ -678,8 +684,14 @@ function buildDimEditor(sec, idx) {
     const dW = type === 'saleImages' ? 140 : (type === 'seupermarketstars' ? 200 : 230);
     const dH = type === 'saleImages' ? 196 : (type === 'seupermarketstars' ? 200 : 230);
     fields = [
-      { key:'productWidth',     label:'Card Width (px)',   type:'number', min:80,  max:500, step:10, def:dW },
-      { key:'imageHeight',      label:'Image Height (px)', type:'number', min:60,  max:800, step:10, def:dH },
+      { key:'productWidth',     label:'Card Width (px)',   type:'number', min:80,  max:500, step:1,  def:dW },
+      { key:'cardHeight',       label:'Card Height (px)',  type:'number', min:0,   max:1000, step:1,  def:0 },
+      { key:'imageWidth',       label:'Image Width (px)',  type:'number', min:0,   max:500, step:1,  def:0 },
+      { key:'imageHeight',      label:'Image Height (px)', type:'number', min:60,  max:800, step:1,  def:dH },
+      { key:'nameGap',          label:'Name → Options Gap (px)', type:'number', min:0, max:15, step:1, def:0 },
+      { key:'optionsGap',       label:'Options → Price Gap (px)', type:'number', min:0, max:15, step:1, def:0 },
+      { key:'buttonGap',        label:'Price → Buttons Gap (px)', type:'number', min:0, max:15, step:1, def:0 },
+      { key:'imageGap',         label:'Card → Image Gap (px)', type:'number', min:0, max:15, step:1, def:0 },
       { key:'cardBorderRadius', label:'Corner Radius (px)',type:'number', min:0,   max:40,  step:1,  def:10 },
       { key:'maxItemsToShow',   label:'Max Items',         type:'number', min:1,   max:30,  step:1,  def:8  },
     ];

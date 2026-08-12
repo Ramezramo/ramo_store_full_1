@@ -88,12 +88,15 @@
   $nameStyle = $coCompact ? 'font-size:12px' : '';
   $priceStyle= $coCompact ? 'font-size:12px' : '';
 
+  /* ── Timeline-controlled dimensions / spacing ───────────── */
+  $cardStyle = $co['cardStyle'] ?? '';
+
   /* ── Displayed product name ─────────────────────────────── */
   // $cardNameHtml can be passed as a variable for raw HTML (e.g. search highlights)
   $displayName = $coNameLimit > 0 ? Str::limit($p->name, $coNameLimit) : $p->name;
 @endphp
 
-<div class="product-card" id="{{ $coIdPrefix }}-{{ $pid }}"
+<div class="product-card" id="{{ $coIdPrefix }}-{{ $pid }}"{{ $cardStyle ? ' style="'.$cardStyle.'"' : '' }}
      data-pid="{{ $pid }}"
      data-base-img="{{ $displayImg }}"
      data-base-price="{{ $basePrice }}"
@@ -187,7 +190,7 @@
     </div>
 
     @if($coShowAddToCart || $coRemoveWishlist)
-    <div style="{{ $coRemoveWishlist ? 'display:flex;gap:8px;margin-top:4px' : '' }}">
+    <div class="pc-actions" style="{{ $coRemoveWishlist ? 'display:flex;gap:8px;margin-top:4px' : '' }}">
       @if($coShowAddToCart)
         @if($canQuickAdd)
         <button class="card-add-btn{{ $coRemoveWishlist ? '' : '' }}" id="pc-add-{{ $pid }}"
@@ -243,6 +246,12 @@
 
 @once
 <style>
+.product-card{height:var(--pc-card-height,auto)}
+.product-card-img{width:var(--pc-image-width,100%);height:var(--pc-image-height,auto);max-width:100%;align-self:center;margin-bottom:var(--pc-image-gap,0px)}
+.product-card-name{margin-bottom:var(--pc-name-gap,0px)}
+.product-card-body>.pc-swatches,.product-card-body>.pc-sizes,.product-card-body>.pc-selected{margin-bottom:var(--pc-options-gap,0px)}
+.product-card-price{margin-top:var(--pc-price-gap,0px)}
+.product-card .pc-actions{margin-top:var(--pc-button-gap,0px)}
 .pc-coupon-bar{display:flex;text-decoration:none;border-radius:0 0 10px 10px;overflow:hidden;margin:10px -14px -14px;font-size:11px;font-weight:700;line-height:1}
 .pc-coupon-left{flex:1;background:#7c3aed;color:#fff;padding:8px 10px;display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pc-coupon-code{background:rgba(255,255,255,.2);border-radius:4px;padding:1px 5px;letter-spacing:.03em}

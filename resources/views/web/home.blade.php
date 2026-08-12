@@ -335,8 +335,21 @@
         $prodWidth   = (int)($sec['productWidth'] ?? 230);
         $imgHeight   = isset($sec['imageHeight']) ? (int)$sec['imageHeight'] : (isset($sec['imageRatio']) ? round($prodWidth * (float)$sec['imageRatio']) : 230);
         $cardRadius  = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 12;
+        $cardHeight  = max(0, (int)($sec['cardHeight'] ?? 0));
+        $imageWidth  = max(0, (int)($sec['imageWidth'] ?? 0));
+        $nameGap     = max(0, min(15, (int)($sec['nameGap'] ?? 0)));
+        $optionsGap  = max(0, min(15, (int)($sec['optionsGap'] ?? 0)));
+        $buttonGap   = max(0, min(15, (int)($sec['buttonGap'] ?? 0)));
+        $imageGap    = max(0, min(15, (int)($sec['imageGap'] ?? 0)));
+        $cardStyle   = implode(';', array_filter([
+          $cardHeight > 0 ? "--pc-card-height:{$cardHeight}px" : null,
+          $imageWidth > 0 ? "--pc-image-width:{$imageWidth}px" : null,
+          "--pc-image-height:{$imgHeight}px", "--pc-name-gap:{$nameGap}px",
+          "--pc-options-gap:{$optionsGap}px", "--pc-button-gap:{$buttonGap}px", "--pc-image-gap:{$imageGap}px",
+        ]));
         $secId       = 'sg-'.$si;
         $cardOptions = [
+          'cardStyle'     => $cardStyle,
           'showBadge'     => $sec['showBadge']     ?? true,
           'showWishlist'  => $sec['showWishlist']  ?? true,
           'showSwatches'  => $sec['showSwatches']  ?? true,
@@ -382,9 +395,22 @@
         $prodWidth      = (int)($sec['productWidth'] ?? 140);
         $imgHeight      = isset($sec['imageHeight']) ? max(60, (int)$sec['imageHeight']) : (isset($sec['imageRatio']) ? max(60, round($prodWidth * (float)$sec['imageRatio'])) : 196);
         $cardRadius     = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 10;
+        $cardHeight     = max(0, (int)($sec['cardHeight'] ?? 0));
+        $imageWidth     = max(0, (int)($sec['imageWidth'] ?? 0));
+        $nameGap        = max(0, min(15, (int)($sec['nameGap'] ?? 0)));
+        $optionsGap     = max(0, min(15, (int)($sec['optionsGap'] ?? 0)));
+        $buttonGap      = max(0, min(15, (int)($sec['buttonGap'] ?? 0)));
+        $imageGap       = max(0, min(15, (int)($sec['imageGap'] ?? 0)));
+        $cardStyle      = implode(';', array_filter([
+          $cardHeight > 0 ? "--pc-card-height:{$cardHeight}px" : null,
+          $imageWidth > 0 ? "--pc-image-width:{$imageWidth}px" : null,
+          "--pc-image-height:{$imgHeight}px", "--pc-name-gap:{$nameGap}px",
+          "--pc-options-gap:{$optionsGap}px", "--pc-button-gap:{$buttonGap}px", "--pc-image-gap:{$imageGap}px",
+        ]));
         $secId          = 'sg-'.$si;
         $uniformHeight  = !empty($sec['uniformHeight']);
         $cardOptions = [
+          'cardStyle'      => $cardStyle,
           'showBadge'     => $sec['showBadge']     ?? true,
           'showWishlist'  => $sec['showWishlist']  ?? true,
           'showSwatches'  => $sec['showSwatches']  ?? true,
@@ -440,8 +466,21 @@
         $prodWidth  = (int)($sec['productWidth'] ?? 200);
         $imgHeight  = isset($sec['imageHeight']) ? (int)$sec['imageHeight'] : (isset($sec['imageRatio']) ? round($prodWidth * (float)$sec['imageRatio']) : 200);
         $cardRadius = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 10;
+        $cardHeight = max(0, (int)($sec['cardHeight'] ?? 0));
+        $imageWidth = max(0, (int)($sec['imageWidth'] ?? 0));
+        $nameGap    = max(0, min(15, (int)($sec['nameGap'] ?? 0)));
+        $optionsGap = max(0, min(15, (int)($sec['optionsGap'] ?? 0)));
+        $buttonGap  = max(0, min(15, (int)($sec['buttonGap'] ?? 0)));
+        $imageGap   = max(0, min(15, (int)($sec['imageGap'] ?? 0)));
+        $cardStyle  = implode(';', array_filter([
+          $cardHeight > 0 ? "--pc-card-height:{$cardHeight}px" : null,
+          $imageWidth > 0 ? "--pc-image-width:{$imageWidth}px" : null,
+          "--pc-image-height:{$imgHeight}px", "--pc-name-gap:{$nameGap}px",
+          "--pc-options-gap:{$optionsGap}px", "--pc-button-gap:{$buttonGap}px", "--pc-image-gap:{$imageGap}px",
+        ]));
         $secId      = 'sg-'.$si;
         $cardOptions = [
+          'cardStyle'     => $cardStyle,
           'showBadge'     => $sec['showBadge']     ?? true,
           'showWishlist'  => $sec['showWishlist']  ?? true,
           'showSwatches'  => $sec['showSwatches']  ?? true,
