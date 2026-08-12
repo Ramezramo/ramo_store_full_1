@@ -489,34 +489,48 @@ button{cursor:pointer;font-family:inherit}
 .toast.toast-err{background:#e02020}
 
 /* ── ADDED-TO-CART DRAWER ── */
-.atc-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9998;opacity:0;visibility:hidden;transition:opacity .25s}
+.atc-overlay{position:fixed;inset:0;background:rgba(20,20,20,.46);z-index:9998;opacity:0;visibility:hidden;transition:opacity .25s;backdrop-filter:blur(2px)}
 .atc-overlay.show{opacity:1;visibility:visible}
-.atc-drawer{position:fixed;top:0;right:0;height:100%;width:380px;max-width:92vw;background:#fff;box-shadow:-8px 0 30px rgba(0,0,0,.15);z-index:9999;transform:translateX(100%);transition:transform .3s cubic-bezier(.2,.9,.3,1);display:flex;flex-direction:column}
-.atc-drawer.show{transform:translateX(0)}
-.atc-drawer-head{display:flex;align-items:center;justify-content:space-between;padding:20px 22px;border-bottom:1px solid var(--c-light)}
-.atc-drawer-title{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:700;color:var(--c-dark)}
-.atc-check{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#22a35c;color:#fff;font-size:12px;font-weight:900}
-.atc-close{background:none;border:none;font-size:24px;line-height:1;color:var(--c-mid);cursor:pointer;padding:2px 6px}
-.atc-close:hover{color:var(--c-dark)}
-.atc-items-list{flex:1;overflow-y:auto;padding:16px 22px}
+.atc-drawer{position:fixed;top:0;right:0;height:100%;width:400px;max-width:92vw;background:#fff;box-shadow:-12px 0 34px rgba(0,0,0,.18);z-index:9999;transform:translateX(100%);transition:transform .3s cubic-bezier(.2,.9,.3,1);display:flex;flex-direction:column;visibility:hidden}
+.atc-drawer.show{transform:translateX(0);visibility:visible}
+.atc-drawer-grab{display:none}
+.atc-drawer-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 16px;border-bottom:1px solid var(--c-light);gap:12px}
+.atc-drawer-title{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:800;color:var(--c-dark);min-width:0}
+.atc-drawer-title-wrap{display:flex;flex-direction:column;gap:2px;min-width:0}
+.atc-drawer-subtitle{font-size:11px;font-weight:500;color:var(--c-mid)}
+.atc-check{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#22a35c;color:#fff;font-size:13px;font-weight:900;flex:0 0 auto}
+.atc-close{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-width:44px;height:44px;background:var(--c-bg);border:1px solid var(--c-light);border-radius:12px;color:var(--c-mid);font-size:11px;font-weight:700;cursor:pointer;padding:0 10px;flex:0 0 auto}
+.atc-close svg{width:16px;height:16px}
+.atc-close:hover,.atc-close:focus-visible{color:var(--c-dark);border-color:#aaa;background:#fff;outline:none}
+.atc-items-list{flex:1;overflow-y:auto;padding:16px 22px;overscroll-behavior:contain}
 .atc-item{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--c-light)}
 .atc-item:first-child{padding-top:0}
 .atc-item:last-child{border-bottom:none}
-.atc-item.atc-item-new{background:#f6fbf8;margin:0 -22px;padding:12px 22px;border-radius:8px}
-.atc-item img{width:64px;height:64px;object-fit:cover;border-radius:10px;background:var(--c-bg);flex-shrink:0}
-.atc-item-info{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.atc-item.atc-item-new{background:#f6fbf8;margin:0 -12px;padding:12px;border-radius:12px;border:1px solid #d8f0df}
+.atc-item img{width:68px;height:68px;object-fit:cover;border-radius:12px;background:var(--c-bg);flex-shrink:0}
+.atc-item-info{display:flex;flex-direction:column;gap:5px;min-width:0;flex:1;justify-content:center}
 .atc-item-name{font-size:13.5px;font-weight:700;color:var(--c-dark);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.atc-item-meta{font-size:12px;color:var(--c-mid)}
-.atc-item-price{font-size:14px;font-weight:800;color:var(--c-dark);display:flex;align-items:center;gap:8px}
+.atc-item-meta{font-size:12px;color:var(--c-mid);line-height:1.35}
+.atc-item-price{font-size:14px;font-weight:800;color:var(--c-dark);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .atc-item-price-old{font-size:12px;font-weight:600;color:#aaa;text-decoration:line-through}
-.atc-drawer-footer{padding:16px 22px 20px;border-top:1px solid var(--c-light);display:flex;flex-direction:column;gap:12px;flex-shrink:0}
+.atc-drawer-footer{padding:16px 22px 20px;border-top:1px solid var(--c-light);display:flex;flex-direction:column;gap:10px;flex-shrink:0;box-shadow:0 -6px 18px rgba(0,0,0,.04)}
 .atc-subtotal-row{display:flex;justify-content:space-between;align-items:center;font-size:14.5px;font-weight:700;color:var(--c-dark)}
-.atc-btn-primary{display:block;text-align:center;padding:13px;background:var(--c-dark);color:#fff;border-radius:50px;font-size:14px;font-weight:700;transition:background .2s}
-.atc-btn-primary:hover{background:var(--c-accent-h)}
-.atc-btn-secondary{display:block;width:100%;text-align:center;padding:13px;background:#fff;color:var(--c-dark);border:1.5px solid var(--c-light);border-radius:50px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s}
+.atc-subtotal-row span:last-child{font-size:17px}
+.atc-btn-primary{display:block;text-align:center;padding:14px;background:var(--c-dark);color:#fff;border-radius:12px;font-size:14px;font-weight:800;transition:background .2s,transform .2s}
+.atc-btn-primary:hover{background:var(--c-accent-h);transform:translateY(-1px)}
+.atc-btn-secondary{display:block;width:100%;text-align:center;padding:12px;background:#fff;color:var(--c-dark);border:1.5px solid var(--c-light);border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s}
 .atc-btn-secondary:hover{border-color:var(--c-dark)}
 @media(max-width:480px){
-  .atc-drawer{width:100%;max-width:100%}
+  .atc-overlay{background:rgba(20,20,20,.38)}
+  .atc-drawer{top:auto;bottom:0;right:0;width:100%;max-width:100%;height:auto;max-height:min(82vh,680px);border-radius:22px 22px 0 0;transform:translateY(105%);box-shadow:0 -12px 34px rgba(0,0,0,.2);padding-bottom:env(safe-area-inset-bottom)}
+  .atc-drawer.show{transform:translateY(0)}
+  .atc-drawer-grab{display:block;width:38px;height:4px;border-radius:10px;background:#d4d4d4;margin:9px auto 0}
+  .atc-drawer-head{padding:10px 16px 13px}
+  .atc-drawer-title{font-size:15px}
+  .atc-drawer-subtitle{font-size:10.5px}
+  .atc-items-list{padding:14px 16px;max-height:42vh}
+  .atc-item.atc-item-new{margin:0 -5px;padding:10px 5px}
+  .atc-drawer-footer{padding:13px 16px 15px}
 }
 
 /* ── BOTTOM NAV ── */
@@ -1051,10 +1065,11 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 
 <!-- ADDED-TO-CART DRAWER -->
 <div class="atc-overlay" id="atc-overlay" onclick="closeAtcDrawer()"></div>
-<div class="atc-drawer" id="atc-drawer">
+<div class="atc-drawer" id="atc-drawer" role="dialog" aria-modal="true" aria-labelledby="atc-title" aria-hidden="true">
+  <div class="atc-drawer-grab" aria-hidden="true"></div>
   <div class="atc-drawer-head">
-    <div class="atc-drawer-title"><span class="atc-check">✓</span> Added to cart</div>
-    <button class="atc-close" onclick="closeAtcDrawer()" aria-label="Close">&times;</button>
+    <div class="atc-drawer-title" id="atc-title"><span class="atc-check">✓</span><span class="atc-drawer-title-wrap"><span>Added to cart</span><span class="atc-drawer-subtitle">Your item is ready to review</span></span></div>
+    <button class="atc-close" onclick="closeAtcDrawer()" aria-label="Close added to cart panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg><span>Close</span></button>
   </div>
   <div class="atc-items-list" id="atc-items-list"></div>
   <div class="atc-drawer-footer">
@@ -1276,14 +1291,19 @@ function openAtcDrawer({ image, oldPrice, varLabel, items, count, cartTotal, row
   document.getElementById('atc-subtotal').textContent = 'EGP ' + Number(cartTotal || 0).toFixed(2);
   document.getElementById('atc-go-cart').textContent = 'Go to Cart (' + (count ?? '') + ')';
 
+  const drawer = document.getElementById('atc-drawer');
   document.getElementById('atc-overlay').classList.add('show');
-  document.getElementById('atc-drawer').classList.add('show');
+  drawer.classList.add('show');
+  drawer.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
+  requestAnimationFrame(() => drawer.querySelector('.atc-close')?.focus());
 }
 
 function closeAtcDrawer() {
+  const drawer = document.getElementById('atc-drawer');
   document.getElementById('atc-overlay').classList.remove('show');
-  document.getElementById('atc-drawer').classList.remove('show');
+  drawer.classList.remove('show');
+  drawer.setAttribute('aria-hidden', 'true');
   document.body.style.overflow = '';
 }
 
