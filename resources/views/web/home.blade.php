@@ -68,7 +68,10 @@
           --tl-card-r:{{ $tlDesk['cardBorderRadius'] ?? ($sec['cardBorderRadius'] ?? 14) }}px;
           @elseif(in_array($layout,['twoColumn','saleImages','seupermarketstars']))
           --tl-prod-w:{{ $tlDesk['productWidth'] ?? ($sec['productWidth'] ?? 200) }}px;
+          --tl-card-h:{{ (($tlDesk['cardHeight'] ?? ($sec['cardHeight'] ?? 0)) > 0) ? (($tlDesk['cardHeight'] ?? ($sec['cardHeight'] ?? 0)).'px') : 'auto' }};
+          --tl-img-w:{{ (($tlDesk['imageWidth'] ?? ($sec['imageWidth'] ?? 0)) > 0) ? (($tlDesk['imageWidth'] ?? ($sec['imageWidth'] ?? 0)).'px') : '100%' }};
           --tl-img-h:{{ $tlDesk['imageHeight'] ?? ($sec['imageHeight'] ?? 200) }}px;
+          --tl-element-spacing:{{ max(0, min(40, (int)($tlDesk['elementSpacing'] ?? ($sec['elementSpacing'] ?? 0)))) }}px;
           --tl-card-r:{{ $tlDesk['cardBorderRadius'] ?? ($sec['cardBorderRadius'] ?? 10) }}px;
           @elseif($layout==='spacer')
           --tl-spacer-h:{{ $tlDesk['height'] ?? ($sec['height'] ?? 24) }}px;
@@ -88,7 +91,10 @@
             --tl-card-r:{{ $tlMob['cardBorderRadius'] ?? ($sec['cardBorderRadius'] ?? 14) }}px;
             @elseif(in_array($layout,['twoColumn','saleImages','seupermarketstars']))
             --tl-prod-w:{{ $tlMob['productWidth'] ?? ($sec['productWidth'] ?? 200) }}px;
+            --tl-card-h:{{ (($tlMob['cardHeight'] ?? ($sec['cardHeight'] ?? 0)) > 0) ? (($tlMob['cardHeight'] ?? ($sec['cardHeight'] ?? 0)).'px') : 'auto' }};
+            --tl-img-w:{{ (($tlMob['imageWidth'] ?? ($sec['imageWidth'] ?? 0)) > 0) ? (($tlMob['imageWidth'] ?? ($sec['imageWidth'] ?? 0)).'px') : '100%' }};
             --tl-img-h:{{ $tlMob['imageHeight'] ?? ($sec['imageHeight'] ?? 200) }}px;
+            --tl-element-spacing:{{ max(0, min(40, (int)($tlMob['elementSpacing'] ?? ($sec['elementSpacing'] ?? 0)))) }}px;
             --tl-card-r:{{ $tlMob['cardBorderRadius'] ?? ($sec['cardBorderRadius'] ?? 10) }}px;
             @elseif($layout==='spacer')
             --tl-spacer-h:{{ $tlMob['height'] ?? ($sec['height'] ?? 24) }}px;
@@ -338,11 +344,7 @@
         $cardHeight  = max(0, (int)($sec['cardHeight'] ?? 0));
         $imageWidth  = max(0, (int)($sec['imageWidth'] ?? 0));
         $elementSpacing = max(0, min(40, (int)($sec['elementSpacing'] ?? 0)));
-        $cardStyle   = implode(';', array_filter([
-          $cardHeight > 0 ? "--pc-card-height:{$cardHeight}px" : null,
-          $imageWidth > 0 ? "--pc-image-width:{$imageWidth}px" : null,
-          "--pc-image-height:{$imgHeight}px", "--pc-element-spacing:{$elementSpacing}px",
-        ]));
+          $cardStyle   = '--pc-card-height:var(--tl-card-h,'.($cardHeight > 0 ? $cardHeight.'px' : 'auto').');--pc-image-width:var(--tl-img-w,'.($imageWidth > 0 ? $imageWidth.'px' : '100%').');--pc-image-height:var(--tl-img-h,'.$imgHeight.'px);--pc-element-spacing:var(--tl-element-spacing,'.$elementSpacing.'px)';
         $secId       = 'sg-'.$si;
         $cardOptions = [
           'cardStyle'     => $cardStyle,
