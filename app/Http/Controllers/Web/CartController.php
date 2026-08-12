@@ -82,9 +82,15 @@ class CartController extends Controller
             }
         }
 
-        $shippingFee = ShippingConfig::feeForSubtotal(max(0, $subtotal - $discount));
-        $total       = max(0, $subtotal - $discount) + $shippingFee;
-        return view('web.cart', compact('cart', 'subtotal', 'discount', 'total', 'coupon', 'shippingFee'));
+        $afterDiscount = max(0, $subtotal - $discount);
+        $shippingFee = ShippingConfig::feeForSubtotal($afterDiscount);
+        $freeShippingEnabled = (bool) ShippingConfig::val('free_shipping_enabled', true);
+        $freeShippingThreshold = (float) ShippingConfig::val('free_shipping_threshold', 1000);
+        $total       = $afterDiscount + $shippingFee;
+        return view('web.cart', compact(
+            'cart', 'subtotal', 'discount', 'total', 'coupon', 'shippingFee',
+            'freeShippingEnabled', 'freeShippingThreshold'
+        ));
     }
 
     private function refreshCartPricing(array $cart): array
@@ -262,11 +268,21 @@ class CartController extends Controller
         $afterDiscount = max(0, $subtotal - $discount);
         $shippingFee   = ShippingConfig::feeForSubtotal($afterDiscount);
 
+        $enabled = (bool) ShippingConfig::val('free_shipping_enabled', true);
+        $threshold = (float) ShippingConfig::val('free_shipping_threshold', 1000);
+        $progress = $enabled && $threshold > 0
+            ? min(100, ($afterDiscount / $threshold) * 100)
+            : 100;
+
         return [
-            'subtotal'    => $subtotal,
-            'discount'    => $discount,
-            'shippingFee' => $shippingFee,
-            'total'       => $afterDiscount + $shippingFee,
+            'subtotal'              => $subtotal,
+            'discount'              => $discount,
+            'shippingFee'           => $shippingFee,
+            'total'                 => $afterDiscount + $shippingFee,
+            'freeShippingEnabled'   => $enabled,
+            'freeShippingThreshold' => $threshold,
+            'freeShippingRemaining' => max(0, $threshold - $afterDiscount),
+            'freeShippingProgress'  => $progress,
         ];
     }
 
@@ -313,8 +329,13 @@ class CartController extends Controller
             'item_subtotal_old' => $hasOldPrice ? number_format($item['regular_price'] * $item['qty'], 2) : null,
             'cart_subtotal'     => number_format($totals['subtotal'], 2),
             'shipping_fee'      => $totals['shippingFee'] > 0 ? number_format($totals['shippingFee'], 2) : null,
-            'cart_total'        => number_format($totals['total'], 2),
-            'count'             => count($cart),
+            'cart_total'             => number_format($totals['total'], 2),
+            'cart_discount'           => number_format($totals['discount'], 2),
+            'free_shipping_enabled'  => $totals['freeShippingEnabled'],
+            'free_shipping_threshold' => number_format($totals['freeShippingThreshold'], 2),
+            'free_shipping_remaining' => number_format($totals['freeShippingRemaining'], 2),
+            'free_shipping_progress'  => $totals['freeShippingProgress'],
+            'count'                  => count($cart),
         ]);
     }
 
@@ -331,8 +352,13 @@ class CartController extends Controller
             'success'       => true,
             'count'         => count($cart),
             'cart_subtotal' => number_format($totals['subtotal'], 2),
-            'shipping_fee'  => $totals['shippingFee'] > 0 ? number_format($totals['shippingFee'], 2) : null,
-            'cart_total'    => number_format($totals['total'], 2),
+            'shipping_fee'           => $totals['shippingFee'] > 0 ? number_format($totals['shippingFee'], 2) : null,
+            'cart_total'             => number_format($totals['total'], 2),
+            'cart_discount'         => number_format($totals['discount'], 2),
+            'free_shipping_enabled' => $totals['freeShippingEnabled'],
+            'free_shipping_threshold' => number_format($totals['freeShippingThreshold'], 2),
+            'free_shipping_remaining' => number_format($totals['freeShippingRemaining'], 2),
+            'free_shipping_progress' => $totals['freeShippingProgress'],
         ]);
     }
 
