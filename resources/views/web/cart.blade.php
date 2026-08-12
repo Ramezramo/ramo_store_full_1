@@ -124,8 +124,10 @@
   .cart-item-controls{grid-column:1 / -1;grid-row:2;flex-direction:row;align-items:center;justify-content:space-between;padding-left:79px;margin-top:-2px;}
   .cart-item-limit{font-size:9.5px;text-align:left;}
   .cart-remove-icon{width:44px;height:44px;}
-  .cart-items-actions{grid-template-columns:1fr 1fr;display:grid;}
-  .cart-items-actions .btn,.cart-items-actions button{padding:10px 7px;font-size:11px;}
+  .cart-items-actions{display:flex;flex-wrap:nowrap;align-items:center;gap:8px;}
+  .cart-items-actions .btn,.cart-items-actions button{padding:10px 8px;font-size:11px;white-space:nowrap;}
+  .cart-items-actions .btn{flex:1;}
+  .cart-items-actions form{flex:0 0 auto;}
   .cart-summary-panel{padding:15px;}
   .cart-summary-panel h2{font-size:15px;}
   .cart-checkout-bar{position:fixed;left:0;right:0;bottom:58px;z-index:9998;margin:0;padding:10px 14px calc(10px + env(safe-area-inset-bottom));border-radius:16px 16px 0 0;border-left:0;border-right:0;border-bottom:0;box-shadow:0 -6px 24px rgba(24,24,24,.13);}
@@ -210,7 +212,6 @@
                   <button type="button" class="cart-remove-icon" onclick="removeItem('{{ $rowId }}')" aria-label="Remove {{ $item['name'] }}" title="Remove item">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                   </button>
-                  <span class="cart-item-limit">{{ $item['minimum_qty'] ?? 1 }}–{{ $item['maximum_qty'] ?? $item['stock'] }} per order</span>
                 </div>
               </article>
             @endforeach
