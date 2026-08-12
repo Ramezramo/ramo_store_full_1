@@ -35,7 +35,19 @@
 .gallery-card-actions .btn{flex:1;justify-content:center}
 .gallery-empty{grid-column:1 / -1;border:1px dashed var(--border);border-radius:10px;padding:42px 20px;text-align:center;color:var(--muted)}
 .gallery-empty strong{display:block;color:var(--text);font-size:14px;margin-bottom:6px}
-@media(max-width:700px){.gallery-upload{grid-template-columns:1fr}.gallery-upload-actions{flex-direction:row;align-items:center;justify-content:space-between;width:100%}.gallery-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}.gallery-toolbar form{width:100%}}
+	.gallery-dropzone.selected{border-color:#3bc57a;background:linear-gradient(135deg,rgba(59,197,122,.16),rgba(59,197,122,.045))}
+	.gallery-dropzone.selected .gallery-drop-icon{background:rgba(59,197,122,.18);color:#63d69b}
+	.gallery-selection{margin:-6px 0 20px;border:1px solid rgba(59,197,122,.42);background:rgba(59,197,122,.07);border-radius:10px;padding:13px}
+	.gallery-selection[hidden]{display:none}
+	.gallery-selection-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:11px}
+	.gallery-selection-title{font-size:13px;font-weight:750;color:#7ae1aa}
+	.gallery-selection-note{font-size:11px;color:var(--muted);margin-top:3px}
+	.gallery-selection-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:9px}
+	.gallery-selection-file{min-width:0;border:1px solid rgba(255,255,255,.1);border-radius:8px;overflow:hidden;background:rgba(15,17,23,.42)}
+	.gallery-selection-preview{display:block;width:100%;aspect-ratio:4 / 3;object-fit:cover;background:#10141d}
+	.gallery-selection-name{display:block;padding:6px 7px 2px;font-size:10px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+	.gallery-selection-size{display:block;padding:0 7px 7px;color:var(--muted);font-size:10px}
+	@media(max-width:700px){.gallery-upload{grid-template-columns:1fr}.gallery-upload-actions{flex-direction:row;align-items:center;justify-content:space-between;width:100%}.gallery-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}.gallery-toolbar form{width:100%}.gallery-selection-grid{grid-template-columns:repeat(auto-fill,minmax(82px,1fr))}}
 </style>
 @endpush
 
@@ -74,8 +86,18 @@
         </div>
       </div>
     </div>
+    <section id="gallery-selection" class="gallery-selection" hidden aria-live="polite">
+      <div class="gallery-selection-head">
+        <div>
+          <div id="gallery-selection-title" class="gallery-selection-title">Images selected</div>
+          <div id="gallery-selection-note" class="gallery-selection-note"></div>
+        </div>
+        <button id="gallery-clear-selection" class="btn btn-ghost btn-sm" type="button">Clear selection</button>
+      </div>
+      <div id="gallery-selection-grid" class="gallery-selection-grid"></div>
+    </section>
   </form>
-  <p class="gallery-help">Every uploaded image is kept in this gallery. Select <strong>Copy URL</strong> below any image, then paste that URL into a banner, Flexible Banner Grid card, or any other image field.</p>
+  <p class="gallery-help">Every uploaded image is kept in this gallery. After you choose files, their thumbnails and names appear above so you can confirm your selection before uploading.</p>
 </div>
 
 <div class="gallery-toolbar">
@@ -130,22 +152,81 @@
   const count = document.getElementById('gallery-upload-count');
   const button = document.getElementById('gallery-upload-button');
   const chooseButton = document.getElementById('gallery-choose-button');
+  const clearButton = document.getElementById('gallery-clear-selection');
   const form = document.getElementById('gallery-upload-form');
+  const selection = document.getElementById('gallery-selection');
+  const selectionTitle = document.getElementById('gallery-selection-title');
+  const selectionNote = document.getElementById('gallery-selection-note');
+  const selectionGrid = document.getElementById('gallery-selection-grid');
+  const addIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg>';
 
-  function updateSelection(files) {
-    const total = files ? files.length : 0;
+  function formatBytes(bytes) {
+    if (!bytes) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const power = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+    return `${(bytes / Math.pow(1024, power)).toFixed(power ? 1 : 0)} ${units[power]}`;
+  }
+
+  function renderSelection(files) {
+    selectionGrid.replaceChildren();
+    files.forEach(file => {
+      const card = document.createElement('div');
+      card.className = 'gallery-selection-file';
+      const preview = document.createElement('img');
+      preview.className = 'gallery-selection-preview';
+      preview.alt = file.name;
+      preview.src = URL.createObjectURL(file);
+      preview.onload = () => URL.revokeObjectURL(preview.src);
+      const name = document.createElement('span');
+      name.className = 'gallery-selection-name';
+      name.title = file.name;
+      name.textContent = file.name;
+      const size = document.createElement('span');
+      size.className = 'gallery-selection-size';
+      size.textContent = formatBytes(file.size);
+      card.append(preview, name, size);
+      selectionGrid.appendChild(card);
+    });
+  }
+
+  function updateSelection(fileList) {
+    const files = Array.from(fileList || []);
+    const total = files.length;
+    const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+    const validCount = total > 0 && total <= 30;
+
     count.classList.toggle('has-files', total > 0);
+    dropzone.classList.toggle('selected', validCount);
+    selection.hidden = total === 0;
+    button.disabled = total > 30;
+
     if (!total) {
       count.textContent = 'No images selected. Choose images first, then add them to the gallery.';
-    } else if (total > 30) {
-      count.textContent = `${total} images selected. Select no more than 30 images at once.`;
-    } else {
-      count.textContent = `${total} image${total === 1 ? '' : 's'} selected and ready to add to the gallery.`;
-      button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M12 5v14M5 12h14"/></svg> Add ' + total + ' to Gallery';
+      button.innerHTML = addIcon + ' Add to Gallery';
+      selectionGrid.replaceChildren();
+      return;
     }
+
+    renderSelection(files);
+    if (total > 30) {
+      count.textContent = `${total} images selected. Select no more than 30 images at once.`;
+      selectionTitle.textContent = 'Too many images selected';
+      selectionNote.textContent = 'Remove files and choose a maximum of 30 images for one upload.';
+      button.innerHTML = addIcon + ' Select up to 30 images';
+      return;
+    }
+
+    count.textContent = `✓ ${total} image${total === 1 ? '' : 's'} selected — ready to upload.`;
+    selectionTitle.textContent = `✓ ${total} image${total === 1 ? '' : 's'} ready to upload`;
+    selectionNote.textContent = `${formatBytes(totalSize)} total • Review the thumbnails and file names below before adding them.`;
+    button.innerHTML = addIcon + ' Add ' + total + ' to Gallery';
   }
 
   chooseButton.addEventListener('click', () => input.click());
+  clearButton.addEventListener('click', () => {
+    input.value = '';
+    updateSelection([]);
+  });
   input.addEventListener('change', () => updateSelection(input.files));
   ['dragenter', 'dragover'].forEach(eventName => dropzone.addEventListener(eventName, event => {
     event.preventDefault();

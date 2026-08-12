@@ -240,5 +240,6 @@ select option{background:var(--card)}
     @yield('content')
   </div>
 </div>
+@stack('scripts')
 </body>
 </html>

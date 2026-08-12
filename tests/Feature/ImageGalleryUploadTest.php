@@ -62,4 +62,32 @@ class ImageGalleryUploadTest extends TestCase
             }
         }
     }
+
+    public function test_gallery_upload_validation_names_the_file_that_cannot_be_uploaded(): void
+    {
+        $admin = User::create([
+            'name' => 'Gallery Validation Test Admin',
+            'email' => 'gallery-validation-test-' . uniqid() . '@ramostore.local',
+            'password' => 'temporary-test-password',
+            'role' => json_encode(['admin']),
+        ]);
+
+        try {
+            $csrfToken = 'gallery-validation-test-csrf';
+            $response = $this->withSession(['_token' => $csrfToken])
+                ->actingAs($admin)
+                ->from(route('admin.image-gallery'))
+                ->post(route('admin.image-gallery.store'), [
+                    '_token' => $csrfToken,
+                    'images' => [UploadedFile::fake()->create('campaign-not-an-image.pdf', 100, 'application/pdf')],
+                ]);
+
+            $response->assertRedirect(route('admin.image-gallery'));
+            $response->assertSessionHasErrors([
+                'images.0' => 'campaign-not-an-image.pdf is not a supported image. Upload a JPG, PNG, WEBP, GIF, or AVIF file.',
+            ]);
+        } finally {
+            $admin->delete();
+        }
+    }
 }
