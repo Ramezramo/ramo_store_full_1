@@ -371,11 +371,32 @@ class WebController extends Controller
         if ($isProductRequest) {
             $rawProducts = $query->paginate(16)->withQueryString();
             $products    = $rawProducts->through(fn($p) => $this->parseProduct($p, $flashSale));
+            $productIds  = $products->pluck('id')->all();
+            $cardVariations = [];
+
+            if (!empty($productIds)) {
+                $cardVariations = DB::table('product_variations')
+                    ->whereIn('product_id', $productIds)
+                    ->orderBy('main_variation', 'desc')
+                    ->get()
+                    ->map(function ($variation) {
+                        $variation->attributes = is_string($variation->attributes)
+                            ? (json_decode($variation->attributes, true) ?? json_decode(stripslashes($variation->attributes), true) ?? [])
+                            : (array) $variation->attributes;
+                        $variation->images = is_string($variation->images)
+                            ? (json_decode($variation->images, true) ?? json_decode(stripslashes($variation->images), true) ?? [])
+                            : (array) $variation->images;
+                        return $variation;
+                    })
+                    ->groupBy('product_id')
+                    ->toArray();
+            }
+
             $html = '';
             foreach ($products as $p) {
                 $html .= view('web.partials.product-card', [
                     'p'              => $p,
-                    'cardVariations' => [],
+                    'cardVariations' => $cardVariations[$p->id] ?? [],
                 ])->render();
             }
             return response()->json([
@@ -400,6 +421,21 @@ class WebController extends Controller
         $activeBrandName = $request->filled('brand') ? $request->brand : null;
         $allBrands = DB::table('brands')->orderBy('name')->get();
 
+        // This setting changes only the narrow-phone card layout. The desktop and
+        // tablet grid remain unchanged, and an invalid/missing value safely keeps
+        // the existing horizontal mobile presentation.
+        $rawMobileLayout = DB::table('app_configs')
+            ->where('config_key', 'shop_mobile_product_layout')
+            ->whereNull('lang')
+            ->value('value');
+        $decodedMobileLayout = is_string($rawMobileLayout) ? json_decode($rawMobileLayout, true) : null;
+        $shopMobileLayout = is_string($decodedMobileLayout)
+            ? $decodedMobileLayout
+            : trim((string) $rawMobileLayout, " \t\n\r\0\x0B\"");
+        if (!in_array($shopMobileLayout, ['grid', 'horizontal'], true)) {
+            $shopMobileLayout = 'horizontal';
+        }
+
         // Deliberately leave $products null here. Rendering product cards in the
         // initial response was the main reason the shop felt stuck before paint.
         $products = null;
@@ -408,7 +444,7 @@ class WebController extends Controller
             ->view('web.shop', compact(
                 'products', 'parentCats', 'childCats',
                 'activeCategoryId', 'activeParentId', 'catCounts',
-                'activeBrandName', 'allBrands'
+                'activeBrandName', 'allBrands', 'shopMobileLayout'
             ))
             ->header('Cache-Control', 'private, no-cache');
     }
@@ -549,6 +585,7 @@ class WebController extends Controller
             ->select(
                 'p.id', 'p.name', 'p.slug', 'p.images',
                 'p.description', 'p.stock_quantity', 'p.unit',
+                'p.minimum_order_qty', 'p.max_orders_per_person', 'p.sold_individually',
                 'p.vendor_id',
                 DB::raw('MIN(pv.price) as price'),
                 DB::raw('MIN(pv.regular_price) as regular_price'),
@@ -561,7 +598,9 @@ class WebController extends Controller
             ->where('p.acceptance_status', 'approved')
             ->groupBy(
                 'p.id', 'p.name', 'p.slug', 'p.images',
-                'p.description', 'p.stock_quantity', 'p.unit', 'p.vendor_id'
+                'p.description', 'p.stock_quantity', 'p.unit',
+                'p.minimum_order_qty', 'p.max_orders_per_person', 'p.sold_individually',
+                'p.vendor_id'
             );
     }
 

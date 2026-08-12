@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\CartTrait;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +14,7 @@ use Illuminate\Support\Str;
 
 class EmailVerificationController extends Controller
 {
+    use CartTrait;
     private int $tokenExpiryMinutes = 60;
 
     private function generateAndStore(string $email): string
@@ -126,6 +128,8 @@ class EmailVerificationController extends Controller
 
         if (!Auth::check()) {
             Auth::login($user);
+            $request->session()->regenerate();
+            $this->mergeGuestSessionOnLogin($user->id);
         }
 
         return redirect()->route('account.profile')

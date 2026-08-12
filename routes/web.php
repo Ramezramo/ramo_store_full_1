@@ -22,6 +22,7 @@ use App\Http\Controllers\Web\GoogleAuthController;
 use App\Http\Controllers\Web\PaymentReceiptController;
 use App\Http\Controllers\Web\PaymentReviewController;
 use App\Http\Controllers\Admin\PaymentMethodsController;
+use App\Http\Controllers\Admin\ImageGalleryController;
 
 Route::get('/', [WebController::class, 'home'])->name('home');
 Route::get('/shop', [WebController::class, 'shop'])->name('shop');
@@ -71,6 +72,7 @@ Route::post('/email/resend', [EmailVerificationController::class, 'resend'])->na
 Route::get('/email/verify/confirm', [EmailVerificationController::class, 'verify'])->name('email.verify');
 
 Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
+Route::get('/wishlist/state', [WishlistController::class, 'state'])->name('wishlist.state');
 Route::post('/wishlist/toggle', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
 Route::delete('/wishlist/{id}', [WishlistController::class, 'remove'])->name('wishlist.remove');
 
@@ -170,6 +172,9 @@ Route::prefix('admin')->middleware(['auth', 'admin.auth', \App\Http\Middleware\R
     Route::delete('/devices/{id}', [AdminDashboardController::class, 'deleteDevice'])->name('admin.devices.delete');
     Route::post('/devices/block-by-id', [AdminDashboardController::class, 'blockDeviceByDeviceId'])->name('admin.devices.block-by-id');
     Route::get('/timeline', [AdminTimelineController::class, 'index'])->name('admin.timeline');
+    Route::get('/image-gallery', [ImageGalleryController::class, 'index'])->name('admin.image-gallery');
+    Route::post('/image-gallery', [ImageGalleryController::class, 'store'])->name('admin.image-gallery.store');
+    Route::delete('/image-gallery/{image}', [ImageGalleryController::class, 'destroy'])->name('admin.image-gallery.destroy');
     Route::get('/live-preview', [AdminTimelineController::class, 'livePreview'])->name('admin.live.preview');
     Route::post('/timeline/save', [AdminTimelineController::class, 'save'])->name('admin.timeline.save');
     Route::get('/products/search', [AdminTimelineController::class, 'searchProducts'])->name('admin.products.search');
@@ -187,6 +192,7 @@ Route::prefix('admin')->middleware(['auth', 'admin.auth', \App\Http\Middleware\R
     Route::get('/configs', [ConfigAdminController::class, 'index'])->name('admin.configs');
     Route::put('/configs/{id}', [ConfigAdminController::class, 'update'])->name('admin.configs.update');
     Route::post('/configs', [ConfigAdminController::class, 'create'])->name('admin.configs.create');
+    Route::post('/configs/shop-mobile-layout', [ConfigAdminController::class, 'updateShopMobileLayout'])->name('admin.configs.shop-mobile-layout');
     Route::delete('/configs/{id}', [ConfigAdminController::class, 'destroy'])->name('admin.configs.destroy');
     Route::get('/auth-settings', [AuthSettingsController::class, 'index'])->name('admin.auth-settings');
     Route::put('/auth-settings', [AuthSettingsController::class, 'update'])->name('admin.auth-settings.update');

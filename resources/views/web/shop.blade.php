@@ -20,7 +20,7 @@
     gap: 10px !important;
   }
 }
-/* ── Narrow phones: Amazon-style horizontal list ── */
+/* ── Narrow phones: administrator-selected product layout ── */
 @media (max-width: 480px) {
 
   /* Hide toolbar search — saves horizontal space, mobile users use the filter panel */
@@ -31,15 +31,13 @@
     margin-bottom: 12px !important;
   }
 
-  /* Stack cards vertically, one per row, no side-by-side */
-  #infinite-product-grid {
+  /* Option A — one horizontal card per row, image left and details right. */
+  #infinite-product-grid.shop-mobile-layout-horizontal {
     display: flex !important;
     flex-direction: column !important;
     gap: 0 !important;
   }
-
-  /* Each card: horizontal row — image left, info right */
-  #infinite-product-grid .product-card {
+  #infinite-product-grid.shop-mobile-layout-horizontal .product-card {
     display: flex !important;
     flex-direction: row !important;
     align-items: flex-start !important;
@@ -56,14 +54,12 @@
     background: #fff;
     padding: 14px 0;
   }
-  #infinite-product-grid .product-card:hover {
+  #infinite-product-grid.shop-mobile-layout-horizontal .product-card:hover {
     transform: none !important;
     box-shadow: none !important;
     border-color: var(--c-light) !important;
   }
-
-  /* Left: fixed-size square image */
-  #infinite-product-grid .product-card-img {
+  #infinite-product-grid.shop-mobile-layout-horizontal .product-card-img {
     flex-shrink: 0 !important;
     width: 110px !important;
     min-width: 110px !important;
@@ -74,9 +70,7 @@
     overflow: hidden !important;
     align-self: flex-start !important;
   }
-
-  /* Right: info column fills remaining width, never overflows */
-  #infinite-product-grid .product-card-body {
+  #infinite-product-grid.shop-mobile-layout-horizontal .product-card-body {
     flex: 1 1 0 !important;
     min-width: 0 !important;
     max-width: 100% !important;
@@ -86,9 +80,7 @@
     gap: 4px !important;
     overflow: hidden !important;
   }
-
-  /* Title: up to 3 lines, neutral weight like Amazon */
-  #infinite-product-grid .product-card-name {
+  #infinite-product-grid.shop-mobile-layout-horizontal .product-card-name {
     font-size: 13px !important;
     font-weight: 500 !important;
     line-height: 1.5 !important;
@@ -100,34 +92,17 @@
     display: -webkit-box !important;
     -webkit-box-orient: vertical !important;
   }
-
-  /* Price: large & bold */
-  #infinite-product-grid .product-card-price { margin-top: 3px; }
-  #infinite-product-grid .price-main        { font-size: 17px !important; font-weight: 800 !important; }
-  #infinite-product-grid .price-old         { font-size: 11px !important; }
-
-  /* Sale badge: absolute top-left of image, small */
-  #infinite-product-grid .badge-sale {
-    font-size: 9px !important;
-    padding: 2px 5px !important;
-  }
-
-  /* Wishlist button: stay inside the image box */
-  #infinite-product-grid .wish-btn {
-    top: 5px !important; right: 5px !important;
-    width: 24px !important; height: 24px !important;
-    font-size: 12px !important;
-  }
-
-  /* Swatches & sizes: compact */
-  #infinite-product-grid .pc-swatches { gap: 4px !important; margin: 2px 0 !important; }
-  #infinite-product-grid .pc-swatch   { width: 14px !important; height: 14px !important; }
-  #infinite-product-grid .pc-sizes    { gap: 3px !important; margin: 2px 0 !important; }
-  #infinite-product-grid .pc-size     { padding: 2px 6px !important; font-size: 10px !important; }
-
-  /* Buttons: compact horizontal pair */
-  #infinite-product-grid .card-add-btn,
-  #infinite-product-grid .card-details-btn {
+  #infinite-product-grid.shop-mobile-layout-horizontal .product-card-price { margin-top: 3px; }
+  #infinite-product-grid.shop-mobile-layout-horizontal .price-main { font-size: 17px !important; font-weight: 800 !important; }
+  #infinite-product-grid.shop-mobile-layout-horizontal .price-old { font-size: 11px !important; }
+  #infinite-product-grid.shop-mobile-layout-horizontal .badge-sale { font-size: 9px !important; padding: 2px 5px !important; }
+  #infinite-product-grid.shop-mobile-layout-horizontal .wish-btn { top: 5px !important; right: 5px !important; width: 24px !important; height: 24px !important; font-size: 12px !important; }
+  #infinite-product-grid.shop-mobile-layout-horizontal .pc-swatches { gap: 4px !important; margin: 2px 0 !important; }
+  #infinite-product-grid.shop-mobile-layout-horizontal .pc-swatch { width: 14px !important; height: 14px !important; }
+  #infinite-product-grid.shop-mobile-layout-horizontal .pc-sizes { gap: 3px !important; margin: 2px 0 !important; }
+  #infinite-product-grid.shop-mobile-layout-horizontal .pc-size { padding: 2px 6px !important; font-size: 10px !important; }
+  #infinite-product-grid.shop-mobile-layout-horizontal .card-add-btn,
+  #infinite-product-grid.shop-mobile-layout-horizontal .card-details-btn {
     margin-top: 6px !important;
     padding: 7px 10px !important;
     font-size: 11.5px !important;
@@ -138,21 +113,68 @@
     overflow: hidden !important;
     text-overflow: ellipsis !important;
   }
-  #infinite-product-grid .card-details-btn {
+  #infinite-product-grid.shop-mobile-layout-horizontal .card-details-btn {
     background: transparent !important;
     color: var(--c-mid) !important;
     border-color: var(--c-light) !important;
     font-weight: 600 !important;
     margin-top: 3px !important;
   }
-
-  /* Coupon strip */
-  #infinite-product-grid .pc-coupon-bar {
+  #infinite-product-grid.shop-mobile-layout-horizontal .pc-coupon-bar {
     margin: 6px 0 0 !important;
     border-radius: 6px !important;
     font-size: 10px !important;
     overflow: hidden !important;
   }
+
+  /* Option B — two vertical cards side by side. */
+  #infinite-product-grid.shop-mobile-layout-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+  #infinite-product-grid.shop-mobile-layout-grid .product-card {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+  #infinite-product-grid.shop-mobile-layout-grid .product-card-img {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    aspect-ratio: 1 / 1 !important;
+    margin: 0 !important;
+    border-radius: 10px 10px 0 0 !important;
+  }
+  #infinite-product-grid.shop-mobile-layout-grid .product-card-body {
+    padding: 9px !important;
+    gap: 4px !important;
+  }
+  #infinite-product-grid.shop-mobile-layout-grid .product-card-name {
+    min-height: 34px !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+    -webkit-line-clamp: 2 !important;
+  }
+  #infinite-product-grid.shop-mobile-layout-grid .price-main { font-size: 14px !important; }
+  #infinite-product-grid.shop-mobile-layout-grid .price-old { display: none !important; }
+  #infinite-product-grid.shop-mobile-layout-grid .pc-swatches { gap: 3px !important; margin: 1px 0 !important; }
+  #infinite-product-grid.shop-mobile-layout-grid .pc-swatch { width: 13px !important; height: 13px !important; }
+  #infinite-product-grid.shop-mobile-layout-grid .pc-sizes { gap: 2px !important; margin: 1px 0 !important; }
+  #infinite-product-grid.shop-mobile-layout-grid .pc-size { padding: 2px 4px !important; font-size: 9px !important; }
+  #infinite-product-grid.shop-mobile-layout-grid .card-add-btn,
+  #infinite-product-grid.shop-mobile-layout-grid .card-details-btn {
+    margin-top: 5px !important;
+    padding: 7px 5px !important;
+    font-size: 10px !important;
+    border-radius: 6px !important;
+  }
+  #infinite-product-grid.shop-mobile-layout-grid .card-details-btn { margin-top: 3px !important; }
+  #infinite-product-grid.shop-mobile-layout-grid .wish-btn { width: 24px !important; height: 24px !important; top: 5px !important; right: 5px !important; }
+  #infinite-product-grid.shop-mobile-layout-grid .badge-sale { font-size: 9px !important; padding: 2px 5px !important; }
+  #infinite-product-grid.shop-mobile-layout-grid .pc-coupon-bar { display: none !important; }
 }
 
 /* ══════════════════════════════════════════════
@@ -528,7 +550,7 @@
         </div>
       </div>
 
-      <div class="product-grid" id="infinite-product-grid" aria-live="polite">
+      <div class="product-grid shop-mobile-layout-{{ $shopMobileLayout }}" id="infinite-product-grid" aria-live="polite">
         <div id="product-loading-state" style="grid-column:1/-1;text-align:center;padding:48px 20px;color:var(--c-mid)">
           <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px">
             <svg style="animation:spin .8s linear infinite" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>

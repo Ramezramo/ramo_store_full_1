@@ -88,6 +88,15 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--c-dark)}
 .toast.err{background:var(--c-red)}
 @keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .new-config-toggle{font-size:13px;color:var(--c-orange);cursor:pointer;font-weight:600;display:flex;align-items:center;gap:5px}
+.mobile-layout-form{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.mobile-layout-options{display:flex;gap:10px;flex-wrap:wrap;flex:1}
+.mobile-layout-option{position:relative;display:flex;align-items:flex-start;gap:10px;min-width:230px;flex:1;padding:13px 14px;border:1.5px solid var(--c-light);border-radius:9px;background:#fff;cursor:pointer;transition:all .14s}
+.mobile-layout-option:hover{border-color:#aaa;background:#fafaf8}
+.mobile-layout-option:has(input:checked){border-color:var(--c-orange);background:#fff5f2;box-shadow:0 0 0 2px rgba(232,93,38,.09)}
+.mobile-layout-option input{width:16px;height:16px;margin-top:2px;accent-color:var(--c-orange);flex-shrink:0}
+.mobile-layout-option strong{display:block;font-size:13px;margin-bottom:3px}
+.mobile-layout-option span{display:block;font-size:12px;color:var(--c-mid);line-height:1.45}
+.admin-flash{margin-bottom:16px;padding:11px 14px;border-radius:8px;background:#eaf8ef;color:#146c36;border:1px solid #c7edcf;font-size:13px;font-weight:600}
 @media(max-width:900px){
   .admin-wrap{flex-direction:column}
   .sidebar{width:100%;flex-direction:row;align-items:center;padding:0 16px}
@@ -136,6 +145,37 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--c-dark)}
         </div>
         <a href="/admin/timeline" style="flex-shrink:0;background:var(--c-orange);color:#fff;padding:12px 22px;border-radius:9px;font-size:13px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:7px;white-space:nowrap">📐 Open Homepage Builder →</a>
       </div>
+      @if(session('success'))
+        <div class="admin-flash">{{ session('success') }}</div>
+      @endif
+
+      <div class="card">
+        <div class="card-title">
+          <span>Shop Mobile Product Layout</span>
+          <span style="font-size:12px;font-weight:400;color:var(--c-mid)">Applies on phones up to 480px wide</span>
+        </div>
+        <form class="mobile-layout-form" method="POST" action="{{ route('admin.configs.shop-mobile-layout') }}">
+          @csrf
+          <div class="mobile-layout-options">
+            <label class="mobile-layout-option">
+              <input type="radio" name="layout" value="grid" {{ $shopMobileLayout === 'grid' ? 'checked' : '' }}>
+              <span>
+                <strong>Two-column grid</strong>
+                <span>Show two vertical product cards side by side.</span>
+              </span>
+            </label>
+            <label class="mobile-layout-option">
+              <input type="radio" name="layout" value="horizontal" {{ $shopMobileLayout === 'horizontal' ? 'checked' : '' }}>
+              <span>
+                <strong>Horizontal list</strong>
+                <span>Show one product per row, with the image on the left.</span>
+              </span>
+            </label>
+          </div>
+          <button class="btn-sm btn-orange" type="submit">Save mobile layout</button>
+        </form>
+      </div>
+
       <div class="stats-row">
         @foreach($groups as $g)
         <div class="stat-card">

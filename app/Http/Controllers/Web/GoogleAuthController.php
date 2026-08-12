@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\CartTrait;
 use App\Models\User;
 use App\Helpers\AuthConfig;
 use Illuminate\Http\Request;
@@ -11,6 +12,7 @@ use Illuminate\Support\Str;
 
 class GoogleAuthController extends Controller
 {
+    use CartTrait;
     public function redirect()
     {
         $cfg = AuthConfig::get();
@@ -116,6 +118,7 @@ class GoogleAuthController extends Controller
 
         Auth::login($user);
         $request->session()->regenerate();
+        $this->mergeGuestSessionOnLogin($user->id);
 
         return redirect()->intended(route('home'));
     }

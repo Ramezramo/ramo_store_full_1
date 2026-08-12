@@ -191,6 +191,7 @@ body{display:flex;height:100vh;overflow:hidden;background:var(--bg);font-family:
       <div id="wp-left">
         <div class="wp-group-label">Content</div>
         <div class="wp-btn" onmouseenter="lpShowPreview('bannerImage')" onclick="lpAddSection('bannerImage')"><span class="wp-ico">🖼️</span><span class="wp-name">Banner / Slider</span></div>
+        <div class="wp-btn" onmouseenter="lpShowPreview('flexBannerGrid')" onclick="lpAddSection('flexBannerGrid')"><span class="wp-ico">🧩</span><span class="wp-name">Flexible Banner Grid</span></div>
         <div class="wp-btn" onmouseenter="lpShowPreview('category')" onclick="lpAddSection('category')"><span class="wp-ico">📂</span><span class="wp-name">Categories Strip</span></div>
         <div class="wp-btn" onmouseenter="lpShowPreview('categoryCards')" onclick="lpAddSection('categoryCards')"><span class="wp-ico">🗂️</span><span class="wp-name">Category Cards</span></div>
         <div class="wp-btn" onmouseenter="lpShowPreview('twoColumn')" onclick="lpAddSection('twoColumn')"><span class="wp-ico">🛍️</span><span class="wp-name">Products Grid</span></div>
@@ -254,6 +255,7 @@ const TYPE_META = {
   category:         { icon:'📂', label:'Categories Strip',   color:'#8b5cf6' },
   categoryCards:    { icon:'🗂️', label:'Category Cards',     color:'#8b5cf6' },
   bannerImage:      { icon:'🖼️', label:'Banner / Slider',    color:'#e85d26' },
+  flexBannerGrid:   { icon:'🧩', label:'Flexible Banner Grid', color:'#7c3aed' },
   twoColumn:        { icon:'🛍️', label:'Products Grid',      color:'#22c55e' },
   saleImages:       { icon:'🏷️', label:'Products Scroll',    color:'#f59e0b' },
   seupermarketstars:{ icon:'⭐', label:'Featured Items',      color:'#ec4899' },
@@ -355,6 +357,18 @@ function buildEditor(sec, idx) {
     <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Banner images:</div>
     <div class="items-list" id="bannerItems-${idx}">` + (sec.items||[]).map((item,ii)=>buildBannerItem(idx,ii,item)).join('') + `</div>
     <button class="add-item-btn" onclick="addBannerItem(${idx})">+ Add Banner Image</button>`;
+  }
+  else if (type === 'flexBannerGrid') {
+    const items = Array.isArray(sec.items) ? sec.items : [];
+    html = `<div class="form-grid">
+      <div class="form-group"><label>Text Above Banners <span style="font-weight:400;color:var(--muted)">(optional)</span></label><input type="text" value="${escAttr(sec.headerText||'')}" maxlength="120" onchange="updateField(${idx},'headerText',this.value)" placeholder="e.g. عروض النهاردة و بس"></div>
+      <div class="form-group"><label>Gap Between Banners (px)</label><input type="number" value="${sec.gap??12}" min="0" max="40" onchange="updateField(${idx},'gap',Math.max(0,Math.min(40,parseInt(this.value)||0)))"></div>
+      <div class="form-group"><label>Corner Radius (px)</label><input type="number" value="${sec.radius??10}" min="0" max="40" onchange="updateField(${idx},'radius',Math.max(0,Math.min(40,parseInt(this.value)||0)))"></div>
+      <div class="form-group"><label>Phone Layout</label><select onchange="updateField(${idx},'mobileColumns',parseInt(this.value))"><option value="1" ${Number(sec.mobileColumns)===1?'selected':''}>Stack one per row</option><option value="2" ${Number(sec.mobileColumns)!==1?'selected':''}>Compact two columns</option></select></div>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin:2px 0 8px">Add as many banners as you need. Choose <strong>Full</strong>, <strong>Half</strong>, or <strong>Quarter</strong> width for each card. Use the arrows to arrange banners next to or below one another.</div>
+    <div class="items-list" id="flexBannerItems-${idx}">${items.map((item,ii)=>buildFlexBannerItem(idx,ii,item)).join('')}</div>
+    <button class="add-item-btn" onclick="addFlexBannerItem(${idx})">+ Add Banner${items.length ? ` (${items.length} added)` : ''}</button>`;
   }
   else if (type === 'twoColumn' || type === 'saleImages' || type === 'seupermarketstars') {
     const defWidth  = type === 'saleImages' ? 140 : (type === 'seupermarketstars' ? 200 : 230);
@@ -828,9 +842,53 @@ function addBannerItem(idx){
 function removeBannerItem(idx,ii){ sections[idx].items.splice(ii,1); renderAll(); setTimeout(()=>{ const b=document.getElementById('body-'+idx); if(b) b.classList.add('open'); },50); }
 function updateBannerItem(idx,ii,key,value){ if(!sections[idx].items) sections[idx].items=[]; if(!sections[idx].items[ii]) sections[idx].items[ii]={}; if(value===undefined) delete sections[idx].items[ii][key]; else sections[idx].items[ii][key]=value; }
 
+function buildFlexBannerItem(idx,ii,item){
+  const total=(sections[idx].items||[]).length;
+  return `<div class="item-row" id="flexBannerItem-${idx}-${ii}" style="align-items:flex-start;flex-wrap:wrap">
+    <div style="display:flex;gap:8px;align-items:center;width:100%;font-size:12px;color:var(--muted);font-weight:700">
+      <span style="background:rgba(124,58,237,.15);color:#a78bfa;border-radius:5px;padding:3px 7px">Banner ${ii+1}</span>
+      <span style="margin-left:auto;display:flex;gap:4px"><button class="btn btn-sm" onclick="moveFlexBannerItem(${idx},${ii},-1)" ${ii===0?'disabled':''} title="Move up">↑</button><button class="btn btn-sm" onclick="moveFlexBannerItem(${idx},${ii},1)" ${ii===total-1?'disabled':''} title="Move down">↓</button></span>
+    </div>
+    <div style="display:flex;gap:5px;flex:2;min-width:200px"><input type="text" value="${escAttr(item.image||'')}" placeholder="Image URL (required)" style="flex:1;min-width:0" onchange="updateFlexBannerItem(${idx},${ii},'image',this.value)"><a class="btn btn-sm" href="{{ route('admin.image-gallery') }}" target="_blank" rel="noopener" title="Open Image Gallery and copy a reusable image URL">Gallery</a></div>
+    <input type="text" value="${escAttr(item.link||'')}" placeholder="Destination URL e.g. /shop?category=1" style="flex:2;min-width:200px" onchange="updateFlexBannerItem(${idx},${ii},'link',this.value)">
+    <select style="width:120px" onchange="updateFlexBannerItem(${idx},${ii},'width',this.value)">
+      <option value="full" ${(item.width||'half')==='full'?'selected':''}>Full width</option>
+      <option value="half" ${(item.width||'half')==='half'?'selected':''}>Half width</option>
+      <option value="quarter" ${item.width==='quarter'?'selected':''}>Quarter width</option>
+    </select>
+    <input type="text" value="${escAttr(item.alt||'')}" placeholder="Image description" style="flex:1;min-width:160px" onchange="updateFlexBannerItem(${idx},${ii},'alt',this.value)">
+    <button class="btn btn-danger btn-sm" onclick="removeFlexBannerItem(${idx},${ii})" title="Remove banner">×</button>
+  </div>`;
+}
+function addFlexBannerItem(idx){
+  if(!sections[idx].items) sections[idx].items=[];
+  sections[idx].items.push({image:'',link:'',width:'half',alt:''});
+  renderAll();
+  setTimeout(()=>{ const b=document.getElementById('body-'+idx); if(b) b.classList.add('open'); },50);
+}
+function updateFlexBannerItem(idx,ii,key,value){
+  if(!sections[idx].items) sections[idx].items=[];
+  if(!sections[idx].items[ii]) sections[idx].items[ii]={};
+  sections[idx].items[ii][key]=value;
+}
+function removeFlexBannerItem(idx,ii){
+  sections[idx].items.splice(ii,1);
+  renderAll();
+  setTimeout(()=>{ const b=document.getElementById('body-'+idx); if(b) b.classList.add('open'); },50);
+}
+function moveFlexBannerItem(idx,ii,direction){
+  const target=ii+direction;
+  const items=sections[idx].items||[];
+  if(target<0||target>=items.length) return;
+  [items[ii],items[target]]=[items[target],items[ii]];
+  renderAll();
+  setTimeout(()=>{ const b=document.getElementById('body-'+idx); if(b) b.classList.add('open'); },50);
+}
+
 // ── DEFAULTS ─────────────────────────────────────────────────────
 const DEFAULTS = {
   bannerImage:       { layout:'bannerImage', design:'default', isSlider:true, autoPlay:true, radius:2, items:[] },
+  flexBannerGrid:    { layout:'flexBannerGrid', name:'Flexible Banner Grid', headerText:'', gap:12, radius:10, mobileColumns:2, items:[] },
   category:          { layout:'category', type:'icon', wrap:false, size:1, radius:50, items:[] },
   categoryCards:     { layout:'categoryCards', headerText:'Shop by Category', columns:3, cardHeight:220, cardBorderRadius:14, maxItemsToShow:12, showCount:true, parentOnly:true },
   twoColumn:         { layout:'twoColumn', headerText:'New Section', maxItemsToShow:8, category:'' },
@@ -865,6 +923,7 @@ const DEFAULTS = {
 // ── WIDGET INFO ───────────────────────────────────────────────────
 const WIDGET_INFO = {
   bannerImage:     { title:'Banner / Slider', desc:'Full-width hero image or auto-playing slideshow. Each slide can link to a category.', tags:['Full-width','Auto-play','Multiple slides'] },
+  flexBannerGrid:  { title:'Flexible Banner Grid', desc:'A responsive mosaic of linked banners. Add as many as you need, set every banner to full, half, or quarter width, and reorder them visually.', tags:['Unlimited images','Full / half / quarter','Phone layout','Custom spacing'] },
   category:        { title:'Categories Strip', desc:'Horizontal row of category icons. Great for quick navigation.', tags:['Icon strip','Scrollable'] },
   categoryCards:   { title:'Category Cards', desc:'Beautiful full-image grid cards for each category. Auto-loads categories with product counts and hover effects.', tags:['Auto-loaded','Grid layout','Hover zoom','Gradient overlay'] },
   twoColumn:       { title:'Products Grid', desc:'2–4 column product grid for a category or all products.', tags:['Product cards','Category filter'] },
@@ -899,6 +958,7 @@ const WIDGET_INFO = {
 // ── WIDGET MOCKUPS ────────────────────────────────────────────────
 const WIDGET_MOCKUPS = {
   bannerImage:`<div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:8px;height:90px;display:flex;align-items:center;justify-content:center"><div style="text-align:center"><div style="font-size:11px;opacity:.5;margin-bottom:4px;color:#fff;letter-spacing:1px">HERO BANNER</div><div style="font-size:16px;font-weight:800;color:#fff">🖼️ Image Slider</div></div></div>`,
+  flexBannerGrid:`<div style="display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:42px;gap:6px"><div style="grid-column:span 4;background:linear-gradient(135deg,#7c3aed,#c084fc);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800">FULL WIDTH</div><div style="grid-column:span 2;background:linear-gradient(135deg,#e85d26,#fb923c);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:800">HALF</div><div style="grid-column:span 1;background:#0ea5e9;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:800">¼</div><div style="grid-column:span 1;background:#22c55e;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:800">¼</div></div>`,
   category:`<div style="display:flex;gap:10px;flex-wrap:wrap">${['👗 Clothes','👟 Shoes','👜 Bags','📱 Phones','💄 Beauty'].map(c=>`<div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div style="width:42px;height:42px;border-radius:50%;background:#f0ede8;border:2px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:18px">${c.split(' ')[0]}</div><span style="font-size:10px;color:#333;font-weight:600">${c.split(' ')[1]}</span></div>`).join('')}</div>`,
   categoryCards:`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">${[['#e85d26','Bags'],['#1a1a2e','Shoes'],['#22c55e','Clothes'],['#8b5cf6','Phones'],['#f59e0b','Beauty'],['#ec4899','Outerwear']].map(([bg,label])=>`<div style="height:68px;background:${bg};border-radius:9px;overflow:hidden;position:relative"><div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.75),transparent)"></div><div style="position:absolute;bottom:7px;left:9px;color:#fff;font-size:11px;font-weight:800">${label}</div></div>`).join('')}</div>`,
   twoColumn:`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">${Array(4).fill(0).map((_,i)=>`<div style="border-radius:6px;overflow:hidden;border:1px solid #eee"><div style="height:60px;background:${['#fdf0e8','#e8f0fd','#e8fdf0','#fde8fd'][i]};display:flex;align-items:center;justify-content:center;font-size:20px">🛍️</div><div style="padding:5px"><div style="height:6px;background:#eee;border-radius:3px;margin-bottom:3px"></div><div style="height:8px;background:#e85d26;border-radius:3px;width:60%"></div></div></div>`).join('')}</div>`,

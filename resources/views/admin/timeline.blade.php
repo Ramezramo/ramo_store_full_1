@@ -113,6 +113,7 @@
 
       <div class="wp-group-label">Content</div>
       <div class="wp-btn" onmouseenter="showPreview('bannerImage')" onclick="addSection('bannerImage')"><span class="wp-ico">🖼️</span><span class="wp-name">Banner / Slider</span></div>
+      <div class="wp-btn" onmouseenter="showPreview('flexBannerGrid')" onclick="addSection('flexBannerGrid')"><span class="wp-ico">🧩</span><span class="wp-name">Flexible Banner Grid</span></div>
       <div class="wp-btn" onmouseenter="showPreview('category')" onclick="addSection('category')"><span class="wp-ico">📂</span><span class="wp-name">Categories Strip</span></div>
       <div class="wp-btn" onmouseenter="showPreview('twoColumn')" onclick="addSection('twoColumn')"><span class="wp-ico">🛍️</span><span class="wp-name">Products Grid</span></div>
       <div class="wp-btn" onmouseenter="showPreview('saleImages')" onclick="addSection('saleImages')"><span class="wp-ico">🏷️</span><span class="wp-name">Products Scroll</span></div>
@@ -188,6 +189,7 @@ const TYPE_META = {
   logo:             { icon:'🏪', label:'Logo / Header Bar', color:'#3b82f6' },
   category:         { icon:'📂', label:'Categories Strip',   color:'#8b5cf6' },
   bannerImage:      { icon:'🖼️', label:'Banner / Slider',    color:'#e85d26' },
+  flexBannerGrid:   { icon:'🧩', label:'Flexible Banner Grid', color:'#7c3aed' },
   twoColumn:        { icon:'🛍️', label:'Products Grid',      color:'#22c55e' },
   saleImages:       { icon:'🏷️', label:'Products Scroll',    color:'#f59e0b' },
   seupermarketstars:{ icon:'⭐', label:'Featured Items',      color:'#ec4899' },
@@ -284,6 +286,20 @@ function buildEditor(sec, idx) {
     <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Banner images (URL + optional category or product link):</div>
     <div class="items-list" id="bannerItems-${idx}">` + (sec.items||[]).map((item, ii) => buildBannerItem(idx, ii, item)).join('') + `</div>
     <button class="add-item-btn" onclick="addBannerItem(${idx})">+ Add Banner Image</button>`;
+  }
+
+  else if (type === 'flexBannerGrid') {
+    const items = Array.isArray(sec.items) ? sec.items : [];
+    html = `
+    <div class="form-grid">
+      <div class="form-group"><label>Text Above Banners <span style="font-weight:400;color:var(--muted)">(optional)</span></label><input type="text" value="${escAttr(sec.headerText||'')}" maxlength="120" style="width:100%" onchange="updateField(${idx},'headerText',this.value)" placeholder="e.g. عروض النهاردة و بس"></div>
+      <div class="form-group"><label>Gap Between Banners (px)</label><input type="number" value="${sec.gap??12}" min="0" max="40" style="width:100%" onchange="updateField(${idx},'gap',Math.max(0,Math.min(40,parseInt(this.value)||0)))"></div>
+      <div class="form-group"><label>Corner Radius (px)</label><input type="number" value="${sec.radius??14}" min="0" max="40" style="width:100%" onchange="updateField(${idx},'radius',Math.max(0,Math.min(40,parseInt(this.value)||0)))"></div>
+      <div class="form-group"><label>Phone Layout</label><select onchange="updateField(${idx},'mobileColumns',parseInt(this.value))"><option value="1" ${Number(sec.mobileColumns)===1?'selected':''}>Stack one per row</option><option value="2" ${Number(sec.mobileColumns)!==1?'selected':''}>Compact two columns</option></select></div>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin:2px 0 8px">Add as many banners as you need. Choose <strong>Full</strong>, <strong>Half</strong>, or <strong>Quarter</strong> width for each card. Use the arrows to arrange banners next to or below one another.</div>
+    <div class="items-list" id="flexBannerItems-${idx}">${items.map((item, ii) => buildFlexBannerItem(idx, ii, item)).join('')}</div>
+    <button class="add-item-btn" onclick="addFlexBannerItem(${idx})">+ Add Banner${items.length ? ` (${items.length} added)` : ''}</button>`;
   }
 
   else if (type === 'twoColumn' || type === 'saleImages' || type === 'seupermarketstars') {
@@ -749,6 +765,50 @@ function buildBannerItem(idx, ii, item) {
   </div>`;
 }
 
+function buildFlexBannerItem(idx, ii, item) {
+  const total = (sections[idx].items || []).length;
+  return `<div class="item-row" id="flexBannerItem-${idx}-${ii}" style="align-items:flex-start;flex-wrap:wrap">
+    <div style="display:flex;gap:8px;align-items:center;width:100%;font-size:12px;color:var(--muted);font-weight:700">
+      <span style="background:rgba(124,58,237,.15);color:#a78bfa;border-radius:5px;padding:3px 7px">Banner ${ii+1}</span>
+      <span style="margin-left:auto;display:flex;gap:4px"><button class="btn btn-sm" onclick="moveFlexBannerItem(${idx},${ii},-1)" ${ii===0?'disabled':''} title="Move up">↑</button><button class="btn btn-sm" onclick="moveFlexBannerItem(${idx},${ii},1)" ${ii===total-1?'disabled':''} title="Move down">↓</button></span>
+    </div>
+    <div style="display:flex;gap:5px;flex:2;min-width:200px"><input type="text" value="${escAttr(item.image||'')}" placeholder="Image URL (required)" style="flex:1;min-width:0" onchange="updateFlexBannerItem(${idx},${ii},'image',this.value)"><a class="btn btn-sm" href="{{ route('admin.image-gallery') }}" target="_blank" rel="noopener" title="Open Image Gallery and copy a reusable image URL">Gallery</a></div>
+    <input type="text" value="${escAttr(item.link||'')}" placeholder="Destination URL e.g. /shop?category=1" style="flex:2;min-width:200px" onchange="updateFlexBannerItem(${idx},${ii},'link',this.value)">
+    <select style="width:120px" onchange="updateFlexBannerItem(${idx},${ii},'width',this.value)">
+      <option value="full" ${(item.width||'half')==='full'?'selected':''}>Full width</option>
+      <option value="half" ${(item.width||'half')==='half'?'selected':''}>Half width</option>
+      <option value="quarter" ${item.width==='quarter'?'selected':''}>Quarter width</option>
+    </select>
+    <input type="text" value="${escAttr(item.alt||'')}" placeholder="Image description" style="flex:1;min-width:160px" onchange="updateFlexBannerItem(${idx},${ii},'alt',this.value)">
+    <button class="btn btn-danger btn-sm" onclick="removeFlexBannerItem(${idx},${ii})" title="Remove banner">×</button>
+  </div>`;
+}
+
+function addFlexBannerItem(idx) {
+  if (!sections[idx].items) sections[idx].items = [];
+  sections[idx].items.push({ image:'', link:'', width:'half', alt:'' });
+  renderAll();
+  setTimeout(() => { const b=document.getElementById('body-'+idx); if(b) b.classList.add('open'); }, 50);
+}
+function updateFlexBannerItem(idx, ii, key, value) {
+  if (!sections[idx].items) sections[idx].items = [];
+  if (!sections[idx].items[ii]) sections[idx].items[ii] = {};
+  sections[idx].items[ii][key] = value;
+}
+function removeFlexBannerItem(idx, ii) {
+  sections[idx].items.splice(ii, 1);
+  renderAll();
+  setTimeout(() => { const b=document.getElementById('body-'+idx); if(b) b.classList.add('open'); }, 50);
+}
+function moveFlexBannerItem(idx, ii, direction) {
+  const target = ii + direction;
+  const items = sections[idx].items || [];
+  if (target < 0 || target >= items.length) return;
+  [items[ii], items[target]] = [items[target], items[ii]];
+  renderAll();
+  setTimeout(() => { const b=document.getElementById('body-'+idx); if(b) b.classList.add('open'); }, 50);
+}
+
 // ── RENDER ALL ─────────────────────────────────────────────────────
 function renderAll() {
   const list = document.getElementById('sectionList');
@@ -888,6 +948,7 @@ function updateBannerItem(idx, ii, key, value) {
 // Add new section
 const DEFAULTS = {
   bannerImage:       { layout:'bannerImage', design:'default', isSlider:true, autoPlay:true, radius:2, items:[] },
+  flexBannerGrid:    { layout:'flexBannerGrid', headerText:'', gap:12, radius:14, mobileColumns:2, items:[] },
   category:          { layout:'category', type:'icon', wrap:false, size:1, radius:50, items:[] },
   twoColumn:         { layout:'twoColumn', headerText:'New Section', maxItemsToShow:8, category:'' },
   saleImages:        { layout:'saleImages', headerText:'Featured Products', maxItemsToShow:8, category:'' },
@@ -920,6 +981,7 @@ const DEFAULTS = {
 // ── WIDGET PREVIEWS ────────────────────────────────────────────────
 const WIDGET_INFO = {
   bannerImage:      { title:'Banner / Slider', desc:'Full-width hero image or auto-playing slideshow with multiple banners. Each slide can link to a category or product.', tags:['Full-width','Configurable','Auto-play','Multiple slides'] },
+  flexBannerGrid:   { title:'Flexible Banner Grid', desc:'Build a custom mosaic with as many linked image banners as you need. Give every banner full, half, or quarter width and place them in any order.', tags:['Unlimited images','Full / half / quarter','Reorderable','Mobile controls'] },
   category:         { title:'Categories Strip', desc:'Horizontal row of category icons with labels. Great for quick navigation to product categories.', tags:['Icon strip','Scrollable','Configurable'] },
   twoColumn:        { title:'Products Grid', desc:'2–4 column product grid for a specific category or all products. Shows price, sale badge, and wishlist button.', tags:['Product cards','Category filter','Max items'] },
   saleImages:       { title:'Products Scroll', desc:'Horizontal scrollable strip of product cards. Ideal for showcasing a collection without taking up vertical space.', tags:['Horizontal scroll','Category filter','Compact'] },

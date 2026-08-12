@@ -8,6 +8,7 @@
   @if(session('error'))
     <div class="alert-box alert-err">{{ session('error') }}</div>
   @endif
+  <div id="cart-quantity-error" class="alert-box alert-err" style="display:none"></div>
 
   @if(empty($cart))
     <div class="empty" style="padding:100px 20px">
@@ -62,14 +63,21 @@
             @endif
 
             {{-- Qty control + unit price --}}
-            <div class="cart-row-actions">
-              <div class="qty-pill">
-                <button type="button" onclick="updateQty('{{ $rowId }}', -1)">−</button>
-                <input type="number" id="qty-{{ $rowId }}" value="{{ $item['qty'] }}" min="1" max="{{ $item['stock'] }}" onchange="setQty('{{ $rowId }}', this.value)">
-                <button type="button" onclick="updateQty('{{ $rowId }}', 1)">+</button>
+              <div class="cart-row-actions">
+                <div>
+                  <div class="qty-pill">
+                    <button type="button" onclick="updateQty('{{ $rowId }}', -1)">−</button>
+                    <input type="number" id="qty-{{ $rowId }}" value="{{ $item['qty'] }}"
+                           min="{{ $item['minimum_qty'] ?? 1 }}" max="{{ max(1, $item['maximum_qty'] ?? $item['stock']) }}"
+                           data-approved-qty="{{ $item['qty'] }}" onchange="setQty('{{ $rowId }}', this.value)">
+                    <button type="button" onclick="updateQty('{{ $rowId }}', 1)">+</button>
+                  </div>
+                  <div style="font-size:11.5px;color:var(--c-mid);margin-top:5px">
+                    Minimum {{ $item['minimum_qty'] ?? 1 }} · Maximum {{ $item['maximum_qty'] ?? $item['stock'] }} per order
+                  </div>
+                </div>
+                <span class="cart-unit-price">{{ number_format($item['price'], 2) }} EGP each</span>
               </div>
-              <span class="cart-unit-price">{{ number_format($item['price'], 2) }} EGP each</span>
-            </div>
           </div>
         </div>
 
@@ -172,39 +180,81 @@ function hideCartLoading() {
   if (overlay) overlay.classList.remove('active');
 }
 
-async function updateQty(rowId, delta) {
-  const input = document.getElementById('qty-' + rowId);
-  const newVal = Math.max(1, parseInt(input.value) + delta);
-  input.value = newVal;
-  await setQty(rowId, newVal);
+function showCartQuantityError(message) {
+  const error = document.getElementById('cart-quantity-error');
+  if (!error) return;
+  error.textContent = message;
+  error.style.display = '';
+  error.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-async function setQty(rowId, val) {
+function clearCartQuantityError() {
+  const error = document.getElementById('cart-quantity-error');
+  if (error) error.style.display = 'none';
+}
+
+async function updateQty(rowId, delta) {
+  const input = document.getElementById('qty-' + rowId);
+  if (!input) return;
+  const minimum = parseInt(input.min, 10) || 1;
+  const maximum = parseInt(input.max, 10) || minimum;
+  const current = parseInt(input.value, 10) || minimum;
+  const newVal = Math.max(minimum, Math.min(maximum, current + delta));
+  if (newVal === current) return;
+  input.value = newVal;
+  await setQty(rowId, newVal, current);
+}
+
+async function setQty(rowId, val, previousVal = null) {
+  const input = document.getElementById('qty-' + rowId);
+  if (!input) return;
+  const approved = parseInt(input.dataset.approvedQty, 10) || parseInt(input.value, 10) || 1;
+  const requested = parseInt(val, 10);
+  const restoreValue = previousVal ?? approved;
+  const minimum = parseInt(input.min, 10) || 1;
+  const maximum = parseInt(input.max, 10) || minimum;
+
+  if (!Number.isInteger(requested) || requested < minimum || requested > maximum) {
+    input.value = approved;
+    showCartQuantityError(`Choose a quantity from ${minimum} to ${maximum} for this item.`);
+    return;
+  }
+
+  clearCartQuantityError();
   showCartLoading();
   try {
     const res = await fetch(`/cart/update/${rowId}`, {
       method: 'POST',
       headers: {'Content-Type':'application/json','X-CSRF-TOKEN': CSRF},
-      body: JSON.stringify({ qty: parseInt(val) })
+      body: JSON.stringify({ qty: requested })
     });
     const data = await res.json();
-    if (data.success) {
-      document.getElementById('sub-' + rowId).textContent = data.item_subtotal + ' EGP';
-      const oldEl = document.getElementById('sub-old-' + rowId);
-      if (oldEl) {
-        if (data.item_subtotal_old) {
-          oldEl.textContent = data.item_subtotal_old + ' EGP';
-          oldEl.style.display = '';
-        } else {
-          oldEl.style.display = 'none';
-        }
-      }
-      document.getElementById('cart-subtotal').textContent = data.cart_subtotal + ' EGP';
-      const shipEl = document.getElementById('cart-shipping');
-      if (shipEl) shipEl.textContent = data.shipping_fee ? (data.shipping_fee + ' EGP') : 'Free';
-      document.getElementById('cart-total').textContent = data.cart_total + ' EGP';
-      updateNavCount(data.count);
+    if (!data.success) {
+      input.value = restoreValue;
+      showCartQuantityError(data.message || 'Unable to update this quantity.');
+      return;
     }
+
+    input.value = requested;
+    input.dataset.approvedQty = requested;
+    document.getElementById('sub-' + rowId).textContent = data.item_subtotal + ' EGP';
+    const oldEl = document.getElementById('sub-old-' + rowId);
+    if (oldEl) {
+      if (data.item_subtotal_old) {
+        oldEl.textContent = data.item_subtotal_old + ' EGP';
+        oldEl.style.display = '';
+      } else {
+        oldEl.style.display = 'none';
+      }
+    }
+    document.getElementById('cart-subtotal').textContent = data.cart_subtotal + ' EGP';
+    const shipEl = document.getElementById('cart-shipping');
+    if (shipEl) shipEl.textContent = data.shipping_fee ? (data.shipping_fee + ' EGP') : 'Free';
+    document.getElementById('cart-total').textContent = data.cart_total + ' EGP';
+    updateNavCount(data.count);
+  } catch (error) {
+    input.value = restoreValue;
+    showCartQuantityError('Unable to update this quantity. Please try again.');
   } finally {
     hideCartLoading();
   }

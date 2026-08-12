@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers\Web;
 
-use App\Http\Controllers\Controller;
 use App\Helpers\AuthConfig;
 use App\Helpers\PaymentConfig;
+use App\Helpers\ShippingConfig;
+use App\Http\Controllers\Controller;
 use App\Http\Traits\CartTrait;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -19,7 +20,46 @@ class CheckoutController extends Controller
 
     private function requiresLogin(): bool
     {
-        return !Auth::check() && !AuthConfig::val('guest_checkout', false);
+        return ! Auth::check() && ! AuthConfig::val('guest_checkout', false);
+    }
+
+    private function cartQuantityIssue(array $cart): ?string
+    {
+        $productIds = collect($cart)->pluck('product_id')->map(fn ($id) => (int) $id)->unique()->values()->all();
+        $products = DB::table('products_data')->whereIn('id', $productIds)->get()->keyBy('id');
+        $variations = DB::table('product_variations')->whereIn('product_id', $productIds)->get()->keyBy('id');
+
+        foreach ($cart as $item) {
+            $productId = (int) ($item['product_id'] ?? 0);
+            $product = $products->get($productId);
+            $quantity = (int) ($item['qty'] ?? 0);
+            $variation = !empty($item['variation_id'])
+                ? $variations->get((int) $item['variation_id'])
+                : $variations->first(fn ($v) => (int) $v->product_id === $productId && (bool) $v->main_variation);
+
+            if (! $product || ! $variation || (int) $variation->product_id !== $productId) {
+                return 'One or more items in your cart are no longer available. Please review your cart.';
+            }
+
+            $minimumQuantity = max(1, (int) ($product->minimum_order_qty ?? 1));
+            $maximumQuantity = max(0, (int) ($variation->stock_quantity ?? 0));
+            $configuredMaximum = (int) ($product->max_orders_per_person ?? 0);
+            if ($configuredMaximum > 0) {
+                $maximumQuantity = min($maximumQuantity, $configuredMaximum);
+            }
+            if ((bool) ($product->sold_individually ?? false)) {
+                $maximumQuantity = min($maximumQuantity, 1);
+            }
+
+            if ($maximumQuantity < $minimumQuantity) {
+                return "\"{$product->name}\" no longer has enough stock to meet its minimum order quantity. Please review your cart.";
+            }
+            if ($quantity < $minimumQuantity || $quantity > $maximumQuantity) {
+                return "The quantity for \"{$product->name}\" must be between {$minimumQuantity} and {$maximumQuantity}. Please review your cart.";
+            }
+        }
+
+        return null;
     }
 
     public function index()
@@ -29,6 +69,10 @@ class CheckoutController extends Controller
             return redirect()->route('cart')->with('error', 'Your cart is empty.');
         }
 
+        if ($quantityIssue = $this->cartQuantityIssue($cart)) {
+            return redirect()->route('cart')->with('error', $quantityIssue);
+        }
+
         if ($this->requiresLogin()) {
             session(['url.intended' => route('checkout')]);
             return redirect()->route('login');
@@ -36,20 +80,26 @@ class CheckoutController extends Controller
 
         $authConfig = AuthConfig::get();
         $coupon     = session('ramo_coupon');
-        $subtotal   = collect($cart)->sum(fn($i) => $i['price'] * $i['qty']);
+        $subtotal   = collect($cart)->sum(fn ($item) => $item['price'] * $item['qty']);
         $discount   = $this->calcDiscount($subtotal, $coupon);
-        $total      = max(0, $subtotal - $discount);
+        $afterDiscount = max(0, $subtotal - $discount);
+        $shippingFee = ShippingConfig::feeForSubtotal($afterDiscount);
+        $total      = $afterDiscount + $shippingFee;
 
         $user = Auth::user();
         $savedAddress = [];
-        if ($user && !empty($user->shipping)) {
+        if ($user && ! empty($user->shipping)) {
             $savedAddress = json_decode($user->shipping, true)
                 ?? json_decode(stripslashes($user->shipping), true)
                 ?? [];
             $savedAddress = is_array($savedAddress) ? $savedAddress : [];
         }
+
         $paymentMethods = PaymentConfig::checkoutMethods();
-        return view('web.checkout', compact('cart', 'subtotal', 'discount', 'total', 'coupon', 'user', 'savedAddress', 'authConfig', 'paymentMethods'));
+        return view('web.checkout', compact(
+            'cart', 'subtotal', 'discount', 'shippingFee', 'total', 'coupon',
+            'user', 'savedAddress', 'authConfig', 'paymentMethods'
+        ));
     }
 
     public function place(Request $r)
@@ -80,76 +130,17 @@ class CheckoutController extends Controller
             'notes'          => 'nullable|string|max:500',
         ]);
 
-        $paymentMethods       = PaymentConfig::checkoutMethods();
-        $manualPaymentMethods = PaymentConfig::enabledMethods();
-        $allowedPaymentMethods = array_merge(
-            array_keys($paymentMethods),
-            ['wallet']
-        );
-        if (!in_array($r->payment_method, $allowedPaymentMethods, true)) {
-            return back()->withInput()->withErrors(['payment_method' => 'That payment method is not currently available.']);
+        // Only accept methods that are currently displayed and enabled by admin.
+        $paymentMethods = PaymentConfig::checkoutMethods();
+        if (! array_key_exists($r->payment_method, $paymentMethods)) {
+            return back()->withInput()->withErrors([
+                'payment_method' => 'That payment method is not currently available.',
+            ]);
         }
 
-        session(['checkout_save_address' => $r->boolean('save_address')]);
-
-        $paymentTitles = [
-            'cod'            => 'Cash on Delivery',
-            'bank_transfer'  => 'Bank Transfer',
-            'vodafone_cash'  => 'Vodafone Cash',
-            'fawry'          => 'Fawry',
-            'wallet'         => 'Wallet',
-            'credit_card'    => 'Credit Card',
-            'manual_wallet'  => 'Pay by Wallet',
-            'manual_instapay'=> 'Pay by InstaPay',
-        ];
+        $paymentTitle = $paymentMethods[$r->payment_method]['title'];
         $isManualPayment = PaymentConfig::isManualMethod($r->payment_method);
-
-        // ── RE-VERIFY PRICES FROM DATABASE (never trust cart-stored prices) ──────
-        $cartProductIds   = collect($cart)->pluck('product_id')->unique()->values()->all();
-        $cartVariationIds = collect($cart)->pluck('variation_id')->filter()->unique()->values()->all();
-
-        $dbProducts   = DB::table('products_data')
-            ->whereIn('id', $cartProductIds)
-            ->get()->keyBy('id');
-
-        $dbVariations = DB::table('product_variations')
-            ->whereIn('product_id', $cartProductIds)
-            ->when(!empty($cartVariationIds), fn($q) => $q->orWhereIn('id', $cartVariationIds))
-            ->get()->keyBy('id');
-
-        $verifiedCart = [];
-        foreach ($cart as $rowId => $item) {
-            $product = $dbProducts->get($item['product_id']);
-            if (!$product) {
-                return redirect()->route('cart')
-                    ->with('error', "Product \"{$item['name']}\" is no longer available.");
-            }
-
-            $variation = $item['variation_id']
-                ? $dbVariations->get($item['variation_id'])
-                : $dbVariations->first(fn($v) => $v->product_id == $item['product_id'] && $v->main_variation);
-
-            if (!$variation) {
-                return redirect()->route('cart')
-                    ->with('error', "A variation for \"{$item['name']}\" could not be found.");
-            }
-
-            $regularPrice = (float) ($variation->regular_price ?? 0);
-            $livePrice    = (float) ($variation->price ?? $regularPrice);
-            $discPct      = (float) ($product->discount_percentage ?? 0);
-            if ($discPct > 0 && $regularPrice > 0 && $livePrice >= $regularPrice) {
-                $livePrice = round($regularPrice * (1 - $discPct / 100), 2);
-            }
-
-            $verifiedCart[$rowId] = array_merge($item, ['price' => $livePrice]);
-        }
-        $cart = $verifiedCart;
-        // ─────────────────────────────────────────────────────────────────────────
-
-        $coupon   = session('ramo_coupon');
-        $subtotal = collect($cart)->sum(fn($i) => $i['price'] * $i['qty']);
-        $discount = $this->calcDiscount($subtotal, $coupon);
-        $total    = max(0, $subtotal - $discount);
+        session(['checkout_save_address' => $r->boolean('save_address')]);
 
         $billing = [
             'first_name' => $r->first_name,
@@ -165,18 +156,230 @@ class CheckoutController extends Controller
             'longitude'  => $r->longitude,
         ];
 
+        try {
+            $orderId = DB::transaction(function () use ($cart, $r, $billing, $paymentTitle, $isManualPayment) {
+                $cartProductIds = collect($cart)->pluck('product_id')->map(fn ($id) => (int) $id)->unique()->values()->all();
+
+                $dbProducts = DB::table('products_data')
+                    ->whereIn('id', $cartProductIds)
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('id');
+
+                // Lock all variations for the cart's products before validating stock.
+                // This serializes competing checkouts for the same variation.
+                $dbVariations = DB::table('product_variations')
+                    ->whereIn('product_id', $cartProductIds)
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('id');
+
+                $verifiedCart = [];
+                foreach ($cart as $rowId => $item) {
+                    $productId = (int) ($item['product_id'] ?? 0);
+                    $quantity = (int) ($item['qty'] ?? 0);
+                    $product = $dbProducts->get($productId);
+
+                    if (! $product || (($product->status ?? 'publish') !== 'publish')) {
+                        throw new \RuntimeException("Product \"" . ($item['name'] ?? $productId) . "\" is no longer available.");
+                    }
+                    if ($quantity < 1) {
+                        throw new \RuntimeException("The quantity for \"{$product->name}\" is invalid.");
+                    }
+
+                    $variation = ! empty($item['variation_id'])
+                        ? $dbVariations->get((int) $item['variation_id'])
+                        : $dbVariations->first(fn ($v) => (int) $v->product_id === $productId && (bool) $v->main_variation);
+
+                    // A variation must belong to the product in the cart. This prevents
+                    // a crafted request from pricing one product with another product's variation.
+                    if (! $variation || (int) $variation->product_id !== $productId) {
+                        throw new \RuntimeException("The selected variation for \"{$product->name}\" is invalid.");
+                    }
+                    if (($variation->status ?? 'publish') !== 'publish' || ($variation->stock_status ?? 'instock') !== 'instock') {
+                        throw new \RuntimeException("The selected variation of \"{$product->name}\" is unavailable.");
+                    }
+                    $stockQuantity = (int) ($variation->stock_quantity ?? 0);
+                    $minimumQuantity = max(1, (int) ($product->minimum_order_qty ?? 1));
+                    $maximumQuantity = $stockQuantity;
+                    $configuredMaximum = (int) ($product->max_orders_per_person ?? 0);
+                    if ($configuredMaximum > 0) {
+                        $maximumQuantity = min($maximumQuantity, $configuredMaximum);
+                    }
+                    if ((bool) ($product->sold_individually ?? false)) {
+                        $maximumQuantity = min($maximumQuantity, 1);
+                    }
+                    if ($maximumQuantity < $minimumQuantity) {
+                        throw new \RuntimeException("\"{$product->name}\" does not have enough stock to meet its minimum order quantity of {$minimumQuantity}.");
+                    }
+                    if ($quantity < $minimumQuantity) {
+                        throw new \RuntimeException("Minimum order quantity for \"{$product->name}\" is {$minimumQuantity}.");
+                    }
+                    if ($quantity > $maximumQuantity) {
+                        throw new \RuntimeException("You can only order up to {$maximumQuantity} unit(s) of \"{$product->name}\" per order.");
+                    }
+
+                    $regularPrice = (float) ($variation->regular_price ?? 0);
+                    $livePrice = (float) ($variation->price ?? $regularPrice);
+                    $discountPercentage = (float) ($product->discount_percentage ?? 0);
+                    if ($discountPercentage > 0 && $regularPrice > 0 && $livePrice >= $regularPrice) {
+                        $livePrice = round($regularPrice * (1 - $discountPercentage / 100), 2);
+                    }
+
+                    $variationAttributes = json_decode($variation->attributes ?? '[]', true)
+                        ?? json_decode(stripslashes($variation->attributes ?? '[]'), true)
+                        ?? [];
+
+                    $verifiedCart[$rowId] = [
+                        'product_id'   => $productId,
+                        'variation_id' => (int) $variation->id,
+                        'name'         => $product->name,
+                        'sku'          => $product->sku ?? null,
+                        'price'        => $livePrice,
+                        'qty'          => $quantity,
+                        'attrs'        => is_array($variationAttributes) ? $variationAttributes : [],
+                    ];
+                }
+
+                $coupon = session('ramo_coupon');
+                $subtotal = collect($verifiedCart)->sum(fn ($item) => $item['price'] * $item['qty']);
+                $discount = $this->calcDiscount($subtotal, $coupon);
+                $afterDiscount = max(0, $subtotal - $discount);
+                $shippingFee = ShippingConfig::feeForSubtotal($afterDiscount);
+                $total = $afterDiscount + $shippingFee;
+
+                // Stock is decremented only after each locked variation has passed validation.
+                foreach ($verifiedCart as $item) {
+                    DB::table('product_variations')
+                        ->where('id', $item['variation_id'])
+                        ->decrement('stock_quantity', $item['qty']);
+                }
+
+                $lineItems = collect($verifiedCart)->map(fn ($item) => [
+                    'product_id'   => $item['product_id'],
+                    'variation_id' => $item['variation_id'],
+                    'name'         => $item['name'],
+                    'sku'          => $item['sku'],
+                    'quantity'     => $item['qty'],
+                    'price'        => $item['price'],
+                    'subtotal'     => round($item['price'] * $item['qty'], 2),
+                    'attributes'   => $item['attrs'],
+                ])->values()->all();
+
+                $now = now();
+                $nowText = $now->toDateTimeString();
+                $orderId = DB::table('orders')->insertGetId([
+                    'customer_id'          => Auth::id(),
+                    'status'               => 'pending',
+                    'payment_status'       => $isManualPayment ? 'pending_verification' : 'confirmed',
+                    'currency'             => 'EGP',
+                    'currency_symbol'      => 'ج.م',
+                    'payment_method'       => $r->payment_method,
+                    'payment_method_title' => $paymentTitle,
+                    'billing'              => json_encode($billing),
+                    'shipping'             => json_encode($billing),
+                    'line_items'           => json_encode($lineItems),
+                    'original_total'       => (int) round($subtotal),
+                    'final_total'          => $total,
+                    'discount_total'       => $discount,
+                    'coupon_code'          => $coupon['code'] ?? null,
+                    'coupon_applied'       => $coupon ? 1 : 0,
+                    'customer_note'        => $r->notes ?? '',
+                    'order_key'            => 'wc_' . Str::random(20),
+                    'date_created'         => $now,
+                    'date_modified'        => $now,
+                    'date_created_gmt'     => $nowText,
+                    'date_modified_gmt'    => $nowText,
+                    'date_paid_gmt'        => '',
+                    'date_completed_gmt'   => '',
+                    'created_at'           => $now,
+                    'updated_at'           => $now,
+                    'payment_url'          => '',
+                    'is_editable'          => true,
+                    'needs_payment'        => $isManualPayment || $r->payment_method !== 'cod',
+                    'needs_processing'     => true,
+                    'set_paid'             => ! $isManualPayment && $r->payment_method === 'cod',
+                    'number'               => 0,
+                    'timeline'             => '[]',
+                    'created_via'          => 'website',
+                    'customer_ip_address'  => $r->ip(),
+                    'customer_user_agent'  => $r->userAgent(),
+                    'cart_hash'            => md5(json_encode($lineItems)),
+                    'parent_id'            => 0,
+                    'shipping_total'       => $shippingFee,
+                    'shipping_tax'         => 0,
+                    'cart_tax'             => 0,
+                    'total_tax'            => 0,
+                ]);
+
+                DB::table('orders')->where('id', $orderId)->update(['number' => $orderId]);
+
+                $vendorMap = DB::table('products_data')
+                    ->whereIn('id', collect($verifiedCart)->pluck('product_id')->unique()->all())
+                    ->pluck('vendor_id', 'id')
+                    ->toArray();
+
+                $vendorGroups = [];
+                foreach ($verifiedCart as $item) {
+                    $vendorGroups[$vendorMap[$item['product_id']] ?? 'none'][] = $item;
+                }
+
+                foreach ($vendorGroups as $vendorId => $items) {
+                    $subLineItems = [];
+                    $subSubtotal = 0;
+                    foreach ($items as $item) {
+                        $itemSubtotal = round($item['price'] * $item['qty'], 2);
+                        $subSubtotal += $itemSubtotal;
+                        $subLineItems[] = [
+                            'product_id'   => $item['product_id'],
+                            'variation_id' => $item['variation_id'],
+                            'name'         => $item['name'],
+                            'sku'          => $item['sku'],
+                            'quantity'     => $item['qty'],
+                            'price'        => $item['price'],
+                            'subtotal'     => $itemSubtotal,
+                            'attributes'   => $item['attrs'],
+                        ];
+                    }
+
+                    $subDiscount = $subtotal > 0 ? round(($subSubtotal / $subtotal) * $discount, 2) : 0;
+                    DB::table('order_sub_orders')->insert([
+                        'parent_order_id' => $orderId,
+                        'vendor_id'       => $vendorId === 'none' ? null : (int) $vendorId,
+                        'customer_id'     => Auth::id(),
+                        'status'          => 'pending',
+                        'vendor_status'   => 'pending',
+                        'line_items'      => json_encode($subLineItems),
+                        'subtotal'        => $subSubtotal,
+                        'discount_total'  => $subDiscount,
+                        'total'           => max(0, $subSubtotal - $subDiscount),
+                        'tracking_number' => null,
+                        'tracking_carrier'=> null,
+                        'timeline'        => '[]',
+                        'notes'           => null,
+                        'created_at'      => $now,
+                        'updated_at'      => $now,
+                    ]);
+                }
+
+                return $orderId;
+            });
+        } catch (\RuntimeException $e) {
+            return redirect()->route('cart')->with('error', $e->getMessage());
+        }
+
         if ($user = Auth::user()) {
             $shipping = [
-                'first_name' => $r->first_name,
-                'last_name'  => $r->last_name,
-                'address'    => $r->address,
+                'first_name'   => $r->first_name,
+                'last_name'    => $r->last_name,
+                'address'      => $r->address,
                 'address_note' => $r->address_note,
-                'city'       => $r->city,
-                'state'      => $r->state,
-                'email'      => $r->email,
-                'phone'      => $r->phone,
-                'latitude'   => $r->latitude,
-                'longitude'  => $r->longitude,
+                'city'         => $r->city,
+                'state'        => $r->state,
+                'email'        => $r->email,
+                'phone'        => $r->phone,
+                'latitude'     => $r->latitude,
+                'longitude'    => $r->longitude,
             ];
             $userUpdates = [
                 'first_name' => $r->first_name,
@@ -198,132 +401,6 @@ class CheckoutController extends Controller
             }
         }
 
-        $lineItems = [];
-        foreach ($cart as $item) {
-            $lineItems[] = [
-                'product_id'   => $item['product_id'],
-                'variation_id' => $item['variation_id'],
-                'name'         => $item['name'],
-                'sku'          => $item['sku'] ?? null,
-                'quantity'     => $item['qty'],
-                'price'        => $item['price'],
-                'subtotal'     => round($item['price'] * $item['qty'], 2),
-                'attributes'   => $item['attrs'] ?? [],
-            ];
-        }
-
-        $now     = now();
-        $nowText = $now->toDateTimeString();
-
-        $orderId = DB::table('orders')->insertGetId([
-            'customer_id'          => Auth::id(),
-            'status'               => $isManualPayment ? 'pending' : 'pending',
-            'payment_status'       => $isManualPayment ? 'pending_verification' : 'confirmed',
-            'currency'             => 'EGP',
-            'currency_symbol'      => 'ج.م',
-            'payment_method'       => $r->payment_method,
-            'payment_method_title' => $paymentTitles[$r->payment_method],
-            'billing'              => json_encode($billing),
-            'shipping'             => json_encode(array_merge($billing, [
-                'latitude' => $r->latitude,
-                'longitude' => $r->longitude,
-            ])),
-            'line_items'           => json_encode($lineItems),
-            'original_total'       => (int) round($subtotal),
-            'final_total'          => $total,
-            'discount_total'       => $discount,
-            'coupon_code'          => $coupon['code'] ?? null,
-            'coupon_applied'       => $coupon ? 1 : 0,
-            'customer_note'        => $r->notes ?? '',
-            'order_key'            => 'wc_' . Str::random(20),
-            'date_created'         => $now,
-            'date_modified'        => $now,
-            'date_created_gmt'     => $nowText,
-            'date_modified_gmt'    => $nowText,
-            'date_paid_gmt'        => '',
-            'date_completed_gmt'   => '',
-            'created_at'           => $now,
-            'updated_at'           => $now,
-            'payment_url'          => '',
-            'is_editable'          => true,
-            'needs_payment'        => $isManualPayment || $r->payment_method !== 'cod',
-            'needs_processing'     => true,
-            'set_paid'             => !$isManualPayment && $r->payment_method === 'cod',
-            'number'               => 0,
-            'timeline'             => '[]',
-            'created_via'          => 'website',
-            'customer_ip_address'  => $r->ip(),
-            'customer_user_agent'  => $r->userAgent(),
-            'cart_hash'            => md5(json_encode($lineItems)),
-            'parent_id'            => 0,
-            'shipping_total'       => 0,
-            'shipping_tax'         => 0,
-            'cart_tax'             => 0,
-            'total_tax'            => 0,
-        ]);
-
-        DB::table('orders')->where('id', $orderId)->update(['number' => $orderId]);
-
-        // ── SPLIT INTO VENDOR SUB-ORDERS ───────────────────────────────────────
-        $productIds = collect($cart)->pluck('product_id')->unique()->values()->all();
-        $vendorMap  = DB::table('products_data')
-            ->whereIn('id', $productIds)
-            ->pluck('vendor_id', 'id')
-            ->toArray();
-
-        // Group cart items by vendor
-        $vendorGroups = [];
-        foreach ($cart as $item) {
-            $vendorId = $vendorMap[$item['product_id']] ?? null;
-            $vendorGroups[$vendorId ?? 'none'][] = $item;
-        }
-
-        foreach ($vendorGroups as $vendorId => $items) {
-            $subLineItems  = [];
-            $subSubtotal   = 0;
-
-            foreach ($items as $item) {
-                $itemSubtotal   = round($item['price'] * $item['qty'], 2);
-                $subSubtotal   += $itemSubtotal;
-                $subLineItems[] = [
-                    'product_id'   => $item['product_id'],
-                    'variation_id' => $item['variation_id'],
-                    'name'         => $item['name'],
-                    'sku'          => $item['sku'] ?? null,
-                    'quantity'     => $item['qty'],
-                    'price'        => $item['price'],
-                    'subtotal'     => $itemSubtotal,
-                    'attributes'   => $item['attrs'] ?? [],
-                ];
-            }
-
-            // Proportional discount
-            $subDiscount = ($subtotal > 0)
-                ? round(($subSubtotal / $subtotal) * $discount, 2)
-                : 0;
-            $subTotal = max(0, $subSubtotal - $subDiscount);
-
-            DB::table('order_sub_orders')->insert([
-                'parent_order_id' => $orderId,
-                'vendor_id'       => ($vendorId === 'none') ? null : (int) $vendorId,
-                'customer_id'     => Auth::id(),
-                'status'          => 'pending',
-                'vendor_status'   => 'pending',
-                'line_items'      => json_encode($subLineItems),
-                'subtotal'        => $subSubtotal,
-                'discount_total'  => $subDiscount,
-                'total'           => $subTotal,
-                'tracking_number' => null,
-                'tracking_carrier'=> null,
-                'timeline'        => '[]',
-                'notes'           => null,
-                'created_at'      => $now,
-                'updated_at'      => $now,
-            ]);
-        }
-        // ───────────────────────────────────────────────────────────────────────
-
-        // Clear cart for both guests (session) and logged-in users (DB cart_items)
         $this->saveCart([]);
         session()->forget('ramo_coupon');
 
@@ -333,12 +410,12 @@ class CheckoutController extends Controller
     public function success($orderId)
     {
         $order = DB::table('orders')->where('id', $orderId)->first();
-        if (! $order) abort(404);
+        if (! $order) {
+            abort(404);
+        }
         $manualPaymentMethods = PaymentConfig::enabledMethods();
-
         $lineItems = json_decode($order->line_items ?? '[]', true) ?: [];
 
-        // Load sub-orders for vendor grouping display
         $subOrders = DB::table('order_sub_orders as s')
             ->where('s.parent_order_id', $orderId)
             ->leftJoin('vendor_users as v', 'v.id', '=', 's.vendor_id')
@@ -350,9 +427,6 @@ class CheckoutController extends Controller
                 return $sub;
             });
 
-        // Line items are stored as a snapshot and don't include images, so
-        // resolve thumbnails from the products table at render time. This also
-        // backfills images for orders placed before this was added.
         $productIds = collect($lineItems)->pluck('product_id')
             ->merge($subOrders->flatMap(fn ($sub) => collect($sub->items)->pluck('product_id')))
             ->filter()
@@ -384,7 +458,9 @@ class CheckoutController extends Controller
 
     private function calcDiscount(float $subtotal, ?array $coupon): float
     {
-        if (! $coupon) return 0;
+        if (! $coupon) {
+            return 0;
+        }
         if ($coupon['discount_type'] === 'percent') {
             return round($subtotal * ($coupon['amount'] / 100), 2);
         }

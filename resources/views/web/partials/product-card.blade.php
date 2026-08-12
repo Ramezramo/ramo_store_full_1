@@ -71,6 +71,13 @@
   ])->values()->toArray();
 
   $basePrice = $p->on_sale ? $p->sale_price : $p->price;
+  $quickAddMinimum = max(1, (int) ($p->minimum_order_qty ?? 1));
+  $quickAddMaximum = max(0, (int) ($p->stock_quantity ?? 0));
+  $configuredQuickAddMaximum = (int) ($p->max_orders_per_person ?? 0);
+  if ($configuredQuickAddMaximum > 0) $quickAddMaximum = min($quickAddMaximum, $configuredQuickAddMaximum);
+  if ($p->sold_individually ?? false) $quickAddMaximum = min($quickAddMaximum, 1);
+  // Cards have no quantity selector, so they may quick-add only products whose seller minimum is one.
+  $canQuickAdd = $quickAddMinimum === 1 && $quickAddMaximum >= 1;
   $hasColors = count($colorMap) > 1;
   $hasSizes  = count($sizeList) > 0;
 
@@ -110,7 +117,7 @@
       @endif
     @endif
     @if($coShowWishlist)
-    <button class="wish-btn" onclick="event.preventDefault();toggleWishlist(this,{{ $pid }})" title="Wishlist">♡</button>
+    <button class="wish-btn" data-wishlist-product-id="{{ $pid }}" onclick="event.preventDefault();toggleWishlist(this,{{ $pid }})" title="Add to Wishlist">♡</button>
     @endif
   </a>
 
@@ -182,13 +189,20 @@
     @if($coShowAddToCart || $coRemoveWishlist)
     <div style="{{ $coRemoveWishlist ? 'display:flex;gap:8px;margin-top:4px' : '' }}">
       @if($coShowAddToCart)
-      <button class="card-add-btn{{ $coRemoveWishlist ? '' : '' }}" id="pc-add-{{ $pid }}"
-              data-name="{{ addslashes($p->name) }}"
-              data-img="{{ $displayImg }}"
-              style="{{ $coRemoveWishlist ? 'flex:1' : '' }}"
-              onclick="pcAddToCart({{ $pid }})">
-        Add to Cart
-      </button>
+        @if($canQuickAdd)
+        <button class="card-add-btn{{ $coRemoveWishlist ? '' : '' }}" id="pc-add-{{ $pid }}"
+                data-name="{{ addslashes($p->name) }}"
+                data-img="{{ $displayImg }}"
+                style="{{ $coRemoveWishlist ? 'flex:1' : '' }}"
+                onclick="pcAddToCart({{ $pid }})">
+          Add to Cart
+        </button>
+        @else
+        <a class="card-add-btn{{ $coRemoveWishlist ? '' : '' }}" href="{{ route('product', $pid) }}"
+           style="{{ $coRemoveWishlist ? 'flex:1' : '' }};text-align:center;text-decoration:none">
+          {{ $quickAddMaximum < $quickAddMinimum ? 'Unavailable' : 'Select quantity (min '.$quickAddMinimum.')' }}
+        </a>
+        @endif
       @endif
       @if($coRemoveWishlist)
       <form action="{{ route('wishlist.remove', $pid) }}" method="POST" style="flex-shrink:0">

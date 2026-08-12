@@ -53,6 +53,7 @@
       <div class="pi-title-row">
         <h1 class="pi-title">{{ $product->name }}</h1>
         <button class="pi-wish-btn {{ $inWishlist ? 'wished' : '' }}" id="wish-btn"
+                data-wishlist-product-id="{{ $product->id }}"
                 onclick="toggleWishlist(this, {{ $product->id }})"
                 title="{{ $inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist' }}">
           {{ $inWishlist ? '♥' : '♡' }}
@@ -192,15 +193,31 @@
       @endif
 
       {{-- ADD TO CART + WISHLIST --}}
+      @php
+        $minimumOrderQty = max(1, (int) ($product->minimum_order_qty ?? 1));
+        $configuredMaximumOrderQty = (int) ($product->max_orders_per_person ?? 0);
+        $initialStockQty = max(0, (int) ($product->stock_quantity ?? 0));
+        $maximumOrderQty = $configuredMaximumOrderQty > 0
+          ? min($initialStockQty, $configuredMaximumOrderQty)
+          : $initialStockQty;
+        if ($product->sold_individually ?? false) $maximumOrderQty = min($maximumOrderQty, 1);
+        $quantityIsOrderable = $maximumOrderQty >= $minimumOrderQty;
+      @endphp
       <div class="pi-cart-row">
-        <div class="qty-input">
-          <button type="button" onclick="changeQty(-1)">−</button>
-          <input type="number" id="qty" value="1" min="1" max="{{ $product->stock_quantity ?: 99 }}">
-          <button type="button" onclick="changeQty(1)">+</button>
+        <div>
+          <div class="qty-input">
+            <button type="button" onclick="changeQty(-1)">−</button>
+            <input type="number" id="qty" value="{{ $quantityIsOrderable ? $minimumOrderQty : 1 }}"
+                   min="{{ $minimumOrderQty }}" max="{{ max(1, $maximumOrderQty) }}">
+            <button type="button" onclick="changeQty(1)">+</button>
+          </div>
+          <div id="quantity-limit-hint" style="margin-top:7px;font-size:12px;color:var(--c-mid)">
+            Minimum {{ $minimumOrderQty }} · Maximum {{ $maximumOrderQty }} per order
+          </div>
         </div>
-        <button class="add-to-cart-btn pi-atc-btn" id="add-to-cart-btn"
+        <button class="add-to-cart-btn pi-atc-btn" id="add-to-cart-btn" {{ $quantityIsOrderable ? '' : 'disabled' }}
                 onclick="handleAddToCart({{ $product->id }}, '{{ addslashes($product->name) }}', {{ $product->display_price }}, '{{ $product->thumbnail_url }}')">
-          🛒 Add to Cart
+          {{ $quantityIsOrderable ? '🛒 Add to Cart' : 'Unavailable' }}
         </button>
       </div>
 
@@ -630,6 +647,10 @@
 // ── Variation Engine ──────────────────────────────────────────────────
 const VAR_DATA  = @json($varData);
 const DISC_PCT  = {{ (float)($product->discount_percentage ?? 0) }};
+const MIN_ORDER_QTY = {{ $minimumOrderQty }};
+const CONFIGURED_MAX_ORDER_QTY = {{ $configuredMaximumOrderQty }};
+const SOLD_INDIVIDUALLY = {{ ($product->sold_individually ?? false) ? 'true' : 'false' }};
+const PRODUCT_STOCK_QTY = {{ $initialStockQty }};
 const ATTR_KEYS = [...new Set(VAR_DATA.flatMap(v => Object.keys(v.attrs)))];
 let selectedAttrs = {};
 let currentVariation = null;
@@ -751,6 +772,41 @@ function tryFindVariation() {
   updateHints();
 }
 
+function maximumOrderQuantity(stock) {
+  let maximum = Math.max(0, Number(stock) || 0);
+  if (CONFIGURED_MAX_ORDER_QTY > 0) maximum = Math.min(maximum, CONFIGURED_MAX_ORDER_QTY);
+  if (SOLD_INDIVIDUALLY) maximum = Math.min(maximum, 1);
+  return maximum;
+}
+
+function syncQuantityBounds(stock) {
+  const input = document.getElementById('qty');
+  const hint = document.getElementById('quantity-limit-hint');
+  const maximum = maximumOrderQuantity(stock);
+  if (!input) return maximum;
+
+  input.min = MIN_ORDER_QTY;
+  input.max = Math.max(1, maximum);
+  if (maximum >= MIN_ORDER_QTY) {
+    const current = Number.parseInt(input.value, 10) || MIN_ORDER_QTY;
+    input.value = Math.max(MIN_ORDER_QTY, Math.min(maximum, current));
+  }
+  if (hint) hint.textContent = `Minimum ${MIN_ORDER_QTY} · Maximum ${maximum} per order`;
+  return maximum;
+}
+
+function quantityValidationMessage(quantity, maximum) {
+  if (maximum < MIN_ORDER_QTY) return `This product does not have enough stock to meet its minimum order quantity of ${MIN_ORDER_QTY}.`;
+  if (quantity < MIN_ORDER_QTY) return `Minimum order quantity is ${MIN_ORDER_QTY}.`;
+  if (quantity > maximum) return `Maximum order quantity is ${maximum}.`;
+  return null;
+}
+
+function showQuantityError(message) {
+  if (typeof window.showToast === 'function') window.showToast(message, 'error');
+  else window.alert(message);
+}
+
 function renderPriceStock(v) {
   const priceEl  = document.getElementById('price-display');
   const origEl   = document.getElementById('orig-display');
@@ -798,13 +854,11 @@ function renderPriceStock(v) {
         ? `<span class="badge-stock-ok">✓ In Stock (${v.stock.toLocaleString()} available)</span>`
         : `<span class="badge-stock-no">Out of Stock</span>`;
     }
-    if (qtyInput) {
-      qtyInput.max = v.stock || 99;
-      if (parseInt(qtyInput.value) > v.stock) qtyInput.value = Math.max(1, v.stock);
-    }
+    const maximumQuantity = syncQuantityBounds(v.stock);
     if (addBtn) {
-      addBtn.disabled    = v.stock === 0;
-      addBtn.textContent = v.stock === 0 ? 'Out of Stock' : 'Add to Cart';
+      const canOrder = v.stock > 0 && maximumQuantity >= MIN_ORDER_QTY;
+      addBtn.disabled    = !canOrder;
+      addBtn.textContent = canOrder ? 'Add to Cart' : (v.stock === 0 ? 'Out of Stock' : 'Unavailable');
       // Update cart price to the effective price
       const productId    = addBtn.getAttribute('data-pid') || addBtn.closest('[data-pid]')?.dataset.pid;
       addBtn.onclick     = () => handleAddToCart({{ $product->id }}, '{{ addslashes($product->name) }}', eff, '{{ $product->thumbnail_url }}');
@@ -832,7 +886,12 @@ function renderPriceStock(v) {
         badgeEl.style.display = 'none';
       }
     }
-    if (addBtn) { addBtn.disabled = false; addBtn.textContent = 'Add to Cart'; }
+    const maximumQuantity = syncQuantityBounds(PRODUCT_STOCK_QTY);
+    if (addBtn) {
+      const canOrder = maximumQuantity >= MIN_ORDER_QTY;
+      addBtn.disabled = !canOrder;
+      addBtn.textContent = canOrder ? 'Add to Cart' : 'Unavailable';
+    }
   }
 }
 
@@ -886,7 +945,17 @@ function handleAddToCart(id, name, basePrice, image) {
     return;
   }
 
-  const qty   = parseInt(document.getElementById('qty').value) || 1;
+  const qtyInput = document.getElementById('qty');
+  const qty = parseInt(qtyInput?.value, 10) || MIN_ORDER_QTY;
+  const maximumQuantity = maximumOrderQuantity(currentVariation ? currentVariation.stock : PRODUCT_STOCK_QTY);
+  const quantityError = quantityValidationMessage(qty, maximumQuantity);
+  if (quantityError) {
+    showQuantityError(quantityError);
+    if (qtyInput && maximumQuantity >= MIN_ORDER_QTY) {
+      qtyInput.value = Math.max(MIN_ORDER_QTY, Math.min(maximumQuantity, qty));
+    }
+    return;
+  }
   const varId = currentVariation ? currentVariation.id : null;
 
   // Compute the true effective price — mirror the discount fallback from renderPriceStock.
@@ -1035,7 +1104,10 @@ function restoreImage() {
 // ── Quantity ──────────────────────────────────────────────────────────
 function changeQty(delta) {
   const input = document.getElementById('qty');
-  input.value = Math.max(1, Math.min(parseInt(input.max) || 99, (parseInt(input.value) || 1) + delta));
+  if (!input) return;
+  const minimum = parseInt(input.min, 10) || MIN_ORDER_QTY;
+  const maximum = parseInt(input.max, 10) || minimum;
+  input.value = Math.max(minimum, Math.min(maximum, (parseInt(input.value, 10) || minimum) + delta));
 }
 
 // ── Star rating picker ────────────────────────────────────────────────

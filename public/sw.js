@@ -12,10 +12,9 @@
  * cookie this relies on is kept accurate.
  */
 
-// Bumped to v2: forces old caches to be purged on activate. The v1 cache could
-// contain personalized/authenticated HTML that was wrongly cached due to the
-// Cookie-header bug described below, so it must not be reused.
-const CACHE_NAME = 'ramo-page-cache-v4';
+// Versioned cache name: changing this value forces existing devices to purge
+// stale home HTML and load the latest client-side wishlist reconciler.
+const CACHE_NAME = 'ramo-page-cache-v8';
 const CACHEABLE_PATHS = ['/'];
 
 self.addEventListener('install', (event) => {

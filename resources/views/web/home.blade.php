@@ -220,6 +220,42 @@
         @endif
       @endif
 
+    {{-- FLEXIBLE BANNER GRID — separately configurable linked cards --}}
+    @elseif($layout === 'flexBannerGrid')
+      @php
+        $gridItems = collect($sec['items'] ?? [])->filter(function ($item) {
+          return is_array($item) && filled($item['image'] ?? null);
+        })->values();
+        $gridGap = max(0, min(40, (int)($sec['gap'] ?? 12)));
+        $gridRadius = max(0, min(40, (int)($sec['radius'] ?? 14)));
+        $gridMobileColumns = (int)($sec['mobileColumns'] ?? 2) === 1 ? 1 : 2;
+        $gridTitle = trim((string)($sec['headerText'] ?? ''));
+      @endphp
+      @if($gridItems->isNotEmpty())
+        <section class="tl-flex-banner-section">
+          @if($gridTitle)<h2 class="tl-flex-banner-title">{{ $gridTitle }}</h2>@endif
+          <div class="tl-flex-banner-grid mobile-{{ $gridMobileColumns }}" style="--fbg-gap:{{ $gridGap }}px;--fbg-radius:{{ $gridRadius }}px">
+            @foreach($gridItems as $bi => $item)
+              @php
+                $bannerWidth = in_array(($item['width'] ?? 'half'), ['full', 'half', 'quarter'], true) ? $item['width'] : 'half';
+                $requestedLink = trim((string)($item['link'] ?? ''));
+                $href = (str_starts_with($requestedLink, '/') || str_starts_with($requestedLink, 'https://') || str_starts_with($requestedLink, 'http://')) ? $requestedLink : '';
+                $alt = trim((string)($item['alt'] ?? '')) ?: 'Promotional banner '.($bi + 1);
+              @endphp
+              @if($href)
+                <a href="{{ $href }}" class="tl-flex-banner tl-flex-banner--{{ $bannerWidth }}" aria-label="{{ $alt }}">
+                  <img src="{{ $item['image'] }}" alt="{{ $alt }}" loading="{{ $bi === 0 ? 'eager' : 'lazy' }}">
+                </a>
+              @else
+                <div class="tl-flex-banner tl-flex-banner--{{ $bannerWidth }}" role="img" aria-label="{{ $alt }}">
+                  <img src="{{ $item['image'] }}" alt="{{ $alt }}" loading="{{ $bi === 0 ? 'eager' : 'lazy' }}">
+                </div>
+              @endif
+            @endforeach
+          </div>
+        </section>
+      @endif
+
     {{-- CATEGORY STRIP --}}
     @elseif($layout === 'category')
       @php $catItems = $sec['items'] ?? []; @endphp
@@ -974,6 +1010,13 @@
           $pcwMinReg   = $fv->min('regular_price') ?? $pcwMinEff;
           $pcwIsRange  = $fv->count() > 0 && round((float)$pcwMinEff,2) !== round((float)$pcwMaxEff,2);
           $pcwAttrMap  = [];
+          $pcwMinimumOrderQty = max(1, (int) ($fp->minimum_order_qty ?? 1));
+          $pcwMaximumOrderQty = max(0, (int) ($fp->stock_quantity ?? 0));
+          $pcwConfiguredMaximum = (int) ($fp->max_orders_per_person ?? 0);
+          if ($pcwConfiguredMaximum > 0) $pcwMaximumOrderQty = min($pcwMaximumOrderQty, $pcwConfiguredMaximum);
+          if ($fp->sold_individually ?? false) $pcwMaximumOrderQty = min($pcwMaximumOrderQty, 1);
+          // This widget cannot select a variation, so only one-unit orders can be quick-added safely.
+          $pcwCanQuickAdd = $pcwMinimumOrderQty === 1 && $pcwMaximumOrderQty >= 1;
           foreach ($fv as $v) {
             foreach (($v->attributes ?? []) as $k => $val) {
               if (!isset($pcwAttrMap[$k])) $pcwAttrMap[$k] = [];
@@ -998,6 +1041,7 @@
               <h2 class="pcw-title"><a href="{{ route('product', $fp->id) }}" style="color:inherit;text-decoration:none">{{ $fp->name }}</a></h2>
               @if($showWishlist)
               <button class="pcw-wish-btn {{ $pcwInWishlist ? 'wished' : '' }}"
+                      data-wishlist-product-id="{{ $fp->id }}"
                       onclick="toggleWishlist(this, {{ $fp->id }})"
                       title="{{ $pcwInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist' }}">{{ $pcwInWishlist ? '♥' : '♡' }}</button>
               @endif
@@ -1058,15 +1102,21 @@
             </div>
             @endif
             <div class="pcw-cart-row">
-              <div class="qty-input">
-                <button type="button" onclick="this.nextElementSibling.value=Math.max(1,+this.nextElementSibling.value-1)">−</button>
-                <input type="number" value="1" min="1" max="{{ $fp->stock_quantity ?: 99 }}" id="pcw-qty-{{ $si }}">
-                <button type="button" onclick="this.previousElementSibling.value=Math.min({{ $fp->stock_quantity ?: 99 }},+this.previousElementSibling.value+1)">+</button>
-              </div>
-              <button class="pcw-atc-btn"
-                      onclick="addToCart({{ $fp->id }}, '{{ addslashes($fp->name) }}', {{ (float)$pcwMinEff }}, '{{ $fp->thumbnail_url }}', parseInt(document.getElementById('pcw-qty-{{ $si }}').value)||1)">
-                🛒 Add to Cart
-              </button>
+              @if($pcwCanQuickAdd)
+                <div class="qty-input">
+                  <button type="button" onclick="this.nextElementSibling.value=Math.max(1,+this.nextElementSibling.value-1)">−</button>
+                  <input type="number" value="1" min="1" max="1" id="pcw-qty-{{ $si }}" readonly aria-label="Quantity">
+                  <button type="button" disabled aria-label="Maximum quantity reached">+</button>
+                </div>
+                <button class="pcw-atc-btn"
+                        onclick="addToCart({{ $fp->id }}, '{{ addslashes($fp->name) }}', {{ (float)$pcwMinEff }}, '{{ $fp->thumbnail_url }}', null, 1)">
+                  🛒 Add to Cart
+                </button>
+              @else
+                <a class="pcw-atc-btn" href="{{ route('product', $fp->id) }}" style="text-align:center;text-decoration:none">
+                  {{ $pcwMaximumOrderQty < $pcwMinimumOrderQty ? 'Unavailable' : 'Select quantity (min '.$pcwMinimumOrderQty.')' }}
+                </a>
+              @endif
             </div>
             @if($showCoupon)
             <div class="pcw-coupon-wrap">
@@ -1335,6 +1385,27 @@ body{padding-top:44px}
   .pcw-info{padding:24px}
 }
 
+/* ── Flexible Banner Grid (admin timeline widget) ─────────────── */
+.tl-flex-banner-section{margin:0 0 28px}
+.tl-flex-banner-title{margin:0 0 14px;font-size:24px;line-height:1.2;font-weight:800;letter-spacing:-.45px;color:#151515}
+.tl-flex-banner-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--fbg-gap,12px)}
+.tl-flex-banner{display:block;position:relative;overflow:hidden;border-radius:var(--fbg-radius,14px);background:#f3f4f6;box-shadow:0 2px 12px rgba(17,24,39,.08);isolation:isolate}
+.tl-flex-banner--full{grid-column:span 4;aspect-ratio:3.25/1}
+.tl-flex-banner--half{grid-column:span 2;aspect-ratio:1.55/1}
+.tl-flex-banner--quarter{grid-column:span 1;aspect-ratio:1/1}
+a.tl-flex-banner{cursor:pointer}
+a.tl-flex-banner:focus-visible{outline:3px solid #e85d26;outline-offset:3px}
+.tl-flex-banner img{width:100%;height:100%;display:block;object-fit:cover;transition:transform .28s ease}
+a.tl-flex-banner:hover img{transform:scale(1.035)}
+@media(max-width:640px){
+  .tl-flex-banner-title{font-size:20px;margin-bottom:10px}
+  .tl-flex-banner-grid.mobile-one{grid-template-columns:1fr}
+  .tl-flex-banner-grid.mobile-one .tl-flex-banner{grid-column:span 1;aspect-ratio:1.75/1}
+  .tl-flex-banner-grid.mobile-two{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tl-flex-banner-grid.mobile-two .tl-flex-banner--full{grid-column:span 2;aspect-ratio:2.25/1}
+  .tl-flex-banner-grid.mobile-two .tl-flex-banner--half,.tl-flex-banner-grid.mobile-two .tl-flex-banner--quarter{grid-column:span 1;aspect-ratio:1/1}
+}
+
 @media(max-width:640px){
   .tl-flash-inner{gap:10px}
   .tl-cd-num{font-size:18px}
@@ -1479,7 +1550,7 @@ window.addEventListener('resize', () => {
 (function(){
   // ── SECTION COLORS BY TYPE ──
   const COLORS = {
-    bannerImage:'#3b82f6', category:'#8b5cf6', twoColumn:'#22c55e',
+    bannerImage:'#3b82f6', flexBannerGrid:'#7c3aed', category:'#8b5cf6', twoColumn:'#22c55e',
     saleImages:'#f59e0b', seupermarketstars:'#ec4899', topVendors:'#f97316',
     brands:'#06b6d4', coupons:'#eab308', statsBar:'#6366f1',
     promoBlock:'#e85d26', testimonials:'#10b981', newsletter:'#0ea5e9',
@@ -1490,7 +1561,7 @@ window.addEventListener('resize', () => {
     flash:'#ef4444', seasonal:'#22c55e', spacer:'#6b7280', divider:'#6b7280',
   };
   const TYPE_LABEL = {
-    bannerImage:'Banner / Slider', category:'Categories Strip', twoColumn:'Products Grid',
+    bannerImage:'Banner / Slider', flexBannerGrid:'Flexible Banner Grid', category:'Categories Strip', twoColumn:'Products Grid',
     saleImages:'Products Scroll', seupermarketstars:'Featured Items', topVendors:'Top Vendors',
     brands:'Brands', coupons:'Coupons Strip', statsBar:'Stats Bar',
     promoBlock:'Promo Block', testimonials:'Testimonials', newsletter:'Newsletter',

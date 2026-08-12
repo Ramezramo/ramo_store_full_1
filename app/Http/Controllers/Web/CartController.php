@@ -13,19 +13,60 @@ class CartController extends Controller
 {
     use CartTrait;
 
+    /**
+     * Return the seller-configured quantity range constrained by live variation stock.
+     * A zero maximum means "unlimited" apart from stock availability.
+     */
+    private function quantityBounds(object $product, int $stock): array
+    {
+        $minimum = max(1, (int) ($product->minimum_order_qty ?? 1));
+        $maximum = $stock;
+        $configuredMaximum = (int) ($product->max_orders_per_person ?? 0);
+
+        if ($configuredMaximum > 0) {
+            $maximum = min($maximum, $configuredMaximum);
+        }
+        if ((bool) ($product->sold_individually ?? false)) {
+            $maximum = min($maximum, 1);
+        }
+
+        return [$minimum, $maximum];
+    }
+
+    private function quantityError(string $productName, int $quantity, int $minimum, int $maximum): ?string
+    {
+        if ($quantity < $minimum) {
+            return "Minimum order quantity for \"{$productName}\" is {$minimum}.";
+        }
+        if ($maximum < $minimum) {
+            return "\"{$productName}\" does not have enough stock to meet its minimum order quantity of {$minimum}.";
+        }
+        if ($quantity > $maximum) {
+            return "You can order up to {$maximum} unit(s) of \"{$productName}\" per order.";
+        }
+
+        return null;
+    }
+
     public function index()
     {
         $cart = $this->getCart();
 
         if (!empty($cart)) {
-            $cart    = $this->refreshCartPricing($cart);
-            $changed = false;
+            $cartBeforeRefresh = $cart;
+            $cart = $this->refreshCartPricing($cart);
+            $quantityMessages = [];
             foreach ($cart as $rowId => $item) {
-                $changed = $changed || ($item['_priceChanged'] ?? false);
-                unset($cart[$rowId]['_priceChanged']);
+                if (!empty($item['_quantityMessage'])) {
+                    $quantityMessages[] = $item['_quantityMessage'];
+                }
+                unset($cart[$rowId]['_priceChanged'], $cart[$rowId]['_quantityMessage']);
             }
-            if ($changed) {
+            if ($cart !== $cartBeforeRefresh) {
                 $this->saveCart($cart);
+            }
+            if (!empty($quantityMessages)) {
+                session()->flash('error', implode(' ', $quantityMessages));
             }
         }
 
@@ -53,18 +94,18 @@ class CartController extends Controller
 
         $products = DB::table('products_data')
             ->whereIn('id', $productIds)
-            ->get(['id', 'sku', 'discount_percentage'])
+            ->get(['id', 'name', 'sku', 'discount_percentage', 'minimum_order_qty', 'max_orders_per_person', 'sold_individually'])
             ->keyBy('id');
 
         $variations = DB::table('product_variations')
             ->whereIn('id', $variationIds)
-            ->get(['id', 'regular_price', 'price'])
+            ->get(['id', 'product_id', 'regular_price', 'price', 'stock_quantity', 'stock_status', 'status'])
             ->keyBy('id');
 
         $mainVariations = DB::table('product_variations')
             ->whereIn('product_id', $productIds)
             ->where('main_variation', true)
-            ->get(['id', 'product_id', 'regular_price', 'price'])
+            ->get(['id', 'product_id', 'regular_price', 'price', 'stock_quantity', 'stock_status', 'status'])
             ->keyBy('product_id');
 
         foreach ($cart as $rowId => &$item) {
@@ -92,6 +133,27 @@ class CartController extends Controller
             }
             $item['regular_price'] = $reg > $eff ? $reg : null;
             $item['sku']           = $product->sku ?? null;
+
+            $liveStock = max(0, (int) ($varRow->stock_quantity ?? 0));
+            [$minimumQuantity, $maximumQuantity] = $this->quantityBounds($product, $liveStock);
+            $item['stock'] = $liveStock;
+            $item['minimum_qty'] = $minimumQuantity;
+            $item['maximum_qty'] = $maximumQuantity;
+
+            $currentQuantity = (int) ($item['qty'] ?? 0);
+            if ($maximumQuantity < $minimumQuantity) {
+                unset($cart[$rowId]);
+                session()->flash('error', "\"{$product->name}\" was removed because it no longer has enough stock to meet its minimum order quantity.");
+                continue;
+            }
+            if ($currentQuantity > $maximumQuantity) {
+                $item['qty'] = $maximumQuantity;
+                $item['_quantityMessage'] = "Quantity for \"{$product->name}\" was reduced from {$currentQuantity} to {$maximumQuantity} to match the current per-order limit and stock.";
+            }
+            if ($currentQuantity < $minimumQuantity) {
+                $item['qty'] = $minimumQuantity;
+                $item['_quantityMessage'] = "Quantity for \"{$product->name}\" was adjusted from {$currentQuantity} to the seller minimum of {$minimumQuantity}.";
+            }
         }
         unset($item);
 
@@ -116,8 +178,23 @@ class CartController extends Controller
         }
 
         $variation = $variationId
-            ? DB::table('product_variations')->where('id', $variationId)->first(['regular_price', 'sale_price', 'price'])
-            : DB::table('product_variations')->where('product_id', $productId)->where('main_variation', true)->first(['regular_price', 'sale_price', 'price']);
+            ? DB::table('product_variations')
+                ->where('id', $variationId)
+                ->where('product_id', $productId)
+                ->first(['id', 'attributes', 'regular_price', 'sale_price', 'price', 'stock_quantity', 'stock_status', 'status'])
+            : DB::table('product_variations')
+                ->where('product_id', $productId)
+                ->where('main_variation', true)
+                ->first(['id', 'attributes', 'regular_price', 'sale_price', 'price', 'stock_quantity', 'stock_status', 'status']);
+
+        if (! $variation || (($variation->status ?? 'publish') !== 'publish') || (($variation->stock_status ?? 'instock') !== 'instock')) {
+            return response()->json(['success' => false, 'message' => 'The selected product variation is unavailable.'], 422);
+        }
+
+        $stock = (int) ($variation->stock_quantity ?? 0);
+        if ($stock < 1) {
+            return response()->json(['success' => false, 'message' => 'The selected product variation is out of stock.'], 422);
+        }
 
         $regularPrice = (float) ($variation->regular_price ?? 0);
         $price        = (float) ($variation->price ?? $regularPrice);
@@ -127,36 +204,37 @@ class CartController extends Controller
         }
 
         $imageUrl = \App\Constants\AppConstants::productThumbnailUrl($product->images);
+        $attrs = json_decode($variation->attributes ?? '[]', true)
+            ?? json_decode(stripslashes($variation->attributes ?? '[]'), true)
+            ?? [];
 
-        $attrs = [];
-        if ($variationId) {
-            $vAttrs = DB::table('product_variations')->where('id', $variationId)->value('attributes');
-            if ($vAttrs) {
-                $attrs = json_decode($vAttrs, true)
-                      ?? json_decode(stripslashes($vAttrs), true)
-                      ?? [];
-            }
+        $resolvedVariationId = (int) $variation->id;
+        $rowId = md5($productId . '_' . $resolvedVariationId);
+        $cart  = $this->getCart();
+        $newQuantity = (int) ($cart[$rowId]['qty'] ?? 0) + $qty;
+        [$minimumQuantity, $maximumQuantity] = $this->quantityBounds($product, $stock);
+
+        if ($error = $this->quantityError($product->name, $newQuantity, $minimumQuantity, $maximumQuantity)) {
+            return response()->json(['success' => false, 'message' => $error], 422);
         }
 
-        $rowId = md5($productId . '_' . ($variationId ?? '0'));
-        $cart  = $this->getCart();
-
         if (isset($cart[$rowId])) {
-            $cart[$rowId]['qty'] = min($cart[$rowId]['qty'] + $qty, (int) ($product->stock_quantity ?? 999));
+            $cart[$rowId]['qty'] = $newQuantity;
             $cart[$rowId]['regular_price'] = $regularPrice > $price ? $regularPrice : null;
+            $cart[$rowId]['stock'] = $stock;
         } else {
             $cart[$rowId] = [
                 'rowId'         => $rowId,
                 'product_id'    => (int) $productId,
-                'variation_id'  => $variationId ? (int) $variationId : null,
+                'variation_id'  => $resolvedVariationId,
                 'name'          => $product->name,
                 'sku'           => $product->sku ?? null,
                 'price'         => $price,
                 'regular_price' => $regularPrice > $price ? $regularPrice : null,
-                'qty'           => $qty,
+                'qty'           => $newQuantity,
                 'image'         => $imageUrl,
-                'stock'         => (int) ($product->stock_quantity ?? 999),
-                'attrs'         => $attrs,
+                'stock'         => $stock,
+                'attrs'         => is_array($attrs) ? $attrs : [],
             ];
         }
 
@@ -197,20 +275,41 @@ class CartController extends Controller
         $r->validate(['qty' => 'required|integer|min:1|max:999']);
         $cart = $this->getCart();
 
-        if (isset($cart[$rowId])) {
-            $cart[$rowId]['qty'] = min((int) $r->qty, $cart[$rowId]['stock']);
-            $this->saveCart($cart);
+        if (! isset($cart[$rowId])) {
+            return response()->json(['success' => false, 'message' => 'Cart item not found.'], 404);
         }
+
+        $item = $cart[$rowId];
+        $product = DB::table('products_data')->where('id', $item['product_id'])->first();
+        $variation = DB::table('product_variations')
+            ->where('id', $item['variation_id'])
+            ->where('product_id', $item['product_id'])
+            ->first(['id', 'stock_quantity', 'stock_status', 'status']);
+
+        if (! $product || ! $variation || (($variation->status ?? 'publish') !== 'publish') || (($variation->stock_status ?? 'instock') !== 'instock')) {
+            return response()->json(['success' => false, 'message' => 'This product variation is no longer available.'], 422);
+        }
+
+        $stock = (int) ($variation->stock_quantity ?? 0);
+        [$minimumQuantity, $maximumQuantity] = $this->quantityBounds($product, $stock);
+        $requestedQuantity = (int) $r->qty;
+
+        if ($error = $this->quantityError($product->name, $requestedQuantity, $minimumQuantity, $maximumQuantity)) {
+            return response()->json(['success' => false, 'message' => $error], 422);
+        }
+
+        $cart[$rowId]['qty'] = $requestedQuantity;
+        $cart[$rowId]['stock'] = $stock;
+        $this->saveCart($cart);
 
         $subtotal = collect($cart)->sum(fn($i) => $i['price'] * $i['qty']);
         $totals   = $this->calcTotals($subtotal);
-        $item     = $cart[$rowId] ?? null;
-
-        $hasOldPrice = $item && !empty($item['regular_price']) && $item['regular_price'] > $item['price'];
+        $item     = $cart[$rowId];
+        $hasOldPrice = !empty($item['regular_price']) && $item['regular_price'] > $item['price'];
 
         return response()->json([
             'success'           => true,
-            'item_subtotal'     => $item ? number_format($item['price'] * $item['qty'], 2) : '0.00',
+            'item_subtotal'     => number_format($item['price'] * $item['qty'], 2),
             'item_subtotal_old' => $hasOldPrice ? number_format($item['regular_price'] * $item['qty'], 2) : null,
             'cart_subtotal'     => number_format($totals['subtotal'], 2),
             'shipping_fee'      => $totals['shippingFee'] > 0 ? number_format($totals['shippingFee'], 2) : null,

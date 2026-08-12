@@ -588,9 +588,16 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 .nav-mobile-menu.open{display:block}
 .nav-mobile-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.4)}
 .nav-mobile-panel{position:relative;background:#fff;padding:16px 20px 24px;z-index:1;overflow-y:auto;max-height:calc(100vh - 64px);border-bottom:1px solid var(--c-light);box-shadow:0 8px 32px rgba(0,0,0,.12)}
-.nav-mobile-search{display:flex;background:var(--c-bg);border:1.5px solid var(--c-light);border-radius:50px;overflow:hidden;margin-bottom:16px}
-.nav-mobile-search input{flex:1;padding:10px 18px;background:none;border:none;outline:none;font-size:14px;color:var(--c-dark)}
-.nav-mobile-search button{padding:10px 14px;background:none;border:none;color:var(--c-mid);font-size:16px}
+	.nav-mobile-search-wrap{margin:0 0 20px}
+	.nav-mobile-search-label{display:block;margin:0 2px 8px;font-size:10.5px;line-height:1;font-weight:800;letter-spacing:.095em;text-transform:uppercase;color:var(--c-mid)}
+	.nav-mobile-search{display:flex;align-items:center;min-height:56px;padding:4px;background:linear-gradient(135deg,#fff 0%,#fafafa 100%);border:1.5px solid #e7e7e7;border-radius:18px;box-shadow:0 5px 14px rgba(24,24,24,.055);overflow:hidden;transition:border-color .18s,box-shadow .18s,background .18s}
+	.nav-mobile-search:focus-within{background:#fff;border-color:rgba(232,93,38,.62);box-shadow:0 0 0 4px rgba(232,93,38,.11),0 7px 18px rgba(24,24,24,.075)}
+	.nav-mobile-search>svg{width:19px;height:19px;margin-left:13px!important;color:#777!important;flex-shrink:0}
+	.nav-mobile-search input{flex:1;min-width:0;height:46px;padding:0 12px;background:none;border:none;outline:none;font-size:16px;font-weight:500;color:var(--c-dark)}
+	.nav-mobile-search input::placeholder{color:#969696;opacity:1}
+	.nav-mobile-search button{display:flex!important;align-items:center;justify-content:center;width:46px!important;height:46px!important;margin:0!important;border-radius:14px!important;background:var(--c-dark)!important;border:none!important;color:#fff!important;cursor:pointer;flex-shrink:0;box-shadow:0 3px 8px rgba(24,24,24,.18);transition:transform .16s,background .16s,box-shadow .16s}
+	.nav-mobile-search button:hover,.nav-mobile-search button:focus-visible{background:var(--c-orange)!important;box-shadow:0 5px 12px rgba(232,93,38,.28);transform:translateY(-1px)}
+	.nav-mobile-search button svg{width:17px;height:17px}
 .nav-mobile-links{display:flex;flex-direction:column;gap:2px}
 .nav-mobile-links a{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;font-size:15px;font-weight:600;color:var(--c-dark);transition:background .12s;text-decoration:none}
 .nav-mobile-links a:hover,.nav-mobile-links a.active{background:var(--c-tag)}
@@ -652,6 +659,8 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
   .product-grid,.product-grid.cols-4{grid-template-columns:1fr !important;gap:10px}
 }
 @media(max-width:600px){
+  /* On phones, cart belongs in the bottom navigation; keep the wishlist heart in the header. */
+  .nav-top-cart{display:none !important}
   .hero{padding:32px 20px;border-radius:10px}.hero-title{font-size:24px;letter-spacing:-.4px}.hero-sub{font-size:13.5px;margin-bottom:22px}
   .btn{padding:12px 24px;font-size:12px}
   .product-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
@@ -836,12 +845,16 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
       {{-- Wishlist --}}
       <a href="{{ route('wishlist') }}" class="nav-icon-btn" title="Wishlist">
         ♡
-        @php $wCount = count(session('ramo_wishlist',[])); @endphp
-        @if($wCount)<span class="nav-badge">{{ $wCount }}</span>@endif
+        @php
+          $wCount = Auth::check()
+            ? \Illuminate\Support\Facades\DB::table('wishlists')->where('user_id', Auth::id())->count()
+            : count(session('ramo_wishlist', []));
+        @endphp
+        <span class="nav-badge" id="wishlist-badge" style="display:{{ $wCount ? 'flex' : 'none' }}">{{ $wCount }}</span>
       </a>
 
       {{-- Cart --}}
-      <a href="{{ route('cart') }}" class="nav-icon-btn" title="Cart">
+      <a href="{{ route('cart') }}" class="nav-icon-btn nav-top-cart" title="Cart">
         🛒
         @php
           $cCount = Auth::check()
@@ -960,13 +973,16 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 <div class="nav-mobile-menu" id="nav-mobile-menu">
   <div class="nav-mobile-backdrop" onclick="closeMobileMenu()"></div>
   <div class="nav-mobile-panel">
-    <form action="{{ route('search') }}" method="GET" class="nav-mobile-search">
-      <svg style="margin-left:14px;flex-shrink:0;color:var(--c-mid)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="15" height="15"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" name="q" placeholder="Search products…" value="{{ request('q', request('search')) }}" autocomplete="off">
-      <button type="submit" aria-label="Search" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;margin:3px;border-radius:50px;background:var(--c-dark);border:none;color:#fff;cursor:pointer;flex-shrink:0">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-      </button>
-    </form>
+    <div class="nav-mobile-search-wrap">
+      <label class="nav-mobile-search-label" for="nav-mobile-search-input">Search Ramo Store</label>
+      <form action="{{ route('search') }}" method="GET" class="nav-mobile-search">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="nav-mobile-search-input" type="text" name="q" placeholder="What are you looking for?" value="{{ request('q', request('search')) }}" autocomplete="off">
+        <button type="submit" aria-label="Search products">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </form>
+    </div>
     <div class="nav-mobile-links">
       <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}">🏠 Home</a>
       <a href="{{ route('shop') }}" class="{{ request()->routeIs('shop') ? 'active' : '' }}">🛍️ Shop</a>
@@ -1065,10 +1081,6 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 001.95-1.57l1.65-8.42H6"/></svg>
     @if($cCount ?? 0)<span class="mn-badge" id="mn-cart-badge">{{ $cCount }}</span>@endif
     <span>Cart</span>
-  </a>
-  <a href="{{ route('wishlist') }}" class="{{ request()->routeIs('wishlist') ? 'on' : '' }}">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
-    <span>Wishlist</span>
   </a>
   @auth
   <a href="{{ route('account.hub') }}" class="{{ request()->routeIs('account.*') ? 'on' : '' }}">
@@ -1200,17 +1212,17 @@ function updateCartBadge(count) {
   // Top nav badge
   let badge = document.getElementById('cart-badge');
   if (!badge && count > 0) {
-    const btn = document.querySelector('a[href="{{ route("cart") }}"].nav-icon-btn');
+    const btn = document.querySelector('a.nav-top-cart');
     if (btn) { badge = document.createElement('span'); badge.id='cart-badge'; badge.className='nav-badge'; btn.appendChild(badge); }
   }
   if (badge) { badge.textContent = count; badge.style.display = count > 0 ? 'flex' : 'none'; }
-  // Bottom nav badge
-  let bnBadge = document.getElementById('bn-cart-badge');
-  if (!bnBadge && count > 0) {
-    const bnIcon = document.querySelector('#bottom-nav .bn-icon');
-    if (bnIcon) { bnBadge = document.createElement('span'); bnBadge.id='bn-cart-badge'; bnBadge.className='bn-badge'; bnIcon.appendChild(bnBadge); }
+  // Mobile bottom-nav cart badge
+  let mnBadge = document.getElementById('mn-cart-badge');
+  if (!mnBadge && count > 0) {
+    const mobileCart = document.querySelector('#mob-nav a[href="{{ route("cart") }}"]');
+    if (mobileCart) { mnBadge = document.createElement('span'); mnBadge.id='mn-cart-badge'; mnBadge.className='mn-badge'; mobileCart.appendChild(mnBadge); }
   }
-  if (bnBadge) { bnBadge.textContent = count; bnBadge.style.display = count > 0 ? 'flex' : 'none'; }
+  if (mnBadge) { mnBadge.textContent = count; mnBadge.style.display = count > 0 ? 'flex' : 'none'; }
 }
 
 // Add to cart (AJAX)
@@ -1417,8 +1429,58 @@ function pcAddToCart(pid) {
   addToCart(pid, name, price, curImg, varId, 1);
 }
 
-// Toggle wishlist
+// ── Wishlist state ────────────────────────────────────────────────────────
+// Home and shop can be restored from the device cache. Reconcile their heart
+// controls with the current session/account value after each page load.
+let wishlistStateVersion = 0;
+
+function setWishlistButtonState(btn, wished) {
+  btn.classList.toggle('wished', wished);
+  btn.title = wished ? 'Remove from Wishlist' : 'Add to Wishlist';
+  btn.textContent = wished ? '♥' : '♡';
+}
+
+function updateWishlistBadge(count) {
+  const normalizedCount = Math.max(0, Number.isFinite(Number(count)) ? Math.trunc(Number(count)) : 0);
+
+  ['wishlist-badge', 'mn-wishlist-badge'].forEach((id) => {
+    const badge = document.getElementById(id);
+    if (!badge) return;
+    badge.textContent = normalizedCount;
+    badge.style.display = normalizedCount > 0 ? 'flex' : 'none';
+  });
+}
+
+function renderWishlistState(productIds, count = null) {
+  const ids = new Set((Array.isArray(productIds) ? productIds : [])
+    .map((id) => Number(id))
+    .filter((id) => Number.isInteger(id) && id > 0));
+
+  document.querySelectorAll('[data-wishlist-product-id]').forEach((button) => {
+    setWishlistButtonState(button, ids.has(Number(button.dataset.wishlistProductId)));
+  });
+  updateWishlistBadge(count === null ? ids.size : count);
+}
+
+function refreshWishlistState() {
+  const requestVersion = ++wishlistStateVersion;
+  fetch('/wishlist/state', {
+    headers: {'Accept': 'application/json'},
+    cache: 'no-store'
+  })
+    .then((response) => (response.ok ? response.json() : null))
+    .then((data) => {
+      if (data && requestVersion === wishlistStateVersion) {
+        renderWishlistState(data.product_ids, data.count);
+      }
+    })
+    .catch(() => {});
+}
+
+// Toggle wishlist and update every visible button for this product, not only
+// the control that was clicked.
 async function toggleWishlist(btn, productId) {
+  const requestVersion = ++wishlistStateVersion;
   try {
     const res = await fetch('/wishlist/toggle', {
       method: 'POST',
@@ -1426,14 +1488,23 @@ async function toggleWishlist(btn, productId) {
       body: JSON.stringify({ product_id: productId })
     });
     const data = await res.json();
-    if (data.success) {
+    if (data.success && requestVersion === wishlistStateVersion) {
       const wished = data.action === 'added';
-      btn.classList.toggle('wished', wished);
-      btn.title = wished ? 'Remove from Wishlist' : 'Add to Wishlist';
+      document.querySelectorAll('[data-wishlist-product-id]').forEach((button) => {
+        if (Number(button.dataset.wishlistProductId) === Number(productId)) {
+          setWishlistButtonState(button, wished);
+        }
+      });
+      // Preserve compatibility for any custom heart control that has not yet
+      // adopted the shared data attribute.
+      setWishlistButtonState(btn, wished);
+      updateWishlistBadge(data.count);
       showToast(wished ? '♥ Saved to Wishlist' : 'Removed from Wishlist');
     }
   } catch(e) {}
 }
+
+refreshWishlistState();
 
 // Mobile bottom nav — show on narrow screens, hide debugbar
 (function mobNav() {

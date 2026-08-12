@@ -19,12 +19,20 @@ class WishlistController extends Controller
 
         if (!empty($ids)) {
             $products = DB::table('products_data as p')
-                ->select('p.id', 'p.name', 'p.images',
+                ->select(
+                    'p.id', 'p.name', 'p.images', 'p.stock_quantity',
+                    'p.minimum_order_qty', 'p.max_orders_per_person',
+                    'p.sold_individually', 'p.button_mode',
                     DB::raw('MIN(pv.price) as price'),
-                    DB::raw('MIN(pv.sale_price) as sale_price'))
+                    DB::raw('MIN(pv.sale_price) as sale_price')
+                )
                 ->join('product_variations as pv', 'pv.product_id', '=', 'p.id')
                 ->whereIn('p.id', $ids)
-                ->groupBy('p.id', 'p.name', 'p.images')
+                ->groupBy(
+                    'p.id', 'p.name', 'p.images', 'p.stock_quantity',
+                    'p.minimum_order_qty', 'p.max_orders_per_person',
+                    'p.sold_individually', 'p.button_mode'
+                )
                 ->get()
                 ->map(function ($p) {
                     $p->thumbnail_url = \App\Constants\AppConstants::productThumbnailUrl($p->images);
@@ -36,6 +44,25 @@ class WishlistController extends Controller
         }
 
         return view('web.wishlist', compact('products'));
+    }
+
+    /**
+     * Return the current session or account wishlist IDs for client-side
+     * reconciliation on pages that may have been restored from the browser's
+     * home/shop page cache.
+     */
+    public function state()
+    {
+        $ids = collect($this->getWishlistIds())
+            ->filter(fn ($id) => filter_var($id, FILTER_VALIDATE_INT) !== false && (int) $id > 0)
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        return response()
+            ->json(['product_ids' => $ids, 'count' => count($ids)])
+            ->header('Cache-Control', 'no-store, private');
     }
 
     public function toggle(Request $r)

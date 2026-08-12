@@ -56,7 +56,21 @@ class ConfigAdminController extends Controller
             ->orderByRaw('CASE WHEN lang IS NULL THEN 0 ELSE 1 END, lang')
             ->get();
 
-        return view('admin.configs.index', compact('configs', 'groups', 'langs', 'group', 'lang', 'search'));
+        $rawMobileLayout = DB::table('app_configs')
+            ->where('config_key', 'shop_mobile_product_layout')
+            ->whereNull('lang')
+            ->value('value');
+        $decodedMobileLayout = is_string($rawMobileLayout) ? json_decode($rawMobileLayout, true) : null;
+        $shopMobileLayout = is_string($decodedMobileLayout)
+            ? $decodedMobileLayout
+            : trim((string) $rawMobileLayout, " \t\n\r\0\x0B\"");
+        if (!in_array($shopMobileLayout, ['grid', 'horizontal'], true)) {
+            $shopMobileLayout = 'horizontal';
+        }
+
+        return view('admin.configs.index', compact(
+            'configs', 'groups', 'langs', 'group', 'lang', 'search', 'shopMobileLayout'
+        ));
     }
 
     public function update(Request $request, int $id)
@@ -123,6 +137,36 @@ class ConfigAdminController extends Controller
         ]);
 
         return response()->json(['success' => true, 'id' => $id, 'message' => 'Config created.']);
+    }
+
+    public function updateShopMobileLayout(Request $request)
+    {
+        if (!$this->isAdmin()) {
+            return redirect('/login')->with('error', 'Admin access required.');
+        }
+
+        $request->validate([
+            'layout' => 'required|in:grid,horizontal',
+        ]);
+
+        DB::table('app_configs')->updateOrInsert(
+            [
+                'config_key' => 'shop_mobile_product_layout',
+                'lang' => null,
+            ],
+            [
+                'config_group' => 'layout',
+                'value' => json_encode($request->input('layout')),
+                'label' => 'Shop mobile product layout',
+                'description' => 'Choose two products per row or a horizontal product row on narrow phones.',
+                'is_public' => false,
+                'sort_order' => 100,
+                'updated_at' => now(),
+            ]
+        );
+
+        return redirect()->route('admin.configs', ['group' => 'layout'])
+            ->with('success', 'Shop mobile layout saved.');
     }
 
     public function destroy(int $id)

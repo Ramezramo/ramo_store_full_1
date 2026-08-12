@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Helpers\AuthConfig;
+use App\Http\Traits\CartTrait;
 use App\Models\OtpVerification;
 use App\Models\User;
 use App\Services\Sms\SmsGateway;
@@ -14,6 +15,7 @@ use Illuminate\Support\Str;
 
 class OtpAuthController extends Controller
 {
+    use CartTrait;
     private function normalizePhone(string $phone): string
     {
         $phone = preg_replace('/\s+/', '', $phone);
@@ -160,6 +162,7 @@ class OtpAuthController extends Controller
             $user->update(['is_phone_verified' => true]);
             Auth::login($user);
             $request->session()->regenerate();
+            $this->mergeGuestSessionOnLogin($user->id);
             return response()->json(['success' => true, 'new_user' => false, 'redirect' => route('home')]);
         }
 
@@ -184,6 +187,7 @@ class OtpAuthController extends Controller
         $user = $this->createUserFromPhone($phone);
         Auth::login($user);
         $request->session()->regenerate();
+        $this->mergeGuestSessionOnLogin($user->id);
 
         return response()->json(['success' => true, 'new_user' => true, 'redirect' => route('home')]);
     }
@@ -215,6 +219,7 @@ class OtpAuthController extends Controller
             session()->forget(['otp_temp_token', 'otp_temp_phone']);
             Auth::login($existingUser);
             $request->session()->regenerate();
+            $this->mergeGuestSessionOnLogin($existingUser->id);
             return redirect()->route('home');
         }
 
@@ -223,6 +228,7 @@ class OtpAuthController extends Controller
         session()->forget(['otp_temp_token', 'otp_temp_phone']);
         Auth::login($user);
         $request->session()->regenerate();
+        $this->mergeGuestSessionOnLogin($user->id);
 
         return redirect()->route('home')->with('success', 'Welcome to Ramo Store!');
     }

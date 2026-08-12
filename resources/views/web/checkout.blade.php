@@ -175,7 +175,7 @@
           <div class="summary-row discount-row"><span>Coupon ({{ $coupon['code'] }})</span><span>−{{ number_format($discount, 2) }} EGP</span></div>
         @endif
         <div class="summary-row"><span>Estimated Delivery</span><span>2–4 days</span></div>
-        <div class="summary-row"><span>Shipping</span><span>Free</span></div>
+        <div class="summary-row"><span>Shipping</span><span>{{ $shippingFee > 0 ? number_format($shippingFee, 2) . ' EGP' : 'Free' }}</span></div>
         <div class="summary-divider"></div>
         <div class="summary-row total-row"><span>Total</span><span>{{ number_format($total, 2) }} EGP</span></div>
       </div>

@@ -142,9 +142,24 @@ trait CartTrait
 
     protected function mergeGuestWishlistToDb(int $userId, array $guestWishlist): void
     {
-        if (empty($guestWishlist)) return;
+        $requestedIds = collect($guestWishlist)
+            ->map(fn ($productId) => (int) $productId)
+            ->filter(fn (int $productId) => $productId > 0)
+            ->unique()
+            ->values()
+            ->all();
 
-        foreach ($guestWishlist as $productId) {
+        if (empty($requestedIds)) return;
+
+        // Session data is client-controlled. Only products that still exist in
+        // the catalog may be copied into an authenticated user's wishlist.
+        $validProductIds = DB::table('products_data')
+            ->whereIn('id', $requestedIds)
+            ->pluck('id')
+            ->map(fn ($productId) => (int) $productId)
+            ->all();
+
+        foreach ($validProductIds as $productId) {
             $exists = DB::table('wishlists')
                 ->where('user_id', $userId)
                 ->where('product_id', $productId)
