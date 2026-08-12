@@ -79,6 +79,11 @@ class CheckoutController extends Controller
         }
 
         $authConfig = AuthConfig::get();
+        if (!Auth::check()) {
+            // Guest checkout remains available, but any optional sign-in started here
+            // should return the customer to this checkout after authentication.
+            session(['url.intended' => route('checkout')]);
+        }
         $coupon     = session('ramo_coupon');
         $subtotal   = collect($cart)->sum(fn ($item) => $item['price'] * $item['qty']);
         $discount   = $this->calcDiscount($subtotal, $coupon);

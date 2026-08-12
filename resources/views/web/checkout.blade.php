@@ -1,6 +1,16 @@
 @extends('layouts.app')
 @section('title', 'Checkout — Ramo Store')
 
+@push('styles')
+<style>
+  .ck-auth-widget{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0 0 22px;padding:16px 18px;border:1px solid #f0d6ca;border-radius:14px;background:#fff9f6}
+  .ck-auth-copy{min-width:0}.ck-auth-kicker{display:block;margin-bottom:4px;color:#e85d26;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+  .ck-auth-title{margin:0;color:#181818;font-size:15px;font-weight:800}.ck-auth-desc{margin:4px 0 0;color:#686868;font-size:12px;line-height:1.45}
+  .ck-auth-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}.ck-auth-action{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:0 12px;border:1px solid #1b1b1b;border-radius:9px;background:#1b1b1b;color:#fff;font-size:12px;font-weight:750;line-height:1;text-decoration:none;white-space:nowrap;transition:.15s}.ck-auth-action:hover{background:#343434;border-color:#343434;color:#fff}.ck-auth-action-light{border-color:#d5d5d5;background:#fff;color:#272727}.ck-auth-action-light:hover{border-color:#aaa;background:#f6f6f6;color:#111}
+  @media(max-width:600px){.ck-auth-widget{align-items:flex-start;flex-direction:column;gap:13px;padding:15px}.ck-auth-actions{justify-content:flex-start;width:100%}.ck-auth-action{flex:1;padding:0 10px}}
+</style>
+@endpush
+
 @section('content')
 <div class="page">
   <div class="breadcrumb">
@@ -19,7 +29,34 @@
         <div class="ck-section">
           <h3 class="ck-title">Contact Information</h3>
           @if(!auth()->check())
-            <p class="ck-login-hint">Already have an account? <a href="{{ route('login') }}">Sign in</a></p>
+            @php
+              $enabledLoginMethods = [
+                'phone'  => (bool) ($authConfig['phone_otp_login'] ?? false),
+                'google' => (bool) ($authConfig['google_login'] ?? false),
+                'email'  => (bool) ($authConfig['email_login'] ?? true),
+              ];
+            @endphp
+            <aside class="ck-auth-widget" aria-label="Available sign-in methods">
+              <div class="ck-auth-copy">
+                <span class="ck-auth-kicker">Guest checkout</span>
+                <p class="ck-auth-title">Sign in for saved details and faster checkout</p>
+                <p class="ck-auth-desc">The options below are controlled by the store administrator. You can also continue by entering your checkout details.</p>
+              </div>
+              <div class="ck-auth-actions">
+                @if($enabledLoginMethods['phone'])
+                  <a class="ck-auth-action" href="{{ route('login') }}#phone-otp">Phone OTP</a>
+                @endif
+                @if($enabledLoginMethods['google'])
+                  <a class="ck-auth-action ck-auth-action-light" href="{{ route('auth.google') }}">Continue with Google</a>
+                @endif
+                @if($enabledLoginMethods['email'])
+                  <a class="ck-auth-action ck-auth-action-light" href="{{ route('login') }}#email-login">Email &amp; password</a>
+                @endif
+                @if(!in_array(true, $enabledLoginMethods, true))
+                  <span class="ck-auth-desc">No sign-in method is currently enabled. Continue as guest.</span>
+                @endif
+              </div>
+            </aside>
           @endif
           <div class="form-grid-2">
             <div class="form-group">

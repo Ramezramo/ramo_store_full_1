@@ -163,7 +163,11 @@ class OtpAuthController extends Controller
             Auth::login($user);
             $request->session()->regenerate();
             $this->mergeGuestSessionOnLogin($user->id);
-            return response()->json(['success' => true, 'new_user' => false, 'redirect' => route('home')]);
+            return response()->json([
+                'success'  => true,
+                'new_user' => false,
+                'redirect' => $request->session()->pull('url.intended', route('home')),
+            ]);
         }
 
         if (!$cfg['auto_register_otp']) {
@@ -189,7 +193,11 @@ class OtpAuthController extends Controller
         $request->session()->regenerate();
         $this->mergeGuestSessionOnLogin($user->id);
 
-        return response()->json(['success' => true, 'new_user' => true, 'redirect' => route('home')]);
+        return response()->json([
+            'success'  => true,
+            'new_user' => true,
+            'redirect' => $request->session()->pull('url.intended', route('home')),
+        ]);
     }
 
     public function showCompleteProfile(Request $request)
@@ -220,7 +228,7 @@ class OtpAuthController extends Controller
             Auth::login($existingUser);
             $request->session()->regenerate();
             $this->mergeGuestSessionOnLogin($existingUser->id);
-            return redirect()->route('home');
+            return redirect()->to($request->session()->pull('url.intended', route('home')));
         }
 
         $user = $this->createUserFromPhone($phone, $request->input('name'), $request->input('email'));
@@ -230,7 +238,8 @@ class OtpAuthController extends Controller
         $request->session()->regenerate();
         $this->mergeGuestSessionOnLogin($user->id);
 
-        return redirect()->route('home')->with('success', 'Welcome to Ramo Store!');
+        return redirect()->to($request->session()->pull('url.intended', route('home')))
+            ->with('success', 'Welcome to Ramo Store!');
     }
 
     private function createUserFromPhone(string $phone, ?string $name = null, ?string $email = null): User

@@ -46,7 +46,7 @@
 
     <div class="auth-methods">
       @if($authConfig['phone_otp_login'] ?? false)
-      <div>
+      <div id="phone-otp">
         <div class="otp-phone-row">
           <div class="country-prefix">🇪🇬 +20</div>
           <input type="tel" id="otp-phone" placeholder="01xxxxxxxxx" maxlength="11" style="border-radius:10px;border:1.5px solid #e5e7eb;padding:13px 14px;font-size:14px;outline:none;width:100%;transition:.15s" oninput="this.value=this.value.replace(/[^0-9]/,'')">
@@ -72,7 +72,7 @@
       @endif
 
       @if($authConfig['email_login'] ?? true)
-      <form method="POST" action="{{ route('login') }}">
+      <form id="email-login" method="POST" action="{{ route('login') }}">
         @csrf
         <div class="form-group">
           <label>Email Address</label>
