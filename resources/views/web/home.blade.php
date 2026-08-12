@@ -337,7 +337,7 @@
         $cardRadius  = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 12;
         $cardHeight  = max(0, (int)($sec['cardHeight'] ?? 0));
         $imageWidth  = max(0, (int)($sec['imageWidth'] ?? 0));
-        $elementSpacing = max(1, min(15, (int)($sec['elementSpacing'] ?? 1)));
+        $elementSpacing = max(0, min(15, (int)($sec['elementSpacing'] ?? 0)));
         $cardStyle   = implode(';', array_filter([
           $cardHeight > 0 ? "--pc-card-height:{$cardHeight}px" : null,
           $imageWidth > 0 ? "--pc-image-width:{$imageWidth}px" : null,
@@ -393,7 +393,7 @@
         $cardRadius     = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 10;
         $cardHeight     = max(0, (int)($sec['cardHeight'] ?? 0));
         $imageWidth     = max(0, (int)($sec['imageWidth'] ?? 0));
-        $elementSpacing = max(1, min(15, (int)($sec['elementSpacing'] ?? 1)));
+        $elementSpacing = max(0, min(15, (int)($sec['elementSpacing'] ?? 0)));
         $cardStyle      = implode(';', array_filter([
           $cardHeight > 0 ? "--pc-card-height:{$cardHeight}px" : null,
           $imageWidth > 0 ? "--pc-image-width:{$imageWidth}px" : null,
@@ -460,7 +460,7 @@
         $cardRadius = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 10;
         $cardHeight = max(0, (int)($sec['cardHeight'] ?? 0));
         $imageWidth = max(0, (int)($sec['imageWidth'] ?? 0));
-        $elementSpacing = max(1, min(15, (int)($sec['elementSpacing'] ?? 1)));
+        $elementSpacing = max(0, min(15, (int)($sec['elementSpacing'] ?? 0)));
         $cardStyle  = implode(';', array_filter([
           $cardHeight > 0 ? "--pc-card-height:{$cardHeight}px" : null,
           $imageWidth > 0 ? "--pc-image-width:{$imageWidth}px" : null,

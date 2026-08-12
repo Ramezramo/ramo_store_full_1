@@ -381,7 +381,7 @@ function buildEditor(sec, idx) {
       <div class="form-group"><label>Image Height (px)</label><input type="number" value="${sec.imageHeight||defHeight}" min="60" max="800" step="1" onchange="updateField(${idx},'imageHeight',parseInt(this.value)||defHeight)"></div>
       <div class="form-group"><label>Card Height (px)</label><input type="number" value="${sec.cardHeight||0}" min="0" max="1000" step="1" onchange="updateField(${idx},'cardHeight',parseInt(this.value)||0)" placeholder="Auto"></div>
       <div class="form-group"><label>Image Width (px)</label><input type="number" value="${sec.imageWidth||0}" min="0" max="500" step="1" onchange="updateField(${idx},'imageWidth',parseInt(this.value)||0)" placeholder="Full width"></div>
-      <div class="form-group"><label>Element Spacing (px)</label><input type="number" value="${sec.elementSpacing!=null?sec.elementSpacing:1}" min="1" max="15" step="1" onchange="updateField(${idx},'elementSpacing',Math.max(1,Math.min(15,parseInt(this.value)||1)))"></div>
+      <div class="form-group"><label>Element Spacing (px)</label><input type="number" value="${sec.elementSpacing!=null?sec.elementSpacing:0}" min="0" max="15" step="1" onchange="updateField(${idx},'elementSpacing',Math.max(0,Math.min(15,parseInt(this.value)||0)))"></div>
       <div class="form-group"><label>Corner Radius (px)</label><input type="number" value="${sec.cardBorderRadius!=null?sec.cardBorderRadius:10}" min="0" max="40" step="1" onchange="updateField(${idx},'cardBorderRadius',parseInt(this.value))"></div>
     </div>
     <div style="font-size:12px;font-weight:700;color:var(--muted);margin:12px 0 8px;text-transform:uppercase;letter-spacing:.5px;border-top:1px solid rgba(255,255,255,.07);padding-top:12px">Card Elements</div>
@@ -685,7 +685,7 @@ function buildDimEditor(sec, idx) {
       { key:'cardHeight',       label:'Card Height (px)',  type:'number', min:0,   max:1000, step:1,  def:0 },
       { key:'imageWidth',       label:'Image Width (px)',  type:'number', min:0,   max:500, step:1,  def:0 },
       { key:'imageHeight',      label:'Image Height (px)', type:'number', min:60,  max:800, step:1,  def:dH },
-      { key:'elementSpacing',   label:'Element Spacing (px)', type:'number', min:1, max:15, step:1, def:1 },
+      { key:'elementSpacing',   label:'Element Spacing (px)', type:'number', min:0, max:15, step:1, def:0 },
       { key:'cardBorderRadius', label:'Corner Radius (px)',type:'number', min:0,   max:40,  step:1,  def:10 },
       { key:'maxItemsToShow',   label:'Max Items',         type:'number', min:1,   max:30,  step:1,  def:8  },
     ];
