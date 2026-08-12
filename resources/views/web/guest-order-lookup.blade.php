@@ -171,7 +171,7 @@
               <span>Payment</span>
               <span>{{ $order->payment_method_title ?? ucfirst($order->payment_method ?? 'N/A') }}</span>
             </div>
-            @if(in_array($order->payment_method ?? '', ['manual_wallet', 'manual_instapay']))
+            @if(\App\Helpers\PaymentConfig::isManualMethod($order->payment_method ?? null))
               <div class="or-summary-row" style="font-size:12px;color:#9a3412">
                 <span>Payment status</span>
                 <strong>{{ ucwords(str_replace('_', ' ', $order->payment_status ?? 'pending_payment')) }}</strong>
@@ -202,7 +202,7 @@
         </div>
         @endif
 
-        @if(in_array($order->payment_method ?? '', ['manual_wallet', 'manual_instapay']) && ($order->payment_status ?? '') !== 'confirmed')
+        @if(\App\Helpers\PaymentConfig::isManualMethod($order->payment_method ?? null) && ($order->payment_status ?? '') !== 'confirmed')
           @php
             $guestPaymentMethod = \App\Helpers\PaymentConfig::detailsFor($order->payment_method);
           @endphp

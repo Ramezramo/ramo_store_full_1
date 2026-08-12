@@ -196,12 +196,36 @@ class PaymentConfig
                     'link' => $config['instapay_link'],
                 ]
                 : null,
+            'credit_card' => trim((string) $config['credit_card_data']) !== ''
+                ? ['title' => 'Credit Card', 'description' => 'Visa / Mastercard', 'destination' => $config['credit_card_data']]
+                : null,
+            'fawry' => trim((string) $config['fawry_data']) !== ''
+                ? ['title' => 'Fawry', 'description' => 'Pay at any Fawry outlet', 'destination' => $config['fawry_data']]
+                : null,
+            'vodafone_cash' => trim((string) $config['vodafone_cash_data']) !== ''
+                ? ['title' => 'Vodafone Cash', 'description' => 'Send money from your Vodafone wallet', 'destination' => $config['vodafone_cash_data']]
+                : null,
+            'bank_transfer' => trim((string) $config['bank_transfer_data']) !== ''
+                ? ['title' => 'Bank Transfer', 'description' => 'Transfer to our bank account', 'destination' => $config['bank_transfer_data']]
+                : null,
             default => null,
         };
     }
 
+    /**
+     * Which payment methods require the customer to upload proof of payment
+     * and an admin to manually confirm before the order counts as paid.
+     * Wallet/InstaPay always did. Credit Card, Fawry, Vodafone Cash, and Bank
+     * Transfer are not wired to a real payment gateway (they just display
+     * instructions from admin config), so they must go through the same
+     * manual-review flow rather than being auto-marked "confirmed" the
+     * moment the order is placed.
+     */
     public static function isManualMethod(?string $method): bool
     {
-        return in_array($method, ['manual_wallet', 'manual_instapay'], true);
+        return in_array($method, [
+            'manual_wallet', 'manual_instapay',
+            'credit_card', 'fawry', 'vodafone_cash', 'bank_transfer',
+        ], true);
     }
 }

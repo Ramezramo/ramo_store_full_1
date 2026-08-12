@@ -22,7 +22,7 @@
       };
     @endphp
     <div class="od-row"><span class="od-label">Status</span><span class="status-badge status-{{ $displayOrderStatus }}">{{ $displayOrderLabel }}</span></div>
-    @if(in_array($order->payment_method, ['manual_wallet', 'manual_instapay']))
+    @if(\App\Helpers\PaymentConfig::isManualMethod($order->payment_method ?? null))
       <div class="od-row"><span class="od-label">Payment status</span><span class="status-badge" style="background:#fff7ed;color:#9a3412">{{ ucwords(str_replace('_', ' ', $order->payment_status ?? 'pending_payment')) }}</span></div>
     @endif
     <div class="od-row"><span class="od-label">Payment</span><span>{{ $order->payment_method_title }}</span></div>
@@ -30,7 +30,7 @@
     <div class="od-row"><span class="od-label">Total</span><span class="od-total">{{ number_format($order->final_total, 2) }} EGP</span></div>
   </div>
 
-  @if(in_array($order->payment_method, ['manual_wallet', 'manual_instapay']) && ($order->payment_status ?? '') !== 'confirmed')
+  @if(\App\Helpers\PaymentConfig::isManualMethod($order->payment_method ?? null) && ($order->payment_status ?? '') !== 'confirmed')
     @php
       $paymentMethod = \App\Helpers\PaymentConfig::detailsFor($order->payment_method);
       $successBilling = json_decode($order->billing ?? '{}', true) ?: [];

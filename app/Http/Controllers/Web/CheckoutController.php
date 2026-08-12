@@ -102,7 +102,7 @@ class CheckoutController extends Controller
             'manual_wallet'  => 'Pay by Wallet',
             'manual_instapay'=> 'Pay by InstaPay',
         ];
-        $isManualPayment = array_key_exists($r->payment_method, $manualPaymentMethods);
+        $isManualPayment = PaymentConfig::isManualMethod($r->payment_method);
 
         // ── RE-VERIFY PRICES FROM DATABASE (never trust cart-stored prices) ──────
         $cartProductIds   = collect($cart)->pluck('product_id')->unique()->values()->all();

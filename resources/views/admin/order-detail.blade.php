@@ -77,7 +77,7 @@
       </div>
     </div>
 
-    @if(in_array($order->payment_method, ['manual_wallet', 'manual_instapay']))
+    @if(\App\Helpers\PaymentConfig::isManualMethod($order->payment_method ?? null))
     <div class="card">
       <div class="card-title">Payment Verification</div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px">

@@ -73,7 +73,7 @@
   </div>
 @endif
 
-@if(in_array($order->payment_method, ['manual_wallet', 'manual_instapay']))
+@if(\App\Helpers\PaymentConfig::isManualMethod($order->payment_method ?? null))
 <div class="od-card" style="border-color:#fed7aa">
   <div class="od-card-head"><span class="od-card-title">Payment Verification</span></div>
   <div class="od-card-body">

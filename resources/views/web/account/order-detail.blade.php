@@ -51,7 +51,7 @@
   @endif
 </div>
 
-@if(in_array($order->payment_method, ['manual_wallet', 'manual_instapay']))
+@if(\App\Helpers\PaymentConfig::isManualMethod($order->payment_method ?? null))
 @php $accountPaymentMethod = \App\Helpers\PaymentConfig::detailsFor($order->payment_method); @endphp
 <div class="order-detail-card" style="margin-top:16px;border:1.5px solid #fed7aa;background:#fffaf5">
   <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
