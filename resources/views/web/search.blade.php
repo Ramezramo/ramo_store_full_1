@@ -297,7 +297,7 @@ mark.search-hl{background:#fff3cd;color:inherit;border-radius:2px;padding:0 1px}
   .search-sidebar{display:none;position:static;padding:16px;border-radius:16px}
   .search-layout.filters-open .search-sidebar{display:block}
   .search-results{width:100%;min-width:0;overflow:hidden}
-  .search-results .product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:24px!important}
+  .search-results .product-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px;margin-bottom:24px!important}
   .search-toolbar{gap:10px;flex-wrap:wrap;margin-bottom:14px}
   .search-toolbar>span:last-child{font-size:12px!important}
   .search-empty{padding:48px 16px}
