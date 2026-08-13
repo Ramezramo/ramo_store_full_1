@@ -29,13 +29,18 @@ class SearchController extends Controller
             ->select(
                 'p.id', 'p.name', 'p.slug', 'p.images', 'p.translations',
                 'p.description', 'p.stock_quantity', 'p.unit',
+                'p.minimum_order_qty', 'p.max_orders_per_person', 'p.sold_individually',
                 DB::raw('MIN(pv.price::numeric) as price'),
                 DB::raw('MIN(pv.regular_price::numeric) as regular_price'),
                 DB::raw('MIN(pv.sale_price::numeric) as sale_price'),
                 DB::raw('MAX(p.discount_percentage) as discount_percentage')
             )
             ->join('product_variations as pv', 'pv.product_id', '=', 'p.id')
-            ->groupBy('p.id', 'p.name', 'p.slug', 'p.images', 'p.translations', 'p.description', 'p.stock_quantity', 'p.unit');
+            ->groupBy(
+                'p.id', 'p.name', 'p.slug', 'p.images', 'p.translations',
+                'p.description', 'p.stock_quantity', 'p.unit',
+                'p.minimum_order_qty', 'p.max_orders_per_person', 'p.sold_individually'
+            );
 
         // Search query
         if ($q !== '') {
@@ -77,6 +82,26 @@ class SearchController extends Controller
 
         $raw      = $query->paginate($perPage);
         $products = $raw->through(fn($p) => $this->localizeSearchProductText($this->parseProduct($p), $locale));
+        $productIds = $products->pluck('id')->all();
+        $cardVariations = [];
+
+        if (!empty($productIds)) {
+            $cardVariations = DB::table('product_variations')
+                ->whereIn('product_id', $productIds)
+                ->orderBy('main_variation', 'desc')
+                ->get()
+                ->map(function ($variation) {
+                    $variation->attributes = is_string($variation->attributes)
+                        ? (json_decode($variation->attributes, true) ?? json_decode(stripslashes($variation->attributes), true) ?? [])
+                        : (array) $variation->attributes;
+                    $variation->images = is_string($variation->images)
+                        ? (json_decode($variation->images, true) ?? json_decode(stripslashes($variation->images), true) ?? [])
+                        : (array) $variation->images;
+                    return $variation;
+                })
+                ->groupBy('product_id')
+                ->toArray();
+        }
 
         $categories = DB::table('categories2')->orderBy('name')->get();
 
@@ -95,7 +120,7 @@ class SearchController extends Controller
 
         return view('web.search', compact(
             'products', 'q', 'minPrice', 'maxPrice', 'inStock', 'sort',
-            'categoryId', 'categories', 'priceRange', 'activeFilters'
+            'categoryId', 'categories', 'priceRange', 'activeFilters', 'cardVariations'
         ));
     }
 

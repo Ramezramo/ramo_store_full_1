@@ -171,9 +171,9 @@
                 : null;
             @endphp
             @include('web.partials.product-card', [
-              'p'            => $p,
-              'cardVariations' => [],
-              'cardNameHtml' => $cardNameHtml,
+              'p'              => $p,
+              'cardVariations' => $cardVariations[$p->id] ?? [],
+              'cardNameHtml'   => $cardNameHtml,
             ])
           @endforeach
         </div>
