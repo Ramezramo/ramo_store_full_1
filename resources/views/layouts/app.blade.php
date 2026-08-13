@@ -535,9 +535,9 @@ button{cursor:pointer;font-family:inherit}
 .toast.toast-err{background:#e02020}
 
 /* ── ADDED-TO-CART DRAWER ── */
-.atc-overlay{position:fixed;inset:0;background:rgba(20,20,20,.46);z-index:9998;opacity:0;visibility:hidden;transition:opacity .25s;backdrop-filter:blur(2px)}
+.atc-overlay{position:fixed;inset:0;background:rgba(20,20,20,.46);z-index:10000;opacity:0;visibility:hidden;transition:opacity .25s;backdrop-filter:blur(2px)}
 .atc-overlay.show{opacity:1;visibility:visible}
-.atc-drawer{position:fixed;top:0;right:0;height:100%;width:400px;max-width:92vw;background:#fff;box-shadow:-12px 0 34px rgba(0,0,0,.18);z-index:9999;transform:translateX(100%);transition:transform .3s cubic-bezier(.2,.9,.3,1);display:flex;flex-direction:column;visibility:hidden}
+.atc-drawer{position:fixed;top:0;right:0;height:100%;width:400px;max-width:92vw;background:#fff;box-shadow:-12px 0 34px rgba(0,0,0,.18);z-index:10001;transform:translateX(100%);transition:transform .3s cubic-bezier(.2,.9,.3,1);display:flex;flex-direction:column;visibility:hidden}
 .atc-drawer.show{transform:translateX(0);visibility:visible}
 .atc-drawer-grab{display:none}
 .atc-drawer-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 16px;border-bottom:1px solid var(--c-light);gap:12px}
