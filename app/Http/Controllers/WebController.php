@@ -10,6 +10,26 @@ use Illuminate\Support\Facades\DB;
 
 class WebController extends Controller
 {
+    public function setLocale(Request $request, string $lang)
+    {
+        $lang = strtolower(trim($lang));
+        $isAvailable = DB::table('app_configs')
+            ->where('config_key', 'horizon_layout')
+            ->where('lang', $lang)
+            ->exists();
+
+        abort_unless($isAvailable, 404);
+        $request->session()->put('locale', $lang);
+
+        $redirect = (string) $request->input('redirect', '');
+        $baseUrl = rtrim(url('/'), '/');
+        if ($redirect === '' || ! str_starts_with($redirect, $baseUrl)) {
+            $redirect = route('home');
+        }
+
+        return redirect()->to($redirect);
+    }
+
     public function home()
     {
         // ── Load horizon_layout timeline config ──────────────────

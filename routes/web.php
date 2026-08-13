@@ -25,6 +25,7 @@ use App\Http\Controllers\Admin\PaymentMethodsController;
 use App\Http\Controllers\Admin\ImageGalleryController;
 
 Route::get('/', [WebController::class, 'home'])->name('home');
+Route::get('/language/{lang}', [WebController::class, 'setLocale'])->where('lang', '[A-Za-z-]+')->name('language.switch');
 Route::get('/shop', [WebController::class, 'shop'])->name('shop');
 Route::get('/product/{id}', [WebController::class, 'product'])->name('product');
 Route::get('/vendor/{id}', [WebController::class, 'vendor'])->name('vendor.store');

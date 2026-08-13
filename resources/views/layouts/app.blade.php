@@ -1,5 +1,11 @@
+@php
+  $timelineLocale = session('locale', 'en');
+  $timelineNextLocale = $timelineLocale === 'ar' ? 'en' : 'ar';
+  $timelineSwitchLabel = $timelineNextLocale === 'ar' ? 'AR' : 'EN';
+  $timelineSwitchTitle = $timelineNextLocale === 'ar' ? 'Switch to Arabic Timeline' : 'Switch to English Timeline';
+@endphp
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ $timelineLocale }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -37,6 +43,8 @@ button{cursor:pointer;font-family:inherit}
 .nav-search button{display:flex;align-items:center;justify-content:center;width:36px;height:36px;margin:3px;border-radius:50px;background:var(--c-dark);border:none;color:#fff;cursor:pointer;flex-shrink:0;transition:background .15s}
 .nav-search button:hover{background:#333}
 .nav-actions{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.nav-language-btn{display:inline-flex;align-items:center;justify-content:center;min-width:42px;height:34px;padding:0 9px;border:1.5px solid var(--c-light);border-radius:9px;background:#fff;color:var(--c-dark);font-size:11px;font-weight:800;letter-spacing:.55px;line-height:1;text-decoration:none;transition:background .15s,border-color .15s,color .15s;white-space:nowrap}
+.nav-language-btn:hover,.nav-language-btn:focus-visible{background:var(--c-tag);border-color:#bcbcbc;color:var(--c-orange);outline:none}
 .nav-icon-btn{position:relative;width:40px;height:40px;border-radius:10px;border:none;background:none;display:flex;align-items:center;justify-content:center;font-size:19px;color:var(--c-mid);cursor:pointer;text-decoration:none;transition:background .15s}
 .nav-icon-btn:hover{background:var(--c-tag);color:var(--c-dark)}
 .nav-badge{position:absolute;top:4px;right:4px;background:var(--c-orange);color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:50px;display:flex;align-items:center;justify-content:center;padding:0 3px;line-height:1}
@@ -659,6 +667,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
   .nav-links{display:none}
   .nav-search{display:none}
   .nav-hamburger{display:flex}
+  .nav-language-btn{min-width:38px;height:36px;padding:0 8px;font-size:10.5px}
   /* 58px bottom nav + 16px breathing room = 74px so nothing scrolls behind the nav */
   .page{padding:20px 14px 74px}
 }
@@ -856,6 +865,15 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
       </form>
     </div>
     <div class="nav-actions">
+      <a
+        href="{{ route('language.switch', ['lang' => $timelineNextLocale]) }}?redirect={{ urlencode(request()->fullUrl()) }}"
+        class="nav-language-btn"
+        lang="{{ $timelineNextLocale }}"
+        dir="ltr"
+        title="{{ $timelineSwitchTitle }}"
+        aria-label="{{ $timelineSwitchTitle }}"
+      >{{ $timelineSwitchLabel }}</a>
+
       {{-- Wishlist --}}
       <a href="{{ route('wishlist') }}" class="nav-icon-btn" title="Wishlist">
         ♡
