@@ -11,6 +11,7 @@ class SearchController extends Controller
     public function index(Request $request)
     {
         $q          = trim($request->input('q', ''));
+        $locale     = strtolower((string) session('locale', 'en'));
         $minPrice   = $request->input('min_price') !== null && $request->input('min_price') !== '' ? (float) $request->input('min_price') : null;
         $maxPrice   = $request->input('max_price') !== null && $request->input('max_price') !== '' ? (float) $request->input('max_price') : null;
         $inStock    = $request->boolean('in_stock');
@@ -26,7 +27,7 @@ class SearchController extends Controller
         // Base query
         $query = DB::table('products_data as p')
             ->select(
-                'p.id', 'p.name', 'p.slug', 'p.images',
+                'p.id', 'p.name', 'p.slug', 'p.images', 'p.translations',
                 'p.description', 'p.stock_quantity', 'p.unit',
                 DB::raw('MIN(pv.price::numeric) as price'),
                 DB::raw('MIN(pv.regular_price::numeric) as regular_price'),
@@ -34,7 +35,7 @@ class SearchController extends Controller
                 DB::raw('MAX(p.discount_percentage) as discount_percentage')
             )
             ->join('product_variations as pv', 'pv.product_id', '=', 'p.id')
-            ->groupBy('p.id', 'p.name', 'p.slug', 'p.images', 'p.description', 'p.stock_quantity', 'p.unit');
+            ->groupBy('p.id', 'p.name', 'p.slug', 'p.images', 'p.translations', 'p.description', 'p.stock_quantity', 'p.unit');
 
         // Search query
         if ($q !== '') {
@@ -75,7 +76,7 @@ class SearchController extends Controller
         }
 
         $raw      = $query->paginate($perPage);
-        $products = $raw->through(fn($p) => $this->parseProduct($p));
+        $products = $raw->through(fn($p) => $this->localizeSearchProductText($this->parseProduct($p), $locale));
 
         $categories = DB::table('categories2')->orderBy('name')->get();
 
@@ -96,6 +97,30 @@ class SearchController extends Controller
             'products', 'q', 'minPrice', 'maxPrice', 'inStock', 'sort',
             'categoryId', 'categories', 'priceRange', 'activeFilters'
         ));
+    }
+
+    private function localizeSearchProductText($product, string $locale)
+    {
+        $product->tl_display_name = $product->name;
+        $product->tl_display_description = $product->description ?? '';
+
+        if ($locale !== 'ar' || empty($product->translations)) {
+            return $product;
+        }
+
+        $rows = is_string($product->translations)
+            ? json_decode($product->translations, true)
+            : $product->translations;
+        $rows = is_array($rows) ? $rows : [];
+        foreach ($rows as $row) {
+            if (is_array($row) && ($row['locale'] ?? '') === 'ar') {
+                $product->tl_display_name = trim((string) ($row['name'] ?? '')) ?: $product->name;
+                $product->tl_display_description = trim((string) ($row['description'] ?? '')) ?: ($product->description ?? '');
+                break;
+            }
+        }
+
+        return $product;
     }
 
     private function parseProduct($p)
