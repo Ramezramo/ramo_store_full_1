@@ -110,10 +110,13 @@ class CartController extends Controller
         $shippingFee = ShippingConfig::feeForSubtotal($afterDiscount);
         $freeShippingEnabled = (bool) ShippingConfig::val('free_shipping_enabled', true);
         $freeShippingThreshold = (float) ShippingConfig::val('free_shipping_threshold', 1000);
+        $hasPreviousOrders = empty($cart) && Auth::check()
+            ? DB::table('orders')->where('customer_id', Auth::id())->exists()
+            : false;
         $total       = $afterDiscount + $shippingFee;
         return view('web.cart', compact(
             'cart', 'subtotal', 'discount', 'total', 'coupon', 'shippingFee',
-            'freeShippingEnabled', 'freeShippingThreshold'
+            'freeShippingEnabled', 'freeShippingThreshold', 'hasPreviousOrders'
         ));
     }
 

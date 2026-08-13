@@ -188,11 +188,21 @@
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 8H6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
         </div>
         <h2>{{ $cartRtl ? 'سلتك فاضية' : 'Your cart is empty' }}</h2>
-        <p>{{ $cartRtl ? 'اختار اللي يعجبك وهتلاقيه هنا.' : 'Find something you love and it will appear here.' }}</p>
+        @auth
+          @if($hasPreviousOrders)
+            <p>{{ $cartRtl ? 'عندك أوردرات سابقة؟ شوف آخر تحديثاتها من هنا.' : 'Have previous orders? See their latest updates here.' }}</p>
+          @else
+            <p>{{ $cartRtl ? 'أول أوردر ليك؟ اختار حاجة تعجبك وابدأ تجربتك مع رامو.' : 'Ready for your first order? Find something you love and start your Ramo experience.' }}</p>
+          @endif
+        @else
+          <p>{{ $cartRtl ? 'اختار اللي يعجبك وهتلاقيه هنا.' : 'Find something you love and it will appear here.' }}</p>
+        @endauth
         <div class="cart-empty-actions">
           <a href="{{ route('shop') }}" class="btn btn-dark">{{ $cartRtl ? 'كمّل تسوّق' : 'Continue Shopping' }}</a>
           @auth
-            <a href="{{ route('account.orders') }}" class="btn cart-empty-order-link">{{ $cartRtl ? 'شوف أوردراتك' : 'View Your Orders' }}</a>
+            @if($hasPreviousOrders)
+              <a href="{{ route('account.orders') }}" class="btn cart-empty-order-link">{{ $cartRtl ? 'شوف أوردراتك' : 'View Your Orders' }}</a>
+            @endif
           @else
             <a href="{{ route('order.track') }}" class="btn cart-empty-order-link">{{ $cartRtl ? 'تابع طلبك' : 'Track Your Order' }}</a>
           @endauth
