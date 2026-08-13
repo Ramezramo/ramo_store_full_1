@@ -89,7 +89,10 @@
 .cart-empty-icon{width:74px;height:74px;display:grid;place-items:center;margin:0 auto 16px;border-radius:22px;background:var(--c-tag);color:var(--c-orange);font-size:34px;}
 .cart-empty-state h2{margin:0 0 7px;font-size:22px;color:var(--c-dark);}
 .cart-empty-state p{margin:0;color:var(--c-mid);font-size:13px;}
-.cart-empty-state .btn{margin-top:22px;border-radius:11px;padding:12px 20px;}
+.cart-empty-actions{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:22px;}
+.cart-empty-state .cart-empty-actions .btn{margin:0;min-width:182px;border-radius:11px;padding:12px 20px;}
+.cart-empty-order-link{background:var(--c-white)!important;color:var(--c-dark)!important;border:1.5px solid var(--c-dark)!important;}
+.cart-empty-order-link:hover,.cart-empty-order-link:focus-visible{background:var(--c-tag)!important;outline:none;}
 .cart-checkout-bar{max-width:1180px;margin:18px auto 0;padding:15px 18px;border:1px solid var(--c-light);border-radius:17px;background:rgba(255,255,255,.96);display:none;align-items:center;justify-content:space-between;gap:18px;box-shadow:0 7px 24px rgba(24,24,24,.07);}
 .cart-checkout-total{display:flex;flex-direction:column;gap:3px;min-width:0;}
 .cart-checkout-total span{font-size:11px;color:var(--c-mid);}
@@ -186,7 +189,14 @@
         </div>
         <h2>{{ $cartRtl ? 'سلتك فاضية' : 'Your cart is empty' }}</h2>
         <p>{{ $cartRtl ? 'اختار اللي يعجبك وهتلاقيه هنا.' : 'Find something you love and it will appear here.' }}</p>
-        <a href="{{ route('shop') }}" class="btn btn-dark">{{ $cartRtl ? 'كمّل تسوّق' : 'Continue Shopping' }}</a>
+        <div class="cart-empty-actions">
+          <a href="{{ route('shop') }}" class="btn btn-dark">{{ $cartRtl ? 'كمّل تسوّق' : 'Continue Shopping' }}</a>
+          @auth
+            <a href="{{ route('account.orders') }}" class="btn cart-empty-order-link">{{ $cartRtl ? 'شوف أوردراتك' : 'View Your Orders' }}</a>
+          @else
+            <a href="{{ route('order.track') }}" class="btn cart-empty-order-link">{{ $cartRtl ? 'تابع طلبك' : 'Track Your Order' }}</a>
+          @endauth
+        </div>
       </section>
     @else
       <div class="cart-screen-grid">
