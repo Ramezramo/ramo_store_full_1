@@ -1,27 +1,36 @@
 @extends('layouts.app')
-@section('title', ($q ? "\"$q\" — Search Results" : 'Search') . ' — Ramo Store')
+@php
+  $searchRtl = session('locale', 'en') === 'ar';
+  $searchResultsLabel = $searchRtl
+    ? ($products->total() === 1 ? 'نتيجة' : 'نتائج')
+    : ($products->total() === 1 ? 'result' : 'results');
+@endphp
+
+@section('title', ($searchRtl
+  ? ($q ? 'بحث عن «' . $q . '»' : 'بحث')
+  : ($q ? "\"$q\" — Search Results" : 'Search')) . ' — Ramo Store')
 
 @section('content')
-<div class="page">
+<div class="page search-page" dir="{{ $searchRtl ? 'rtl' : 'ltr' }}">
 
   <div class="breadcrumb">
-    <a href="{{ route('home') }}">Home</a><span>/</span>
-    <strong>{{ $q ? "Search: \"$q\"" : 'Search' }}</strong>
+    <a href="{{ route('home') }}">{{ $searchRtl ? 'الرئيسية' : 'Home' }}</a><span>/</span>
+    <strong>{{ $q ? ($searchRtl ? 'بحث عن «' . $q . '»' : "Search: \"$q\"") : ($searchRtl ? 'بحث' : 'Search') }}</strong>
   </div>
 
   {{-- SEARCH HERO --}}
   <div class="search-hero">
     <form method="GET" action="{{ route('search') }}" id="search-form">
       <div class="search-hero-bar">
-        <input type="text" name="q" value="{{ $q }}" placeholder="Search products…" id="search-q" autocomplete="off">
-        <button type="submit">Search</button>
+        <input type="text" name="q" value="{{ $q }}" placeholder="{{ $searchRtl ? 'دوّر على منتجات…' : 'Search products…' }}" id="search-q" autocomplete="off">
+        <button type="submit">{{ $searchRtl ? 'بحث' : 'Search' }}</button>
       </div>
       {{-- Preserve other filters on search --}}
       @if($sort && $sort !== 'relevance') <input type="hidden" name="sort" value="{{ $sort }}"> @endif
       @if($categoryId) <input type="hidden" name="category" value="{{ $categoryId }}"> @endif
     </form>
     @if($q)
-      <p class="search-result-meta">{{ $products->total() }} result{{ $products->total() != 1 ? 's' : '' }} for <strong>"{{ $q }}"</strong></p>
+      <p class="search-result-meta">{{ $products->total() }} {{ $searchRtl ? $searchResultsLabel : $searchResultsLabel }} {{ $searchRtl ? 'عن' : 'for' }} <strong>{{ $searchRtl ? '«' : '"' }}{{ $q }}{{ $searchRtl ? '»' : '"' }}</strong></p>
     @endif
   </div>
 
@@ -34,17 +43,17 @@
         if($f['type'] === 'in_stock') unset($removeParams['in_stock']);
       @endphp
       <a href="{{ route('search', $removeParams) }}" class="filter-chip">
-        {{ $f['label'] }} <span>×</span>
+        {{ $searchRtl && $f['type'] === 'in_stock' ? 'المتاح بس' : $f['label'] }} <span>×</span>
       </a>
     @endforeach
-    <a href="{{ route('search', $q ? ['q' => $q] : []) }}" class="filter-chip-clear">Clear all</a>
+    <a href="{{ route('search', $q ? ['q' => $q] : []) }}" class="filter-chip-clear">{{ $searchRtl ? 'مسح الكل' : 'Clear all' }}</a>
   </div>
   @endif
 
   <div class="search-layout" id="search-layout">
 
     <button type="button" class="mobile-filter-toggle" id="mobile-filter-toggle" aria-expanded="false" aria-controls="search-sidebar">
-      <span>Filters</span><span class="mobile-filter-chevron" aria-hidden="true">⌄</span>
+      <span>{{ $searchRtl ? 'الفلاتر' : 'Filters' }}</span><span class="mobile-filter-chevron" aria-hidden="true">⌄</span>
     </button>
 
     {{-- ── SIDEBAR FILTERS ── --}}
@@ -54,20 +63,20 @@
 
         {{-- Sort --}}
         <div class="filter-section">
-          <div class="filter-label">Sort By</div>
+          <div class="filter-label">{{ $searchRtl ? 'ترتيب حسب' : 'Sort By' }}</div>
           <select name="sort" class="sort-select" onchange="document.getElementById('filter-form').submit()">
-            <option value="relevance" {{ $sort === 'relevance' ? 'selected' : '' }}>Relevance</option>
-            <option value="newest"    {{ $sort === 'newest'    ? 'selected' : '' }}>Newest First</option>
-            <option value="price_asc" {{ $sort === 'price_asc' ? 'selected' : '' }}>Price: Low to High</option>
-            <option value="price_desc"{{ $sort === 'price_desc'? 'selected' : '' }}>Price: High to Low</option>
-            <option value="name_asc"  {{ $sort === 'name_asc'  ? 'selected' : '' }}>Name: A–Z</option>
-            <option value="name_desc" {{ $sort === 'name_desc' ? 'selected' : '' }}>Name: Z–A</option>
+            <option value="relevance" {{ $sort === 'relevance' ? 'selected' : '' }}>{{ $searchRtl ? 'الأكثر صلة' : 'Relevance' }}</option>
+            <option value="newest"    {{ $sort === 'newest'    ? 'selected' : '' }}>{{ $searchRtl ? 'الأحدث' : 'Newest First' }}</option>
+            <option value="price_asc" {{ $sort === 'price_asc' ? 'selected' : '' }}>{{ $searchRtl ? 'السعر: من الأقل للأعلى' : 'Price: Low to High' }}</option>
+            <option value="price_desc"{{ $sort === 'price_desc'? 'selected' : '' }}>{{ $searchRtl ? 'السعر: من الأعلى للأقل' : 'Price: High to Low' }}</option>
+            <option value="name_asc"  {{ $sort === 'name_asc'  ? 'selected' : '' }}>{{ $searchRtl ? 'الاسم: من أ إلى ي' : 'Name: A–Z' }}</option>
+            <option value="name_desc" {{ $sort === 'name_desc' ? 'selected' : '' }}>{{ $searchRtl ? 'الاسم: من ي إلى أ' : 'Name: Z–A' }}</option>
           </select>
         </div>
 
         {{-- Price Range --}}
         <div class="filter-section">
-          <div class="filter-label">Price Range <span id="price-label" class="filter-val"></span></div>
+          <div class="filter-label">{{ $searchRtl ? 'نطاق السعر' : 'Price Range' }} <span id="price-label" class="filter-val"></span></div>
           <div class="price-range-wrap">
             <div class="price-range-track" id="range-track">
               <div class="price-range-fill" id="range-fill"></div>
@@ -80,7 +89,7 @@
             </div>
             <div class="price-inputs-row">
               <div class="price-input-box">
-                <span>Min</span>
+                <span>{{ $searchRtl ? 'أقل سعر' : 'Min' }}</span>
                 <input type="number" name="min_price" id="min-price-input"
                        value="{{ $minPrice !== null ? (int)$minPrice : '' }}"
                        placeholder="{{ floor($priceRange->min_price) }}"
@@ -88,7 +97,7 @@
               </div>
               <div class="price-input-sep">–</div>
               <div class="price-input-box">
-                <span>Max</span>
+                <span>{{ $searchRtl ? 'أعلى سعر' : 'Max' }}</span>
                 <input type="number" name="max_price" id="max-price-input"
                        value="{{ $maxPrice !== null ? (int)$maxPrice : '' }}"
                        placeholder="{{ ceil($priceRange->max_price) }}"
@@ -101,7 +110,7 @@
         {{-- In Stock --}}
         <div class="filter-section">
           <label class="toggle-row">
-            <span class="filter-label" style="margin:0">In Stock Only</span>
+            <span class="filter-label" style="margin:0">{{ $searchRtl ? 'المتاح بس' : 'In Stock Only' }}</span>
             <label class="toggle-switch">
               <input type="checkbox" name="in_stock" value="1" id="in-stock-toggle"
                      {{ $inStock ? 'checked' : '' }} onchange="document.getElementById('filter-form').submit()">
@@ -112,10 +121,10 @@
 
         {{-- Category --}}
         <div class="filter-section">
-          <div class="filter-label">Category</div>
+          <div class="filter-label">{{ $searchRtl ? 'التصنيف' : 'Category' }}</div>
           <div class="cat-filter-list">
             <a href="{{ route('search', array_merge(request()->except('category'), ['category' => ''])) }}"
-               class="cat-filter-item {{ !$categoryId ? 'active' : '' }}">All Categories</a>
+               class="cat-filter-item {{ !$categoryId ? 'active' : '' }}">{{ $searchRtl ? 'كل التصنيفات' : 'All Categories' }}</a>
             @foreach($categories as $cat)
               <a href="{{ route('search', array_merge(request()->except('category'), ['category' => $cat->id])) }}"
                  class="cat-filter-item {{ $categoryId == $cat->id ? 'active' : '' }}">
@@ -126,7 +135,7 @@
         </div>
 
         {{-- Apply button (for price range) --}}
-        <button type="submit" class="apply-filters-btn">Apply Filters</button>
+        <button type="submit" class="apply-filters-btn">{{ $searchRtl ? 'تطبيق الفلاتر' : 'Apply Filters' }}</button>
       </form>
     </aside>
 
@@ -136,21 +145,21 @@
       @if($products->isEmpty())
         <div class="search-empty">
           <div style="font-size:64px;margin-bottom:20px">🔍</div>
-          <h3>No products found</h3>
+          <h3>{{ $searchRtl ? 'ملقيناش منتجات' : 'No products found' }}</h3>
           @if($q)
-            <p>We couldn't find anything for <strong>"{{ $q }}"</strong>. Try a different search or remove some filters.</p>
+            <p>{{ $searchRtl ? 'ملقيناش حاجة لـ' : "We couldn't find anything for" }} <strong>{{ $searchRtl ? '«' : '"' }}{{ $q }}{{ $searchRtl ? '»' : '"' }}</strong>{{ $searchRtl ? '. جرّب كلمة بحث تانية أو شيل بعض الفلاتر.' : '. Try a different search or remove some filters.' }}</p>
           @else
-            <p>Try adjusting the filters or browsing all products.</p>
+            <p>{{ $searchRtl ? 'جرّب تغيّر الفلاتر أو تصفّح كل المنتجات.' : 'Try adjusting the filters or browsing all products.' }}</p>
           @endif
           <div style="display:flex;gap:12px;justify-content:center;margin-top:24px;flex-wrap:wrap">
-            <a href="{{ route('search') }}" class="btn btn-outline" style="border-radius:10px;padding:11px 22px">Clear all filters</a>
-            <a href="{{ route('shop') }}" class="btn btn-dark" style="border-radius:10px;padding:11px 22px">Browse shop</a>
+            <a href="{{ route('search') }}" class="btn btn-outline" style="border-radius:10px;padding:11px 22px">{{ $searchRtl ? 'مسح كل الفلاتر' : 'Clear all filters' }}</a>
+            <a href="{{ route('shop') }}" class="btn btn-dark" style="border-radius:10px;padding:11px 22px">{{ $searchRtl ? 'تصفّح المتجر' : 'Browse shop' }}</a>
           </div>
         </div>
       @else
         <div class="search-toolbar">
-          <span class="result-count">{{ $products->total() }} product{{ $products->total()!=1?'s':'' }}</span>
-          <span style="font-size:13px;color:var(--c-mid)">Page {{ $products->currentPage() }} of {{ $products->lastPage() }}</span>
+          <span class="result-count">{{ $products->total() }} {{ $searchRtl ? $searchResultsLabel : ($products->total()!=1 ? 'products' : 'product') }}</span>
+          <span style="font-size:13px;color:var(--c-mid)">{{ $searchRtl ? 'صفحة' : 'Page' }} {{ $products->currentPage() }} {{ $searchRtl ? 'من' : 'of' }} {{ $products->lastPage() }}</span>
         </div>
 
         <div class="product-grid" style="margin-bottom:32px">
@@ -204,6 +213,16 @@
 <style>
 /* ── Search Page Styles ── */
 .search-hero{margin-bottom:28px}
+.search-page[dir="rtl"]{text-align:right}
+.search-page[dir="rtl"] .search-hero-bar{margin-left:0;margin-right:0}
+.search-page[dir="rtl"] .search-hero-bar input{text-align:right}
+.search-page[dir="rtl"] .search-result-meta{text-align:right}
+.search-page[dir="rtl"] .search-toolbar{direction:rtl}
+.search-page[dir="rtl"] .filter-label{direction:rtl}
+.search-page[dir="rtl"] .price-inputs-row{direction:rtl}
+.search-page[dir="rtl"] .search-empty{text-align:center}
+.search-page[dir="rtl"] .search-empty p{text-align:center}
+.search-page[dir="rtl"] .mobile-filter-toggle{direction:rtl}
 .search-hero-bar{display:flex;background:var(--c-white);border:2px solid var(--c-dark);border-radius:50px;overflow:hidden;max-width:680px}
 .search-hero-bar input{flex:1;padding:14px 20px;border:none;outline:none;font-size:15px;font-family:inherit;background:none}
 .search-hero-bar button{padding:12px 24px;background:var(--c-dark);color:#fff;border:none;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;transition:background .15s}
@@ -280,7 +299,9 @@ mark.search-hl{background:#fff3cd;color:inherit;border-radius:2px;padding:0 1px}
   .search-toolbar{gap:10px;flex-wrap:wrap;margin-bottom:14px}
   .search-toolbar>span:last-child{font-size:12px!important}
   .search-empty{padding:48px 16px}
+  .search-page[dir="rtl"] .search-hero-bar input{text-align:right}
 }
+
 </style>
 
 <script>
