@@ -92,9 +92,13 @@ class AuthWebController extends Controller
 
     public function logout(Request $r)
     {
+        $locale = $r->session()->get('locale', 'en');
+
         Auth::logout();
         $r->session()->invalidate();
         $r->session()->regenerateToken();
+        $r->session()->put('locale', $locale);
+
         return redirect()->route('home');
     }
 
