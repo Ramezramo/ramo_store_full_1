@@ -986,9 +986,6 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
         @php
           $__au = Auth::user();
           $__accountDisplayName = Str::limit($__au->first_name ?: $__au->name, 12);
-          if ($headerIsArabic && strcasecmp(trim($__accountDisplayName), 'Sara') === 0) {
-            $__accountDisplayName = 'سارة';
-          }
         @endphp
         <div class="nav-portal" id="account-portal">
           <button class="nav-user-btn" onclick="togglePortal('account-portal',event)" style="padding:7px 12px">
