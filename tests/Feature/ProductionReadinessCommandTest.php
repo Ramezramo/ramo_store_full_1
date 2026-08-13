@@ -11,6 +11,8 @@ class ProductionReadinessCommandTest extends TestCase
         config([
             'app.debug' => false,
             'app.url' => 'https://store.example.com',
+            'debugbar.enabled' => false,
+            'trustedproxy.proxies' => [],
             'session.secure' => true,
             'session.driver' => 'redis',
             'cache.default' => 'redis',
@@ -29,6 +31,27 @@ class ProductionReadinessCommandTest extends TestCase
         config([
             'app.debug' => true,
             'app.url' => 'https://store.example.com',
+            'debugbar.enabled' => false,
+            'trustedproxy.proxies' => [],
+            'session.secure' => true,
+            'session.driver' => 'redis',
+            'cache.default' => 'redis',
+            'queue.default' => 'redis',
+            'filesystems.default' => 's3',
+        ]);
+
+        $this->artisan('production:check')
+            ->expectsOutputToContain('Production configuration check failed.')
+            ->assertExitCode(1);
+    }
+
+    public function test_it_fails_when_wildcard_proxy_trust_is_enabled(): void
+    {
+        config([
+            'app.debug' => false,
+            'app.url' => 'https://store.example.com',
+            'debugbar.enabled' => false,
+            'trustedproxy.proxies' => '*',
             'session.secure' => true,
             'session.driver' => 'redis',
             'cache.default' => 'redis',

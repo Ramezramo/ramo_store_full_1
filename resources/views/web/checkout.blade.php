@@ -64,6 +64,7 @@
     <div>
       <form method="POST" action="{{ route('checkout.place') }}" id="checkout-form">
         @csrf
+        <input type="hidden" name="idempotency_key" value="{{ old('idempotency_key', $checkoutIdempotencyKey) }}">
 
         {{-- CONTACT INFO --}}
         <div class="ck-section">
@@ -286,6 +287,20 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   paymentOptions.forEach((input) => input.addEventListener('change', updateSelectedMethod));
   updateSelectedMethod();
+
+  const checkoutForm = document.getElementById('checkout-form');
+  checkoutForm?.addEventListener('submit', (event) => {
+    if (!checkoutForm.checkValidity()) return;
+    const submitButton = checkoutForm.querySelector('.place-order-btn');
+    if (!submitButton || submitButton.disabled) {
+      event.preventDefault();
+      return;
+    }
+    submitButton.disabled = true;
+    submitButton.setAttribute('aria-busy', 'true');
+    submitButton.textContent = checkoutText.isAr ? 'بنأكد الطلب…' : 'Placing order…';
+  });
+
   const useLocationBtn = document.getElementById('use-current-location-btn');
   const addressInput = document.querySelector('input[name="address"]');
   const cityInput = document.querySelector('input[name="city"]');

@@ -19,12 +19,17 @@ class SearchController extends Controller
         $categoryId = $request->input('category');
         $perPage    = 12;
 
-        // Global price range for slider
-        $priceRange = DB::table('product_variations')
-            ->selectRaw('MIN(price::numeric) as min_price, MAX(price::numeric) as max_price')
+        // Global price range for products that are actually sellable on the storefront.
+        $priceRange = DB::table('product_variations as pv')
+            ->join('products_data as p', 'p.id', '=', 'pv.product_id')
+            ->where('p.status', 'publish')
+            ->where('p.acceptance_status', 'approved')
+            ->where('pv.regular_price', '>', 0)
+            ->selectRaw('MIN(pv.price::numeric) as min_price, MAX(pv.price::numeric) as max_price')
             ->first();
 
-        // Base query
+        // Base query. Discovery surfaces must never leak a draft, rejected, or
+        // unpriced product even when it remains in a legacy search index.
         $query = DB::table('products_data as p')
             ->select(
                 'p.id', 'p.name', 'p.slug', 'p.images', 'p.translations',
@@ -36,6 +41,14 @@ class SearchController extends Controller
                 DB::raw('MAX(p.discount_percentage) as discount_percentage')
             )
             ->join('product_variations as pv', 'pv.product_id', '=', 'p.id')
+            ->where('p.status', 'publish')
+            ->where('p.acceptance_status', 'approved')
+            ->whereExists(function ($variations) {
+                $variations->selectRaw('1')
+                    ->from('product_variations as sellable_pv')
+                    ->whereColumn('sellable_pv.product_id', 'p.id')
+                    ->where('sellable_pv.regular_price', '>', 0);
+            })
             ->groupBy(
                 'p.id', 'p.name', 'p.slug', 'p.images', 'p.translations',
                 'p.description', 'p.stock_quantity', 'p.unit',
@@ -45,8 +58,10 @@ class SearchController extends Controller
         // Search query
         if ($q !== '') {
             $query->where(function ($sub) use ($q) {
-                $sub->whereRaw('LOWER(p.name) LIKE ?', ['%' . strtolower($q) . '%'])
-                    ->orWhereRaw('LOWER(p.description) LIKE ?', ['%' . strtolower($q) . '%']);
+                $needle = '%' . $q . '%';
+                $sub->where('p.name', 'ILIKE', $needle)
+                    ->orWhere('p.description', 'ILIKE', $needle)
+                    ->orWhere('p.search_text', 'ILIKE', $needle);
             });
         }
 
@@ -58,7 +73,12 @@ class SearchController extends Controller
 
         // In-stock filter
         if ($inStock) {
-            $query->where('p.stock_quantity', '>', 0);
+            $query->whereExists(function ($variations) {
+                $variations->selectRaw('1')
+                    ->from('product_variations as in_stock_pv')
+                    ->whereColumn('in_stock_pv.product_id', 'p.id')
+                    ->where('in_stock_pv.stock_quantity', '>', 0);
+            });
         }
 
         // Price filter via HAVING (after GROUP BY)
@@ -77,6 +97,12 @@ class SearchController extends Controller
             case 'name_asc':   $query->orderBy('p.name', 'asc');                  break;
             case 'name_desc':  $query->orderBy('p.name', 'desc');                 break;
             default:
+                if ($q !== '') {
+                    $query->orderByRaw(
+                        'CASE WHEN p.name ILIKE ? THEN 0 WHEN p.name ILIKE ? THEN 1 ELSE 2 END',
+                        [$q, '%' . $q . '%']
+                    );
+                }
                 $query->orderBy('p.id', 'desc');
         }
 
@@ -113,7 +139,7 @@ class SearchController extends Controller
             $activeFilters[] = ['type' => 'category', 'label' => $cat?->name ?? "#$categoryId", 'remove' => 'category'];
         }
         if ($minPrice !== null || $maxPrice !== null) {
-            $pLabel = ($minPrice !== null ? number_format($minPrice) : '0') . ' – ' . ($maxPrice !== null ? number_format($maxPrice) : number_format($priceRange->max_price)) . ' EGP';
+            $pLabel = ($minPrice !== null ? number_format($minPrice) : '0') . ' – ' . ($maxPrice !== null ? number_format($maxPrice) : number_format($priceRange->max_price ?? 0)) . ' EGP';
             $activeFilters[] = ['type' => 'price', 'label' => $pLabel, 'remove' => ['min_price','max_price']];
         }
         if ($inStock) $activeFilters[] = ['type' => 'in_stock', 'label' => 'In Stock Only', 'remove' => 'in_stock'];

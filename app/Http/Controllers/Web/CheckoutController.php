@@ -121,6 +121,12 @@ class CheckoutController extends Controller
         $total      = $afterDiscount + $shippingFee;
 
         $user = Auth::user();
+        $checkoutIdempotencyKey = session('checkout_idempotency_key');
+        if (! is_string($checkoutIdempotencyKey) || ! Str::isUuid($checkoutIdempotencyKey)) {
+            $checkoutIdempotencyKey = (string) Str::uuid();
+            session(['checkout_idempotency_key' => $checkoutIdempotencyKey]);
+        }
+
         $savedAddress = [];
         if ($user && ! empty($user->shipping)) {
             $savedAddress = json_decode($user->shipping, true)
@@ -132,12 +138,30 @@ class CheckoutController extends Controller
         $paymentMethods = PaymentConfig::checkoutMethods();
         return view('web.checkout', compact(
             'cart', 'subtotal', 'discount', 'shippingFee', 'total', 'coupon',
-            'user', 'savedAddress', 'authConfig', 'paymentMethods'
+            'user', 'savedAddress', 'authConfig', 'paymentMethods', 'checkoutIdempotencyKey'
         ));
     }
 
     public function place(Request $r)
     {
+        $idempotencyKey = (string) $r->input('idempotency_key');
+        // Guest checkout is normally disabled, but use a stable non-null scope if it is enabled.
+        $idempotencyUserId = (int) (Auth::id() ?? 0);
+
+        // Check completed requests before inspecting the cart: a successful first
+        // request clears the cart, while a duplicate must still reach its receipt.
+        if (Str::isUuid($idempotencyKey)) {
+            $completedOrderId = DB::table('idempotency_keys')
+                ->where('key', $idempotencyKey)
+                ->where('user_id', $idempotencyUserId)
+                ->value('order_id');
+
+            if ($completedOrderId) {
+                session()->forget('checkout_idempotency_key');
+                return redirect()->route('order.success', $completedOrderId);
+            }
+        }
+
         $cart = $this->getCart();
         if (empty($cart)) {
             return redirect()->route('cart')->with('error', $this->localized('Your cart is empty.', 'السلة فاضية.'));
@@ -161,7 +185,8 @@ class CheckoutController extends Controller
             'longitude'      => 'nullable|numeric',
             'save_address'   => 'nullable|boolean',
             'payment_method' => 'required|string',
-            'notes'          => 'nullable|string|max:500',
+            'notes'           => 'nullable|string|max:500',
+            'idempotency_key' => 'required|uuid',
         ]);
 
         // Only accept methods that are currently displayed and enabled by admin.
@@ -191,7 +216,33 @@ class CheckoutController extends Controller
         ];
 
         try {
-            $orderId = DB::transaction(function () use ($cart, $r, $billing, $paymentTitle, $isManualPayment) {
+            $checkoutResult = DB::transaction(function () use ($cart, $r, $billing, $paymentTitle, $isManualPayment, $idempotencyKey, $idempotencyUserId) {
+                // Claim the key inside the same transaction as stock changes and order creation.
+                // A double-click or retry can therefore never create a second order.
+                $claimed = DB::table('idempotency_keys')->insertOrIgnore([
+                    'key' => $idempotencyKey,
+                    'user_id' => $idempotencyUserId,
+                    'order_id' => null,
+                    'created_at' => now(),
+                ]);
+
+                if (! $claimed) {
+                    $existingKey = DB::table('idempotency_keys')
+                        ->where('key', $idempotencyKey)
+                        ->where('user_id', $idempotencyUserId)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if ($existingKey?->order_id) {
+                        return ['order_id' => (int) $existingKey->order_id, 'replayed' => true];
+                    }
+
+                    throw new \RuntimeException($this->localized(
+                        'Your order is already being processed. Please wait a moment before trying again.',
+                        'طلبك بيتعالج دلوقتي. استنى لحظة قبل ما تحاول تاني.'
+                    ));
+                }
+
                 $cartProductIds = collect($cart)->pluck('product_id')->map(fn ($id) => (int) $id)->unique()->values()->all();
 
                 $dbProducts = DB::table('products_data')
@@ -396,11 +447,23 @@ class CheckoutController extends Controller
                     ]);
                 }
 
-                return $orderId;
+                DB::table('idempotency_keys')
+                    ->where('key', $idempotencyKey)
+                    ->where('user_id', $idempotencyUserId)
+                    ->update(['order_id' => $orderId]);
+
+                return ['order_id' => $orderId, 'replayed' => false];
             });
         } catch (\RuntimeException $e) {
             return redirect()->route('cart')->with('error', $e->getMessage());
         }
+
+        if ($checkoutResult['replayed']) {
+            session()->forget('checkout_idempotency_key');
+            return redirect()->route('order.success', $checkoutResult['order_id']);
+        }
+
+        $orderId = $checkoutResult['order_id'];
 
         if ($user = Auth::user()) {
             $shipping = [
@@ -436,7 +499,7 @@ class CheckoutController extends Controller
         }
 
         $this->saveCart([]);
-        session()->forget('ramo_coupon');
+        session()->forget(['ramo_coupon', 'checkout_idempotency_key']);
 
         return redirect()->route('order.success', $orderId);
     }

@@ -33,13 +33,12 @@ class GuestOrderController extends Controller
         $emailInput = strtolower(trim($request->input('email')));
 
         $order = DB::table('orders')->where('id', $orderId)->first();
+        $genericLookupError = $isAr
+            ? 'مقدرناش نلاقي طلب بالبيانات دي. راجع رقم الطلب والإيميل وحاول تاني.'
+            : 'We could not find an order with those details. Please check them and try again.';
 
         if (!$order) {
-            return back()->withInput()->with(
-                'error', $isAr
-                    ? 'مش لاقيين طلب رقم ' . $orderId . '، تأكد من رقم الطلب.'
-                    : 'Order #' . $orderId . ' was not found. Please check your order number.'
-            );
+            return back()->withInput()->with('error', $genericLookupError);
         }
 
         $billing = [];
@@ -52,11 +51,7 @@ class GuestOrderController extends Controller
         $storedEmail = strtolower(trim($billing['email'] ?? ''));
 
         if (!$storedEmail || $storedEmail !== $emailInput) {
-            return back()->withInput()->with(
-                'error', $isAr
-                    ? 'الإيميل مش مطابق لطلب رقم ' . $orderId . '، حاول تاني.'
-                    : 'The email address does not match our records for order #' . $orderId . '. Please try again.'
-            );
+            return back()->withInput()->with('error', $genericLookupError);
         }
 
         $lineItems = [];

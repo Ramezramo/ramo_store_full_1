@@ -23,7 +23,13 @@ class AddSecurityHeaders
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+        // Checkout uses browser geolocation, so geolocation is intentionally not disabled here.
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=()');
+        $response->headers->remove('X-Powered-By');
+
+        if (function_exists('header_remove')) {
+            header_remove('X-Powered-By');
+        }
 
         if ($request->isSecure()) {
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');

@@ -31,25 +31,29 @@ Route::get('/product/{id}', [WebController::class, 'product'])->name('product');
 Route::get('/vendor/{id}', [WebController::class, 'vendor'])->name('vendor.store');
 
 Route::get('/cart', [CartController::class, 'index'])->name('cart');
-Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
-Route::post('/cart/update/{rowId}', [CartController::class, 'update'])->name('cart.update');
-Route::delete('/cart/remove/{rowId}', [CartController::class, 'remove'])->name('cart.remove');
-Route::delete('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');
-Route::post('/cart/coupon', [CartController::class, 'applyCoupon'])->name('cart.coupon');
-Route::delete('/cart/coupon', [CartController::class, 'removeCoupon'])->name('cart.coupon.remove');
+Route::post('/cart/add', [CartController::class, 'add'])->middleware('throttle:cart-mutation')->name('cart.add');
+Route::post('/cart/update/{rowId}', [CartController::class, 'update'])->middleware('throttle:cart-mutation')->name('cart.update');
+Route::delete('/cart/remove/{rowId}', [CartController::class, 'remove'])->middleware('throttle:cart-mutation')->name('cart.remove');
+Route::delete('/cart/clear', [CartController::class, 'clear'])->middleware('throttle:cart-mutation')->name('cart.clear');
+Route::post('/cart/coupon', [CartController::class, 'applyCoupon'])->middleware('throttle:coupon-check')->name('cart.coupon');
+Route::delete('/cart/coupon', [CartController::class, 'removeCoupon'])->middleware('throttle:coupon-check')->name('cart.coupon.remove');
 Route::get('/cart/count', [CartController::class, 'count'])->name('cart.count');
 
 Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
-Route::post('/checkout/place', [CheckoutController::class, 'place'])->name('checkout.place');
+Route::post('/checkout/place', [CheckoutController::class, 'place'])->middleware('throttle:checkout-place')->name('checkout.place');
 Route::get('/order-success/{id}', [CheckoutController::class, 'success'])->name('order.success');
 
 Route::get('/login', [AuthWebController::class, 'showLogin'])->name('login');
-Route::post('/login', [AuthWebController::class, 'login']);
+Route::post('/login', [AuthWebController::class, 'login'])->middleware('throttle:login-web');
 Route::get('/register', [AuthWebController::class, 'showRegister'])->name('register');
 Route::post('/register', [AuthWebController::class, 'register']);
 Route::post('/logout', [AuthWebController::class, 'logout'])->name('logout');
-Route::post('/auth/send-otp', [OtpAuthController::class, 'sendOtp'])->name('auth.send-otp');
-Route::post('/auth/verify-otp', [OtpAuthController::class, 'verifyOtp'])->name('auth.verify-otp');
+Route::post('/auth/send-otp', [OtpAuthController::class, 'sendOtp'])
+    ->middleware(['throttle:otp-send-ip', 'throttle:otp-send-phone'])
+    ->name('auth.send-otp');
+Route::post('/auth/verify-otp', [OtpAuthController::class, 'verifyOtp'])
+    ->middleware(['throttle:otp-verify-ip', 'throttle:otp-verify-phone'])
+    ->name('auth.verify-otp');
 Route::get('/auth/otp-verify', fn() => view('web.auth.otp-verify'))->name('auth.otp-verify');
 Route::get('/auth/complete-profile', [OtpAuthController::class, 'showCompleteProfile'])->name('auth.complete-profile');
 Route::post('/auth/complete-profile', [OtpAuthController::class, 'completeProfile'])->name('auth.complete-profile.post');
@@ -64,7 +68,7 @@ Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']
 
 use App\Http\Controllers\Web\GuestOrderController;
 Route::get('/my-order', [GuestOrderController::class, 'index'])->name('guest.order');
-Route::post('/my-order', [GuestOrderController::class, 'lookup'])->name('guest.order.lookup');
+Route::post('/my-order', [GuestOrderController::class, 'lookup'])->middleware('throttle:order-lookup')->name('guest.order.lookup');
 Route::post('/my-order/{id}/payment-receipt', [PaymentReceiptController::class, 'uploadForGuest'])->name('guest.order.payment-receipt');
 
 use App\Http\Controllers\Web\EmailVerificationController;
@@ -96,11 +100,11 @@ Route::middleware('auth')->prefix('account')->group(function () {
 Route::middleware('auth')->post('/reviews', [ReviewController::class, 'webStore'])->name('review.store');
 Route::middleware('auth')->delete('/reviews/{id}', [ReviewController::class, 'destroy'])->name('review.destroy');
 Route::post('/reviews/{id}/helpful', [ReviewController::class, 'helpful'])->name('review.helpful');
-Route::get('/search', [SearchController::class, 'index'])->name('search');
+Route::get('/search', [SearchController::class, 'index'])->middleware('throttle:search')->name('search');
 
 use App\Http\Controllers\Web\OrderTrackingController;
 Route::get('/track', [OrderTrackingController::class, 'index'])->name('order.track');
-Route::post('/track', [OrderTrackingController::class, 'track'])->name('order.track.submit');
+Route::post('/track', [OrderTrackingController::class, 'track'])->middleware('throttle:order-lookup')->name('order.track.submit');
 
 use App\Http\Controllers\Web\VendorWebController;
 use App\Http\Controllers\Web\VendorProductController;

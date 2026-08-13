@@ -25,4 +25,15 @@ class SecurityHeadersTest extends TestCase
         $response->assertOk()
             ->assertHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     }
+
+    public function test_untrusted_forwarded_https_header_does_not_enable_secure_response_behavior(): void
+    {
+        $response = $this->withServerVariables([
+            'HTTP_X_FORWARDED_PROTO' => 'https',
+            'REMOTE_ADDR' => '203.0.113.200',
+        ])->get('http://localhost/');
+
+        $response->assertOk()
+            ->assertHeaderMissing('Strict-Transport-Security');
+    }
 }

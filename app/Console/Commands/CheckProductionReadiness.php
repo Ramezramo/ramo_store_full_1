@@ -42,6 +42,18 @@ class CheckProductionReadiness extends Command
                 'actual' => (string) config('app.url'),
             ],
             [
+                'name' => 'Debug diagnostics are disabled',
+                'passed' => config('debugbar.enabled') === false,
+                'expected' => 'DEBUGBAR_ENABLED=false',
+                'actual' => config('debugbar.enabled') ? 'true' : 'false',
+            ],
+            [
+                'name' => 'Trusted proxies are explicit or unused',
+                'passed' => ! in_array(config('trustedproxy.proxies'), ['*', '**'], true),
+                'expected' => 'specific CDN/load-balancer CIDRs, or empty for a direct HTTPS origin',
+                'actual' => config('trustedproxy.proxies') ? 'configured' : 'none',
+            ],
+            [
                 'name' => 'Session cookies require HTTPS',
                 'passed' => config('session.secure') === true,
                 'expected' => 'SESSION_SECURE_COOKIE=true',

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Constants\AppConstants;
+use App\Services\Catalog\ProductPublicationValidator;
 use App\Services\OrderStatusService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -417,8 +418,13 @@ class AdminDashboardController extends Controller
         return view('admin.products', compact('products', 'search', 'acceptance', 'status'));
     }
 
-    public function approveProduct(int $id)
+    public function approveProduct(int $id, ProductPublicationValidator $publicationValidator)
     {
+        $failures = $publicationValidator->failuresFor($id);
+        if ($failures) {
+            return back()->with('error', 'Product cannot be published: ' . implode(' ', $failures));
+        }
+
         DB::table('products_data')->where('id', $id)->update([
             'acceptance_status' => 'approved',
             'status'            => 'publish',
@@ -445,14 +451,21 @@ class AdminDashboardController extends Controller
         return back()->with('success', 'Product deleted.');
     }
 
-    public function toggleProductStatus(Request $request, int $id)
+    public function toggleProductStatus(Request $request, int $id, ProductPublicationValidator $publicationValidator)
     {
         $status = $request->input('status', 'publish');
+        if ($status === 'publish') {
+            $failures = $publicationValidator->failuresFor($id);
+            if ($failures) {
+                return back()->with('error', 'Product cannot be published: ' . implode(' ', $failures));
+            }
+        }
+
         DB::table('products_data')->where('id', $id)->update(['status' => $status, 'updated_at' => now()]);
         return back()->with('success', 'Product status updated.');
     }
 
-    public function bulkProducts(Request $request)
+    public function bulkProducts(Request $request, ProductPublicationValidator $publicationValidator)
     {
         $request->validate([
             'bulk_action' => 'required|in:approve,reject,delete',
@@ -466,12 +479,31 @@ class AdminDashboardController extends Controller
         $now = now();
 
         if ($request->bulk_action === 'approve') {
-            DB::table('products_data')->whereIn('id', $ids)->update([
-                'acceptance_status' => 'approved',
-                'status'            => 'publish',
-                'updated_at'        => $now,
-            ]);
-            return back()->with('success', count($ids).' product(s) approved and published.');
+            $publishableIds = [];
+            $blocked = [];
+
+            foreach ($ids as $id) {
+                $failures = $publicationValidator->failuresFor($id);
+                if ($failures) {
+                    $blocked[] = '#' . $id . ': ' . implode(' ', $failures);
+                    continue;
+                }
+                $publishableIds[] = $id;
+            }
+
+            if ($publishableIds) {
+                DB::table('products_data')->whereIn('id', $publishableIds)->update([
+                    'acceptance_status' => 'approved',
+                    'status'            => 'publish',
+                    'updated_at'        => $now,
+                ]);
+            }
+
+            if ($blocked) {
+                return back()->with('error', 'Published ' . count($publishableIds) . ' product(s). Blocked incomplete products: ' . implode(' | ', $blocked));
+            }
+
+            return back()->with('success', count($publishableIds).' product(s) approved and published.');
         }
 
         if ($request->bulk_action === 'reject') {

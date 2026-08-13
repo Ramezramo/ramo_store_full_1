@@ -87,10 +87,31 @@ class AppConstants
         if (!$path || trim($path) === '' || $path === 'empty') {
             return null;
         }
+
+        $path = trim($path);
         if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
-            return static::normalizeLegacyLocalUrl($path);
+            $normalizedUrl = static::normalizeLegacyLocalUrl($path);
+
+            if (str_starts_with($normalizedUrl, '/storage/')) {
+                return static::publicStoragePathExists($normalizedUrl) ? $normalizedUrl : null;
+            }
+
+            return $normalizedUrl;
         }
-        return static::imageBase() . ltrim(str_replace('\\', '/', $path), '/');
+
+        $normalizedPath = ltrim(str_replace('\\', '/', $path), '/');
+
+        return static::publicStoragePathExists($normalizedPath)
+            ? static::imageBase() . $normalizedPath
+            : null;
+    }
+
+    /** Determine whether a public-disk media path exists without exposing a broken URL. */
+    private static function publicStoragePathExists(string $path): bool
+    {
+        $storagePath = preg_replace('/^\/storage\//', '', strtok($path, '?'));
+
+        return $storagePath !== '' && \Illuminate\Support\Facades\Storage::disk('public')->exists($storagePath);
     }
 
     /**
@@ -146,11 +167,20 @@ class AppConstants
             ? (json_decode($imagesRaw, true) ?? json_decode(stripslashes($imagesRaw), true) ?? [])
             : (array) $imagesRaw;
 
-        $path = $imgs['thumbnail']
-            ?? (array_values((array)($imgs['other_images']  ?? []))[0] ?? null)
-            ?? (array_values((array)($imgs['natural_images'] ?? []))[0] ?? null);
+        $paths = array_merge(
+            [$imgs['thumbnail'] ?? null],
+            array_values((array) ($imgs['other_images'] ?? [])),
+            array_values((array) ($imgs['natural_images'] ?? [])),
+        );
 
-        return static::imageUrl($path);
+        foreach ($paths as $path) {
+            $url = static::imageUrl(is_string($path) ? $path : null);
+            if ($url) {
+                return $url;
+            }
+        }
+
+        return null;
     }
 
     /**

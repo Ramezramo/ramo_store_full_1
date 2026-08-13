@@ -33,13 +33,14 @@ class OrderTrackingController extends Controller
         $phoneInput = preg_replace('/\s+/', '', $request->input('phone'));
 
         $order = DB::table('orders')->where('id', $orderId)->first();
+        $genericLookupError = $isAr
+            ? 'مقدرناش نلاقي طلب بالبيانات دي. راجع رقم الطلب ورقم الموبايل وحاول تاني.'
+            : 'We could not find an order with those details. Please check them and try again.';
 
         if (!$order) {
             return view('web.order-tracking', [
                 'order' => null,
-                'error' => $isAr
-                    ? 'مش لاقيين طلب رقم ' . $orderId . '، تأكد من رقم الطلب'
-                    : 'Order #' . $orderId . ' was not found. Please check your order number.',
+                'error' => $genericLookupError,
             ]);
         }
 
@@ -62,9 +63,7 @@ class OrderTrackingController extends Controller
         if (!$match) {
             return view('web.order-tracking', [
                 'order' => null,
-                'error' => $isAr
-                    ? 'رقم الموبايل مش مطابق لطلب رقم ' . $orderId . '، حاول تاني'
-                    : 'The phone number does not match our records for order #' . $orderId . '. Please try again.',
+                'error' => $genericLookupError,
             ]);
         }
 
