@@ -327,7 +327,8 @@ class WebController extends Controller
         // Keep the navigation/filter shell fast. Product data is loaded by the
         // browser immediately after the shell paints via the AJAX branch below.
         $isProductRequest = $request->ajax();
-        $flashSale = $isProductRequest ? FlashSaleService::getActive() : null;
+        $locale = strtolower((string) session('locale', 'en'));
+        $flashSale = $isProductRequest ? FlashSaleService::getActive($locale) : null;
         $query = $this->baseProductQuery();
 
         // Build category hierarchy for sidebar
@@ -390,7 +391,9 @@ class WebController extends Controller
         // AJAX / infinite-scroll request — return JSON with rendered card HTML
         if ($isProductRequest) {
             $rawProducts = $query->paginate(16)->withQueryString();
-            $products    = $rawProducts->through(fn($p) => $this->parseProduct($p, $flashSale));
+            $products    = $rawProducts->through(fn($p) =>
+                $this->localizeTimelineProductText($this->parseProduct($p, $flashSale), $locale)
+            );
             $productIds  = $products->pluck('id')->all();
             $cardVariations = [];
 
@@ -454,6 +457,11 @@ class WebController extends Controller
             : trim((string) $rawMobileLayout, " \t\n\r\0\x0B\"");
         if (!in_array($shopMobileLayout, ['grid', 'horizontal'], true)) {
             $shopMobileLayout = 'horizontal';
+        }
+        // Arabic shop mode uses the compact two-column phone grid so localized
+        // product cards remain consistent with the Arabic storefront direction.
+        if ($locale === 'ar') {
+            $shopMobileLayout = 'grid';
         }
 
         // Deliberately leave $products null here. Rendering product cards in the
