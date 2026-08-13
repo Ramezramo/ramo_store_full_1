@@ -479,14 +479,15 @@ class WebController extends Controller
 
     public function product($id)
     {
-        $flashSale = FlashSaleService::getActive();
+        $locale = session('locale', 'en');
+        $flashSale = FlashSaleService::getActive($locale);
         $raw = $this->baseProductQuery()
             ->where('p.id', $id)
             ->first();
 
         if (! $raw) abort(404);
 
-        $product    = $this->parseProduct($raw, $flashSale);
+        $product    = $this->localizeTimelineProductText($this->parseProduct($raw, $flashSale), $locale);
         $variations = DB::table('product_variations')
             ->where('product_id', $id)
             ->orderBy('main_variation', 'desc')
@@ -519,7 +520,7 @@ class WebController extends Controller
                     ->where('p.id', '!=', $id)
                     ->limit(8)
                     ->get()
-                    ->map(fn($p) => $this->parseProduct($p, $flashSale));
+                    ->map(fn($p) => $this->localizeTimelineProductText($this->parseProduct($p, $flashSale), $locale));
             }
         }
 
@@ -528,7 +529,7 @@ class WebController extends Controller
             ->orderByRaw('RANDOM()')
             ->limit(4)
             ->get()
-            ->map(fn($p) => $this->parseProduct($p, $flashSale));
+            ->map(fn($p) => $this->localizeTimelineProductText($this->parseProduct($p, $flashSale), $locale));
 
         $reviews = DB::table('product_reviews as r')
             ->leftJoin('users as u', 'u.id', '=', 'r.user_id')
@@ -583,7 +584,8 @@ class WebController extends Controller
 
     public function vendor($id)
     {
-        $flashSale = FlashSaleService::getActive();
+        $locale = session('locale', 'en');
+        $flashSale = FlashSaleService::getActive($locale);
         $vendor = DB::table('vendor_users')
             ->where('id', $id)
             ->where('status', 'approved')
@@ -602,7 +604,7 @@ class WebController extends Controller
         else                                        $query->orderBy('p.id', 'desc');
 
         $rawProducts = $query->paginate(12)->withQueryString();
-        $products    = $rawProducts->through(fn($p) => $this->parseProduct($p, $flashSale));
+        $products    = $rawProducts->through(fn($p) => $this->localizeTimelineProductText($this->parseProduct($p, $flashSale), $locale));
 
         return view('web.vendor', compact('vendor', 'products'));
     }
@@ -640,6 +642,8 @@ class WebController extends Controller
     {
         $product->timeline_name = $product->name;
         $product->timeline_description = $product->description;
+        $product->tl_display_name = $product->name;
+        $product->tl_display_description = $product->description;
 
         if (strtolower($locale) === 'en') {
             return $product;
@@ -657,9 +661,11 @@ class WebController extends Controller
 
             if (filled($translation['name'] ?? null)) {
                 $product->timeline_name = $translation['name'];
+                $product->tl_display_name = $translation['name'];
             }
             if (filled($translation['description'] ?? null)) {
                 $product->timeline_description = $translation['description'];
+                $product->tl_display_description = $translation['description'];
             }
             break;
         }
