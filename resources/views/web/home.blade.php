@@ -369,6 +369,9 @@
       @if($products->count())
       <style>
         #{{ $secId }} .product-card { border-radius: var(--tl-card-r,{{ $cardRadius }}px) }
+        @media(max-width:600px){
+          #{{ $secId }} { grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:10px !important; }
+        }
         @if($imgHeight)
         #{{ $secId }} .product-card-img { aspect-ratio: unset; height: var(--tl-img-h,{{ $imgHeight }}px) }
         @endif
@@ -484,6 +487,9 @@
       @if($products->count())
       <style>
         #{{ $secId }} .product-card { border-radius: var(--tl-card-r,{{ $cardRadius }}px) }
+        @media(max-width:600px){
+          #{{ $secId }} { grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:10px !important; }
+        }
         @if($imgHeight)
         #{{ $secId }} .product-card-img { aspect-ratio: unset; height: var(--tl-img-h,{{ $imgHeight }}px) }
         @endif
