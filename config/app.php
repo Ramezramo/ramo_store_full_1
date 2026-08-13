@@ -57,6 +57,9 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    // Optional CDN or asset-host origin for files stored under /storage.
+    'image_base_url' => env('IMAGE_BASE_URL'),
+
     'asset_url' => env('ASSET_URL'),
 
     /*

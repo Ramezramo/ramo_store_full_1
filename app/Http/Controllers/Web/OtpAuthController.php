@@ -111,7 +111,7 @@ class OtpAuthController extends Controller
             ]);
         }
 
-        $isLogDriver = strtolower((string) env('SMS_GATEWAY', 'log')) === 'log';
+        $isLogDriver = strtolower((string) config('sms.driver', 'log')) === 'log';
 
         try {
             $this->sendSms($phone, $otp);

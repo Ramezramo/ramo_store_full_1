@@ -18,6 +18,14 @@ class PreventPageCaching
     public function handle(Request $request, Closure $next)
     {
         $response = $next($request);
+
+        // This middleware exists for visual QA only. Keep normal caching available
+        // whenever production-safe debug mode is disabled, while preserving instant
+        // reloads during local visual QA.
+        if (! config('app.debug')) {
+            return $response;
+        }
+
         $contentType = (string) $response->headers->get('Content-Type', '');
 
         if ($request->isMethod('GET') && ($response->isRedirection() || str_contains($contentType, 'text/html'))) {

@@ -140,7 +140,7 @@ class MailtrapChannel
     {
         $message = $notification->toMailtrap($notifiable);
 
-        $apiToken = env('MAILTRAP_API_TOKEN', 'not-set');
+        $apiToken = config('services.mailtrap.api_token', 'not-set');
         // \Log::info('Mailtrap API Token: ' . substr($apiToken, 0, 5) . '...');
         // \Log::info('Sending to: ' . $message['email']);
         // \Log::info('Mailtrap Payload: ' . json_encode($message, JSON_UNESCAPED_UNICODE));

@@ -57,7 +57,7 @@ class AppConstants
      */
     public static function imageBase(): string
     {
-        $override = env('IMAGE_BASE_URL');
+        $override = config('app.image_base_url');
         if ($override) {
             return rtrim($override, '/') . '/';
         }

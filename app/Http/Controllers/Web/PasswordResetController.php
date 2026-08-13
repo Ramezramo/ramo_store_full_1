@@ -50,8 +50,8 @@ class PasswordResetController extends Controller
         );
 
         $resetUrl = route('password.reset.form', ['token' => $token, 'email' => $user->email]);
-        $isDevMode = config('app.debug') && strtolower((string) env('MAIL_MAILER', 'smtp')) === 'smtp'
-                     && env('MAIL_HOST') === 'mailpit';
+        $isDevMode = config('app.debug') && strtolower((string) config('mail.default', 'smtp')) === 'smtp'
+                     && config('mail.mailers.smtp.host') === 'mailpit';
 
         if ($isDevMode) {
             return back()->with([

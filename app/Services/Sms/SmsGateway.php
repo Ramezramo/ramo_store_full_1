@@ -10,7 +10,7 @@ class SmsGateway
 {
     public function send(string $phone, string $message): bool
     {
-        $driver = strtolower((string) env('SMS_GATEWAY', 'log'));
+        $driver = strtolower((string) config('sms.driver', 'log'));
 
         if ($driver === 'msegat') {
             return $this->sendViaMsegat($phone, $message);
@@ -38,15 +38,15 @@ class SmsGateway
 
     private function sendViaMsegat(string $phone, string $message): bool
     {
-        $username = env('MSEGAT_USERNAME');
-        $password = env('MSEGAT_PASSWORD');
-        $sender = env('MSEGAT_SENDER', 'RamoStore');
+        $username = config('sms.msegat.username');
+        $password = config('sms.msegat.password');
+        $sender = config('sms.msegat.sender', 'RamoStore');
 
         if (!$username || !$password) {
             throw new RuntimeException('Msegat credentials are missing.');
         }
 
-        $response = Http::asForm()->post('https://www.msegat.com/gw/sendsms.php', [
+        $response = Http::connectTimeout(5)->timeout((int) config('sms.timeout', 10))->asForm()->post('https://www.msegat.com/gw/sendsms.php', [
             'userName'   => $username,
             'numbers'    => $phone,
             'userSender' => $sender,
@@ -63,15 +63,15 @@ class SmsGateway
 
     private function sendViaVonage(string $phone, string $message): bool
     {
-        $key    = env('VONAGE_KEY');
-        $secret = env('VONAGE_SECRET');
-        $from   = env('VONAGE_FROM', 'RamoStore');
+        $key    = config('sms.vonage.key');
+        $secret = config('sms.vonage.secret');
+        $from   = config('sms.vonage.from', 'RamoStore');
 
         if (!$key || !$secret) {
             throw new RuntimeException('Vonage credentials are missing.');
         }
 
-        $response = Http::asForm()->post('https://rest.nexmo.com/sms/json', [
+        $response = Http::connectTimeout(5)->timeout((int) config('sms.timeout', 10))->asForm()->post('https://rest.nexmo.com/sms/json', [
             'api_key'    => $key,
             'api_secret' => $secret,
             'to'         => $phone,
