@@ -20,7 +20,7 @@ class WishlistController extends Controller
         if (!empty($ids)) {
             $products = DB::table('products_data as p')
                 ->select(
-                    'p.id', 'p.name', 'p.images', 'p.stock_quantity',
+                    'p.id', 'p.name', 'p.translations', 'p.images', 'p.stock_quantity',
                     'p.minimum_order_qty', 'p.max_orders_per_person',
                     'p.sold_individually', 'p.button_mode',
                     DB::raw('MIN(pv.price) as price'),
@@ -29,7 +29,7 @@ class WishlistController extends Controller
                 ->join('product_variations as pv', 'pv.product_id', '=', 'p.id')
                 ->whereIn('p.id', $ids)
                 ->groupBy(
-                    'p.id', 'p.name', 'p.images', 'p.stock_quantity',
+                    'p.id', 'p.name', 'p.translations', 'p.images', 'p.stock_quantity',
                     'p.minimum_order_qty', 'p.max_orders_per_person',
                     'p.sold_individually', 'p.button_mode'
                 )
@@ -39,6 +39,14 @@ class WishlistController extends Controller
                     $p->price      = (float)($p->price ?? 0);
                     $p->sale_price = (float)($p->sale_price ?? 0);
                     $p->on_sale    = $p->sale_price > 0 && $p->sale_price < $p->price;
+
+                    $p->timeline_name = $p->name;
+                    if (session('locale', 'en') === 'ar') {
+                        $translations = json_decode($p->translations ?? '[]', true) ?: [];
+                        $arabic = collect($translations)->first(fn ($translation) => ($translation['locale'] ?? null) === 'ar');
+                        $p->timeline_name = trim((string)($arabic['name'] ?? '')) ?: $p->name;
+                    }
+
                     return $p;
                 });
         }
