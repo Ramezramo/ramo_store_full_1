@@ -189,7 +189,7 @@
       @if($p->on_sale)
         <span class="price-main sale" id="pc-price-{{ $pid }}"{{ $priceStyle ? ' style="'.$priceStyle.'"' : '' }}>{{ number_format($p->sale_price, 2) }} EGP</span>
         @if($coShowOldPrice)
-        <span class="price-old" id="pc-orig-{{ $pid }}">{{ number_format($p->price, 2) }}</span>
+        <span class="price-old" id="pc-orig-{{ $pid }}" aria-label="{{ $cardRtl ? 'السعر قبل الخصم' : 'Original price' }}">{{ number_format($p->price, 2) }} EGP</span>
         @endif
       @else
         <span class="price-main" id="pc-price-{{ $pid }}"{{ $priceStyle ? ' style="'.$priceStyle.'"' : '' }}>{{ number_format($p->price, 2) }} EGP</span>

@@ -181,8 +181,27 @@
     line-height: 1.35 !important;
     -webkit-line-clamp: 2 !important;
   }
-  #infinite-product-grid.shop-mobile-layout-grid .price-main { font-size: 14px !important; }
-  #infinite-product-grid.shop-mobile-layout-grid .price-old { display: none !important; }
+  #infinite-product-grid.shop-mobile-layout-grid .product-card-price {
+    display: flex !important;
+    align-items: baseline !important;
+    gap: 4px !important;
+    flex-wrap: nowrap !important;
+    min-width: 0 !important;
+  }
+  #infinite-product-grid.shop-mobile-layout-grid .price-main {
+    font-size: 14px !important;
+    flex-shrink: 0 !important;
+  }
+  #infinite-product-grid.shop-mobile-layout-grid .price-old {
+    display: inline !important;
+    font-size: 9px !important;
+    line-height: 1.2 !important;
+    color: #8b8b8b !important;
+    text-decoration: line-through !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
   #infinite-product-grid.shop-mobile-layout-grid .pc-swatches { gap: 3px !important; margin: 1px 0 !important; }
   #infinite-product-grid.shop-mobile-layout-grid .pc-swatch { width: 13px !important; height: 13px !important; }
   #infinite-product-grid.shop-mobile-layout-grid .pc-sizes { gap: 2px !important; margin: 1px 0 !important; }
