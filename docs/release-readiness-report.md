@@ -52,7 +52,7 @@ The existing media paths can be read through the configured `FILESYSTEM_DISK`; w
 
 ### Fourth retest reconciliation
 
-The supplied comparison report was reconciled against the current temporary public deployment and source tree; the detailed evidence is retained in [`fourth-retest-intake-2026-08-13.md`](fourth-retest-intake-2026-08-13.md). Its observed HTTP responses, HTTP sitemap locations, non-Secure cookies, stale local gallery paths, missing HSTS/CSP, and public Debugbar indications are **not reproducible in the current build**. The previous zero-byte favicon was corrected with a valid multi-resolution ICO, a PNG fallback, and an Apple touch icon linked from the shared customer layout.
+The supplied comparison report was reconciled against the current temporary public deployment and source tree; the detailed evidence is retained in [`fourth-retest-intake-2026-08-13.md`](fourth-retest-intake-2026-08-13.md). Its observed HTTP responses, HTTP sitemap locations, non-Secure cookies, stale local gallery paths, missing HSTS/CSP, and public Debugbar indications are **not reproducible in the current build**. The previous zero-byte favicon was corrected with a valid multi-resolution ICO, a PNG fallback, and an Apple touch icon linked from the shared customer layout. On 14 August 2026, the reported blank product 22 panel was corrected with a user-authorized managed JPEG; the live product page now renders `/storage/products/luxe-velvet-jeans-olive.jpg` instead of the empty-image state.
 
 The public temporary proxy still fails to preserve `X-Frame-Options`, although the application-level header is present in the security middleware. This is an edge configuration requirement, not a rationale for removing the application protection. It remains a launch blocker until validated at the final HTTPS edge.
 
@@ -71,6 +71,8 @@ The public temporary proxy still fails to preserve `X-Frame-Options`, although t
 | Health and request-ID tests | Passed: safe status responses and request-ID generation/validation. |
 | Final public response reconciliation | HTTP → HTTPS returned `308`; HTTPS returned HSTS, CSP report-only, Secure cookies, short public cache on catalog, no-store/private on checkout, 0 HTTP sitemap locations, 0 stale gallery filenames, and 0 active Debugbar assets. |
 | Favicon integrity | Valid 17 KB multi-image `favicon.ico` plus PNG and Apple touch-icon assets; linked in shared customer head. |
+| Product 22 media restoration | **Passed:** controlled 960×1200 JPEG is served as `image/jpeg` at 101,234 bytes; product thumbnail and gallery resolve it through the standard managed-media pipeline. |
+| Catalog media audit | **Still blocked:** strict mode reports 21 product records with unmanaged external media, although it reports zero published products without a usable image after the product 22 correction. |
 | Frame protection at temporary edge | **Still blocked:** temporary proxy does not retain `X-Frame-Options`; validate final CDN/load balancer behavior before launch. |
 
 ## Remaining external launch gates
@@ -83,7 +85,7 @@ The production release process must include a schema-owner or dedicated migratio
 
 ### 2. Complete media migration and edge configuration
 
-Provision the S3-compatible bucket, restrict write access, configure `FILESYSTEM_DISK=s3`, configure the CDN-backed `IMAGE_BASE_URL`, copy every current object with checksums, and verify every product/receipt reference. Replace the unapproved listing/cart imagery, including the product 22 placeholder, with merchant-approved assets. Generate and validate responsive image variants, including WebP where supported, before enforcing a responsive image rollout. Retain the original objects until reconciliation, backup, rollback, and representative storefront checks complete.
+Provision the S3-compatible bucket, restrict write access, configure `FILESYSTEM_DISK=s3`, configure the CDN-backed `IMAGE_BASE_URL`, copy every current object with checksums, and verify every product/receipt reference. The product 22 placeholder is corrected in the current build with a controlled local asset, but the strict catalog audit still identifies 21 product records using unmanaged external media; migrate those approved, licensed source assets before production. Generate and validate responsive image variants, including WebP where supported, before enforcing a responsive image rollout. Retain the original objects until reconciliation, backup, rollback, and representative storefront checks complete.
 
 Place the origin behind a trusted CDN/load balancer, allow only exact proxy CIDRs in `TRUSTED_PROXIES`, preserve the application’s `X-Frame-Options` response header, redirect HTTP to HTTPS, and restrict direct-origin access. If country locale selection is enabled, use a trusted edge-provided country header only after the edge is configured to overwrite any client-supplied value. Cloudflare and CloudFront both document country header capabilities. [3] [4]
 

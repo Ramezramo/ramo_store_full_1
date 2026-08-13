@@ -28,6 +28,8 @@ A direct check against the current temporary public deployment after commit `0da
 
 The zero-byte favicon was replaced with a valid multi-resolution ICO, a PNG fallback, and an Apple touch icon. The shared customer layout now links each icon asset. A fresh public request returned 17,009 bytes for the ICO, 1,616 bytes for the PNG, and all three icon links in the generated homepage head.
 
+On 14 August 2026, the reported product 22 blank-image defect was also corrected with a user-authorized controlled JPEG at `products/luxe-velvet-jeans-olive.jpg`. Migration `2026_08_14_010000_repair_luxe_velvet_jeans_media` replaces the three missing imported paths with that managed image for the product thumbnail and gallery. A fresh public product-page check rendered the image from `/storage/products/luxe-velvet-jeans-olive.jpg`; its response was `200`, `image/jpeg`, and 101,234 bytes. The focused media tests passed with 7 tests and 11 assertions, and the full Laravel suite passed with 61 tests and 246 assertions.
+
 ## Remaining valid launch gates
 
-The external-media migration, approved product imagery (including the product 22/cart placeholder issue), merchant-approved policy and pricing terms, edge frame-header preservation, CSP staging observation, real production services, and controlled staging journey/load testing remain valid blockers. The temporary deployment must remain **NO-GO** for real orders and cannot be claimed to support 10,000 users.
+The product 22/cart placeholder issue is resolved in the current build. However, **21 other product records still use unmanaged external media**, so catalog-wide media migration remains a valid blocker. Merchant-approved policy and pricing terms, edge frame-header preservation, CSP staging observation, real production services, and controlled staging journey/load testing also remain valid blockers. The temporary deployment must remain **NO-GO** for real orders and cannot be claimed to support 10,000 users.
