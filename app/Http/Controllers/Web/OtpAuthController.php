@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Helpers\AuthConfig;
+use App\Jobs\SendOtpSms;
 use App\Http\Traits\CartTrait;
 use App\Models\OtpVerification;
 use App\Models\User;
@@ -90,7 +91,7 @@ class OtpAuthController extends Controller
             $existing->delete();
 
             $otp = $this->generateOtp($otpLength);
-            OtpVerification::create([
+            $otpVerification = OtpVerification::create([
                 'phone'               => $phone,
                 'otp_code'            => $otp,
                 'expires_at'          => now()->addMinutes($expiryMinutes),
@@ -101,22 +102,28 @@ class OtpAuthController extends Controller
             ]);
         } else {
             $otp = $this->generateOtp($otpLength);
-            OtpVerification::create([
-                'phone'      => $phone,
-                'otp_code'   => $otp,
-                'expires_at' => now()->addMinutes($expiryMinutes),
-                'attempts'   => 0,
+            $otpVerification = OtpVerification::create([
+                'phone'        => $phone,
+                'otp_code'     => $otp,
+                'expires_at'   => now()->addMinutes($expiryMinutes),
+                'attempts'     => 0,
                 'resend_count' => 0,
-                'verified'   => false,
+                'verified'     => false,
             ]);
         }
 
         $isLogDriver = strtolower((string) config('sms.driver', 'log')) === 'log';
 
-        try {
-            $this->sendSms($phone, $otp);
-        } catch (\Throwable $e) {
-            return response()->json(['success' => false, 'message' => $this->localized($e->getMessage(), 'حصلت مشكلة وإحنا بنبعت الكود. جرّب تاني.')], 500);
+        if ($isLogDriver) {
+            try {
+                $this->sendSms($phone, $otp);
+            } catch (\Throwable $e) {
+                return response()->json(['success' => false, 'message' => $this->localized($e->getMessage(), 'حصلت مشكلة وإحنا بنبعت الكود. جرّب تاني.')], 500);
+            }
+        } else {
+            // Real provider calls are intentionally asynchronous. The development
+            // log driver remains synchronous so the visible OTP fallback is unchanged.
+            SendOtpSms::dispatch($otpVerification->id)->afterCommit();
         }
 
         $response = ['success' => true, 'message' => $this->localized('OTP sent successfully.', 'الكود اتبعت بنجاح.'), 'expires_in' => $expiryMinutes * 60];

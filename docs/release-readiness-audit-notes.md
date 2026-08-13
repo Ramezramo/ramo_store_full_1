@@ -37,3 +37,5 @@ This file records evidence and sources. The final report will provide a prioriti
 - Laravel's official release schedule shows security fixes for Laravel 10 ended on 4 February 2025; Laravel 12 security support runs until 24 February 2027: <https://laravel.com/docs/13.x/releases>.
 
 - Laravel’s official upgrade guides require a sequential 10→11→12 dependency transition: PHP 8.2+, `laravel/framework:^11`, `laravel/sanctum:^4`, and `nunomaduro/collision:^8.1` for Laravel 11, followed by `laravel/framework:^12` and `phpunit/phpunit:^11` for Laravel 12. The isolated dependency resolution and the application test suite completed successfully on this project’s PHP 8.3 runtime. Sources: <https://laravel.com/docs/11.x/upgrade> and <https://laravel.com/docs/12.x/upgrade>.
+
+- Laravel 12 recommends the PhpRedis extension for workloads that use Redis heavily, while `predis/predis` is the supported pure-PHP alternative when an extension cannot be installed. Laravel’s Redis queue driver requires either one of these clients and supports a bounded `block_for` value to avoid busy polling. Sources: <https://laravel.com/docs/12.x/redis> and <https://laravel.com/docs/12.x/queues>.
