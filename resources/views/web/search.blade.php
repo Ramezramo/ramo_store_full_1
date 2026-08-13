@@ -214,7 +214,8 @@
 .filter-chip-clear{display:inline-flex;align-items:center;padding:5px 12px;background:var(--c-tag);color:var(--c-mid);border-radius:50px;font-size:12.5px;font-weight:600;transition:all .15s}
 .filter-chip-clear:hover{background:var(--c-light);color:var(--c-dark)}
 
-.search-layout{display:grid;grid-template-columns:240px 1fr;gap:28px;align-items:start}
+.search-layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:28px;align-items:start}
+.search-sidebar,.search-results{min-width:0}
 .search-sidebar{background:var(--c-white);border:1.5px solid var(--c-light);border-radius:var(--radius-lg);padding:20px;position:sticky;top:84px}
 .filter-section{border-bottom:1px solid var(--c-light);padding-bottom:18px;margin-bottom:18px}
 .filter-section:last-of-type{border-bottom:none;margin-bottom:0;padding-bottom:0}
@@ -257,6 +258,20 @@
 .search-empty h3{font-size:20px;font-weight:800;margin-bottom:12px}
 .search-empty p{color:var(--c-mid);font-size:14px}
 mark.search-hl{background:#fff3cd;color:inherit;border-radius:2px;padding:0 1px}
+
+@media(max-width:768px){
+  .search-hero{margin-bottom:20px}
+  .search-hero-bar{width:100%;max-width:none}
+  .search-hero-bar input{min-width:0;padding:13px 16px;font-size:16px}
+  .search-hero-bar button{padding:12px 18px;flex-shrink:0}
+  .filter-chips{margin-bottom:16px}
+  .search-layout{grid-template-columns:minmax(0,1fr);gap:16px}
+  .search-sidebar{position:static;padding:16px;border-radius:16px}
+  .search-results{width:100%;min-width:0;overflow:hidden}
+  .search-toolbar{gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .search-toolbar>span:last-child{font-size:12px!important}
+  .search-empty{padding:48px 16px}
+}
 </style>
 
 <script>
