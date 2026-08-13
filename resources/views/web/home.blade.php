@@ -3,6 +3,8 @@
 
 @section('content')
 
+@php $timelineRtl = session('locale') === 'ar'; @endphp
+<div class="timeline-widgets{{ $timelineRtl ? ' timeline-widgets--rtl' : '' }}" @if($timelineRtl) dir="rtl" @endif>
 {{-- ── ANNOUNCEMENT BARS (full-width, outside page) ── --}}
 @foreach($sections as $si => $sec)
   @if(($sec['layout'] ?? '') === 'announcement')
@@ -1176,10 +1178,38 @@
   @endforelse
 
 </div>
+</div>
 @endsection
 
 @push('styles')
 <style>
+/* Arabic direction is deliberately scoped to Timeline widgets only. */
+.timeline-widgets--rtl{direction:rtl}
+.timeline-widgets--rtl .tl-flex-banner-title,
+.timeline-widgets--rtl .sec-head,
+.timeline-widgets--rtl .sec-title,
+.timeline-widgets--rtl .tl-promo-content,
+.timeline-widgets--rtl .tl-testimonial-card,
+.timeline-widgets--rtl .tl-newsletter,
+.timeline-widgets--rtl .tl-bundle,
+.timeline-widgets--rtl .tl-loyalty,
+.timeline-widgets--rtl .tl-activity,
+.timeline-widgets--rtl .tl-referral,
+.timeline-widgets--rtl .tl-product-card,
+.timeline-widgets--rtl .product-card-body{direction:rtl;text-align:right}
+.timeline-widgets--rtl input,
+.timeline-widgets--rtl textarea{direction:rtl;text-align:right}
+.timeline-widgets--rtl .tl-arrow.prev{left:auto;right:10px}
+.timeline-widgets--rtl .tl-arrow.next{right:auto;left:10px}
+.timeline-widgets--rtl .tl-scroll-arrow.prev{left:auto;right:-6px}
+.timeline-widgets--rtl .tl-scroll-arrow.next{right:auto;left:-6px}
+.timeline-widgets--rtl .tl-announce-close{right:auto;left:12px}
+.timeline-widgets--rtl .tl-rank-badge{left:auto;right:8px}
+.timeline-widgets--rtl .tl-bundle-badge{right:auto;left:16px}
+.timeline-widgets--rtl .tl-loyalty-double{margin-left:0;margin-right:8px}
+.timeline-widgets--rtl .tl-stat-item{border-right:none;border-left:1px solid rgba(255,255,255,.15)}
+.timeline-widgets--rtl .tl-stat-item:last-child{border-left:none}
+
 @if(request()->has('tl_preview'))
 /* ── TIMELINE PREVIEW OVERLAY ── */
 .tl-preview-toolbar{position:fixed;top:0;left:0;right:0;z-index:99999;background:#1a1a2e;color:#fff;display:flex;align-items:center;gap:12px;padding:0 20px;height:44px;font-size:13px;font-family:system-ui,sans-serif;box-shadow:0 2px 12px rgba(0,0,0,.4)}
