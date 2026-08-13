@@ -562,10 +562,12 @@ button{cursor:pointer;font-family:inherit}
 .atc-drawer-footer{padding:16px 22px 20px;border-top:1px solid var(--c-light);display:flex;flex-direction:column;gap:10px;flex-shrink:0;box-shadow:0 -6px 18px rgba(0,0,0,.04)}
 .atc-subtotal-row{display:flex;justify-content:space-between;align-items:center;font-size:14.5px;font-weight:700;color:var(--c-dark)}
 .atc-subtotal-row span:last-child{font-size:17px}
-.atc-btn-primary{display:block;text-align:center;padding:14px;background:var(--c-dark);color:#fff;border-radius:12px;font-size:14px;font-weight:800;transition:background .2s,transform .2s}
-.atc-btn-primary:hover{background:var(--c-accent-h);transform:translateY(-1px)}
-.atc-btn-secondary{display:block;width:100%;text-align:center;padding:12px;background:#fff;color:var(--c-dark);border:1.5px solid var(--c-light);border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s}
-.atc-btn-secondary:hover{border-color:var(--c-dark)}
+.atc-btn-checkout{display:block;text-align:center;padding:14px;background:var(--c-orange);color:#fff;border-radius:12px;font-size:14px;font-weight:800;box-shadow:0 6px 16px rgba(232,93,38,.22);transition:background .2s,transform .2s,box-shadow .2s}
+.atc-btn-checkout:hover,.atc-btn-checkout:focus-visible{background:var(--c-accent-h);color:#fff;transform:translateY(-1px);box-shadow:0 8px 20px rgba(232,93,38,.3);outline:none}
+.atc-btn-primary{display:block;text-align:center;padding:12px;background:#fff;color:var(--c-dark);border:1.5px solid var(--c-dark);border-radius:12px;font-size:13px;font-weight:800;transition:background .2s,color .2s,transform .2s}
+.atc-btn-primary:hover,.atc-btn-primary:focus-visible{background:var(--c-dark);color:#fff;transform:translateY(-1px);outline:none}
+.atc-btn-secondary{display:block;width:100%;text-align:center;padding:8px;background:transparent;color:var(--c-mid);border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;transition:color .2s,background .2s}
+.atc-btn-secondary:hover,.atc-btn-secondary:focus-visible{color:var(--c-dark);background:var(--c-bg);outline:none}
 @media(max-width:480px){
   .atc-overlay{background:rgba(20,20,20,.38)}
   .atc-drawer{top:auto;bottom:0;right:0;width:100%;max-width:100%;height:auto;max-height:min(82vh,680px);border-radius:22px 22px 0 0;transform:translateY(105%);box-shadow:0 -12px 34px rgba(0,0,0,.2);padding-bottom:env(safe-area-inset-bottom)}
@@ -1154,6 +1156,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
       <span>{{ $headerIsArabic ? 'الإجمالي الفرعي' : 'Subtotal' }}</span>
       <span id="atc-subtotal">EGP 0.00</span>
     </div>
+    <a href="{{ route('checkout') }}" class="atc-btn-checkout" id="atc-checkout-now">{{ $headerIsArabic ? 'إتمام الطلب' : 'Checkout Now' }}</a>
     <a href="{{ route('cart') }}" class="atc-btn-primary" id="atc-go-cart">{{ $headerIsArabic ? 'روح للسلة' : 'Go to Cart' }}</a>
     <button class="atc-btn-secondary" onclick="closeAtcDrawer()">{{ $headerIsArabic ? 'كمّل تسوّق' : 'Continue Shopping' }}</button>
   </div>
