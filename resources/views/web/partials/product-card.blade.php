@@ -93,7 +93,8 @@
 
   /* ── Displayed product name ─────────────────────────────── */
   // $cardNameHtml can be passed as a variable for raw HTML (e.g. search highlights)
-  $displayName = $coNameLimit > 0 ? Str::limit($p->name, $coNameLimit) : $p->name;
+  $productDisplayName = $p->timeline_name ?? $p->name;
+  $displayName = $coNameLimit > 0 ? Str::limit($productDisplayName, $coNameLimit) : $productDisplayName;
 @endphp
 
 <div class="product-card" id="{{ $coIdPrefix }}-{{ $pid }}" @if($cardStyle) style="{{ $cardStyle }}" @endif
@@ -104,7 +105,7 @@
 
   <a href="{{ route('product', $pid) }}" class="product-card-img" @if($imgStyle) style="{{ $imgStyle }}" @endif>
     @if($displayImg)
-      <img src="{{ $displayImg }}" alt="{{ $p->name }}" loading="lazy" id="pc-img-{{ $pid }}"
+      <img src="{{ $displayImg }}" alt="{{ $productDisplayName }}" loading="lazy" id="pc-img-{{ $pid }}"
            onerror="this.onerror=null;this.style.display='none';this.parentElement.querySelector('.pc-img-fallback')?.style.setProperty('display','flex')">
       <div class="pc-img-fallback" style="display:none;width:100%;height:100%;align-items:center;justify-content:center;background:#f7f7f7;color:#ccc;font-size:32px">🛍️</div>
     @else
@@ -194,7 +195,7 @@
       @if($coShowAddToCart)
         @if($canQuickAdd)
         <button class="card-add-btn{{ $coRemoveWishlist ? '' : '' }}" id="pc-add-{{ $pid }}"
-                data-name="{{ addslashes($p->name) }}"
+                data-name="{{ addslashes($productDisplayName) }}"
                 data-img="{{ $displayImg }}"
                 style="{{ $coRemoveWishlist ? 'flex:1' : '' }}"
                 onclick="pcAddToCart({{ $pid }})">

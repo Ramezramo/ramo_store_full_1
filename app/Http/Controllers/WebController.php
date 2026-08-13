@@ -77,7 +77,7 @@ class WebController extends Controller
                     });
                 }
                 $sectionProducts[$i] = $query->limit($max)->get()
-                    ->map(fn($p) => $this->parseProduct($p, $flashSale));
+                    ->map(fn($p) => $this->localizeTimelineProductText($this->parseProduct($p, $flashSale), $lang));
             }
 
             if ($layout === 'testimonials') {
@@ -144,17 +144,17 @@ class WebController extends Controller
                     ->where('p.status', 'publish')
                     ->where('p.acceptance_status', 'approved')
                     ->select(
-                        'p.id', 'p.name', 'p.slug', 'p.images', 'p.total_sales',
+                        'p.id', 'p.name', 'p.slug', 'p.images', 'p.total_sales', 'p.translations',
                         'p.description', 'p.stock_quantity', 'p.unit', 'p.vendor_id',
                         DB::raw('MIN(pv.price) as price'),
                         DB::raw('MIN(pv.sale_price) as sale_price'),
                         DB::raw('MAX(p.discount_percentage) as discount_percentage')
                     )
                     ->addSelect(DB::raw("(SELECT string_agg(pc_sub.category_id::text, ',') FROM product_category pc_sub WHERE pc_sub.product_id = p.id) as product_cat_ids"))
-                    ->groupBy('p.id','p.name','p.slug','p.images','p.total_sales',
+                    ->groupBy('p.id','p.name','p.slug','p.images','p.total_sales','p.translations',
                               'p.description','p.stock_quantity','p.unit','p.vendor_id')
                     ->orderBy($orderCol === 'avg_rating' ? DB::raw('MIN(pv.price)') : DB::raw('p.total_sales'), 'desc')
-                    ->limit($max)->get()->map(fn($p) => $this->parseProduct($p, $flashSale));
+                    ->limit($max)->get()->map(fn($p) => $this->localizeTimelineProductText($this->parseProduct($p, $flashSale), $lang));
                 $sectionTrending[$i] = $q;
             }
 
@@ -166,17 +166,17 @@ class WebController extends Controller
                     ->where('p.status', 'publish')
                     ->where('p.acceptance_status', 'approved')
                     ->select(
-                        'p.id', 'p.name', 'p.slug', 'p.images', 'p.date_created',
+                        'p.id', 'p.name', 'p.slug', 'p.images', 'p.date_created', 'p.translations',
                         'p.description', 'p.stock_quantity', 'p.unit', 'p.vendor_id',
                         DB::raw('MIN(pv.price) as price'),
                         DB::raw('MIN(pv.sale_price) as sale_price'),
                         DB::raw('MAX(p.discount_percentage) as discount_percentage')
                     )
                     ->addSelect(DB::raw("(SELECT string_agg(pc_sub.category_id::text, ',') FROM product_category pc_sub WHERE pc_sub.product_id = p.id) as product_cat_ids"))
-                    ->groupBy('p.id','p.name','p.slug','p.images','p.date_created',
+                    ->groupBy('p.id','p.name','p.slug','p.images','p.date_created','p.translations',
                               'p.description','p.stock_quantity','p.unit','p.vendor_id')
                     ->orderBy('p.date_created', 'desc')
-                    ->limit($max)->get()->map(fn($p) => $this->parseProduct($p, $flashSale));
+                    ->limit($max)->get()->map(fn($p) => $this->localizeTimelineProductText($this->parseProduct($p, $flashSale), $lang));
             }
 
             if ($layout === 'activity') {
@@ -246,7 +246,7 @@ class WebController extends Controller
                 if ($productId > 0) {
                     $p = $this->baseProductQuery()->where('p.id', $productId)->first();
                     if ($p) {
-                        $sectionFeaturedProduct[$i] = $this->parseProduct($p, $flashSale);
+                        $sectionFeaturedProduct[$i] = $this->localizeTimelineProductText($this->parseProduct($p, $flashSale), $lang);
                         $sectionFeaturedVariations[$i] = DB::table('product_variations')
                             ->where('product_id', $productId)
                             ->orderBy('main_variation', 'desc')
@@ -603,7 +603,7 @@ class WebController extends Controller
     {
         return DB::table('products_data as p')
             ->select(
-                'p.id', 'p.name', 'p.slug', 'p.images',
+                'p.id', 'p.name', 'p.slug', 'p.images', 'p.translations',
                 'p.description', 'p.stock_quantity', 'p.unit',
                 'p.minimum_order_qty', 'p.max_orders_per_person', 'p.sold_individually',
                 'p.vendor_id',
@@ -617,11 +617,46 @@ class WebController extends Controller
             ->where('p.status', 'publish')
             ->where('p.acceptance_status', 'approved')
             ->groupBy(
-                'p.id', 'p.name', 'p.slug', 'p.images',
+                'p.id', 'p.name', 'p.slug', 'p.images', 'p.translations',
                 'p.description', 'p.stock_quantity', 'p.unit',
                 'p.minimum_order_qty', 'p.max_orders_per_person', 'p.sold_individually',
                 'p.vendor_id'
             );
+    }
+
+    /**
+     * Add Timeline-only product text for the active language. The main English
+     * name and description are retained whenever the selected locale is absent.
+     */
+    private function localizeTimelineProductText($product, string $locale)
+    {
+        $product->timeline_name = $product->name;
+        $product->timeline_description = $product->description;
+
+        if (strtolower($locale) === 'en') {
+            return $product;
+        }
+
+        $translations = $product->translations ?? [];
+        if (is_string($translations)) {
+            $translations = json_decode($translations, true) ?? [];
+        }
+
+        foreach ((array) $translations as $translation) {
+            if (! is_array($translation) || strtolower((string) ($translation['locale'] ?? '')) !== strtolower($locale)) {
+                continue;
+            }
+
+            if (filled($translation['name'] ?? null)) {
+                $product->timeline_name = $translation['name'];
+            }
+            if (filled($translation['description'] ?? null)) {
+                $product->timeline_description = $translation['description'];
+            }
+            break;
+        }
+
+        return $product;
     }
 
     private function parseProduct($p, $flashSale = null)

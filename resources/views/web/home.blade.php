@@ -731,11 +731,12 @@
       <div class="tl-arrivals-wrap" id="{{ $tickerId }}" style="margin-bottom:36px" {{ $pause ? 'onmouseenter="this.style.animationPlayState=\'paused\'" onmouseleave="this.style.animationPlayState=\'running\'"' : '' }}>
         <div class="tl-arrivals-track" style="{{ $loop2 ? '' : 'animation:none' }}">
           @foreach(array_merge($products->all(), $products->all()) as $p)
+          @php $arrivalName = $p->timeline_name ?? $p->name; @endphp
           <a href="{{ route('product', $p->id) }}" class="tl-arrival-card">
-            @if($p->thumbnail_url)<img src="{{ $p->thumbnail_url }}" alt="{{ $p->name }}" class="tl-arrival-img">@else<div class="tl-arrival-placeholder">🛍️</div>@endif
+            @if($p->thumbnail_url)<img src="{{ $p->thumbnail_url }}" alt="{{ $arrivalName }}" class="tl-arrival-img">@else<div class="tl-arrival-placeholder">🛍️</div>@endif
             <div class="tl-arrival-body">
               @if($sec['showCategoryChip'] ?? false)<span class="tl-arrival-tag">{{ $tag }}</span>@endif
-              <div class="tl-arrival-name">{{ Str::limit($p->name, 22) }}</div>
+              <div class="tl-arrival-name">{{ Str::limit($arrivalName, 22) }}</div>
               <div class="tl-arrival-price">{{ number_format($p->on_sale ? $p->sale_price : $p->price, 0) }} EGP</div>
             </div>
           </a>
@@ -1026,6 +1027,7 @@
           $pcwRevs  = DB::table('product_reviews')->where('product_id', $fp->id)->where('approved', true)->get(['rating']);
           $pcwTotal = $pcwRevs->count();
           $pcwAvg   = $pcwTotal ? round($pcwRevs->avg('rating'), 1) : 0;
+          $pcwName     = $fp->timeline_name ?? $fp->name;
           $pcwDiscPct  = (float)($fp->discount_percentage ?? 0);
           $pcwHasDisc  = $pcwDiscPct > 0;
           $pcwMinEff   = $fv->min('price') ?? $fp->display_price;
@@ -1053,7 +1055,7 @@
         <div class="pcw-card" style="margin-bottom:44px">
           <a href="{{ route('product', $fp->id) }}" class="pcw-img-wrap">
             @if($fp->thumbnail_url)
-              <img src="{{ $fp->thumbnail_url }}" alt="{{ $fp->name }}" class="pcw-img" loading="lazy">
+              <img src="{{ $fp->thumbnail_url }}" alt="{{ $pcwName }}" class="pcw-img" loading="lazy">
             @else
               <div class="pcw-img-placeholder">🛍️</div>
             @endif
@@ -1061,7 +1063,7 @@
           </a>
           <div class="pcw-info">
             <div class="pcw-title-row">
-              <h2 class="pcw-title"><a href="{{ route('product', $fp->id) }}" style="color:inherit;text-decoration:none">{{ $fp->name }}</a></h2>
+              <h2 class="pcw-title"><a href="{{ route('product', $fp->id) }}" style="color:inherit;text-decoration:none">{{ $pcwName }}</a></h2>
               @if($showWishlist)
               <button class="pcw-wish-btn {{ $pcwInWishlist ? 'wished' : '' }}"
                       data-wishlist-product-id="{{ $fp->id }}"
@@ -1132,7 +1134,7 @@
                   <button type="button" disabled aria-label="Maximum quantity reached">+</button>
                 </div>
                 <button class="pcw-atc-btn"
-                        onclick="addToCart({{ $fp->id }}, '{{ addslashes($fp->name) }}', {{ (float)$pcwMinEff }}, '{{ $fp->thumbnail_url }}', null, 1)">
+                        onclick="addToCart({{ $fp->id }}, '{{ addslashes($pcwName) }}', {{ (float)$pcwMinEff }}, '{{ $fp->thumbnail_url }}', null, 1)">
                   🛒 Add to Cart
                 </button>
               @else
