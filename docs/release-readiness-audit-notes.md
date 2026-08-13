@@ -28,3 +28,10 @@
 The storefront changes are suitable for continued development and demonstration, but the application is **not production-ready yet** for a real user launch or a 10,000-user target. The minimum go-live gates are: fix all dependency advisories, upgrade from unsupported Laravel 10 to a supported release, move sessions/cache/queues to managed shared services, set production-only environment and HTTPS cookie settings, disable development no-cache behavior outside local development, add observability and critical-flow tests, and complete a representative authenticated load test.
 
 This file records evidence and sources. The final report will provide a prioritized implementation checklist and a capacity model.
+
+## Supplementary source notes
+
+- Cloudflare documents that enabling IP Geolocation adds `CF-IPCountry` to requests sent to the origin: <https://developers.cloudflare.com/network/ip-geolocation/>.
+- AWS documents that `CloudFront-Viewer-Country` contains the viewer's two-letter country code and can be sent to the origin through the appropriate policy: <https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/adding-cloudfront-headers.html>.
+- Laravel's production guide states that `config:cache` requires `env()` calls to remain inside configuration files and that `APP_DEBUG` must always be `false` in production: <https://laravel.com/docs/10.x/deployment>.
+- Laravel's official release schedule shows security fixes for Laravel 10 ended on 4 February 2025; Laravel 12 security support runs until 24 February 2027: <https://laravel.com/docs/13.x/releases>.
