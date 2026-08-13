@@ -683,6 +683,8 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 	.nav-mobile-menu--rtl .nav-mobile-search button svg{transform:scaleX(-1)}
 	.nav-mobile-menu--rtl .nav-mobile-signout{text-align:right}
 	.nav-mobile-menu--rtl .nav-mobile-links span[style*="margin-left"]{margin-left:0!important;margin-right:4px!important}
+	.nav-mobile-language-link{border:1px solid var(--c-light);margin:8px 0 10px;color:var(--c-orange)!important;font-weight:800!important;justify-content:center}
+	.nav-mobile-language-link:hover{border-color:var(--c-orange);background:#fff5ef!important}
 	#mob-nav.mob-nav--rtl{direction:rtl}
 
 /* ── SHOP FILTER TOGGLE (mobile only) ── */
@@ -725,7 +727,8 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
   .nav-links{display:none}
   .nav-search{display:none}
   .nav-hamburger{display:flex}
-  .nav-language-btn{min-width:38px;height:36px;padding:0 8px;font-size:10.5px}
+  .nav-language-btn{display:none}
+  .nav-mobile-language-link{display:flex}
   /* 58px bottom nav + 16px breathing room = 74px so nothing scrolls behind the nav */
   .page{padding:20px 14px 74px}
 }
@@ -1090,6 +1093,14 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
       </a>
       <a href="{{ route('wishlist') }}" class="{{ request()->routeIs('wishlist') ? 'active' : '' }}">♡ {{ $mobileWishlistLabel }}</a>
       <a href="{{ route('order.track') }}" class="{{ request()->routeIs('order.track*') ? 'active' : '' }}">📦 {{ $mobileTrackOrderLabel }}</a>
+      <a
+        href="{{ route('language.switch', ['lang' => $timelineNextLocale]) }}?redirect={{ urlencode(request()->fullUrl()) }}"
+        class="nav-mobile-language-link"
+        lang="{{ $timelineNextLocale }}"
+        dir="ltr"
+        title="{{ $timelineSwitchTitle }}"
+        aria-label="{{ $timelineSwitchTitle }}"
+      >🌐 {{ $headerIsArabic ? 'English' : 'العربية' }}</a>
       <hr class="nav-mobile-divider">
       @auth
         @php $__mu = Auth::user(); @endphp
