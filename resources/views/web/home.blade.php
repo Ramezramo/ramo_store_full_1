@@ -3,7 +3,10 @@
 
 @section('content')
 
-@php $timelineRtl = session('locale') === 'ar'; @endphp
+@php
+  $timelineRtl = session('locale') === 'ar';
+  $timelineSeeAllLabel = $timelineRtl ? 'شوف اكتر' : 'See all →';
+@endphp
 <div class="timeline-widgets{{ $timelineRtl ? ' timeline-widgets--rtl' : '' }}" @if($timelineRtl) dir="rtl" @endif>
 {{-- ── ANNOUNCEMENT BARS (full-width, outside page) ── --}}
 @foreach($sections as $si => $sec)
@@ -305,7 +308,7 @@
       @if($cats->count())
       <div class="sec-head">
         <h2 class="sec-title">{{ $title }}</h2>
-        <a href="{{ route('shop') }}" class="sec-link">See all →</a>
+        <a href="{{ route('shop') }}" class="sec-link">{{ $timelineSeeAllLabel }}</a>
       </div>
       <div style="display:grid;grid-template-columns:repeat(var(--tl-columns,{{ $columns }}),1fr);gap:16px;margin-bottom:44px">
         @foreach($cats as $ci => $cat)
@@ -377,7 +380,7 @@
       </style>
       <div class="sec-head">
         <h2 class="sec-title">{{ $title }}</h2>
-        <a href="{{ route('shop', array_filter(['category' => $catId])) }}" class="sec-link">View all →</a>
+        <a href="{{ route('shop', array_filter(['category' => $catId])) }}" class="sec-link">{{ $timelineSeeAllLabel }}</a>
       </div>
       <div class="product-grid" id="{{ $secId }}" style="grid-template-columns:repeat(auto-fill,minmax(var(--tl-prod-w,{{ $prodWidth }}px),1fr));margin-bottom:40px">
         @foreach($products as $p)
@@ -428,7 +431,7 @@
       </style>
       <div class="sec-head">
         <h2 class="sec-title">{{ $title }}</h2>
-        <a href="{{ route('shop', array_filter(['category' => $catId])) }}" class="sec-link">See all →</a>
+        <a href="{{ route('shop', array_filter(['category' => $catId])) }}" class="sec-link">{{ $timelineSeeAllLabel }}</a>
       </div>
       <div class="tl-scroll-wrap" style="margin-bottom:36px">
         <button type="button" class="tl-scroll-arrow prev" aria-label="Scroll left" onclick="scrollProducts('{{ $secId }}', -1)">&#8249;</button>
@@ -492,7 +495,7 @@
       </style>
       <div class="sec-head">
         <h2 class="sec-title">{{ $title }}</h2>
-        <a href="{{ route('shop', array_filter(['category' => $catId])) }}" class="sec-link">View all →</a>
+        <a href="{{ route('shop', array_filter(['category' => $catId])) }}" class="sec-link">{{ $timelineSeeAllLabel }}</a>
       </div>
       <div class="product-grid" id="{{ $secId }}" style="grid-template-columns:repeat(auto-fill,minmax(var(--tl-prod-w,{{ $prodWidth }}px),1fr));margin-bottom:40px">
         @foreach($products as $p)
@@ -702,7 +705,7 @@
     @elseif($layout === 'trending')
       @php $products = $sectionTrending[$si] ?? collect(); $title = $sec['headerText'] ?? 'Trending Now'; @endphp
       @if($products->count())
-      <div class="sec-head"><h2 class="sec-title">🔥 {{ $title }}</h2><a href="{{ route('shop') }}" class="sec-link">View all →</a></div>
+      <div class="sec-head"><h2 class="sec-title">🔥 {{ $title }}</h2><a href="{{ route('shop') }}" class="sec-link">{{ $timelineSeeAllLabel }}</a></div>
       <div class="tl-scroll-section" style="margin-bottom:36px"><div class="tl-scroll-track">
         @foreach($products as $idx => $p)
         <div class="tl-scroll-card" style="position:relative">
@@ -727,7 +730,7 @@
         $tickerId = 'ticker-'.$si;
       @endphp
       @if($products->count())
-      <div class="sec-head"><h2 class="sec-title">✨ {{ $sec['headerText'] ?? 'New Arrivals' }}</h2><a href="{{ route('shop') }}" class="sec-link">See all →</a></div>
+      <div class="sec-head"><h2 class="sec-title">✨ {{ $sec['headerText'] ?? 'New Arrivals' }}</h2><a href="{{ route('shop') }}" class="sec-link">{{ $timelineSeeAllLabel }}</a></div>
       <div class="tl-arrivals-wrap" id="{{ $tickerId }}" style="margin-bottom:36px" {{ $pause ? 'onmouseenter="this.style.animationPlayState=\'paused\'" onmouseleave="this.style.animationPlayState=\'running\'"' : '' }}>
         <div class="tl-arrivals-track" style="{{ $loop2 ? '' : 'animation:none' }}">
           @foreach(array_merge($products->all(), $products->all()) as $p)
@@ -990,7 +993,7 @@
         $title    = $recLabel ? 'Picked For You' : ($sec['headerText'] ?? 'Recommended For You');
       @endphp
       @if($products->count())
-      <div class="sec-head"><h2 class="sec-title">{{ $title }}</h2><a href="{{ route('shop') }}" class="sec-link">See all →</a></div>
+      <div class="sec-head"><h2 class="sec-title">{{ $title }}</h2><a href="{{ route('shop') }}" class="sec-link">{{ $timelineSeeAllLabel }}</a></div>
       <div class="tl-scroll-section" style="margin-bottom:36px"><div class="tl-scroll-track">
         @foreach($products as $p)
         <div class="tl-scroll-card">
