@@ -1,5 +1,13 @@
 @extends('web.account.layout')
-@php $pageTitle = 'My Orders'; @endphp
+@php
+  $isAr = session('locale') === 'ar';
+  $pageTitle = $isAr ? 'طلباتي' : 'My Orders';
+  $statusLabelsAr = [
+    'pending' => 'في الانتظار', 'processing' => 'جاري التجهيز', 'shipped' => 'اتشحن',
+    'delivered' => 'اتسلّم', 'cancelled' => 'اتلغى', 'refunded' => 'اترجع',
+    'payment_failed' => 'فشل الدفع',
+  ];
+@endphp
 
 @section('account-content')
 <style>
@@ -82,25 +90,25 @@
   }
 </style>
 
-<div class="acc-section-title">Order History</div>
+<div class="acc-section-title">{{ $isAr ? 'سجل الطلبات' : 'Order History' }}</div>
 
 @if($orders->count())
 <div class="orders-table-wrap">
   <table class="orders-table">
     <thead>
       <tr>
-        <th>Order #</th><th>Date</th><th>Status</th><th>Payment</th><th>Total</th><th></th>
+        <th>{{ $isAr ? 'رقم الطلب' : 'Order #' }}</th><th>{{ $isAr ? 'التاريخ' : 'Date' }}</th><th>{{ $isAr ? 'الحالة' : 'Status' }}</th><th>{{ $isAr ? 'الدفع' : 'Payment' }}</th><th>{{ $isAr ? 'الإجمالي' : 'Total' }}</th><th></th>
       </tr>
     </thead>
     <tbody>
       @foreach($orders as $order)
       <tr>
         <td><strong>#{{ $order->id }}</strong></td>
-        <td>{{ \Carbon\Carbon::parse($order->date_created)->format('M d, Y') }}</td>
-        <td><span class="status-badge status-{{ $order->status }}">{{ app(\App\Services\OrderStatusService::class)->label($order->status) }}</span></td>
+        <td>{{ $isAr ? \Carbon\Carbon::parse($order->date_created)->locale('ar')->translatedFormat('j F Y') : \Carbon\Carbon::parse($order->date_created)->format('M d, Y') }}</td>
+        <td><span class="status-badge status-{{ $order->status }}">{{ $isAr ? ($statusLabelsAr[$order->status] ?? app(\App\Services\OrderStatusService::class)->label($order->status)) : app(\App\Services\OrderStatusService::class)->label($order->status) }}</span></td>
         <td>{{ $order->payment_method_title }}</td>
         <td><strong>{{ number_format($order->final_total, 2) }} EGP</strong></td>
-        <td><a href="{{ route('account.order', $order->id) }}" class="btn btn-outline" style="font-size:12px;padding:6px 14px">View</a></td>
+        <td><a href="{{ route('account.order', $order->id) }}" class="btn btn-outline" style="font-size:12px;padding:6px 14px">{{ $isAr ? 'شوف' : 'View' }}</a></td>
       </tr>
       @endforeach
     </tbody>
@@ -122,25 +130,25 @@
     <article class="order-mobile-card">
       <div class="order-mobile-card-header">
         <div>
-          <div class="order-mobile-number">Order #{{ $order->id }}</div>
-          <div class="order-mobile-date">{{ \Carbon\Carbon::parse($order->date_created)->format('M d, Y') }}</div>
+          <div class="order-mobile-number">{{ $isAr ? 'طلب رقم' : 'Order #' }} #{{ $order->id }}</div>
+          <div class="order-mobile-date">{{ $isAr ? \Carbon\Carbon::parse($order->date_created)->locale('ar')->translatedFormat('j F Y') : \Carbon\Carbon::parse($order->date_created)->format('M d, Y') }}</div>
         </div>
-        <span class="status-badge status-{{ $order->status }}">{{ app(\App\Services\OrderStatusService::class)->label($order->status) }}</span>
+        <span class="status-badge status-{{ $order->status }}">{{ $isAr ? ($statusLabelsAr[$order->status] ?? app(\App\Services\OrderStatusService::class)->label($order->status)) : app(\App\Services\OrderStatusService::class)->label($order->status) }}</span>
       </div>
 
       <div class="order-mobile-details">
         <div>
-          <span class="order-mobile-label">Payment</span>
+          <span class="order-mobile-label">{{ $isAr ? 'الدفع' : 'Payment' }}</span>
           <span class="order-mobile-value">{{ $order->payment_method_title }}</span>
         </div>
         <div>
-          <span class="order-mobile-label">Total</span>
+          <span class="order-mobile-label">{{ $isAr ? 'الإجمالي' : 'Total' }}</span>
           <span class="order-mobile-value order-mobile-total">{{ number_format($order->final_total, 2) }} EGP</span>
         </div>
       </div>
 
       <div class="order-mobile-action">
-        <a href="{{ route('account.order', $order->id) }}" class="btn btn-outline">View order</a>
+        <a href="{{ route('account.order', $order->id) }}" class="btn btn-outline">{{ $isAr ? 'شوف الطلب' : 'View order' }}</a>
       </div>
     </article>
   @endforeach
@@ -158,9 +166,9 @@
 @else
   <div class="empty">
     <div class="empty-icon">📦</div>
-    <h3>No orders yet</h3>
-    <p>When you place an order it will appear here.</p>
-    <a href="{{ route('shop') }}" class="btn btn-dark" style="margin-top:20px">Shop Now</a>
+    <h3>{{ $isAr ? 'لسه مفيش طلبات' : 'No orders yet' }}</h3>
+    <p>{{ $isAr ? 'لما تعمل طلب هيظهر هنا.' : 'When you place an order it will appear here.' }}</p>
+    <a href="{{ route('shop') }}" class="btn btn-dark" style="margin-top:20px">{{ $isAr ? 'تسوّق دلوقتي' : 'Shop Now' }}</a>
   </div>
 @endif
 @endsection

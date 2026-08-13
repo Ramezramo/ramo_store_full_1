@@ -14,6 +14,11 @@ class OrderMessageController extends Controller
         $this->middleware('auth');
     }
 
+    private function localized(string $english, string $arabic): string
+    {
+        return session('locale', 'en') === 'ar' ? $arabic : $english;
+    }
+
     public function store(Request $request, int $orderId)
     {
         $request->validate([
@@ -63,6 +68,6 @@ class OrderMessageController extends Controller
             'updated_at'         => now(),
         ]);
 
-        return back()->with('success', 'Message sent to the vendor.');
+        return back()->with('success', $this->localized('Message sent to the vendor.', 'رسالتك اتبعتت للبائع.'));
     }
 }

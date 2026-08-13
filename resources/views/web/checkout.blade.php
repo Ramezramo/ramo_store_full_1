@@ -1,5 +1,41 @@
 @extends('layouts.app')
-@section('title', 'Checkout — Ramo Store')
+@php
+  $isAr = session('locale') === 'ar';
+  $governoratesAr = [
+    'Cairo' => 'القاهرة', 'Giza' => 'الجيزة', 'Alexandria' => 'الإسكندرية', 'Aswan' => 'أسوان', 'Asyut' => 'أسيوط',
+    'Beheira' => 'البحيرة', 'Beni Suef' => 'بني سويف', 'Dakahlia' => 'الدقهلية', 'Damietta' => 'دمياط', 'Faiyum' => 'الفيوم',
+    'Gharbia' => 'الغربية', 'Ismailia' => 'الإسماعيلية', 'Kafr El Sheikh' => 'كفر الشيخ', 'Luxor' => 'الأقصر', 'Matrouh' => 'مطروح',
+    'Minya' => 'المنيا', 'Monufia' => 'المنوفية', 'New Valley' => 'الوادي الجديد', 'North Sinai' => 'شمال سينا',
+    'Port Said' => 'بورسعيد', 'Qalyubia' => 'القليوبية', 'Qena' => 'قنا', 'Red Sea' => 'البحر الأحمر',
+    'Sharqia' => 'الشرقية', 'Sohag' => 'سوهاج', 'South Sinai' => 'جنوب سينا', 'Suez' => 'السويس',
+  ];
+  $paymentLabelsAr = [
+    'manual_wallet' => ['title' => 'الدفع بالمحفظة', 'description' => 'حوّل من أي محفظة موبايل مصرية', 'data_label' => 'حوّل لـ'],
+    'manual_instapay' => ['title' => 'الدفع بإنستاباي', 'description' => 'حوّل باستخدام إنستاباي', 'data_label' => 'حوّل لـ'],
+    'cod' => ['title' => 'الدفع عند الاستلام', 'description' => 'ادفع لما طلبك يوصل', 'data_label' => 'التفاصيل'],
+    'vodafone_cash' => ['title' => 'فودافون كاش', 'description' => 'حوّل من محفظة فودافون كاش', 'data_label' => 'حوّل لـ'],
+    'bank_transfer' => ['title' => 'تحويل بنكي', 'description' => 'حوّل على حسابنا البنكي', 'data_label' => 'بيانات الحساب'],
+    'fawry' => ['title' => 'فوري', 'description' => 'ادفع من أي منفذ فوري', 'data_label' => 'التفاصيل'],
+    'credit_card' => ['title' => 'كارت بنكي', 'description' => 'فيزا أو ماستركارد', 'data_label' => 'التفاصيل'],
+  ];
+  $checkoutText = [
+    'isAr' => $isAr,
+    'selected' => $isAr ? 'تم اختيار:' : 'Selected:',
+    'locationSelected' => $isAr ? 'تم تحديد المكان.' : 'Location selected.',
+    'detailsUnavailable' => $isAr ? 'تم تحديد المكان، بس ماقدرناش نجيب تفاصيل العنوان.' : 'Location selected, but address details could not be loaded.',
+    'mapLoading' => $isAr ? 'بنحمّل الخريطة…' : 'Loading map…',
+    'mapReady' => $isAr ? 'الخريطة جاهزة. اضغط أو اسحب العلامة عشان تعدّل مكان التوصيل.' : 'Map ready. Tap or drag the pin to adjust your delivery location.',
+    'mapUnavailable' => $isAr ? 'ماقدرناش نحمّل الخريطة. تقدر تكتب عنوانك بنفسك.' : 'The map could not be loaded. You can still enter your address manually.',
+    'locating' => $isAr ? 'بنحدد مكانك…' : 'Locating...',
+    'detected' => $isAr ? 'اتحدد مكانك' : 'Location detected',
+    'dragPin' => $isAr ? 'تقدر تسحب العلامة عشان تعدّله.' : 'You can drag the pin to adjust it.',
+    'manualAddress' => $isAr ? 'تقدر تكتب أو تعدّل عنوانك بنفسك.' : 'You can still enter or edit your address manually.',
+    'accessDenied' => $isAr ? 'الوصول لمكانك اترفض. فعّله من إعدادات المتصفح وجرّب تاني.' : 'Location access was denied. Please enable it in your browser settings and try again.',
+    'accessBlocked' => $isAr ? 'الوصول لمكانك متوقف. فعّله من إعدادات المتصفح وجرّب تاني.' : 'Location access is blocked. Please enable it in your browser settings and try again.',
+    'detectFailed' => $isAr ? 'ماقدرناش نحدد مكانك. اسمح بالوصول للموقع وجرّب تاني.' : 'Could not detect your location. Please allow location access and try again.',
+  ];
+@endphp
+@section('title', $isAr ? 'إتمام الطلب — Ramo Store' : 'Checkout — Ramo Store')
 
 @push('styles')
 <style>
@@ -9,16 +45,17 @@
   .ck-auth-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}.ck-auth-action{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:0 12px;border:1px solid #1b1b1b;border-radius:9px;background:#1b1b1b;color:#fff;font-size:12px;font-weight:750;line-height:1;text-decoration:none;white-space:nowrap;transition:.15s}.ck-auth-action:hover{background:#343434;border-color:#343434;color:#fff}.ck-auth-action-light{border-color:#d5d5d5;background:#fff;color:#272727}.ck-auth-action-light:hover{border-color:#aaa;background:#f6f6f6;color:#111}
   .ck-save-address{display:flex;align-items:center;gap:13px;min-height:64px;margin-top:4px;padding:12px 15px;border:1px solid #e4e4e4;border-radius:12px;background:#fcfcfc;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s}.ck-save-address:hover{border-color:#cfcfcf;background:#fff}.ck-save-address:has(input:focus-visible){border-color:#e85d26;box-shadow:0 0 0 3px rgba(232,93,38,.14)}.ck-save-address input[type="checkbox"]{width:20px!important;height:20px!important;min-width:20px;margin:0!important;flex:0 0 20px;accent-color:#e85d26;cursor:pointer}.ck-save-address-copy{display:flex;flex-direction:column;gap:3px;min-width:0}.ck-save-address-title{color:#202020;font-size:13px;font-weight:800;line-height:1.25}.ck-save-address-desc{color:#777;font-size:12px;line-height:1.35}
   .ck-map-shell{position:relative;width:100%;height:280px;margin-bottom:12px;border:1px solid rgba(0,0,0,.08);border-radius:14px;overflow:hidden;background:#f8f8f8}.ck-map-canvas{width:100%;height:100%}.ck-map-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(145deg,#fffdfb,#f7f7f6);z-index:2;text-align:center}.ck-map-placeholder[hidden]{display:none}.ck-map-placeholder-inner{display:flex;max-width:240px;align-items:center;flex-direction:column;gap:8px}.ck-map-placeholder-icon{display:flex;width:40px;height:40px;align-items:center;justify-content:center;border-radius:50%;background:#fff1e9;color:#e85d26;font-size:21px}.ck-map-placeholder-title{color:#222;font-size:14px;font-weight:800}.ck-map-placeholder-copy{color:#757575;font-size:12px;line-height:1.4}.ck-map-load-btn{min-height:38px;margin-top:2px;padding:0 13px;border:1px solid #e85d26;border-radius:9px;background:#fff;color:#c94717;font-size:12px;font-weight:800;cursor:pointer}.ck-map-load-btn:hover{background:#fff4ef}.ck-map-load-btn:focus-visible{outline:3px solid rgba(232,93,38,.24);outline-offset:2px}
+  .checkout-page-ar{font-family:'Cairo','Tahoma',sans-serif;text-align:right}.checkout-page-ar .ck-auth-actions{justify-content:flex-start}.checkout-page-ar .ck-save-address{direction:rtl}.checkout-page-ar .checkout-layout{direction:rtl}.checkout-page-ar .summary-row{direction:rtl}
   @media(max-width:600px){.ck-auth-widget{align-items:flex-start;flex-direction:column;gap:13px;padding:15px}.ck-auth-actions{justify-content:flex-start;width:100%}.ck-auth-action{flex:1;padding:0 10px}.ck-save-address{min-height:58px;padding:11px 13px}}
 </style>
 @endpush
 
 @section('content')
-<div class="page">
+<div class="page checkout-page {{ $isAr ? 'checkout-page-ar' : '' }}" dir="{{ $isAr ? 'rtl' : 'ltr' }}">
   <div class="breadcrumb">
-    <a href="{{ route('home') }}">Home</a><span>/</span>
-    <a href="{{ route('cart') }}">Cart</a><span>/</span>
-    <strong>Checkout</strong>
+    <a href="{{ route('home') }}">{{ $isAr ? 'الرئيسية' : 'Home' }}</a><span>/</span>
+    <a href="{{ route('cart') }}">{{ $isAr ? 'السلة' : 'Cart' }}</a><span>/</span>
+    <strong>{{ $isAr ? 'إتمام الطلب' : 'Checkout' }}</strong>
   </div>
 
   <div class="checkout-layout">
@@ -29,7 +66,7 @@
 
         {{-- CONTACT INFO --}}
         <div class="ck-section">
-          <h3 class="ck-title">Contact Information</h3>
+          <h3 class="ck-title">{{ $isAr ? 'بيانات التواصل' : 'Contact Information' }}</h3>
           @if(!auth()->check())
             @php
               $enabledLoginMethods = [
@@ -38,47 +75,47 @@
                 'email'  => (bool) ($authConfig['email_login'] ?? true),
               ];
             @endphp
-            <aside class="ck-auth-widget" aria-label="Available sign-in methods">
+            <aside class="ck-auth-widget" aria-label="{{ $isAr ? 'طرق تسجيل الدخول المتاحة' : 'Available sign-in methods' }}">
               <div class="ck-auth-copy">
-                <span class="ck-auth-kicker">Guest checkout</span>
-                <p class="ck-auth-title">Sign in for saved details and faster checkout</p>
-                <p class="ck-auth-desc">The options below are controlled by the store administrator. You can also continue by entering your checkout details.</p>
+                <span class="ck-auth-kicker">{{ $isAr ? 'إتمام طلب كضيف' : 'Guest checkout' }}</span>
+                <p class="ck-auth-title">{{ $isAr ? 'سجّل دخولك عشان بياناتك المحفوظة ودفع أسرع' : 'Sign in for saved details and faster checkout' }}</p>
+                <p class="ck-auth-desc">{{ $isAr ? 'طرق الدخول المتاحة بيحددها مسؤول المتجر. تقدر كمان تكمل ببيانات طلبك.' : 'The options below are controlled by the store administrator. You can also continue by entering your checkout details.' }}</p>
               </div>
               <div class="ck-auth-actions">
                 @if($enabledLoginMethods['phone'])
-                  <a class="ck-auth-action" href="{{ route('login') }}#phone-otp">Phone OTP</a>
+                  <a class="ck-auth-action" href="{{ route('login') }}#phone-otp">{{ $isAr ? 'دخول برقم الموبايل' : 'Phone OTP' }}</a>
                 @endif
                 @if($enabledLoginMethods['google'])
-                  <a class="ck-auth-action ck-auth-action-light" href="{{ route('auth.google') }}">Continue with Google</a>
+                  <a class="ck-auth-action ck-auth-action-light" href="{{ route('auth.google') }}">{{ $isAr ? 'كمّل بحساب جوجل' : 'Continue with Google' }}</a>
                 @endif
                 @if($enabledLoginMethods['email'])
-                  <a class="ck-auth-action ck-auth-action-light" href="{{ route('login') }}#email-login">Email &amp; password</a>
+                  <a class="ck-auth-action ck-auth-action-light" href="{{ route('login') }}#email-login">{{ $isAr ? 'الإيميل وكلمة السر' : 'Email & password' }}</a>
                 @endif
                 @if(!in_array(true, $enabledLoginMethods, true))
-                  <span class="ck-auth-desc">No sign-in method is currently enabled. Continue as guest.</span>
+                  <span class="ck-auth-desc">{{ $isAr ? 'مفيش طريقة دخول مفعّلة دلوقتي. كمّل كضيف.' : 'No sign-in method is currently enabled. Continue as guest.' }}</span>
                 @endif
               </div>
             </aside>
           @endif
           <div class="form-grid-2">
             <div class="form-group">
-              <label>First Name *</label>
+              <label>{{ $isAr ? 'الاسم الأول' : 'First Name' }} *</label>
               <input type="text" name="first_name" value="{{ old('first_name', $user->first_name ?? '') }}" required>
               @error('first_name')<span class="err">{{ $message }}</span>@enderror
             </div>
             <div class="form-group">
-              <label>Last Name *</label>
+              <label>{{ $isAr ? 'اسم العيلة' : 'Last Name' }} *</label>
               <input type="text" name="last_name" value="{{ old('last_name', $user->last_name ?? '') }}" required>
               @error('last_name')<span class="err">{{ $message }}</span>@enderror
             </div>
           </div>
           <div class="form-group">
-            <label>Email Address <span style="color:#999;font-weight:400;font-size:12px">(optional)</span></label>
+            <label>{{ $isAr ? 'الإيميل' : 'Email Address' }} <span style="color:#999;font-weight:400;font-size:12px">({{ $isAr ? 'اختياري' : 'optional' }})</span></label>
             <input type="email" name="email" value="{{ old('email', ($user && !str_ends_with($user->email ?? '', '@ramostore.local')) ? ($user->email ?? '') : '') }}" placeholder="you@example.com">
             @error('email')<span class="err">{{ $message }}</span>@enderror
           </div>
           <div class="form-group">
-              <label>Phone Number *</label>
+              <label>{{ $isAr ? 'رقم الموبايل' : 'Phone Number' }} *</label>
               <input type="tel" name="phone" value="{{ old('phone', $user->phone ?? '') }}" placeholder="01xxxxxxxxx" inputmode="tel" pattern="[0-9+\-\s()]{7,20}" required>
             @error('phone')<span class="err">{{ $message }}</span>@enderror
           </div>
@@ -86,85 +123,86 @@
 
         {{-- SHIPPING ADDRESS --}}
         <div class="ck-section">
-          <h3 class="ck-title">Shipping Address</h3>
+          <h3 class="ck-title">{{ $isAr ? 'عنوان الشحن' : 'Shipping Address' }}</h3>
           <div class="form-group">
-            <label>Pin Your Location on Map</label>
-            <button type="button" class="btn btn-outline" id="use-current-location-btn" style="margin-bottom:12px">📍 Use My Current Location</button>
+            <label>{{ $isAr ? 'حدّد مكانك على الخريطة' : 'Pin Your Location on Map' }}</label>
+            <button type="button" class="btn btn-outline" id="use-current-location-btn" style="margin-bottom:12px">📍 {{ $isAr ? 'استخدم موقعي الحالي' : 'Use My Current Location' }}</button>
             <div class="ck-map-shell">
-              <div id="checkout-map" class="ck-map-canvas" aria-label="Interactive delivery location map"></div>
+              <div id="checkout-map" class="ck-map-canvas" aria-label="{{ $isAr ? 'خريطة مكان التوصيل التفاعلية' : 'Interactive delivery location map' }}"></div>
               <div id="checkout-map-placeholder" class="ck-map-placeholder">
                 <div class="ck-map-placeholder-inner">
                   <span class="ck-map-placeholder-icon" aria-hidden="true">⌖</span>
-                  <span class="ck-map-placeholder-title">Choose a delivery pin</span>
-                  <span class="ck-map-placeholder-copy">Load the interactive map only when you want to adjust your delivery location.</span>
-                  <button type="button" id="load-checkout-map-btn" class="ck-map-load-btn" aria-controls="checkout-map">Load map</button>
+                  <span class="ck-map-placeholder-title">{{ $isAr ? 'اختار مكان التوصيل' : 'Choose a delivery pin' }}</span>
+                  <span class="ck-map-placeholder-copy">{{ $isAr ? 'حمّل الخريطة وقت ما تحب تعدّل مكان التوصيل.' : 'Load the interactive map only when you want to adjust your delivery location.' }}</span>
+                  <button type="button" id="load-checkout-map-btn" class="ck-map-load-btn" aria-controls="checkout-map">{{ $isAr ? 'حمّل الخريطة' : 'Load map' }}</button>
                 </div>
               </div>
               <div id="map-locating-overlay" style="display:none;position:absolute;inset:0;background:rgba(255,255,255,.75);border-radius:14px;z-index:999;flex-direction:column;align-items:center;justify-content:center;gap:10px">
                 <div style="width:38px;height:38px;border:4px solid #e85d26;border-top-color:transparent;border-radius:50%;animation:map-spin .8s linear infinite"></div>
-                <span style="font-size:13px;font-weight:600;color:#e85d26">Getting your location…</span>
+                <span style="font-size:13px;font-weight:600;color:#e85d26">{{ $isAr ? 'بنحدد مكانك…' : 'Getting your location…' }}</span>
               </div>
             </div>
             <style>@keyframes map-spin{to{transform:rotate(360deg)}}</style>
             <div id="location-status" style="font-size:12px;color:var(--muted)"></div>
           </div>
           <div class="form-group">
-            <label>Street Address *</label>
+            <label>{{ $isAr ? 'العنوان بالتفصيل' : 'Street Address' }} *</label>
             <input type="text" name="address" value="{{ old('address', $savedAddress['address'] ?? '') }}" required>
             @error('address')<span class="err">{{ $message }}</span>@enderror
           </div>
           <div class="form-grid-2">
             <div class="form-group">
-              <label>City *</label>
+              <label>{{ $isAr ? 'المدينة' : 'City' }} *</label>
               <input type="text" name="city" value="{{ old('city', $savedAddress['city'] ?? '') }}" required>
               @error('city')<span class="err">{{ $message }}</span>@enderror
             </div>
             <div class="form-group">
-              <label>State / Governorate *</label>
+              <label>{{ $isAr ? 'المحافظة' : 'State / Governorate' }} *</label>
                 <select name="state" required>
-                <option value="">Select governorate</option>
+                <option value="">{{ $isAr ? 'اختار المحافظة' : 'Select governorate' }}</option>
                 @foreach(['Cairo','Giza','Alexandria','Aswan','Asyut','Beheira','Beni Suef','Dakahlia','Damietta','Faiyum','Gharbia','Ismailia','Kafr El Sheikh','Luxor','Matrouh','Minya','Monufia','New Valley','North Sinai','Port Said','Qalyubia','Qena','Red Sea','Sharqia','Sohag','South Sinai','Suez'] as $gov)
-                  <option value="{{ $gov }}" {{ old('state', $savedAddress['state'] ?? '') === $gov ? 'selected' : '' }}>{{ $gov }}</option>
+                  <option value="{{ $gov }}" {{ old('state', $savedAddress['state'] ?? '') === $gov ? 'selected' : '' }}>{{ $isAr ? ($governoratesAr[$gov] ?? $gov) : $gov }}</option>
                 @endforeach
               </select>
               @error('state')<span class="err">{{ $message }}</span>@enderror
             </div>
           </div>
           <div class="form-group">
-            <label>Apartment / Floor / Additional details</label>
-            <textarea name="address_note" rows="2" placeholder="Apartment / Floor / Additional details">{{ old('address_note', $savedAddress['address_note'] ?? '') }}</textarea>
+            <label>{{ $isAr ? 'الشقة أو الدور أو تفاصيل إضافية' : 'Apartment / Floor / Additional details' }}</label>
+            <textarea name="address_note" rows="2" placeholder="{{ $isAr ? 'الشقة أو الدور أو تفاصيل إضافية' : 'Apartment / Floor / Additional details' }}">{{ old('address_note', $savedAddress['address_note'] ?? '') }}</textarea>
           </div>
           <input type="hidden" name="latitude" id="checkout-latitude" value="{{ old('latitude', $savedAddress['latitude'] ?? ($user->latitude ?? '')) }}">
           <input type="hidden" name="longitude" id="checkout-longitude" value="{{ old('longitude', $savedAddress['longitude'] ?? ($user->longitude ?? '')) }}">
           <label class="ck-save-address" for="save-address">
             <input type="checkbox" name="save_address" value="1" id="save-address" {{ old('save_address', session('checkout_save_address', true)) ? 'checked' : '' }}>
             <span class="ck-save-address-copy">
-              <span class="ck-save-address-title">Save this address for future use</span>
-              <span class="ck-save-address-desc">Keep these delivery details in your account for a faster next checkout.</span>
+              <span class="ck-save-address-title">{{ $isAr ? 'احفظ العنوان ده للمرة الجاية' : 'Save this address for future use' }}</span>
+              <span class="ck-save-address-desc">{{ $isAr ? 'خلي بيانات التوصيل دي محفوظة في حسابك عشان طلبك الجاي يبقى أسرع.' : 'Keep these delivery details in your account for a faster next checkout.' }}</span>
             </span>
           </label>
         </div>
 
         {{-- PAYMENT --}}
         <div class="ck-section">
-          <h3 class="ck-title">Payment Method</h3>
+          <h3 class="ck-title">{{ $isAr ? 'طريقة الدفع' : 'Payment Method' }}</h3>
           @php
             $selectedPaymentMethod = old('payment_method', array_key_first($paymentMethods) ?: 'cod');
           @endphp
           <div class="pay-methods">
             @foreach($paymentMethods as $val => $method)
+            @php $paymentCopy = $isAr ? ($paymentLabelsAr[$val] ?? []) : []; @endphp
             <label class="pay-option {{ $selectedPaymentMethod === $val ? 'selected' : '' }}" data-val="{{ $val }}">
               <input type="radio" name="payment_method" value="{{ $val }}" {{ $selectedPaymentMethod === $val ? 'checked' : '' }}>
               <span class="pay-icon">{{ $method['icon'] ?? '💳' }}</span>
               <div>
-                <div class="pay-title">{{ $method['title'] }}</div>
-                <div class="pay-desc">{{ $method['description'] }}</div>
+                <div class="pay-title">{{ $paymentCopy['title'] ?? $method['title'] }}</div>
+                <div class="pay-desc">{{ $paymentCopy['description'] ?? $method['description'] }}</div>
                 @if($method['data'] ?? '')
                   <div class="pay-data">
-                    <span>{{ $method['data_label'] ?? 'Details' }}:</span>
+                    <span>{{ $paymentCopy['data_label'] ?? ($method['data_label'] ?? ($isAr ? 'التفاصيل' : 'Details')) }}:</span>
                     <strong>{{ $method['data'] }}</strong>
                     @if($method['link'] ?? null)
-                      <a href="{{ $method['link'] }}" target="_blank" rel="noopener">Open link</a>
+                      <a href="{{ $method['link'] }}" target="_blank" rel="noopener">{{ $isAr ? 'افتح الرابط' : 'Open link' }}</a>
                     @endif
                   </div>
                 @endif
@@ -173,24 +211,24 @@
             @endforeach
           </div>
           @error('payment_method')<span class="err">{{ $message }}</span>@enderror
-          <div style="font-size:12px;color:#6b7280;margin-top:10px">For Wallet or InstaPay, place the order first, transfer the amount, then upload your receipt from the order page.</div>
+          <div style="font-size:12px;color:#6b7280;margin-top:10px">{{ $isAr ? 'لو الدفع بمحفظة أو إنستاباي، اعمل الطلب الأول، حوّل المبلغ، وبعدها ارفع الإيصال من صفحة الطلب.' : 'For Wallet or InstaPay, place the order first, transfer the amount, then upload your receipt from the order page.' }}</div>
         </div>
 
         {{-- ORDER NOTES --}}
         <div class="ck-section">
           <div class="form-group">
-            <label>Order Notes (optional)</label>
-            <textarea name="notes" rows="3" placeholder="Any special instructions for your order…">{{ old('notes') }}</textarea>
+            <label>{{ $isAr ? 'ملاحظات على الطلب' : 'Order Notes' }} ({{ $isAr ? 'اختياري' : 'optional' }})</label>
+            <textarea name="notes" rows="3" placeholder="{{ $isAr ? 'فيه أي ملاحظات خاصة بطلبك؟' : 'Any special instructions for your order…' }}">{{ old('notes') }}</textarea>
           </div>
         </div>
 
-        <button type="submit" class="btn btn-dark place-order-btn">Place Order →</button>
+        <button type="submit" class="btn btn-dark place-order-btn">{{ $isAr ? 'أكّد الطلب ←' : 'Place Order →' }}</button>
       </form>
     </div>
 
     {{-- ORDER SUMMARY --}}
     <div class="ck-summary">
-      <h3 class="ck-title">Order Summary</h3>
+      <h3 class="ck-title">{{ $isAr ? 'ملخص الطلب' : 'Order Summary' }}</h3>
       <div class="ck-items">
         @foreach($cart as $item)
         <div class="ck-item">
@@ -205,7 +243,7 @@
           <div class="ck-item-name">
             {{ Str::limit($item['name'], 35) }}
             @if(!empty($item['sku']))
-              <div class="ck-item-sku">SKU: {{ $item['sku'] }}</div>
+              <div class="ck-item-sku">{{ $isAr ? 'الكود:' : 'SKU:' }} {{ $item['sku'] }}</div>
             @endif
             @if(!empty($item['attrs']))
               <div class="ck-item-attrs">
@@ -220,14 +258,14 @@
         @endforeach
       </div>
       <div class="ck-totals">
-        <div class="summary-row"><span>Subtotal</span><span>{{ number_format($subtotal, 2) }} EGP</span></div>
+        <div class="summary-row"><span>{{ $isAr ? 'الإجمالي الفرعي' : 'Subtotal' }}</span><span>{{ number_format($subtotal, 2) }} EGP</span></div>
         @if($coupon && $discount > 0)
-          <div class="summary-row discount-row"><span>Coupon ({{ $coupon['code'] }})</span><span>−{{ number_format($discount, 2) }} EGP</span></div>
+          <div class="summary-row discount-row"><span>{{ $isAr ? 'كود خصم' : 'Coupon' }} ({{ $coupon['code'] }})</span><span>−{{ number_format($discount, 2) }} EGP</span></div>
         @endif
-        <div class="summary-row"><span>Estimated Delivery</span><span>2–4 days</span></div>
-        <div class="summary-row"><span>Shipping</span><span>{{ $shippingFee > 0 ? number_format($shippingFee, 2) . ' EGP' : 'Free' }}</span></div>
+        <div class="summary-row"><span>{{ $isAr ? 'التوصيل المتوقع' : 'Estimated Delivery' }}</span><span>{{ $isAr ? 'من يومين لـ 4 أيام' : '2–4 days' }}</span></div>
+        <div class="summary-row"><span>{{ $isAr ? 'الشحن' : 'Shipping' }}</span><span>{{ $shippingFee > 0 ? number_format($shippingFee, 2) . ' EGP' : ($isAr ? 'مجاني' : 'Free') }}</span></div>
         <div class="summary-divider"></div>
-        <div class="summary-row total-row"><span>Total</span><span>{{ number_format($total, 2) }} EGP</span></div>
+        <div class="summary-row total-row"><span>{{ $isAr ? 'الإجمالي' : 'Total' }}</span><span>{{ number_format($total, 2) }} EGP</span></div>
       </div>
     </div>
 
@@ -238,6 +276,7 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+  const checkoutText = @json($checkoutText);
   const paymentOptions = document.querySelectorAll('input[name="payment_method"]');
   const updateSelectedMethod = () => {
     document.querySelectorAll('.pay-option').forEach((option) => {
@@ -296,9 +335,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (addressInput) addressInput.dispatchEvent(new Event('input', { bubbles: true }));
       if (cityInput) cityInput.dispatchEvent(new Event('input', { bubbles: true }));
       matchGovernorate(state);
-      setStatus(city || state ? `Selected: ${[city, state].filter(Boolean).join(', ')}` : 'Location selected.');
+      setStatus(city || state ? `${checkoutText.selected} ${[city, state].filter(Boolean).join(', ')}` : checkoutText.locationSelected);
     } catch (_) {
-      setStatus('Location selected, but address details could not be loaded.');
+      setStatus(checkoutText.detailsUnavailable);
     }
   };
   const initMap = (lat, lng) => {
@@ -364,11 +403,11 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   if (mapEl) {
     loadMapBtn?.addEventListener('click', () => {
-      setStatus('Loading map…');
+      setStatus(checkoutText.mapLoading);
       ensureMap().then(() => {
-        setStatus('Map ready. Tap or drag the pin to adjust your delivery location.');
+        setStatus(checkoutText.mapReady);
       }).catch(() => {
-        setStatus('The map could not be loaded. You can still enter your address manually.');
+        setStatus(checkoutText.mapUnavailable);
       });
     });
     if (useLocationBtn && navigator.geolocation) {
@@ -377,7 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
       function hideMapLoading() { if (mapOverlay) mapOverlay.style.display = 'none'; }
 
       function fetchLocation() {
-        setStatus('Locating...');
+        setStatus(checkoutText.locating);
         showMapLoading();
         navigator.geolocation.getCurrentPosition(async (pos) => {
           const { latitude, longitude, accuracy } = pos.coords;
@@ -385,15 +424,17 @@ document.addEventListener('DOMContentLoaded', () => {
           updateFields(latitude, longitude);
           try {
             await ensureMap(latitude, longitude);
-            setStatus(accuracy ? `Location detected (${Math.round(accuracy)}m accuracy). You can drag the pin to adjust it.` : 'Location detected. You can drag the pin to adjust it.');
+            setStatus(accuracy
+              ? (checkoutText.isAr ? `${checkoutText.detected} (دقة ${Math.round(accuracy)} متر). ${checkoutText.dragPin}` : `Location detected (${Math.round(accuracy)}m accuracy). You can drag the pin to adjust it.`)
+              : `${checkoutText.detected}. ${checkoutText.dragPin}`);
           } catch (_) {
-            setStatus('Location detected. You can still enter or edit your address manually.');
+            setStatus(`${checkoutText.detected}. ${checkoutText.manualAddress}`);
           } finally {
             hideMapLoading();
           }
         }, () => {
           hideMapLoading();
-          setStatus('Could not detect your location. Please allow location access and try again.');
+          setStatus(checkoutText.detectFailed);
         }, { enableHighAccuracy: true, timeout: 60000, maximumAge: 0 });
       }
 
@@ -415,11 +456,11 @@ document.addEventListener('DOMContentLoaded', () => {
                   fetchLocation();
                 } else if (result.state === 'denied') {
                   result.onchange = null;
-                  setStatus('Location access was denied. Please enable it in your browser settings and try again.');
+                  setStatus(checkoutText.accessDenied);
                 }
               };
             } else {
-              setStatus('Location access is blocked. Please enable it in your browser settings and try again.');
+              setStatus(checkoutText.accessBlocked);
             }
           });
         } else {

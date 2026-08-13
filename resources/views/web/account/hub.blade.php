@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'My Account — Ramo Store')
+@section('title', (session('locale') === 'ar' ? 'حسابي' : 'My Account') . ' — Ramo Store')
 
 @section('content')
 @php
@@ -7,6 +7,7 @@
   $displayName = trim(($u->first_name ?? '') . ' ' . ($u->last_name ?? '')) ?: $u->name;
   $hasPlaceholderEmail = str_ends_with($u->email ?? '', '@ramostore.local');
   $displayEmail = $hasPlaceholderEmail ? null : $u->email;
+  $isAr = session('locale') === 'ar';
 @endphp
 
 <style>
@@ -98,6 +99,9 @@
   flex-shrink: 0; color: #e53935;
 }
 .acc-hub-signout span { flex: 1; font-size: 15px; font-weight: 500; }
+[dir="rtl"] .acc-hub-edit-link { margin-left: 0; margin-right: auto; }
+[dir="rtl"] .acc-hub-chevron svg { transform: scaleX(-1); }
+[dir="rtl"] .acc-hub-signout { text-align: right; }
 
 /* Desktop: wider card layout */
 @media(min-width: 769px) {
@@ -109,7 +113,7 @@
 }
 </style>
 
-<div class="acc-hub-wrap">
+<div class="acc-hub-wrap" dir="{{ $isAr ? 'rtl' : 'ltr' }}" style="{{ $isAr ? 'font-family:Tahoma,Arial,sans-serif' : '' }}">
 
   {{-- Hero --}}
   <div class="acc-hub-hero">
@@ -119,21 +123,21 @@
       @if($displayEmail)
         <div class="acc-hub-email">{{ $displayEmail }}</div>
       @else
-        <div class="acc-hub-email" style="opacity:.7">No email set</div>
+        <div class="acc-hub-email" style="opacity:.7">{{ $isAr ? 'مفيش إيميل مضاف' : 'No email set' }}</div>
       @endif
     </div>
-    <a href="{{ route('account.profile') }}" class="acc-hub-edit-link">Edit</a>
+    <a href="{{ route('account.profile') }}" class="acc-hub-edit-link">{{ $isAr ? 'تعديل' : 'Edit' }}</a>
   </div>
 
   {{-- My Account section --}}
   <div class="acc-hub-section">
-    <div class="acc-hub-section-label">My Account</div>
+    <div class="acc-hub-section-label">{{ $isAr ? 'حسابي' : 'My Account' }}</div>
 
     <a href="{{ route('account.orders') }}" class="acc-hub-item">
       <div class="acc-hub-item-icon">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
       </div>
-      <div class="acc-hub-item-label">My Orders</div>
+      <div class="acc-hub-item-label">{{ $isAr ? 'طلباتي' : 'My Orders' }}</div>
       <div class="acc-hub-chevron"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </a>
 
@@ -141,7 +145,7 @@
       <div class="acc-hub-item-icon">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
       </div>
-      <div class="acc-hub-item-label">Wishlist</div>
+      <div class="acc-hub-item-label">{{ $isAr ? 'المفضلة' : 'Wishlist' }}</div>
       <div class="acc-hub-chevron"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </a>
 
@@ -149,7 +153,7 @@
       <div class="acc-hub-item-icon">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
       </div>
-      <div class="acc-hub-item-label">My Reviews</div>
+      <div class="acc-hub-item-label">{{ $isAr ? 'تقييماتي' : 'My Reviews' }}</div>
       <div class="acc-hub-chevron"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </a>
 
@@ -157,22 +161,22 @@
       <div class="acc-hub-item-icon">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
       </div>
-      <div class="acc-hub-item-label">Refund &amp; Returns</div>
+      <div class="acc-hub-item-label">{{ $isAr ? 'الاسترجاع والمرتجعات' : 'Refund & Returns' }}</div>
       <div class="acc-hub-chevron"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </a>
   </div>
 
   {{-- Account Settings --}}
   <div class="acc-hub-section">
-    <div class="acc-hub-section-label">Settings</div>
+    <div class="acc-hub-section-label">{{ $isAr ? 'الإعدادات' : 'Settings' }}</div>
 
     <a href="{{ route('account.profile') }}" class="acc-hub-item">
       <div class="acc-hub-item-icon">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       </div>
       <div>
-        <div class="acc-hub-item-label">Edit Profile</div>
-        <div class="acc-hub-item-sub">Name, email, phone &amp; password</div>
+        <div class="acc-hub-item-label">{{ $isAr ? 'عدّل بياناتي' : 'Edit Profile' }}</div>
+        <div class="acc-hub-item-sub">{{ $isAr ? 'الاسم، الإيميل، الموبايل وكلمة السر' : 'Name, email, phone & password' }}</div>
       </div>
       <div class="acc-hub-chevron"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </a>
@@ -183,7 +187,7 @@
         <div class="acc-hub-signout-icon">
           <svg fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </div>
-        <span>Sign Out</span>
+        <span>{{ $isAr ? 'تسجيل الخروج' : 'Sign Out' }}</span>
       </button>
     </form>
   </div>

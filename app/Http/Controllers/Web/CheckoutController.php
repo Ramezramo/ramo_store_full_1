@@ -23,6 +23,24 @@ class CheckoutController extends Controller
         return ! Auth::check() && ! AuthConfig::val('guest_checkout', false);
     }
 
+    private function localized(string $english, string $arabic): string
+    {
+        return session('locale', 'en') === 'ar' ? $arabic : $english;
+    }
+
+    private function localizedProductName(object $product): string
+    {
+        $fallback = (string) ($product->name ?? '');
+        if (session('locale', 'en') !== 'ar' || empty($product->translations)) {
+            return $fallback;
+        }
+        $translations = is_string($product->translations)
+            ? (json_decode($product->translations, true) ?? [])
+            : (array) $product->translations;
+        $arabic = collect($translations)->first(fn ($translation) => ($translation['locale'] ?? null) === 'ar');
+        return trim((string) ($arabic['name'] ?? '')) ?: $fallback;
+    }
+
     private function cartQuantityIssue(array $cart): ?string
     {
         $productIds = collect($cart)->pluck('product_id')->map(fn ($id) => (int) $id)->unique()->values()->all();
@@ -38,7 +56,7 @@ class CheckoutController extends Controller
                 : $variations->first(fn ($v) => (int) $v->product_id === $productId && (bool) $v->main_variation);
 
             if (! $product || ! $variation || (int) $variation->product_id !== $productId) {
-                return 'One or more items in your cart are no longer available. Please review your cart.';
+                return $this->localized('One or more items in your cart are no longer available. Please review your cart.', 'منتج أو أكتر في السلة مبقاش متاح. راجع السلة.');
             }
 
             $minimumQuantity = max(1, (int) ($product->minimum_order_qty ?? 1));
@@ -52,10 +70,10 @@ class CheckoutController extends Controller
             }
 
             if ($maximumQuantity < $minimumQuantity) {
-                return "\"{$product->name}\" no longer has enough stock to meet its minimum order quantity. Please review your cart.";
+                return $this->localized("\"{$product->name}\" no longer has enough stock to meet its minimum order quantity. Please review your cart.", "\"{$this->localizedProductName($product)}\" مخزونه مش مكفي للحد الأدنى للطلب. راجع السلة.");
             }
             if ($quantity < $minimumQuantity || $quantity > $maximumQuantity) {
-                return "The quantity for \"{$product->name}\" must be between {$minimumQuantity} and {$maximumQuantity}. Please review your cart.";
+                return $this->localized("The quantity for \"{$product->name}\" must be between {$minimumQuantity} and {$maximumQuantity}. Please review your cart.", "كمية \"{$this->localizedProductName($product)}\" لازم تكون من {$minimumQuantity} لحد {$maximumQuantity}. راجع السلة.");
             }
         }
 
@@ -66,11 +84,22 @@ class CheckoutController extends Controller
     {
         $cart = $this->getCart();
         if (empty($cart)) {
-            return redirect()->route('cart')->with('error', 'Your cart is empty.');
+            return redirect()->route('cart')->with('error', $this->localized('Your cart is empty.', 'السلة فاضية.'));
         }
 
         if ($quantityIssue = $this->cartQuantityIssue($cart)) {
             return redirect()->route('cart')->with('error', $quantityIssue);
+        }
+
+        if (session('locale', 'en') === 'ar') {
+            $productIds = collect($cart)->pluck('product_id')->map(fn ($id) => (int) $id)->unique()->values()->all();
+            $products = DB::table('products_data')->whereIn('id', $productIds)->get()->keyBy('id');
+            $cart = array_map(function (array $item) use ($products) {
+                if ($product = $products->get((int) ($item['product_id'] ?? 0))) {
+                    $item['name'] = $this->localizedProductName($product);
+                }
+                return $item;
+            }, $cart);
         }
 
         if ($this->requiresLogin()) {
@@ -111,7 +140,7 @@ class CheckoutController extends Controller
     {
         $cart = $this->getCart();
         if (empty($cart)) {
-            return redirect()->route('cart')->with('error', 'Your cart is empty.');
+            return redirect()->route('cart')->with('error', $this->localized('Your cart is empty.', 'السلة فاضية.'));
         }
 
         if ($this->requiresLogin()) {
@@ -139,7 +168,7 @@ class CheckoutController extends Controller
         $paymentMethods = PaymentConfig::checkoutMethods();
         if (! array_key_exists($r->payment_method, $paymentMethods)) {
             return back()->withInput()->withErrors([
-                'payment_method' => 'That payment method is not currently available.',
+                'payment_method' => $this->localized('That payment method is not currently available.', 'طريقة الدفع دي مش متاحة دلوقتي.'),
             ]);
         }
 
@@ -186,10 +215,10 @@ class CheckoutController extends Controller
                     $product = $dbProducts->get($productId);
 
                     if (! $product || (($product->status ?? 'publish') !== 'publish')) {
-                        throw new \RuntimeException("Product \"" . ($item['name'] ?? $productId) . "\" is no longer available.");
+                        throw new \RuntimeException($this->localized("Product \"" . ($item['name'] ?? $productId) . "\" is no longer available.", "المنتج \"" . ($item['name'] ?? $productId) . "\" مبقاش متاح."));
                     }
                     if ($quantity < 1) {
-                        throw new \RuntimeException("The quantity for \"{$product->name}\" is invalid.");
+                        throw new \RuntimeException($this->localized("The quantity for \"{$product->name}\" is invalid.", "كمية \"{$this->localizedProductName($product)}\" مش صحيحة."));
                     }
 
                     $variation = ! empty($item['variation_id'])
@@ -199,10 +228,10 @@ class CheckoutController extends Controller
                     // A variation must belong to the product in the cart. This prevents
                     // a crafted request from pricing one product with another product's variation.
                     if (! $variation || (int) $variation->product_id !== $productId) {
-                        throw new \RuntimeException("The selected variation for \"{$product->name}\" is invalid.");
+                        throw new \RuntimeException($this->localized("The selected variation for \"{$product->name}\" is invalid.", "الاختيار اللي اخترته لمنتج \"{$this->localizedProductName($product)}\" مش صحيح."));
                     }
                     if (($variation->status ?? 'publish') !== 'publish' || ($variation->stock_status ?? 'instock') !== 'instock') {
-                        throw new \RuntimeException("The selected variation of \"{$product->name}\" is unavailable.");
+                        throw new \RuntimeException($this->localized("The selected variation of \"{$product->name}\" is unavailable.", "الاختيار اللي اخترته لمنتج \"{$this->localizedProductName($product)}\" مش متاح."));
                     }
                     $stockQuantity = (int) ($variation->stock_quantity ?? 0);
                     $minimumQuantity = max(1, (int) ($product->minimum_order_qty ?? 1));
@@ -215,13 +244,13 @@ class CheckoutController extends Controller
                         $maximumQuantity = min($maximumQuantity, 1);
                     }
                     if ($maximumQuantity < $minimumQuantity) {
-                        throw new \RuntimeException("\"{$product->name}\" does not have enough stock to meet its minimum order quantity of {$minimumQuantity}.");
+                        throw new \RuntimeException($this->localized("\"{$product->name}\" does not have enough stock to meet its minimum order quantity of {$minimumQuantity}.", "\"{$this->localizedProductName($product)}\" مخزونه مش مكفي للحد الأدنى اللي هو {$minimumQuantity}."));
                     }
                     if ($quantity < $minimumQuantity) {
-                        throw new \RuntimeException("Minimum order quantity for \"{$product->name}\" is {$minimumQuantity}.");
+                        throw new \RuntimeException($this->localized("Minimum order quantity for \"{$product->name}\" is {$minimumQuantity}.", "أقل كمية للطلب من \"{$this->localizedProductName($product)}\" هي {$minimumQuantity}."));
                     }
                     if ($quantity > $maximumQuantity) {
-                        throw new \RuntimeException("You can only order up to {$maximumQuantity} unit(s) of \"{$product->name}\" per order.");
+                        throw new \RuntimeException($this->localized("You can only order up to {$maximumQuantity} unit(s) of \"{$product->name}\" per order.", "تقدر تطلب لحد {$maximumQuantity} قطعة من \"{$this->localizedProductName($product)}\" في الطلب الواحد."));
                     }
 
                     $regularPrice = (float) ($variation->regular_price ?? 0);
@@ -238,7 +267,7 @@ class CheckoutController extends Controller
                     $verifiedCart[$rowId] = [
                         'product_id'   => $productId,
                         'variation_id' => (int) $variation->id,
-                        'name'         => $product->name,
+                        'name'         => $this->localizedProductName($product),
                         'sku'          => $product->sku ?? null,
                         'price'        => $livePrice,
                         'qty'          => $quantity,

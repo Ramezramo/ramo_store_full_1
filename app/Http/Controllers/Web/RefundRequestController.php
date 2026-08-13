@@ -14,6 +14,11 @@ class RefundRequestController extends Controller
         $this->middleware('auth');
     }
 
+    private function localized(string $english, string $arabic): string
+    {
+        return session('locale') === 'ar' ? $arabic : $english;
+    }
+
     public function index()
     {
         $refunds = DB::table('refund_requests as r')
@@ -67,7 +72,7 @@ class RefundRequestController extends Controller
             ->first();
 
         if (! $order) {
-            return back()->with('error', 'Order not found.')->withInput();
+            return back()->with('error', $this->localized('Order not found.', 'مش لاقيين الطلب ده.'))->withInput();
         }
 
         $already = DB::table('refund_requests')
@@ -77,7 +82,7 @@ class RefundRequestController extends Controller
             ->exists();
 
         if ($already) {
-            return back()->with('error', 'You already have an open request for this order.')->withInput();
+            return back()->with('error', $this->localized('You already have an open request for this order.', 'عندك طلب مفتوح بالفعل للطلب ده.'))->withInput();
         }
 
         $vendorId = null;
@@ -102,7 +107,7 @@ class RefundRequestController extends Controller
             'updated_at'  => now(),
         ]);
 
-        return redirect()->route('account.refunds')->with('success', 'Your request has been submitted. We will review it shortly.');
+        return redirect()->route('account.refunds')->with('success', $this->localized('Your request has been submitted. We will review it shortly.', 'طلبك اتبعت وهنراجعه قريب.'));
     }
 
     public function show(int $id)
@@ -127,7 +132,7 @@ class RefundRequestController extends Controller
             ->first();
 
         if (! $refund) {
-            return back()->with('error', 'Request cannot be cancelled.');
+            return back()->with('error', $this->localized('Request cannot be cancelled.', 'مش ممكن تلغي الطلب ده دلوقتي.'));
         }
 
         DB::table('refund_requests')->where('id', $id)->update([
@@ -135,6 +140,6 @@ class RefundRequestController extends Controller
             'updated_at' => now(),
         ]);
 
-        return redirect()->route('account.refunds')->with('success', 'Request cancelled.');
+        return redirect()->route('account.refunds')->with('success', $this->localized('Request cancelled.', 'طلب الاسترجاع اتلغى.'));
     }
 }

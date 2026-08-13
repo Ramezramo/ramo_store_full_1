@@ -1,13 +1,31 @@
 @extends('layouts.app')
-@section('title', $product->name . ' — Ramo Store')
+@php
+  $isAr = session('locale') === 'ar';
+  $displayProductName = $product->tl_display_name ?? $product->timeline_name ?? $product->name;
+  $displayProductDescription = $product->tl_display_description ?? $product->timeline_description ?? $product->description;
+  $productText = [
+    'isAr' => $isAr,
+    'minimum' => $isAr ? 'الحد الأدنى' : 'Minimum',
+    'maximum' => $isAr ? 'الحد الأقصى' : 'Maximum',
+    'perOrder' => $isAr ? 'في الطلب' : 'per order',
+    'notEnough' => $isAr ? 'المنتج ده مش متوفر منه كمية كفاية للحد الأدنى' : 'This product does not have enough stock to meet its minimum order quantity of',
+    'inStock' => $isAr ? 'متوفر' : 'In Stock',
+    'available' => $isAr ? 'متاح' : 'available',
+    'outOfStock' => $isAr ? 'مش متوفر' : 'Out of Stock',
+    'addToCart' => $isAr ? 'ضيف للسلة' : 'Add to Cart',
+    'unavailable' => $isAr ? 'غير متاح' : 'Unavailable',
+    'select' => $isAr ? 'اختار' : 'Please select a',
+  ];
+@endphp
+@section('title', $displayProductName . ' — Ramo Store')
 
 @section('content')
-<div class="page">
+<div class="page {{ $isAr ? 'product-page-ar' : '' }}" dir="{{ $isAr ? 'rtl' : 'ltr' }}">
 
   <div class="breadcrumb">
-    <a href="{{ route('home') }}">Home</a><span>/</span>
-    <a href="{{ route('shop') }}">Shop</a><span>/</span>
-    <strong>{{ Str::limit($product->name, 40) }}</strong>
+    <a href="{{ route('home') }}">{{ $isAr ? 'الرئيسية' : 'Home' }}</a><span>/</span>
+    <a href="{{ route('shop') }}">{{ $isAr ? 'المتجر' : 'Shop' }}</a><span>/</span>
+    <strong>{{ Str::limit($displayProductName, 40) }}</strong>
   </div>
 
   <div class="product-layout">
@@ -25,21 +43,21 @@
         <div class="gallery-thumbs" id="gallery-thumbs">
           @foreach($allImages as $i => $url)
           <div class="gallery-thumb {{ $i === 0 ? 'active' : '' }}" onclick="switchImg(this,'{{ $url }}')">
-            <img src="{{ $url }}" alt="Image {{ $i+1 }}" loading="lazy"
+            <img src="{{ $url }}" alt="{{ $isAr ? 'صورة' : 'Image' }} {{ $i+1 }}" loading="lazy"
                  onerror="handleThumbError(this)">
           </div>
           @endforeach
         </div>
         <div class="gallery-main" id="gallery-main-wrap">
           @if($product->thumbnail_url)
-            <img src="{{ $product->thumbnail_url }}" alt="{{ $product->name }}" id="main-img"
+            <img src="{{ $product->thumbnail_url }}" alt="{{ $displayProductName }}" id="main-img"
                  onerror="handleImgError(this)">
           @else
-            <img src="" alt="{{ $product->name }}" id="main-img" style="display:none"
+            <img src="" alt="{{ $displayProductName }}" id="main-img" style="display:none"
                  onerror="handleImgError(this)">
             <div id="main-img-placeholder" class="img-placeholder-box" style="width:100%;height:100%">
               <span class="img-placeholder-icon">🖼️</span>
-              <span class="img-placeholder-text">No image</span>
+              <span class="img-placeholder-text">{{ $isAr ? 'مفيش صورة' : 'No image' }}</span>
             </div>
           @endif
         </div>
@@ -51,11 +69,11 @@
 
       {{-- Title + Wishlist --}}
       <div class="pi-title-row">
-        <h1 class="pi-title">{{ $product->name }}</h1>
+        <h1 class="pi-title">{{ $displayProductName }}</h1>
         <button class="pi-wish-btn {{ $inWishlist ? 'wished' : '' }}" id="wish-btn"
                 data-wishlist-product-id="{{ $product->id }}"
                 onclick="toggleWishlist(this, {{ $product->id }})"
-                title="{{ $inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist' }}">
+                title="{{ $inWishlist ? ($isAr ? 'شيل من المفضلة' : 'Remove from Wishlist') : ($isAr ? 'ضيف للمفضلة' : 'Add to Wishlist') }}">
           {{ $inWishlist ? '♥' : '♡' }}
         </button>
       </div>
@@ -73,18 +91,18 @@
         </div>
         @if($totalRev)
           <span class="pi-rating-val">{{ $avgRating }}</span>
-          <a href="#reviews" class="pi-rating-count">({{ $totalRev }} review{{ $totalRev!=1?'s':'' }})</a>
+          <a href="#reviews" class="pi-rating-count">({{ $totalRev }} {{ $isAr ? 'تقييم' : 'review'.($totalRev!=1?'s':'') }})</a>
         @else
-          <span class="pi-rating-none">No reviews yet</span>
+          <span class="pi-rating-none">{{ $isAr ? 'لسه مفيش تقييمات' : 'No reviews yet' }}</span>
         @endif
       </div>
 
       {{-- Stock badge --}}
       <div id="stock-display" class="pi-stock">
         @if($product->stock_quantity > 0)
-          <span class="badge-stock-ok">✓ In Stock ({{ number_format($product->stock_quantity) }} available)</span>
+          <span class="badge-stock-ok">✓ {{ $isAr ? 'متوفر' : 'In Stock' }} ({{ number_format($product->stock_quantity) }} {{ $isAr ? 'متاح' : 'available' }})</span>
         @else
-          <span class="badge-stock-no">Out of Stock</span>
+          <span class="badge-stock-no">{{ $isAr ? 'مش متوفر' : 'Out of Stock' }}</span>
         @endif
       </div>
 
@@ -120,13 +138,13 @@
             <span class="pi-price-orig" id="orig-display" style="display:none"></span>
           @endif
           @if($hasDisc)
-            <span class="pi-disc-badge" id="disc-badge">{{ round($discPct) }}% OFF</span>
+            <span class="pi-disc-badge" id="disc-badge">{{ $isAr ? 'خصم ' . round($discPct) . '%' : round($discPct) . '% OFF' }}</span>
           @else
             <span class="pi-disc-badge" id="disc-badge" style="display:none"></span>
           @endif
         </div>
         @if($hasDisc)
-        <div class="pi-sale-note">🏷️ Sale price — you save {{ round($discPct) }}% off the original price</div>
+        <div class="pi-sale-note">🏷️ {{ $isAr ? 'سعر التخفيض — بتوفّر ' . round($discPct) . '% من السعر الأصلي' : 'Sale price — you save ' . round($discPct) . '% off the original price' }}</div>
         @endif
       </div>
 
@@ -160,10 +178,15 @@
       @if(!empty($attrMap))
       <div class="pi-variations-wrap">
         @foreach($attrMap as $attrKey => $attrValues)
-          @php $isColor = strtolower($attrKey) === 'color'; @endphp
+          @php
+            $isColor = strtolower($attrKey) === 'color';
+            $attrLabel = $isAr ? match(strtolower($attrKey)) {
+              'color' => 'اللون', 'size' => 'المقاس', default => $attrKey,
+            } : $attrKey;
+          @endphp
           <div class="pi-var-group">
             <div class="var-label">
-              {{ $attrKey }}
+              {{ $attrLabel }}
               @if($isColor) <span class="var-selected-label" id="sel-{{ Str::slug($attrKey) }}"></span>@endif
             </div>
             <div class="var-options" id="opts-{{ Str::slug($attrKey) }}">
@@ -212,31 +235,31 @@
             <button type="button" onclick="changeQty(1)">+</button>
           </div>
           <div id="quantity-limit-hint" style="margin-top:7px;font-size:12px;color:var(--c-mid)">
-            Minimum {{ $minimumOrderQty }} · Maximum {{ $maximumOrderQty }} per order
+            {{ $isAr ? 'الحد الأدنى ' . $minimumOrderQty . ' · الحد الأقصى ' . $maximumOrderQty . ' في الطلب' : 'Minimum ' . $minimumOrderQty . ' · Maximum ' . $maximumOrderQty . ' per order' }}
           </div>
         </div>
         <button class="add-to-cart-btn pi-atc-btn" id="add-to-cart-btn" {{ $quantityIsOrderable ? '' : 'disabled' }}
-                onclick="handleAddToCart({{ $product->id }}, '{{ addslashes($product->name) }}', {{ $product->display_price }}, '{{ $product->thumbnail_url }}')">
-          {{ $quantityIsOrderable ? '🛒 Add to Cart' : 'Unavailable' }}
+                onclick="handleAddToCart({{ $product->id }}, '{{ addslashes($displayProductName) }}', {{ $product->display_price }}, '{{ $product->thumbnail_url }}')">
+          {{ $quantityIsOrderable ? ($isAr ? '🛒 ضيف للسلة' : '🛒 Add to Cart') : ($isAr ? 'مش متوفر' : 'Unavailable') }}
         </button>
       </div>
 
       {{-- COUPON --}}
       <div class="pi-coupon-wrap">
-        <div class="pi-coupon-label">🏷️ Have a coupon?</div>
+        <div class="pi-coupon-label">🏷️ {{ $isAr ? 'معاك كود خصم؟' : 'Have a coupon?' }}</div>
         <div class="pi-coupon-row">
-          <input type="text" id="pi-coupon-input" class="pi-coupon-input" placeholder="Enter promo code" maxlength="50">
-          <button class="pi-coupon-btn" onclick="applyProductCoupon()">Apply</button>
+          <input type="text" id="pi-coupon-input" class="pi-coupon-input" placeholder="{{ $isAr ? 'اكتب كود الخصم' : 'Enter promo code' }}" maxlength="50">
+          <button class="pi-coupon-btn" onclick="applyProductCoupon()">{{ $isAr ? 'استخدمه' : 'Apply' }}</button>
         </div>
         <div id="pi-coupon-msg" class="pi-coupon-msg"></div>
       </div>
 
-      @if($product->description || $product->unit_label)
+      @if($displayProductDescription || $product->unit_label)
       <div class="desc-block pi-desc">
-        @if($product->description)
+        @if($displayProductDescription)
           @php
             // Split on bullet characters (•, -, or *) to detect list items
-            $raw = $product->description;
+            $raw = $displayProductDescription;
             // Separate a leading sentence (before first bullet) from the bullet list
             $parts = preg_split('/\s*[•]\s*/', $raw, -1, PREG_SPLIT_NO_EMPTY);
             $hasBullets = str_contains($raw, '•') && count($parts) > 1;
@@ -263,7 +286,7 @@
             <p>{{ $raw }}</p>
           @endif
         @endif
-        @if($product->unit_label)<p style="margin-top:10px;font-size:13px"><strong>Unit:</strong> {{ $product->unit_label }}</p>@endif
+        @if($product->unit_label)<p style="margin-top:10px;font-size:13px"><strong>{{ $isAr ? 'الوحدة:' : 'Unit:' }}</strong> {{ $product->unit_label }}</p>@endif
       </div>
       @endif
 
@@ -288,7 +311,7 @@
             <span style="color:{{ $s <= round($avgRating) ? '#f5a623' : '#e0e0e0' }}">★</span>
           @endfor
         </div>
-        <div class="rv-total-label">{{ $totalReviews }} review{{ $totalReviews!=1?'s':'' }}</div>
+        <div class="rv-total-label">{{ $totalReviews }} {{ $isAr ? 'تقييم' : 'review'.($totalReviews!=1?'s':'') }}</div>
       </div>
 
       <div class="rv-distribution">
@@ -305,13 +328,13 @@
       @auth
         @if(!$userReviewed)
         <button class="rv-write-btn" onclick="document.getElementById('review-form-wrap').scrollIntoView({behavior:'smooth'})">
-          Write a Review
+          {{ $isAr ? 'اكتب تقييم' : 'Write a Review' }}
         </button>
         @else
-        <div class="rv-wrote-badge">✓ You reviewed this product</div>
+        <div class="rv-wrote-badge">✓ {{ $isAr ? 'إنت قيّمت المنتج ده' : 'You reviewed this product' }}</div>
         @endif
       @else
-        <a href="{{ route('login') }}" class="rv-write-btn">Sign in to Review</a>
+        <a href="{{ route('login') }}" class="rv-write-btn">{{ $isAr ? 'سجّل دخول عشان تقيّم' : 'Sign in to Review' }}</a>
       @endauth
     </div>
 
@@ -322,12 +345,12 @@
     {{-- ── Sort bar ── --}}
     @if($totalReviews > 0)
     <div class="rv-toolbar">
-      <span class="rv-toolbar-count">{{ $totalReviews }} Review{{ $totalReviews!=1?'s':'' }}</span>
+      <span class="rv-toolbar-count">{{ $totalReviews }} {{ $isAr ? 'تقييم' : 'Review'.($totalReviews!=1?'s':'') }}</span>
       <select class="rv-sort-select" onchange="sortReviews(this.value)">
-        <option value="newest">Newest First</option>
-        <option value="highest">Highest Rated</option>
-        <option value="lowest">Lowest Rated</option>
-        <option value="helpful">Most Helpful</option>
+        <option value="newest">{{ $isAr ? 'الأحدث الأول' : 'Newest First' }}</option>
+        <option value="highest">{{ $isAr ? 'الأعلى تقييمًا' : 'Highest Rated' }}</option>
+        <option value="lowest">{{ $isAr ? 'الأقل تقييمًا' : 'Lowest Rated' }}</option>
+        <option value="helpful">{{ $isAr ? 'الأكثر فائدة' : 'Most Helpful' }}</option>
       </select>
     </div>
     @endif
@@ -348,13 +371,13 @@
             <div class="rv-name-row">
               <span class="rv-name">{{ $review->reviewer_name }}</span>
               @if($review->is_verified_purchase)
-                <span class="rv-verified">✓ Verified Purchase</span>
+                <span class="rv-verified">✓ {{ $isAr ? 'شراء مؤكد' : 'Verified Purchase' }}</span>
               @endif
               @if($isOwn)
-                <span class="rv-own-badge">Your review</span>
+                <span class="rv-own-badge">{{ $isAr ? 'تقييمك' : 'Your review' }}</span>
               @endif
             </div>
-            <div class="rv-date">{{ \Carbon\Carbon::parse($review->created_at)->format('M d, Y') }}</div>
+            <div class="rv-date">{{ $isAr ? \Carbon\Carbon::parse($review->created_at)->locale('ar')->translatedFormat('j F Y') : \Carbon\Carbon::parse($review->created_at)->format('M d, Y') }}</div>
           </div>
           <div class="rv-card-stars">
             @for($s=1;$s<=5;$s++)<span style="color:{{ $s<=$review->rating?'#f5a623':'#e0e0e0' }}">★</span>@endfor
@@ -370,17 +393,17 @@
           <button class="rv-helpful {{ $alreadyHelpful ? 'voted' : '' }}"
                   onclick="markHelpful(this, {{ $review->id }})"
                   {{ $alreadyHelpful ? 'disabled' : '' }}>
-            👍 Helpful <span class="rv-helpful-cnt">({{ $review->helpful_count ?: 0 }})</span>
+            👍 {{ $isAr ? 'مفيد' : 'Helpful' }} <span class="rv-helpful-cnt">({{ $review->helpful_count ?: 0 }})</span>
           </button>
           @if($isOwn)
-            <button class="rv-delete" onclick="deleteReview(this, {{ $review->id }}, {{ $product->id }})">Delete</button>
+            <button class="rv-delete" onclick="deleteReview(this, {{ $review->id }}, {{ $product->id }})">{{ $isAr ? 'حذف' : 'Delete' }}</button>
           @endif
         </div>
       </div>
       @empty
         <div class="rv-empty">
           <div style="font-size:48px;margin-bottom:12px">✍️</div>
-          <p>No reviews yet — be the first to share your thoughts!</p>
+          <p>{{ $isAr ? 'لسه مفيش تقييمات — كن أول واحد يشارك رأيه!' : 'No reviews yet — be the first to share your thoughts!' }}</p>
         </div>
       @endforelse
     </div>
@@ -390,15 +413,15 @@
       @auth
         @if(!$userReviewed)
         <div class="rv-form-card">
-          <h3 class="rv-form-title">Write a Review</h3>
-          <p class="rv-form-sub">Share your honest experience with this product</p>
+          <h3 class="rv-form-title">{{ $isAr ? 'اكتب تقييم' : 'Write a Review' }}</h3>
+          <p class="rv-form-sub">{{ $isAr ? 'شاركنا تجربتك الحقيقية مع المنتج ده' : 'Share your honest experience with this product' }}</p>
           <form method="POST" action="{{ route('review.store') }}" id="review-form">
             @csrf
             <input type="hidden" name="product_id" value="{{ $product->id }}">
 
             {{-- Star Picker --}}
             <div class="rv-form-row">
-              <label class="rv-form-label">Your Rating *</label>
+              <label class="rv-form-label">{{ $isAr ? 'تقييمك' : 'Your Rating' }} *</label>
               <div class="rv-star-picker" id="star-picker">
                 @for($s=1;$s<=5;$s++)
                   <span class="rv-star" data-val="{{ $s }}"
@@ -408,31 +431,31 @@
                 @endfor
               </div>
               <input type="hidden" name="rating" id="rating-input" value="">
-              <span class="rv-star-label" id="star-label">Click to rate</span>
+              <span class="rv-star-label" id="star-label">{{ $isAr ? 'اختار تقييم' : 'Click to rate' }}</span>
               @error('rating')<span class="rv-field-err">{{ $message }}</span>@enderror
             </div>
 
             {{-- Title --}}
             <div class="rv-form-row">
-              <label class="rv-form-label">Review Title</label>
+              <label class="rv-form-label">{{ $isAr ? 'عنوان التقييم' : 'Review Title' }}</label>
               <input type="text" name="title" class="rv-input" maxlength="150"
-                     placeholder="Sum up your experience in one line"
+                     placeholder="{{ $isAr ? 'لخّص تجربتك في سطر' : 'Sum up your experience in one line' }}"
                      value="{{ old('title') }}">
               @error('title')<span class="rv-field-err">{{ $message }}</span>@enderror
             </div>
 
             {{-- Body --}}
             <div class="rv-form-row">
-              <label class="rv-form-label">Your Review *</label>
+              <label class="rv-form-label">{{ $isAr ? 'تقييمك' : 'Your Review' }} *</label>
               <textarea name="body" class="rv-textarea" rows="5" id="review-body"
                         maxlength="1000" required
-                        placeholder="What did you think? Quality, fit, value for money…">{{ old('body') }}</textarea>
+                        placeholder="{{ $isAr ? 'إيه رأيك؟ الجودة والمقاس والسعر…' : 'What did you think? Quality, fit, value for money…' }}">{{ old('body') }}</textarea>
               <div class="rv-char-counter"><span id="char-count">0</span> / 1000</div>
               @error('body')<span class="rv-field-err">{{ $message }}</span>@enderror
             </div>
 
             <button type="submit" class="rv-submit" id="rv-submit-btn" onclick="return validateReviewForm()">
-              Publish Review
+              {{ $isAr ? 'انشر التقييم' : 'Publish Review' }}
             </button>
           </form>
         </div>
@@ -440,8 +463,8 @@
       @else
         <div class="rv-signin-prompt">
           <div style="font-size:36px;margin-bottom:12px">⭐</div>
-          <p>Have this product? Share your experience!</p>
-          <a href="{{ route('login') }}" class="rv-write-btn" style="display:inline-flex;margin-top:16px">Sign in to Write a Review</a>
+          <p>{{ $isAr ? 'عندك المنتج ده؟ شاركنا تجربتك!' : 'Have this product? Share your experience!' }}</p>
+          <a href="{{ route('login') }}" class="rv-write-btn" style="display:inline-flex;margin-top:16px">{{ $isAr ? 'سجّل دخول عشان تكتب تقييم' : 'Sign in to Write a Review' }}</a>
         </div>
       @endauth
     </div>
@@ -468,13 +491,13 @@
           </div>
         </div>
       </div>
-      <a href="{{ route('vendor.store', $vendor->id) }}" class="vendor-banner-btn">Visit Store →</a>
+      <a href="{{ route('vendor.store', $vendor->id) }}" class="vendor-banner-btn">{{ $isAr ? 'شوف المتجر ←' : 'Visit Store →' }}</a>
     </div>
 
     @if($vendorProducts->count())
     <div class="sec-head" style="margin-top:28px;margin-bottom:16px">
-      <h2 class="sec-title">More from {{ Str::limit($vendor->shop_name, 24) }}</h2>
-      <a href="{{ route('vendor.store', $vendor->id) }}" class="sec-link">See all →</a>
+      <h2 class="sec-title">{{ $isAr ? 'منتجات تانية من' : 'More from' }} {{ Str::limit($vendor->shop_name, 24) }}</h2>
+      <a href="{{ route('vendor.store', $vendor->id) }}" class="sec-link">{{ $isAr ? 'شوف أكتر ←' : 'See all →' }}</a>
     </div>
     <div class="tl-scroll-section" style="margin-bottom:8px">
       <div class="tl-scroll-track">
@@ -497,8 +520,8 @@
   @if($related->count())
   <div style="margin-top:64px">
     <div class="sec-head">
-      <h2 class="sec-title">You may also like</h2>
-      <a href="{{ route('shop') }}" class="sec-link">See all →</a>
+      <h2 class="sec-title">{{ $isAr ? 'ممكن يعجبك كمان' : 'You may also like' }}</h2>
+      <a href="{{ route('shop') }}" class="sec-link">{{ $isAr ? 'شوف أكتر ←' : 'See all →' }}</a>
     </div>
     <div class="product-grid cols-4">
       @foreach($related as $p)
@@ -516,13 +539,13 @@
         <img src="{{ $product->thumbnail_url }}" alt="" class="sticky-atc-thumb" onerror="this.style.display='none'">
       @endif
       <div class="sticky-atc-meta">
-        <div class="sticky-atc-name">{{ Str::limit($product->name, 48) }}</div>
+        <div class="sticky-atc-name">{{ Str::limit($displayProductName, 48) }}</div>
         <div class="sticky-atc-price" id="sticky-price">{{ number_format($product->display_price, 2) }} EGP</div>
       </div>
     </div>
     <button class="sticky-atc-btn"
-            onclick="handleAddToCart({{ $product->id }}, '{{ addslashes($product->name) }}', {{ $product->display_price }}, '{{ $product->thumbnail_url }}')">
-      Add to Cart
+            onclick="handleAddToCart({{ $product->id }}, '{{ addslashes($displayProductName) }}', {{ $product->display_price }}, '{{ $product->thumbnail_url }}')">
+      {{ $isAr ? 'ضيف للسلة' : 'Add to Cart' }}
     </button>
   </div>
 </div>
@@ -642,6 +665,24 @@
   --swatch-teal:#319795; --swatch-indigo:#5a67d8; --swatch-cyan:#00b5d8;
   --swatch-lime:#68d391; --swatch-rose:#fc8181;
 }
+
+/* Arabic detail-page direction and alignment without affecting the English view. */
+.product-page-ar { font-family: 'Cairo', 'Tahoma', sans-serif; }
+.product-page-ar .product-info,
+.product-page-ar .desc-block,
+.product-page-ar .reviews-section,
+.product-page-ar .vendor-section { text-align: right; }
+.product-page-ar .gallery-thumbs { direction: rtl; }
+.product-page-ar .rv-card-head,
+.product-page-ar .rv-card-foot,
+.product-page-ar .sticky-atc-inner { direction: rtl; }
+.product-page-ar .rv-card-stars { margin-right: auto; margin-left: 0; }
+.product-page-ar .pi-cart-row,
+.product-page-ar .pi-coupon-row { direction: rtl; }
+@media (max-width: 680px) {
+  .product-page-ar .product-layout { direction: rtl; }
+  .product-page-ar .sticky-atc-inner { padding-right: 14px; padding-left: 14px; }
+}
 </style>
 <script>
 // ── Variation Engine ──────────────────────────────────────────────────
@@ -651,6 +692,7 @@ const MIN_ORDER_QTY = {{ $minimumOrderQty }};
 const CONFIGURED_MAX_ORDER_QTY = {{ $configuredMaximumOrderQty }};
 const SOLD_INDIVIDUALLY = {{ ($product->sold_individually ?? false) ? 'true' : 'false' }};
 const PRODUCT_STOCK_QTY = {{ $initialStockQty }};
+const PRODUCT_TEXT = @json($productText);
 const ATTR_KEYS = [...new Set(VAR_DATA.flatMap(v => Object.keys(v.attrs)))];
 let selectedAttrs = {};
 let currentVariation = null;
@@ -791,14 +833,16 @@ function syncQuantityBounds(stock) {
     const current = Number.parseInt(input.value, 10) || MIN_ORDER_QTY;
     input.value = Math.max(MIN_ORDER_QTY, Math.min(maximum, current));
   }
-  if (hint) hint.textContent = `Minimum ${MIN_ORDER_QTY} · Maximum ${maximum} per order`;
+  if (hint) hint.textContent = PRODUCT_TEXT.isAr
+    ? `${PRODUCT_TEXT.minimum} ${MIN_ORDER_QTY} · ${PRODUCT_TEXT.maximum} ${maximum} ${PRODUCT_TEXT.perOrder}`
+    : `Minimum ${MIN_ORDER_QTY} · Maximum ${maximum} per order`;
   return maximum;
 }
 
 function quantityValidationMessage(quantity, maximum) {
-  if (maximum < MIN_ORDER_QTY) return `This product does not have enough stock to meet its minimum order quantity of ${MIN_ORDER_QTY}.`;
-  if (quantity < MIN_ORDER_QTY) return `Minimum order quantity is ${MIN_ORDER_QTY}.`;
-  if (quantity > maximum) return `Maximum order quantity is ${maximum}.`;
+  if (maximum < MIN_ORDER_QTY) return PRODUCT_TEXT.isAr ? `${PRODUCT_TEXT.notEnough} ${MIN_ORDER_QTY}.` : `This product does not have enough stock to meet its minimum order quantity of ${MIN_ORDER_QTY}.`;
+  if (quantity < MIN_ORDER_QTY) return PRODUCT_TEXT.isAr ? `${PRODUCT_TEXT.minimum} ${MIN_ORDER_QTY}.` : `Minimum order quantity is ${MIN_ORDER_QTY}.`;
+  if (quantity > maximum) return PRODUCT_TEXT.isAr ? `${PRODUCT_TEXT.maximum} ${maximum}.` : `Maximum order quantity is ${maximum}.`;
   return null;
 }
 
@@ -851,17 +895,17 @@ function renderPriceStock(v) {
 
     if (stockEl) {
       stockEl.innerHTML = v.stock > 0
-        ? `<span class="badge-stock-ok">✓ In Stock (${v.stock.toLocaleString()} available)</span>`
-        : `<span class="badge-stock-no">Out of Stock</span>`;
+        ? `<span class="badge-stock-ok">✓ ${PRODUCT_TEXT.inStock} (${v.stock.toLocaleString()} ${PRODUCT_TEXT.available})</span>`
+        : `<span class="badge-stock-no">${PRODUCT_TEXT.outOfStock}</span>`;
     }
     const maximumQuantity = syncQuantityBounds(v.stock);
     if (addBtn) {
       const canOrder = v.stock > 0 && maximumQuantity >= MIN_ORDER_QTY;
       addBtn.disabled    = !canOrder;
-      addBtn.textContent = canOrder ? 'Add to Cart' : (v.stock === 0 ? 'Out of Stock' : 'Unavailable');
+      addBtn.textContent = canOrder ? PRODUCT_TEXT.addToCart : (v.stock === 0 ? PRODUCT_TEXT.outOfStock : PRODUCT_TEXT.unavailable);
       // Update cart price to the effective price
       const productId    = addBtn.getAttribute('data-pid') || addBtn.closest('[data-pid]')?.dataset.pid;
-      addBtn.onclick     = () => handleAddToCart({{ $product->id }}, '{{ addslashes($product->name) }}', eff, '{{ $product->thumbnail_url }}');
+      addBtn.onclick     = () => handleAddToCart({{ $product->id }}, '{{ addslashes($displayProductName) }}', eff, '{{ $product->thumbnail_url }}');
     }
   } else {
     // No variation fully selected — show effective price range
@@ -890,7 +934,7 @@ function renderPriceStock(v) {
     if (addBtn) {
       const canOrder = maximumQuantity >= MIN_ORDER_QTY;
       addBtn.disabled = !canOrder;
-      addBtn.textContent = canOrder ? 'Add to Cart' : 'Unavailable';
+      addBtn.textContent = canOrder ? PRODUCT_TEXT.addToCart : PRODUCT_TEXT.unavailable;
     }
   }
 }
@@ -909,7 +953,7 @@ function updateHints() {
     const missing = ATTR_KEYS.filter(k => !selectedAttrs[k]);
     if (missing.length === 0) { el.textContent = ''; return; }
     if (Object.keys(selectedAttrs).length > 0 && missing.includes(key)) {
-      el.textContent = `Please select a ${key}`;
+      el.textContent = PRODUCT_TEXT.isAr ? `${PRODUCT_TEXT.select} ${key}` : `Please select a ${key}`;
     } else {
       el.textContent = '';
     }
@@ -934,7 +978,7 @@ function handleAddToCart(id, name, basePrice, image) {
     const missing = ATTR_KEYS.filter(k => !selectedAttrs[k]);
     missing.forEach(k => {
       const el = document.getElementById('hint-' + slugify(k));
-      if (el) { el.textContent = `Please select a ${k}`; el.style.color = 'var(--c-orange)'; }
+      if (el) { el.textContent = PRODUCT_TEXT.isAr ? `${PRODUCT_TEXT.select} ${k}` : `Please select a ${k}`; el.style.color = 'var(--c-orange)'; }
     });
     // Shake the first unselected group
     const firstGroup = document.getElementById('opts-' + slugify(missing[0]));
@@ -1190,7 +1234,7 @@ function markHelpful(btn, id) {
 
 // ── Delete review ─────────────────────────────────────────────────────
 function deleteReview(btn, id, productId) {
-  if (!confirm('Delete your review? This cannot be undone.')) return;
+  if (!confirm(PRODUCT_TEXT.isAr ? 'تحذف تقييمك؟ مش هتقدر ترجعه.' : 'Delete your review? This cannot be undone.')) return;
   fetch(`/reviews/${id}`, {
     method: 'DELETE',
     headers: {
@@ -1220,7 +1264,7 @@ function deleteReview(btn, id, productId) {
 function applyProductCoupon() {
   const code = document.getElementById('pi-coupon-input')?.value?.trim();
   const msg  = document.getElementById('pi-coupon-msg');
-  if (!code) { if (msg) { msg.textContent = 'Please enter a coupon code.'; msg.className = 'pi-coupon-msg error'; } return; }
+  if (!code) { if (msg) { msg.textContent = PRODUCT_TEXT.isAr ? 'اكتب كود الخصم الأول.' : 'Please enter a coupon code.'; msg.className = 'pi-coupon-msg error'; } return; }
 
   fetch('/cart/coupon', {
     method: 'POST',
@@ -1235,15 +1279,15 @@ function applyProductCoupon() {
   .then(data => {
     if (!msg) return;
     if (data.success) {
-      msg.textContent = '✓ Coupon applied! Discount will be reflected at checkout.';
+      msg.textContent = PRODUCT_TEXT.isAr ? '✓ اتطبق كود الخصم! الخصم هيبان وقت الدفع.' : '✓ Coupon applied! Discount will be reflected at checkout.';
       msg.className = 'pi-coupon-msg success';
       document.getElementById('pi-coupon-input').value = '';
     } else {
-      msg.textContent = data.message || 'Invalid coupon code.';
+      msg.textContent = PRODUCT_TEXT.isAr ? 'كود الخصم مش صحيح أو مش متاح.' : (data.message || 'Invalid coupon code.');
       msg.className = 'pi-coupon-msg error';
     }
   })
-  .catch(() => { if (msg) { msg.textContent = 'Could not apply coupon. Try again.'; msg.className = 'pi-coupon-msg error'; } });
+  .catch(() => { if (msg) { msg.textContent = PRODUCT_TEXT.isAr ? 'ماعرفناش نطبق كود الخصم، جرّب تاني.' : 'Could not apply coupon. Try again.'; msg.className = 'pi-coupon-msg error'; } });
 }
 </script>
 <style>

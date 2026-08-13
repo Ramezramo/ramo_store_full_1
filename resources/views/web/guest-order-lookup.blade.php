@@ -1,20 +1,21 @@
 @extends('layouts.app')
-@section('title', isset($order) && $order ? 'Order #'.$order->id.' — Details' : 'Look Up Your Order')
+@php $isAr = session('locale') === 'ar'; @endphp
+@section('title', isset($order) && $order ? ($isAr ? 'طلب رقم #'.$order->id.' — التفاصيل' : 'Order #'.$order->id.' — Details') : ($isAr ? 'دور على طلبك' : 'Look Up Your Order'))
 
 @section('content')
-<div class="page">
+<div class="page guest-order-page {{ $isAr ? 'guest-order-page-ar' : '' }}" dir="{{ $isAr ? 'rtl' : 'ltr' }}">
 
   <div class="breadcrumb">
-    <a href="{{ route('home') }}">Home</a><span>/</span>
-    <strong>My Order</strong>
+    <a href="{{ route('home') }}">{{ $isAr ? 'الرئيسية' : 'Home' }}</a><span>/</span>
+    <strong>{{ $isAr ? 'طلبي' : 'My Order' }}</strong>
   </div>
 
   {{-- ── LOOKUP FORM ── --}}
   <div class="track-hero">
     <div class="track-form-card">
       <div class="track-icon">🛍️</div>
-      <h1 class="track-title">Find Your Order</h1>
-      <p class="track-sub">Enter your order number and the email address you used at checkout.</p>
+      <h1 class="track-title">{{ $isAr ? 'دور على طلبك' : 'Find Your Order' }}</h1>
+      <p class="track-sub">{{ $isAr ? 'اكتب رقم الطلب والإيميل اللي استخدمته وقت إتمام الطلب.' : 'Enter your order number and the email address you used at checkout.' }}</p>
 
       @if(session('error'))
         <div class="track-error">
@@ -26,29 +27,29 @@
         @csrf
         <div class="track-fields">
           <div class="track-field">
-            <label>Order Number</label>
-            <input type="number" name="order_id" placeholder="e.g. 1042"
+            <label>{{ $isAr ? 'رقم الطلب' : 'Order Number' }}</label>
+            <input type="number" name="order_id" placeholder="{{ $isAr ? 'مثال: 1042' : 'e.g. 1042' }}"
                    value="{{ old('order_id') }}"
                    min="1" required autofocus>
             @error('order_id')<span class="field-err">{{ $message }}</span>@enderror
           </div>
           <div class="track-field">
-            <label>Email Address</label>
+            <label>{{ $isAr ? 'الإيميل' : 'Email Address' }}</label>
             <input type="email" name="email" placeholder="you@example.com"
                    value="{{ old('email') }}" required>
             @error('email')<span class="field-err">{{ $message }}</span>@enderror
           </div>
         </div>
-        <button type="submit" class="track-submit">Find My Order →</button>
+        <button type="submit" class="track-submit">{{ $isAr ? 'دور على طلبي ←' : 'Find My Order →' }}</button>
       </form>
 
       <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--c-light);display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
         @auth
-          <a href="{{ route('account.orders') }}" class="track-link" style="font-size:13px">📋 View all orders in your account</a>
+          <a href="{{ route('account.orders') }}" class="track-link" style="font-size:13px">📋 {{ $isAr ? 'شوف كل طلباتك في حسابك' : 'View all orders in your account' }}</a>
         @else
-          <a href="{{ route('login') }}" class="track-link" style="font-size:13px">🔐 Sign in to your account</a>
+          <a href="{{ route('login') }}" class="track-link" style="font-size:13px">🔐 {{ $isAr ? 'سجّل دخولك' : 'Sign in to your account' }}</a>
         @endauth
-        <a href="{{ route('order.track') }}" class="track-link" style="font-size:13px;color:var(--c-mid)">Track by phone number instead</a>
+        <a href="{{ route('order.track') }}" class="track-link" style="font-size:13px;color:var(--c-mid)">{{ $isAr ? 'اتتبع برقم الموبايل بدل كده' : 'Track by phone number instead' }}</a>
       </div>
     </div>
   </div>
@@ -68,8 +69,8 @@
     {{-- Header --}}
     <div class="or-header">
       <div>
-        <h2 class="or-title">Order <span>#{{ $order->id }}</span></h2>
-        <div class="or-date">Placed on {{ $order->date_created ? \Carbon\Carbon::parse($order->date_created)->format('d M Y, g:i A') : \Carbon\Carbon::parse($order->created_at)->format('d M Y') }}</div>
+        <h2 class="or-title">{{ $isAr ? 'طلب رقم' : 'Order' }} <span>#{{ $order->id }}</span></h2>
+        <div class="or-date">{{ $isAr ? 'اتعمل يوم ' : 'Placed on ' }}{{ $order->date_created ? ($isAr ? \Carbon\Carbon::parse($order->date_created)->locale('ar')->translatedFormat('j F Y، g:i A') : \Carbon\Carbon::parse($order->date_created)->format('d M Y, g:i A')) : ($isAr ? \Carbon\Carbon::parse($order->created_at)->locale('ar')->translatedFormat('j F Y') : \Carbon\Carbon::parse($order->created_at)->format('d M Y')) }}</div>
       </div>
       <div class="or-status-pill" style="background:{{ $status['bg'] }};color:{{ $status['color'] }};border:1.5px solid {{ $status['color'] }}20">
         {{ $status['icon'] }} {{ $status['label'] }}
@@ -98,8 +99,8 @@
     </div>
     @else
     <div class="or-cancelled-banner" style="background:{{ $status['bg'] }};color:{{ $status['color'] }}">
-      {{ $status['icon'] }} This order has been <strong>{{ $status['label'] }}</strong>.
-      @if(strtolower($order->status) === 'refunded') A refund has been processed. @endif
+      {{ $status['icon'] }} {{ $isAr ? 'الطلب ده حالته' : 'This order has been' }} <strong>{{ $status['label'] }}</strong>.
+      @if(strtolower($order->status) === 'refunded') {{ $isAr ? 'تم رد الفلوس.' : 'A refund has been processed.' }} @endif
     </div>
     @endif
 
@@ -107,7 +108,7 @@
 
       {{-- Order Items --}}
       <div class="or-section">
-        <div class="or-section-title">Order Items</div>
+        <div class="or-section-title">{{ $isAr ? 'منتجات الطلب' : 'Order Items' }}</div>
         <div class="or-items">
           @forelse($lineItems ?? [] as $item)
           <div class="or-item">
@@ -128,15 +129,15 @@
                 </div>
               @endif
               <div class="or-item-meta">
-                Qty: <strong>{{ $item['quantity'] }}</strong>
+                {{ $isAr ? 'الكمية:' : 'Qty:' }} <strong>{{ $item['quantity'] }}</strong>
                 &nbsp;·&nbsp;
-                {{ number_format($item['price'] ?? 0, 2) }} EGP each
+                {{ number_format($item['price'] ?? 0, 2) }} EGP {{ $isAr ? 'للقطعة' : 'each' }}
               </div>
             </div>
             <div class="or-item-total">{{ number_format(($item['price'] ?? 0) * ($item['quantity'] ?? 1), 2) }} EGP</div>
           </div>
           @empty
-          <div style="color:var(--c-mid);font-size:13px;padding:16px 0">No item details available.</div>
+          <div style="color:var(--c-mid);font-size:13px;padding:16px 0">{{ $isAr ? 'مفيش تفاصيل للمنتجات متاحة.' : 'No item details available.' }}</div>
           @endforelse
         </div>
       </div>
@@ -145,36 +146,36 @@
 
         {{-- Order Summary --}}
         <div class="or-section">
-          <div class="or-section-title">Order Summary</div>
+          <div class="or-section-title">{{ $isAr ? 'ملخص الطلب' : 'Order Summary' }}</div>
           <div class="or-summary">
             <div class="or-summary-row">
-              <span>Subtotal</span>
+              <span>{{ $isAr ? 'الإجمالي الفرعي' : 'Subtotal' }}</span>
               <span>{{ number_format($order->original_total ?? 0, 2) }} EGP</span>
             </div>
             @if(($order->discount_total ?? 0) > 0)
             <div class="or-summary-row" style="color:#22a35c">
-              <span>Discount @if($order->coupon_code)(<code>{{ $order->coupon_code }}</code>)@endif</span>
+              <span>{{ $isAr ? 'الخصم' : 'Discount' }} @if($order->coupon_code)(<code>{{ $order->coupon_code }}</code>)@endif</span>
               <span>−{{ number_format($order->discount_total, 2) }} EGP</span>
             </div>
             @endif
             @if(($order->shipping_total ?? 0) > 0)
             <div class="or-summary-row">
-              <span>Shipping</span>
+              <span>{{ $isAr ? 'الشحن' : 'Shipping' }}</span>
               <span>{{ number_format($order->shipping_total, 2) }} EGP</span>
             </div>
             @endif
             <div class="or-summary-row or-summary-total">
-              <span>Total</span>
+              <span>{{ $isAr ? 'الإجمالي' : 'Total' }}</span>
               <span>{{ number_format($order->final_total ?? $order->original_total, 2) }} EGP</span>
             </div>
             <div class="or-summary-row" style="font-size:12px;color:var(--c-mid)">
-              <span>Payment</span>
+              <span>{{ $isAr ? 'طريقة الدفع' : 'Payment' }}</span>
               <span>{{ $order->payment_method_title ?? ucfirst($order->payment_method ?? 'N/A') }}</span>
             </div>
             @if(\App\Helpers\PaymentConfig::isManualMethod($order->payment_method ?? null))
               <div class="or-summary-row" style="font-size:12px;color:#9a3412">
-                <span>Payment status</span>
-                <strong>{{ ucwords(str_replace('_', ' ', $order->payment_status ?? 'pending_payment')) }}</strong>
+                <span>{{ $isAr ? 'حالة الدفع' : 'Payment status' }}</span>
+                <strong>{{ $isAr ? match(strtolower($order->payment_status ?? 'pending_payment')) { 'confirmed' => 'تم التأكيد', 'failed' => 'فشل', default => 'في الانتظار' } : ucwords(str_replace('_', ' ', $order->payment_status ?? 'pending_payment')) }}</strong>
               </div>
             @endif
           </div>
@@ -182,7 +183,7 @@
 
         {{-- Shipping Address --}}
         <div class="or-section">
-          <div class="or-section-title">Shipping Address</div>
+          <div class="or-section-title">{{ $isAr ? 'عنوان الشحن' : 'Shipping Address' }}</div>
           <div class="or-address">
             @php $sh = $shipping ?? $billing ?? []; @endphp
             <div class="or-address-name">{{ ($sh['first_name'] ?? '') . ' ' . ($sh['last_name'] ?? '') }}</div>
@@ -197,7 +198,7 @@
         {{-- Customer Note --}}
         @if($order->customer_note ?? null)
         <div class="or-section">
-          <div class="or-section-title">Your Note</div>
+          <div class="or-section-title">{{ $isAr ? 'ملاحظتك' : 'Your Note' }}</div>
           <div class="or-note">{{ $order->customer_note }}</div>
         </div>
         @endif
@@ -208,19 +209,19 @@
           @endphp
           @if($guestPaymentMethod)
           <div class="or-section" style="background:#fffaf5">
-            <div class="or-section-title" style="color:#9a3412">Upload payment receipt</div>
+            <div class="or-section-title" style="color:#9a3412">{{ $isAr ? 'ارفع إيصال الدفع' : 'Upload payment receipt' }}</div>
             <p style="font-size:13px;color:#555;line-height:1.6;margin-bottom:10px">
-              Transfer <strong>{{ number_format($order->final_total, 2) }} EGP</strong> to <strong>{{ $guestPaymentMethod['destination'] }}</strong>, then upload the receipt below.
+              {{ $isAr ? 'حوّل' : 'Transfer' }} <strong>{{ number_format($order->final_total, 2) }} EGP</strong> {{ $isAr ? 'إلى' : 'to' }} <strong>{{ $guestPaymentMethod['destination'] }}</strong>{{ $isAr ? '، وبعدها ارفع الإيصال هنا.' : ', then upload the receipt below.' }}
             </p>
             @if(!empty($guestPaymentMethod['link']))
-              <a href="{{ $guestPaymentMethod['link'] }}" target="_blank" rel="noopener" style="font-size:12px;color:#e85d26;display:inline-block;margin-bottom:10px">Open InstaPay link →</a>
+              <a href="{{ $guestPaymentMethod['link'] }}" target="_blank" rel="noopener" style="font-size:12px;color:#e85d26;display:inline-block;margin-bottom:10px">{{ $isAr ? 'افتح رابط إنستاباي ←' : 'Open InstaPay link →' }}</a>
             @endif
             <form method="POST" action="{{ route('guest.order.payment-receipt', $order->id) }}" enctype="multipart/form-data">
               @csrf
               <input type="hidden" name="email" value="{{ $billing['email'] ?? '' }}">
               <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
                 <input type="file" name="receipt" accept="image/jpeg,image/png,image/webp" required style="font-size:12px">
-                <button class="track-submit" style="width:auto;padding:9px 14px;font-size:12px">Upload receipt</button>
+                <button class="track-submit" style="width:auto;padding:9px 14px;font-size:12px">{{ $isAr ? 'ارفع الإيصال' : 'Upload receipt' }}</button>
               </div>
             </form>
           </div>
@@ -230,13 +231,13 @@
         {{-- Create Account CTA for guests --}}
         @guest
         <div class="or-section" style="background:linear-gradient(135deg,#f9fafb,#eff6ff)">
-          <div class="or-section-title" style="color:#1d4ed8">Create an Account</div>
+          <div class="or-section-title" style="color:#1d4ed8">{{ $isAr ? 'اعمل حساب' : 'Create an Account' }}</div>
           <p style="font-size:13px;color:#555;line-height:1.6;margin-bottom:12px">
-            Save your details and track all your orders in one place.
+            {{ $isAr ? 'احفظ بياناتك واتتبع كل طلباتك في مكان واحد.' : 'Save your details and track all your orders in one place.' }}
           </p>
           <a href="{{ route('register') }}"
              style="display:inline-block;background:#1a1a1a;color:#fff;text-decoration:none;font-size:13px;font-weight:600;padding:9px 16px;border-radius:8px">
-            Sign Up Free →
+            {{ $isAr ? 'اعمل حساب مجانًا ←' : 'Sign Up Free →' }}
           </a>
         </div>
         @endguest
@@ -246,8 +247,8 @@
 
     {{-- Footer actions --}}
     <div class="or-footer">
-      <a href="{{ route('guest.order') }}" class="btn btn-outline" style="border-radius:10px;padding:11px 20px;font-size:13.5px">Look Up Another Order</a>
-      <a href="{{ route('shop') }}" class="btn btn-dark" style="border-radius:10px;padding:11px 20px;font-size:13.5px">Continue Shopping</a>
+      <a href="{{ route('guest.order') }}" class="btn btn-outline" style="border-radius:10px;padding:11px 20px;font-size:13.5px">{{ $isAr ? 'دور على طلب تاني' : 'Look Up Another Order' }}</a>
+      <a href="{{ route('shop') }}" class="btn btn-dark" style="border-radius:10px;padding:11px 20px;font-size:13.5px">{{ $isAr ? 'كمّل تسوّق' : 'Continue Shopping' }}</a>
     </div>
   </div>
   @endif
@@ -317,10 +318,13 @@
 .or-note{font-size:13.5px;color:var(--c-mid);line-height:1.6;background:var(--c-bg);padding:12px;border-radius:8px;font-style:italic}
 .or-footer{padding:20px 28px;display:flex;gap:12px;flex-wrap:wrap;border-top:1.5px solid var(--c-light)}
 
+/* Arabic tracking layout overrides. */
+.guest-order-page-ar{font-family:'Cairo','Tahoma',sans-serif;text-align:right}.guest-order-page-ar .track-form,.guest-order-page-ar .track-error{text-align:right}.guest-order-page-ar .track-field label,.guest-order-page-ar .or-section-title{letter-spacing:0;text-transform:none}.guest-order-page-ar .or-right-col{border-left:none;border-right:1.5px solid var(--c-light)}.guest-order-page-ar .or-item,.guest-order-page-ar .or-header,.guest-order-page-ar .or-footer{direction:rtl}.guest-order-page-ar .or-progress{direction:rtl}.guest-order-page-ar .or-summary-row{direction:rtl}
+
 @media(max-width:700px){
   .track-fields{grid-template-columns:1fr}
   .or-body{grid-template-columns:1fr}
-  .or-right-col{border-left:none;border-top:1.5px solid var(--c-light)}
+  .or-right-col{border-left:none;border-top:1.5px solid var(--c-light)}.guest-order-page-ar .or-right-col{border-right:none}
   .or-progress{gap:0;overflow-x:auto;padding-bottom:8px;justify-content:flex-start}
   .or-step{min-width:80px}
   .track-form-card{padding:28px 20px}

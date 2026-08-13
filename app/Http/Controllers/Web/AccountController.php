@@ -16,6 +16,11 @@ class AccountController extends Controller
         $this->middleware('auth');
     }
 
+    private function localized(string $english, string $arabic): string
+    {
+        return session('locale') === 'ar' ? $arabic : $english;
+    }
+
     public function hub()
     {
         $user = Auth::user();
@@ -62,7 +67,7 @@ class AccountController extends Controller
         if ($request->filled('new_password')) {
             if (!$isOtpUser) {
                 if (! $request->filled('current_password') || ! Hash::check($request->current_password, $user->password)) {
-                    return back()->withErrors(['current_password' => 'Current password is incorrect.'])->withInput();
+                    return back()->withErrors(['current_password' => $this->localized('Current password is incorrect.', 'كلمة السر الحالية مش صحيحة.')])->withInput();
                 }
             }
             $data['password'] = Hash::make($request->new_password);
@@ -73,7 +78,7 @@ class AccountController extends Controller
 
         DB::table('users')->where('id', $user->id)->update($data);
 
-        return back()->with('success', 'Profile updated successfully.');
+        return back()->with('success', $this->localized('Profile updated successfully.', 'بيانات الحساب اتحدثت بنجاح.'));
     }
 
     public function orders()
@@ -94,7 +99,17 @@ class AccountController extends Controller
             ->orderByDesc('r.created_at')
             ->get(['r.id', 'r.rating', 'r.title', 'r.body', 'r.approved',
                    'r.created_at', 'r.helpful_count', 'r.is_verified_purchase',
-                   'p.id as product_id', 'p.name as product_name', 'p.slug as product_slug']);
+                   'p.id as product_id', 'p.name as product_name', 'p.translations as product_translations', 'p.slug as product_slug']);
+
+        if (session('locale') === 'ar') {
+            $reviews->each(function ($review) {
+                $translations = is_string($review->product_translations)
+                    ? (json_decode($review->product_translations, true) ?? [])
+                    : (array) $review->product_translations;
+                $arabic = collect($translations)->first(fn ($translation) => ($translation['locale'] ?? null) === 'ar');
+                $review->product_name = trim((string) ($arabic['name'] ?? '')) ?: $review->product_name;
+            });
+        }
 
         return view('web.account.reviews', compact('reviews'));
     }
@@ -108,6 +123,7 @@ class AccountController extends Controller
 
         if (! $order) abort(404);
 
+        $locale    = session('locale', 'en');
         $lineItems = json_decode($order->line_items ?? '[]', true);
         $billing   = json_decode($order->billing   ?? '{}', true);
 
@@ -144,6 +160,38 @@ class AccountController extends Controller
                     ->get(['m.*', 'v.shop_name as vendor_shop_name']);
                 return $sub;
             });
+
+        // Display the stored Arabic product name when Arabic mode is active without altering order records.
+        if ($locale === 'ar') {
+            $productIds = collect($lineItems)->pluck('product_id')
+                ->merge($subOrders->flatMap(fn ($sub) => collect($sub->items)->pluck('product_id')))
+                ->filter()->unique()->values()->all();
+
+            $arabicNames = DB::table('products_data')->whereIn('id', $productIds)
+                ->get(['id', 'name', 'translations'])
+                ->mapWithKeys(function ($product) {
+                    $translations = is_string($product->translations)
+                        ? (json_decode($product->translations, true) ?? [])
+                        : (array) $product->translations;
+                    $arabic = collect($translations)->first(fn ($translation) => ($translation['locale'] ?? null) === 'ar');
+                    return [$product->id => trim((string) ($arabic['name'] ?? '')) ?: $product->name];
+                })->all();
+
+            $localizeItems = function (array $items) use ($arabicNames): array {
+                return array_map(function (array $item) use ($arabicNames) {
+                    $productId = $item['product_id'] ?? null;
+                    if ($productId && isset($arabicNames[$productId])) {
+                        $item['name'] = $arabicNames[$productId];
+                    }
+                    return $item;
+                }, $items);
+            };
+
+            $lineItems = $localizeItems($lineItems);
+            $subOrders->each(function ($sub) use ($localizeItems) {
+                $sub->items = $localizeItems($sub->items);
+            });
+        }
 
         // Legacy: if no sub-orders, pass empty collection — view will fall back to lineItems
         $messages = collect(); // kept for backward compat if any view still uses it

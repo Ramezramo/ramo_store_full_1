@@ -27,6 +27,10 @@
   $mobileSignInLabel = $headerIsArabic ? 'سجّل دخول' : 'Sign In';
   $mobileRegisterLabel = $headerIsArabic ? 'إنشاء حساب' : 'Register';
   $mobileSignOutLabel = $headerIsArabic ? 'تسجيل الخروج' : 'Sign Out';
+  $headerProfileLabel = $headerIsArabic ? 'حسابي' : 'Profile';
+  $headerMyOrdersLabel = $headerIsArabic ? 'طلباتي' : 'My Orders';
+  $headerSignInLabel = $headerIsArabic ? 'سجّل دخول' : 'Sign In';
+  $headerSignOutLabel = $headerIsArabic ? 'تسجيل الخروج' : 'Sign Out';
 @endphp
 <!DOCTYPE html>
 <html lang="{{ $timelineLocale }}">
@@ -1029,28 +1033,28 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
           <div class="nav-portal-dropdown" style="right:0;left:auto">
             <a href="{{ route('account.profile') }}" class="nav-portal-item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              Profile
+              {{ $headerProfileLabel }}
             </a>
             <a href="{{ route('account.orders') }}" class="nav-portal-item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-              My Orders
+              {{ $headerMyOrdersLabel }}
             </a>
             <a href="{{ route('wishlist') }}" class="nav-portal-item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
-              Wishlist
+              {{ $headerWishlistLabel }}
             </a>
             <hr class="nav-portal-divider">
             <form method="POST" action="{{ route('logout') }}">
               @csrf
               <button type="submit" class="nav-portal-item danger">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                Sign Out
+                {{ $headerSignOutLabel }}
               </button>
             </form>
           </div>
         </div>
       @else
-        <a href="{{ route('login') }}" class="nav-user-btn">Sign In</a>
+        <a href="{{ route('login') }}" class="nav-user-btn">{{ $headerSignInLabel }}</a>
       @endauth
     </div>
   </div>
@@ -1115,43 +1119,43 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 @yield('content')
 
 <!-- FOOTER -->
-<footer>
+<footer dir="{{ $headerIsArabic ? 'rtl' : 'ltr' }}">
   <div class="footer-inner">
     <div class="footer-logo">Ramo<span>Store</span></div>
     <div class="footer-links">
-      <a href="{{ route('home') }}">Home</a>
-      <a href="{{ route('shop') }}">Shop</a>
-      <a href="{{ route('wishlist') }}">Wishlist</a>
-      <a href="{{ route('cart') }}">Cart</a>
-      @auth<a href="{{ route('account.orders') }}">My Orders</a>@endauth
-      <a href="{{ route('vendor.register') }}" style="color:var(--c-orange);font-weight:600">Sell on Ramo</a>
+      <a href="{{ route('home') }}">{{ $headerHomeLabel }}</a>
+      <a href="{{ route('shop') }}">{{ $headerShopLabel }}</a>
+      <a href="{{ route('wishlist') }}">{{ $headerWishlistLabel }}</a>
+      <a href="{{ route('cart') }}">{{ $headerCartLabel }}</a>
+      @auth<a href="{{ route('account.orders') }}">{{ $headerMyOrdersLabel }}</a>@endauth
+      <a href="{{ route('vendor.register') }}" style="color:var(--c-orange);font-weight:600">{{ $headerIsArabic ? 'بيع على رامو' : 'Sell on Ramo' }}</a>
     </div>
-    <div class="footer-note">© {{ date('Y') }} RamoStore. All rights reserved.</div>
+    <div class="footer-note">© {{ date('Y') }} RamoStore. {{ $headerIsArabic ? 'كل الحقوق محفوظة.' : 'All rights reserved.' }}</div>
   </div>
 </footer>
 
 <!-- TOAST -->
 <div class="toast" id="toast">
   <span id="toast-icon">🛍️</span>
-  <span id="toast-msg">Done!</span>
+  <span id="toast-msg">{{ $headerIsArabic ? 'تم' : 'Done!' }}</span>
 </div>
 
 <!-- ADDED-TO-CART DRAWER -->
 <div class="atc-overlay" id="atc-overlay" onclick="closeAtcDrawer()"></div>
-<div class="atc-drawer" id="atc-drawer" role="dialog" aria-modal="true" aria-labelledby="atc-title" aria-hidden="true">
+<div class="atc-drawer" id="atc-drawer" role="dialog" aria-modal="true" aria-labelledby="atc-title" aria-hidden="true" dir="{{ $headerIsArabic ? 'rtl' : 'ltr' }}">
   <div class="atc-drawer-grab" aria-hidden="true"></div>
   <div class="atc-drawer-head">
-    <div class="atc-drawer-title" id="atc-title"><span class="atc-check">✓</span><span class="atc-drawer-title-wrap"><span>Added to cart</span><span class="atc-drawer-subtitle">Your item is ready to review</span></span></div>
-    <button class="atc-close" onclick="closeAtcDrawer()" aria-label="Close added to cart panel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg><span>Close</span></button>
+    <div class="atc-drawer-title" id="atc-title"><span class="atc-check">✓</span><span class="atc-drawer-title-wrap"><span>{{ $headerIsArabic ? 'اتضاف للسلة' : 'Added to cart' }}</span><span class="atc-drawer-subtitle">{{ $headerIsArabic ? 'المنتج جاهز تراجعه' : 'Your item is ready to review' }}</span></span></div>
+    <button class="atc-close" onclick="closeAtcDrawer()" aria-label="{{ $headerIsArabic ? 'اقفل نافذة السلة' : 'Close added to cart panel' }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg><span>{{ $headerIsArabic ? 'قفل' : 'Close' }}</span></button>
   </div>
   <div class="atc-items-list" id="atc-items-list"></div>
   <div class="atc-drawer-footer">
     <div class="atc-subtotal-row">
-      <span>Subtotal</span>
+      <span>{{ $headerIsArabic ? 'الإجمالي الفرعي' : 'Subtotal' }}</span>
       <span id="atc-subtotal">EGP 0.00</span>
     </div>
-    <a href="{{ route('cart') }}" class="atc-btn-primary" id="atc-go-cart">Go to Cart</a>
-    <button class="atc-btn-secondary" onclick="closeAtcDrawer()">Continue Shopping</button>
+    <a href="{{ route('cart') }}" class="atc-btn-primary" id="atc-go-cart">{{ $headerIsArabic ? 'روح للسلة' : 'Go to Cart' }}</a>
+    <button class="atc-btn-secondary" onclick="closeAtcDrawer()">{{ $headerIsArabic ? 'كمّل تسوّق' : 'Continue Shopping' }}</button>
   </div>
 </div>
 
@@ -1185,6 +1189,36 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 
 <script>
 const CSRF_TOKEN = '{{ csrf_token() }}';
+const STOREFRONT_IS_AR = {{ $headerIsArabic ? 'true' : 'false' }};
+const STOREFRONT_COPY = STOREFRONT_IS_AR ? {
+  addError: 'مش قادرين نضيف المنتج للسلة دلوقتي.',
+  networkError: 'في مشكلة في الاتصال، جرّب تاني.',
+  cart: 'روح للسلة',
+  sku: 'كود المنتج',
+  quantity: 'الكمية',
+  color: 'اللون',
+  size: 'المقاس',
+  add: 'ضيف للسلة',
+  unavailable: 'مش متاح',
+  saved: 'اتحفظ في المفضلة',
+  removed: 'اتشال من المفضلة',
+  addWishlist: 'ضيف للمفضلة',
+  removeWishlist: 'شيل من المفضلة'
+} : {
+  addError: 'Could not add to cart.',
+  networkError: 'Network error. Try again.',
+  cart: 'Go to Cart',
+  sku: 'SKU',
+  quantity: 'Qty',
+  color: 'Color',
+  size: 'Size',
+  add: 'Add to Cart',
+  unavailable: 'Out of Stock',
+  saved: 'Saved to Wishlist',
+  removed: 'Removed from Wishlist',
+  addWishlist: 'Add to Wishlist',
+  removeWishlist: 'Remove from Wishlist'
+};
 
 // ── Device-side page cache (Home + Shop) ──────────────────────────────────
 // Registers a Service Worker that caches these two pages in the browser's
@@ -1350,10 +1384,10 @@ async function addToCart(productId, name, price, image, variationId = null, qty 
       updateCartBadge(data.count);
       openAtcDrawer({ image, oldPrice, varLabel, items: data.items, count: data.count, cartTotal: data.cart_total, rowId: data.row_id });
     } else {
-      showToast(data.message || 'Could not add to cart.', 'err');
+      showToast(data.message || STOREFRONT_COPY.addError, 'err');
     }
   } catch(e) {
-    showToast('Network error. Try again.', 'err');
+    showToast(STOREFRONT_COPY.networkError, 'err');
   }
 }
 
@@ -1366,9 +1400,9 @@ function openAtcDrawer({ image, oldPrice, varLabel, items, count, cartTotal, row
     const isNew = rowId && item.rowId === rowId;
     const attrs = item.attrs && typeof item.attrs === 'object' ? Object.entries(item.attrs).map(([k,v]) => `${k}: ${v}`).join(', ') : (varLabel && isNew ? varLabel : '');
     const metaParts = [];
-    if (item.sku) metaParts.push('SKU: ' + item.sku);
+    if (item.sku) metaParts.push(STOREFRONT_COPY.sku + ': ' + item.sku);
     if (attrs) metaParts.push(attrs);
-    if (item.qty > 1) metaParts.push('Qty: ' + item.qty);
+    if (item.qty > 1) metaParts.push(STOREFRONT_COPY.quantity + ': ' + item.qty);
 
     const row = document.createElement('div');
     row.className = 'atc-item' + (isNew ? ' atc-item-new' : '');
@@ -1386,7 +1420,7 @@ function openAtcDrawer({ image, oldPrice, varLabel, items, count, cartTotal, row
   });
 
   document.getElementById('atc-subtotal').textContent = 'EGP ' + Number(cartTotal || 0).toFixed(2);
-  document.getElementById('atc-go-cart').textContent = 'Go to Cart (' + (count ?? '') + ')';
+  document.getElementById('atc-go-cart').textContent = STOREFRONT_COPY.cart + ' (' + (count ?? '') + ')';
 
   const drawer = document.getElementById('atc-drawer');
   document.getElementById('atc-overlay').classList.add('show');
@@ -1506,7 +1540,7 @@ function _pcUpdatePrice(pid) {
     if (origEl) origEl.textContent = match.sale && match.sale < match.price ? match.price.toFixed(2) : '';
     card.dataset.selVar   = match.id;
     card.dataset.selPrice = displayPrice;
-    if (addBtn) addBtn.textContent = match.stock > 0 ? 'Add to Cart' : 'Out of Stock';
+    if (addBtn) addBtn.textContent = match.stock > 0 ? STOREFRONT_COPY.add : STOREFRONT_COPY.unavailable;
   } else {
     // Show base / range
     const prices = vars.map(v => v.sale && v.sale < v.price ? v.sale : v.price);
@@ -1514,7 +1548,7 @@ function _pcUpdatePrice(pid) {
     priceEl.textContent = mn===mx ? mn.toFixed(2)+' EGP' : mn.toFixed(2)+' – '+mx.toFixed(2)+' EGP';
     card.dataset.selVar = '';
     card.dataset.selPrice = '';
-    if (addBtn) addBtn.textContent = 'Add to Cart';
+    if (addBtn) addBtn.textContent = STOREFRONT_COPY.add;
   }
 }
 
@@ -1530,8 +1564,8 @@ function _pcUpdateSummary(pid) {
     return;
   }
   const parts = [];
-  if (color) parts.push('Color: ' + color);
-  if (size) parts.push('Size: ' + size);
+  if (color) parts.push(STOREFRONT_COPY.color + ': ' + color);
+  if (size) parts.push(STOREFRONT_COPY.size + ': ' + size);
   el.textContent = parts.join(' • ');
 }
 
@@ -1553,7 +1587,7 @@ let wishlistStateVersion = 0;
 
 function setWishlistButtonState(btn, wished) {
   btn.classList.toggle('wished', wished);
-  btn.title = wished ? 'Remove from Wishlist' : 'Add to Wishlist';
+  btn.title = wished ? STOREFRONT_COPY.removeWishlist : STOREFRONT_COPY.addWishlist;
   btn.textContent = wished ? '♥' : '♡';
 }
 
@@ -1616,7 +1650,7 @@ async function toggleWishlist(btn, productId) {
       // adopted the shared data attribute.
       setWishlistButtonState(btn, wished);
       updateWishlistBadge(data.count);
-      showToast(wished ? '♥ Saved to Wishlist' : 'Removed from Wishlist');
+      showToast(wished ? '♥ ' + STOREFRONT_COPY.saved : STOREFRONT_COPY.removed);
     }
   } catch(e) {}
 }

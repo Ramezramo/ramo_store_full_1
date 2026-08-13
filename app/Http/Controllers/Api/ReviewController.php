@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\DB;
 
 class ReviewController extends Controller
 {
+    private function localized(string $english, string $arabic): string
+    {
+        return session('locale', 'en') === 'ar' ? $arabic : $english;
+    }
     public function index($productId)
     {
         $reviews = DB::table('product_reviews as r')
@@ -56,7 +60,7 @@ class ReviewController extends Controller
             ->exists();
 
         if ($existing) {
-            return response()->json(['success' => false, 'message' => 'You already reviewed this product.'], 422);
+            return response()->json(['success' => false, 'message' => $this->localized('You already reviewed this product.', 'إنت قيّمت المنتج ده قبل كده.')], 422);
         }
 
         $verified = DB::table('orders')
@@ -78,7 +82,7 @@ class ReviewController extends Controller
             'updated_at'           => now(),
         ]);
 
-        return response()->json(['success' => true, 'message' => 'Review submitted!', 'id' => $id], 201);
+        return response()->json(['success' => true, 'message' => $this->localized('Review submitted!', 'تقييمك اتبعت!'), 'id' => $id], 201);
     }
 
     public function webStore(Request $r)
@@ -96,7 +100,7 @@ class ReviewController extends Controller
             ->exists();
 
         if ($existing) {
-            return redirect()->route('product', $r->product_id)->with('error', 'You already reviewed this product.');
+            return redirect()->route('product', $r->product_id)->with('error', $this->localized('You already reviewed this product.', 'إنت قيّمت المنتج ده قبل كده.'));
         }
 
         $verified = DB::table('orders')
@@ -118,13 +122,13 @@ class ReviewController extends Controller
             'updated_at'           => now(),
         ]);
 
-        return redirect()->route('product', $r->product_id)->with('success', 'Your review has been published!');
+        return redirect()->route('product', $r->product_id)->with('success', $this->localized('Your review has been published!', 'تقييمك اتنشر!'));
     }
 
     public function destroy(Request $r, $id)
     {
         $review = DB::table('product_reviews')->where('id', $id)->first();
-        if (!$review) return response()->json(['success' => false, 'message' => 'Not found.'], 404);
+        if (!$review) return response()->json(['success' => false, 'message' => $this->localized('Not found.', 'مش لاقيين التقييم ده.')], 404);
 
         // Must be the reviewer or admin
         $user    = Auth::user();
@@ -133,11 +137,11 @@ class ReviewController extends Controller
         $isOwner = Auth::check() && Auth::id() === (int)$review->user_id;
 
         if (!$isOwner && !$isAdmin) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+            return response()->json(['success' => false, 'message' => $this->localized('Unauthorized.', 'مش مسموحلك تعمل الإجراء ده.')], 403);
         }
 
         DB::table('product_reviews')->where('id', $id)->delete();
-        return response()->json(['success' => true, 'message' => 'Review deleted.']);
+        return response()->json(['success' => true, 'message' => $this->localized('Review deleted.', 'التقييم اتمسح.')]);
     }
 
     public function helpful(Request $r, $id)
@@ -147,7 +151,7 @@ class ReviewController extends Controller
 
         $voted = session('review_helpful_voted', []);
         if (in_array((int)$id, $voted)) {
-            return response()->json(['success' => false, 'message' => 'Already voted.', 'count' => $review->helpful_count]);
+            return response()->json(['success' => false, 'message' => $this->localized('Already voted.', 'إنت صوّت قبل كده.'), 'count' => $review->helpful_count]);
         }
 
         DB::table('product_reviews')->where('id', $id)->increment('helpful_count');

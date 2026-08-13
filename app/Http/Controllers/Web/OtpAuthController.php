@@ -16,6 +16,11 @@ use Illuminate\Support\Str;
 class OtpAuthController extends Controller
 {
     use CartTrait;
+    private function localized(string $english, string $arabic): string
+    {
+        return session('locale') === 'ar' ? $arabic : $english;
+    }
+
     private function normalizePhone(string $phone): string
     {
         $phone = preg_replace('/\s+/', '', $phone);
@@ -49,14 +54,14 @@ class OtpAuthController extends Controller
         $cfg = AuthConfig::get();
 
         if (!$cfg['phone_otp_login']) {
-            return response()->json(['success' => false, 'message' => 'Phone OTP login is disabled.'], 403);
+            return response()->json(['success' => false, 'message' => $this->localized('Phone OTP login is disabled.', 'تسجيل الدخول بكود الموبايل مش متاح دلوقتي.')], 403);
         }
 
         $request->validate(['phone' => 'required|string|min:9|max:20']);
         $phone = $this->normalizePhone($request->phone);
 
         if (!preg_match('/^\+?[0-9]{10,15}$/', $phone)) {
-            return response()->json(['success' => false, 'message' => 'Please enter a valid phone number.'], 422);
+            return response()->json(['success' => false, 'message' => $this->localized('Please enter a valid phone number.', 'اكتب رقم موبايل صحيح.')], 422);
         }
 
         $maxResends     = (int) $cfg['max_resends_per_hour'];
@@ -70,12 +75,12 @@ class OtpAuthController extends Controller
             $ageSeconds = abs(now()->diffInSeconds($existing->created_at, false));
             if ($ageSeconds < $cooldownSecs) {
                 $wait = $cooldownSecs - $ageSeconds;
-                return response()->json(['success' => false, 'message' => "Please wait {$wait} seconds before requesting a new OTP.", 'wait' => $wait], 429);
+                return response()->json(['success' => false, 'message' => $this->localized("Please wait {$wait} seconds before requesting a new OTP.", "استنى {$wait} ثانية قبل ما تطلب كود جديد."), 'wait' => $wait], 429);
             }
 
             $windowStart = $existing->resend_window_start ?? $existing->created_at;
             if (now()->diffInSeconds($windowStart) < 3600 && $existing->resend_count >= $maxResends) {
-                return response()->json(['success' => false, 'message' => 'Too many OTP requests. Please try again in an hour.'], 429);
+                return response()->json(['success' => false, 'message' => $this->localized('Too many OTP requests. Please try again in an hour.', 'طلبات كود كتير. جرّب تاني بعد ساعة.')], 429);
             }
 
             $newResendCount = $existing->resend_count + 1;
@@ -111,10 +116,10 @@ class OtpAuthController extends Controller
         try {
             $this->sendSms($phone, $otp);
         } catch (\Throwable $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => $this->localized($e->getMessage(), 'حصلت مشكلة وإحنا بنبعت الكود. جرّب تاني.')], 500);
         }
 
-        $response = ['success' => true, 'message' => 'OTP sent successfully.', 'expires_in' => $expiryMinutes * 60];
+        $response = ['success' => true, 'message' => $this->localized('OTP sent successfully.', 'الكود اتبعت بنجاح.'), 'expires_in' => $expiryMinutes * 60];
 
         if ($isLogDriver && config('app.debug')) {
             $response['dev_otp']  = $otp;
@@ -136,22 +141,22 @@ class OtpAuthController extends Controller
         $record = OtpVerification::where('phone', $phone)->where('verified', false)->latest()->first();
 
         if (!$record) {
-            return response()->json(['success' => false, 'message' => 'No OTP found for this phone number. Please request a new one.'], 404);
+            return response()->json(['success' => false, 'message' => $this->localized('No OTP found for this phone number. Please request a new one.', 'مش لاقيين كود للرقم ده. اطلب كود جديد.')], 404);
         }
 
         if ($record->isExpired()) {
             $record->delete();
-            return response()->json(['success' => false, 'message' => 'OTP has expired. Please request a new one.'], 410);
+            return response()->json(['success' => false, 'message' => $this->localized('OTP has expired. Please request a new one.', 'الكود انتهت صلاحيته. اطلب كود جديد.')], 410);
         }
 
         if ($record->isExhausted($maxAttempts)) {
-            return response()->json(['success' => false, 'message' => 'Too many incorrect attempts. Please request a new OTP.'], 429);
+            return response()->json(['success' => false, 'message' => $this->localized('Too many incorrect attempts. Please request a new OTP.', 'محاولات غلط كتير. اطلب كود جديد.')], 429);
         }
 
         if ($record->otp_code !== $request->otp) {
             $record->increment('attempts');
             $remaining = $maxAttempts - $record->attempts;
-            return response()->json(['success' => false, 'message' => "Incorrect OTP. {$remaining} attempt(s) remaining.", 'remaining' => $remaining], 422);
+            return response()->json(['success' => false, 'message' => $this->localized("Incorrect OTP. {$remaining} attempt(s) remaining.", "الكود مش صحيح. فاضل {$remaining} محاولة."), 'remaining' => $remaining], 422);
         }
 
         $record->update(['verified' => true]);
@@ -171,7 +176,7 @@ class OtpAuthController extends Controller
         }
 
         if (!$cfg['auto_register_otp']) {
-            return response()->json(['success' => false, 'message' => 'No account found with this phone number. Please register first.'], 403);
+            return response()->json(['success' => false, 'message' => $this->localized('No account found with this phone number. Please register first.', 'مفيش حساب بالرقم ده. اعمل حساب الأول.')], 403);
         }
 
         $tempToken = Str::random(40);
@@ -203,7 +208,7 @@ class OtpAuthController extends Controller
     public function showCompleteProfile(Request $request)
     {
         if (!session('otp_temp_token') || !session('otp_temp_phone')) {
-            return redirect()->route('login')->withErrors(['phone' => 'Session expired. Please start over.']);
+            return redirect()->route('login')->withErrors(['phone' => $this->localized('Session expired. Please start over.', 'الجلسة انتهت. ابدأ من الأول.')]);
         }
         return view('web.auth.complete-profile');
     }
@@ -214,7 +219,7 @@ class OtpAuthController extends Controller
         $phone     = session('otp_temp_phone');
 
         if (!$tempToken || !$phone || $request->input('temp_token') !== $tempToken) {
-            return redirect()->route('login')->withErrors(['phone' => 'Session expired. Please start over.']);
+            return redirect()->route('login')->withErrors(['phone' => $this->localized('Session expired. Please start over.', 'الجلسة انتهت. ابدأ من الأول.')]);
         }
 
         $request->validate([
@@ -239,7 +244,7 @@ class OtpAuthController extends Controller
         $this->mergeGuestSessionOnLogin($user->id);
 
         return redirect()->to($request->session()->pull('url.intended', route('home')))
-            ->with('success', 'Welcome to Ramo Store!');
+            ->with('success', $this->localized('Welcome to Ramo Store!', 'أهلاً بيك في Ramo Store!'));
     }
 
     private function createUserFromPhone(string $phone, ?string $name = null, ?string $email = null): User

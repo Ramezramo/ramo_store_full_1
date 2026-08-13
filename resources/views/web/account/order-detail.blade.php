@@ -1,6 +1,11 @@
 @extends('web.account.layout')
 @php
-  $pageTitle = 'Order #'.$order->id;
+  $isAr = session('locale') === 'ar';
+  $pageTitle = $isAr ? 'طلب رقم #'.$order->id : 'Order #'.$order->id;
+  $statusLabel = fn ($status) => $isAr ? match(strtolower($status ?? 'pending')) {
+    'pending', 'pending_payment' => 'في الانتظار', 'processing' => 'جاري التجهيز', 'shipped' => 'اتشحن', 'completed', 'delivered' => 'اتسلّم',
+    'cancelled' => 'اتلغى', 'refunded' => 'اترجع', 'failed', 'payment_failed' => 'فشل الدفع', 'rejected' => 'اترفض', default => $status,
+  } : app(\App\Services\OrderStatusService::class)->label($status);
   $cancelled = in_array($order->status, ['cancelled','refunded','failed']);
   $hasSubOrders = isset($subOrders) && $subOrders->count() > 0;
   $messageCount = 0;
@@ -26,10 +31,10 @@
 @endphp
 
 @section('account-content')
-<div class="acc-section-title" style="margin-bottom:20px">Order #{{ $order->id }}</div>
+<div class="acc-section-title" style="margin-bottom:20px">{{ $isAr ? 'طلب رقم' : 'Order' }} #{{ $order->id }}</div>
 
 @if($cancelled)
-  <div class="acc-alert acc-alert-error" style="margin-bottom:24px">This order has been <strong>{{ app(\App\Services\OrderStatusService::class)->label($order->status) }}</strong>.</div>
+  <div class="acc-alert acc-alert-error" style="margin-bottom:24px">{{ $isAr ? 'الطلب ده حالته' : 'This order has been' }} <strong>{{ $statusLabel($order->status) }}</strong>{{ $isAr ? '.' : '.' }}</div>
 @endif
 
 @if(session('success'))
@@ -41,13 +46,13 @@
 
 {{-- ── ORDER META ────────────────────────────────────────────────── --}}
 <div class="order-detail-card">
-  <div class="od-row"><span class="od-label">Order #</span><strong>#{{ $order->id }}</strong></div>
-  <div class="od-row"><span class="od-label">Status</span><span class="status-badge status-{{ $order->status }}">{{ app(\App\Services\OrderStatusService::class)->label($order->status) }}</span></div>
-  <div class="od-row"><span class="od-label">Date</span><span>{{ \Carbon\Carbon::parse($order->date_created)->format('M d, Y h:i A') }}</span></div>
-  <div class="od-row"><span class="od-label">Payment</span><span>{{ $order->payment_method_title }}</span></div>
-  <div class="od-row"><span class="od-label">Total Paid</span><strong style="color:#e85d26">{{ number_format($order->final_total, 2) }} EGP</strong></div>
+  <div class="od-row"><span class="od-label">{{ $isAr ? 'رقم الطلب' : 'Order #' }}</span><strong>#{{ $order->id }}</strong></div>
+  <div class="od-row"><span class="od-label">{{ $isAr ? 'الحالة' : 'Status' }}</span><span class="status-badge status-{{ $order->status }}">{{ $statusLabel($order->status) }}</span></div>
+  <div class="od-row"><span class="od-label">{{ $isAr ? 'التاريخ' : 'Date' }}</span><span>{{ $isAr ? \Carbon\Carbon::parse($order->date_created)->locale('ar')->translatedFormat('j F Y، g:i A') : \Carbon\Carbon::parse($order->date_created)->format('M d, Y h:i A') }}</span></div>
+  <div class="od-row"><span class="od-label">{{ $isAr ? 'طريقة الدفع' : 'Payment' }}</span><span>{{ $order->payment_method_title }}</span></div>
+  <div class="od-row"><span class="od-label">{{ $isAr ? 'المبلغ المدفوع' : 'Total Paid' }}</span><strong style="color:#e85d26">{{ number_format($order->final_total, 2) }} EGP</strong></div>
   @if($order->customer_note)
-    <div class="od-row"><span class="od-label">Notes</span><span>{{ $order->customer_note }}</span></div>
+    <div class="od-row"><span class="od-label">{{ $isAr ? 'ملاحظاتك' : 'Notes' }}</span><span>{{ $order->customer_note }}</span></div>
   @endif
 </div>
 
@@ -56,45 +61,45 @@
 <div class="order-detail-card" style="margin-top:16px;border:1.5px solid #fed7aa;background:#fffaf5">
   <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
     <div>
-      <div style="font-size:15px;font-weight:800">Payment verification</div>
+      <div style="font-size:15px;font-weight:800">{{ $isAr ? 'مراجعة الدفع' : 'Payment verification' }}</div>
       <div style="font-size:13px;color:#6b7280;margin-top:4px">
-        Status:
+        {{ $isAr ? 'الحالة:' : 'Status:' }}
         <strong style="color:{{ $order->payment_status === 'confirmed' ? '#15803d' : ($order->payment_status === 'rejected' ? '#b91c1c' : '#b45309') }}">
-          {{ ucwords(str_replace('_', ' ', $order->payment_status ?? 'pending_payment')) }}
+          {{ $isAr ? match(strtolower($order->payment_status ?? 'pending_payment')) { 'confirmed' => 'تم التأكيد', 'rejected' => 'اترفض', 'failed' => 'فشل', default => 'في الانتظار' } : ucwords(str_replace('_', ' ', $order->payment_status ?? 'pending_payment')) }}
         </strong>
       </div>
     </div>
     @if($order->payment_receipt_path)
-      <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($order->payment_receipt_path) }}" target="_blank" rel="noopener" class="btn btn-outline" style="font-size:12px">View latest receipt</a>
+      <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($order->payment_receipt_path) }}" target="_blank" rel="noopener" class="btn btn-outline" style="font-size:12px">{{ $isAr ? 'شوف آخر إيصال' : 'View latest receipt' }}</a>
     @endif
   </div>
   @if($order->payment_status === 'rejected')
     <div style="margin-top:12px;padding:10px 12px;border-radius:8px;background:#fef2f2;color:#991b1b;font-size:13px">
-      Receipt rejected{{ $order->payment_rejection_reason ? ': '.$order->payment_rejection_reason : '.' }} Upload a clearer receipt below.
+      {{ $isAr ? 'الإيصال اترفض' : 'Receipt rejected' }}{{ $order->payment_rejection_reason ? ': '.$order->payment_rejection_reason : '.' }} {{ $isAr ? 'ارفع إيصال أوضح تحت.' : 'Upload a clearer receipt below.' }}
     </div>
   @endif
   @if($order->payment_status !== 'confirmed')
     @if($accountPaymentMethod)
       <p style="font-size:13px;color:#6b7280;line-height:1.6;margin-top:12px">
-        Transfer <strong>{{ number_format($order->final_total, 2) }} EGP</strong> to <strong>{{ $accountPaymentMethod['destination'] }}</strong>, then upload the receipt below.
+        {{ $isAr ? 'حوّل' : 'Transfer' }} <strong>{{ number_format($order->final_total, 2) }} EGP</strong> {{ $isAr ? 'إلى' : 'to' }} <strong>{{ $accountPaymentMethod['destination'] }}</strong>{{ $isAr ? '، وبعدها ارفع الإيصال تحت.' : ', then upload the receipt below.' }}
       </p>
     @endif
     <form method="POST" action="{{ route('account.order.payment-receipt', $order->id) }}" enctype="multipart/form-data" style="margin-top:16px">
       @csrf
-      <label style="display:block;font-size:12px;font-weight:700;color:#6b7280;margin-bottom:7px">Upload payment receipt (JPG, PNG or WEBP, up to 10MB)</label>
+      <label style="display:block;font-size:12px;font-weight:700;color:#6b7280;margin-bottom:7px">{{ $isAr ? 'ارفع إيصال الدفع (JPG أو PNG أو WEBP، لحد 10 ميجابايت)' : 'Upload payment receipt (JPG, PNG or WEBP, up to 10MB)' }}</label>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <input type="file" name="receipt" accept="image/jpeg,image/png,image/webp" required style="font-size:12px">
-        <button class="btn btn-dark" style="font-size:12px">Submit receipt</button>
+        <button class="btn btn-dark" style="font-size:12px">{{ $isAr ? 'ابعت الإيصال' : 'Submit receipt' }}</button>
       </div>
       @error('receipt')<div class="err" style="margin-top:6px">{{ $message }}</div>@enderror
     </form>
   @endif
   @if(isset($paymentReceipts) && $paymentReceipts->count())
     <div style="margin-top:18px;padding-top:14px;border-top:1px solid #fed7aa">
-      <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#92400e;margin-bottom:8px">Receipt history</div>
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#92400e;margin-bottom:8px">{{ $isAr ? 'سجل الإيصالات' : 'Receipt history' }}</div>
       @foreach($paymentReceipts as $receipt)
         <div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:7px 0;border-bottom:1px solid #ffedd5">
-          <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($receipt->file_path) }}" target="_blank" rel="noopener">{{ $receipt->original_name ?: 'Receipt #'.$receipt->id }}</a>
+          <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($receipt->file_path) }}" target="_blank" rel="noopener">{{ $receipt->original_name ?: ($isAr ? 'إيصال رقم '.$receipt->id : 'Receipt #'.$receipt->id) }}</a>
           <span style="color:#6b7280">{{ ucfirst($receipt->status) }}</span>
         </div>
       @endforeach
@@ -109,8 +114,8 @@
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
     <div style="font-size:22px">🎉</div>
     <div>
-      <div style="font-size:15px;font-weight:800;color:#15803d">You saved {{ number_format($totalSavings, 2) }} EGP on this order!</div>
-      <div style="font-size:12px;color:#16a34a;margin-top:2px">Great deal — here's the breakdown:</div>
+      <div style="font-size:15px;font-weight:800;color:#15803d">{{ $isAr ? 'وفّرت' : 'You saved' }} {{ number_format($totalSavings, 2) }} EGP {{ $isAr ? 'في الطلب ده!' : 'on this order!' }}</div>
+      <div style="font-size:12px;color:#16a34a;margin-top:2px">{{ $isAr ? 'عرض حلو — دي التفاصيل:' : "Great deal — here's the breakdown:" }}</div>
     </div>
   </div>
   <div style="display:flex;flex-direction:column;gap:6px">
@@ -118,7 +123,7 @@
       <div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border-radius:8px;padding:8px 12px">
         <div style="display:flex;align-items:center;gap:6px">
           <span style="font-size:14px">🏷️</span>
-          <span style="font-size:13px;font-weight:600;color:#15803d">Sale price discount</span>
+          <span style="font-size:13px;font-weight:600;color:#15803d">{{ $isAr ? 'خصم سعر العرض' : 'Sale price discount' }}</span>
         </div>
         <span style="font-size:13px;font-weight:800;color:#15803d">−{{ number_format($saleSavings, 2) }} EGP</span>
       </div>
@@ -128,7 +133,7 @@
         <div style="display:flex;align-items:center;gap:6px">
           <span style="font-size:14px">🎟️</span>
           <div>
-            <span style="font-size:13px;font-weight:600;color:#15803d">Coupon</span>
+            <span style="font-size:13px;font-weight:600;color:#15803d">{{ $isAr ? 'كود خصم' : 'Coupon' }}</span>
             @if($couponCode)
               <span style="margin-left:6px;background:#dcfce7;color:#15803d;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;font-family:monospace;border:1px solid #86efac">{{ strtoupper($couponCode) }}</span>
             @endif
@@ -144,7 +149,7 @@
 {{-- ── SHIPPING ADDRESS ─────────────────────────────────────────── --}}
 @if(!empty($billing))
 <div class="order-detail-card" style="margin-top:16px">
-  <h3 style="font-size:15px;font-weight:700;margin-bottom:14px">Shipping Address</h3>
+  <h3 style="font-size:15px;font-weight:700;margin-bottom:14px">{{ $isAr ? 'عنوان الشحن' : 'Shipping Address' }}</h3>
   <p style="font-size:14px;line-height:1.8;color:var(--c-dark)">
     {{ $billing['first_name'] ?? '' }} {{ $billing['last_name'] ?? '' }}<br>
     {{ $billing['address_1'] ?? '' }}<br>
@@ -181,7 +186,7 @@
       };
       $subCancelled = in_array($sub->status, ['cancelled']);
       $subFillPct   = $subCancelled ? 0 : match($subStepIndex) { 0=>0,1=>33,2=>66,3=>100,default=>0 };
-      $subSteps     = ['pending'=>'Pending','processing'=>'Processing','shipped'=>'Shipped','delivered'=>'Delivered'];
+      $subSteps     = $isAr ? ['pending'=>'في الانتظار','processing'=>'جاري التجهيز','shipped'=>'اتشحن','delivered'=>'اتسلّم'] : ['pending'=>'Pending','processing'=>'Processing','shipped'=>'Shipped','delivered'=>'Delivered'];
     @endphp
 
     <div style="margin-top:20px;border:2px solid #e5e7eb;border-radius:16px;overflow:hidden">
@@ -190,17 +195,17 @@
       <div style="background:#f9fafb;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e5e7eb;flex-wrap:wrap;gap:8px">
         <div>
           <div style="font-size:13px;font-weight:800;color:#111827">
-            {{ $sub->vendor_shop_name ?: 'Store' }}
-            <span style="font-weight:400;color:#6b7280;font-size:12px">— Sub-order #{{ $sub->id }}</span>
+            {{ $sub->vendor_shop_name ?: ($isAr ? 'المتجر' : 'Store') }}
+            <span style="font-weight:400;color:#6b7280;font-size:12px">— {{ $isAr ? 'طلب فرعي رقم' : 'Sub-order #' }}{{ $sub->id }}</span>
           </div>
           @if($sub->tracking_number)
             <div style="font-size:12px;color:#6b7280;margin-top:3px">
-              Tracking: <strong style="font-family:monospace">{{ $sub->tracking_number }}</strong>
-              @if($sub->tracking_carrier) via {{ $sub->tracking_carrier }} @endif
+              {{ $isAr ? 'رقم التتبع:' : 'Tracking:' }} <strong style="font-family:monospace">{{ $sub->tracking_number }}</strong>
+              @if($sub->tracking_carrier) {{ $isAr ? 'عن طريق' : 'via' }} {{ $sub->tracking_carrier }} @endif
             </div>
           @endif
         </div>
-        <span class="status-badge status-{{ $sub->status }}" style="font-size:12px">{{ app(\App\Services\OrderStatusService::class)->label($sub->status) }}</span>
+        <span class="status-badge status-{{ $sub->status }}" style="font-size:12px">{{ $statusLabel($sub->status) }}</span>
       </div>
 
       {{-- Sub-order progress bar --}}
@@ -228,12 +233,12 @@
         </div>
       </div>
       @else
-      <div style="padding:10px 18px;background:#fff;font-size:13px;color:#ef4444;font-weight:600">This shipment was cancelled.</div>
+      <div style="padding:10px 18px;background:#fff;font-size:13px;color:#ef4444;font-weight:600">{{ $isAr ? 'الشحنة دي اتلغت.' : 'This shipment was cancelled.' }}</div>
       @endif
 
       {{-- Sub-order items --}}
       <div style="padding:0 18px 16px;background:#fff">
-        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin-bottom:10px">Items</div>
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin-bottom:10px">{{ $isAr ? 'المنتجات' : 'Items' }}</div>
         @foreach($sub->items as $item)
           <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f3f4f6">
             <div style="flex:1">
@@ -249,17 +254,17 @@
           </div>
         @endforeach
         <div style="display:flex;justify-content:space-between;padding-top:12px;font-size:13px">
-          <span style="color:#6b7280">Sub-total</span>
+          <span style="color:#6b7280">{{ $isAr ? 'الإجمالي الفرعي' : 'Sub-total' }}</span>
           <strong>{{ number_format($sub->subtotal, 2) }} EGP</strong>
         </div>
         @if($sub->discount_total > 0)
           <div style="display:flex;justify-content:space-between;font-size:13px;margin-top:4px">
-            <span style="color:#22c55e">Discount</span>
+            <span style="color:#22c55e">{{ $isAr ? 'الخصم' : 'Discount' }}</span>
             <strong style="color:#22c55e">−{{ number_format($sub->discount_total, 2) }} EGP</strong>
           </div>
         @endif
         <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:800;margin-top:8px;padding-top:8px;border-top:2px solid #e5e7eb">
-          <span>Vendor Total</span>
+          <span>{{ $isAr ? 'إجمالي المتجر' : 'Vendor Total' }}</span>
           <span style="color:#e85d26">{{ number_format($sub->total, 2) }} EGP</span>
         </div>
       </div>
@@ -267,7 +272,7 @@
       {{-- Messages & reply for this sub-order --}}
       <div style="padding:16px 18px;background:#fafafa;border-top:1px solid #e5e7eb">
         <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin-bottom:12px">
-          Messages with {{ $sub->vendor_shop_name ?: 'Vendor' }}
+          {{ $isAr ? 'رسايل مع' : 'Messages with' }} {{ $sub->vendor_shop_name ?: ($isAr ? 'البائع' : 'Vendor') }}
         </div>
 
         @if(isset($sub->messages) && count($sub->messages) > 0)
@@ -276,27 +281,27 @@
               <div style="border:1px solid {{ $msg->is_vendor_response ? '#fdba74' : '#e5e7eb' }};background:{{ $msg->is_vendor_response ? '#fff7ed' : '#fff' }};border-radius:10px;padding:10px 13px">
                 <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px">
                   <strong style="color:{{ $msg->is_vendor_response ? '#e85d26' : '#111827' }}">
-                    {{ $msg->is_vendor_response ? ($msg->vendor_shop_name ?: 'Vendor') : 'You' }}
+                    {{ $msg->is_vendor_response ? ($msg->vendor_shop_name ?: ($isAr ? 'البائع' : 'Vendor')) : ($isAr ? 'إنت' : 'You') }}
                   </strong>
                   <span style="color:#6b7280">{{ \Carbon\Carbon::parse($msg->created_at)->format('d M Y, g:i A') }}</span>
                 </div>
                 <div style="font-size:13px;line-height:1.7;color:#111827">{{ $msg->message }}</div>
                 @if($msg->is_vendor_response)
-                  <div style="margin-top:6px;display:inline-block;background:rgba(232,93,38,.12);color:#e85d26;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px">Vendor</div>
+                  <div style="margin-top:6px;display:inline-block;background:rgba(232,93,38,.12);color:#e85d26;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px">{{ $isAr ? 'البائع' : 'Vendor' }}</div>
                 @endif
               </div>
             @endforeach
           </div>
         @else
-          <div style="color:#6b7280;font-size:13px;margin-bottom:12px">No messages yet. Ask a question below.</div>
+          <div style="color:#6b7280;font-size:13px;margin-bottom:12px">{{ $isAr ? 'مفيش رسايل لسه. اسأل تحت.' : 'No messages yet. Ask a question below.' }}</div>
         @endif
 
         <form method="POST" action="{{ route('account.order.messages.store', $order->id) }}">
           @csrf
           <input type="hidden" name="sub_order_id" value="{{ $sub->id }}">
-          <textarea name="message" rows="3" placeholder="Message {{ $sub->vendor_shop_name ?: 'Vendor' }}..." style="width:100%;padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;resize:vertical;box-sizing:border-box"></textarea>
+          <textarea name="message" rows="3" placeholder="{{ $isAr ? 'ابعت رسالة لـ ' : 'Message ' }}{{ $sub->vendor_shop_name ?: ($isAr ? 'البائع' : 'Vendor') }}..." style="width:100%;padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;resize:vertical;box-sizing:border-box"></textarea>
           <div style="margin-top:8px">
-            <button type="submit" class="btn btn-dark" style="font-size:12px;padding:8px 16px">Send Message</button>
+            <button type="submit" class="btn btn-dark" style="font-size:12px;padding:8px 16px">{{ $isAr ? 'ابعت الرسالة' : 'Send Message' }}</button>
           </div>
         </form>
       </div>
@@ -304,7 +309,7 @@
       {{-- Refund / Return CTA per sub-order --}}
       @if(in_array($sub->status, ['delivered','completed','shipped','processing']))
         <div style="padding:12px 18px;background:#fff;border-top:1px solid #e5e7eb">
-          <a href="{{ route('account.refunds.create', ['order_id' => $order->id]) }}" style="font-size:12px;color:#e85d26;text-decoration:none;font-weight:600">⚠ Request Refund / Return for this shipment →</a>
+          <a href="{{ route('account.refunds.create', ['order_id' => $order->id]) }}" style="font-size:12px;color:#e85d26;text-decoration:none;font-weight:600">⚠ {{ $isAr ? 'اطلب استرجاع للشحنة دي ←' : 'Request Refund / Return for this shipment →' }}</a>
         </div>
       @endif
 
@@ -314,7 +319,7 @@
 @else
   {{-- LEGACY: no sub-orders, show all items as before --}}
   <div class="order-detail-card" style="margin-top:16px">
-    <h3 style="font-size:15px;font-weight:700;margin-bottom:16px">Items</h3>
+    <h3 style="font-size:15px;font-weight:700;margin-bottom:16px">{{ $isAr ? 'المنتجات' : 'Items' }}</h3>
     @foreach($lineItems as $item)
     <div class="order-item-row">
       <div class="order-item-info">
@@ -328,17 +333,17 @@
     </div>
     @endforeach
     <div class="ck-totals" style="margin-top:16px">
-      <div class="summary-row"><span>Subtotal</span><span>{{ number_format($order->original_total, 2) }} EGP</span></div>
+      <div class="summary-row"><span>{{ $isAr ? 'الإجمالي الفرعي' : 'Subtotal' }}</span><span>{{ number_format($order->original_total, 2) }} EGP</span></div>
       @if($order->discount_total > 0)
-        <div class="summary-row discount-row"><span>Discount</span><span>−{{ number_format($order->discount_total, 2) }} EGP</span></div>
+        <div class="summary-row discount-row"><span>{{ $isAr ? 'الخصم' : 'Discount' }}</span><span>−{{ number_format($order->discount_total, 2) }} EGP</span></div>
       @endif
       <div class="summary-divider"></div>
-      <div class="summary-row total-row"><span>Total</span><span>{{ number_format($order->final_total, 2) }} EGP</span></div>
+      <div class="summary-row total-row"><span>{{ $isAr ? 'الإجمالي' : 'Total' }}</span><span>{{ number_format($order->final_total, 2) }} EGP</span></div>
     </div>
   </div>
 @endif
 
 <div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center">
-  <a href="{{ route('account.orders') }}" class="btn btn-outline">← Back to Orders</a>
+  <a href="{{ route('account.orders') }}" class="btn btn-outline">{{ $isAr ? 'الرجوع للطلبات ←' : '← Back to Orders' }}</a>
 </div>
 @endsection

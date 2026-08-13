@@ -33,6 +33,11 @@ class CartController extends Controller
         return [$minimum, $maximum];
     }
 
+    private function localized(string $english, string $arabic): string
+    {
+        return session('locale', 'en') === 'ar' ? $arabic : $english;
+    }
+
     private function localizedCartProductName(object $product): string
     {
         $fallback = (string) ($product->name ?? '');
@@ -55,13 +60,13 @@ class CartController extends Controller
     private function quantityError(string $productName, int $quantity, int $minimum, int $maximum): ?string
     {
         if ($quantity < $minimum) {
-            return "Minimum order quantity for \"{$productName}\" is {$minimum}.";
+            return $this->localized("Minimum order quantity for \"{$productName}\" is {$minimum}.", "أقل كمية للطلب من \"{$productName}\" هي {$minimum}.");
         }
         if ($maximum < $minimum) {
-            return "\"{$productName}\" does not have enough stock to meet its minimum order quantity of {$minimum}.";
+            return $this->localized("\"{$productName}\" does not have enough stock to meet its minimum order quantity of {$minimum}.", "\"{$productName}\" مفيش منه مخزون كفاية للحد الأدنى اللي هو {$minimum}.");
         }
         if ($quantity > $maximum) {
-            return "You can order up to {$maximum} unit(s) of \"{$productName}\" per order.";
+            return $this->localized("You can order up to {$maximum} unit(s) of \"{$productName}\" per order.", "تقدر تطلب لحد {$maximum} قطعة من \"{$productName}\" في الطلب الواحد.");
         }
 
         return null;
@@ -170,16 +175,16 @@ class CartController extends Controller
             $currentQuantity = (int) ($item['qty'] ?? 0);
             if ($maximumQuantity < $minimumQuantity) {
                 unset($cart[$rowId]);
-                session()->flash('error', "\"{$product->name}\" was removed because it no longer has enough stock to meet its minimum order quantity.");
+                session()->flash('error', $this->localized("\"{$product->name}\" was removed because it no longer has enough stock to meet its minimum order quantity.", "\"{$this->localizedCartProductName($product)}\" اتشال من السلة عشان المخزون مش مكفي للحد الأدنى للطلب."));
                 continue;
             }
             if ($currentQuantity > $maximumQuantity) {
                 $item['qty'] = $maximumQuantity;
-                $item['_quantityMessage'] = "Quantity for \"{$product->name}\" was reduced from {$currentQuantity} to {$maximumQuantity} to match the current per-order limit and stock.";
+                $item['_quantityMessage'] = $this->localized("Quantity for \"{$product->name}\" was reduced from {$currentQuantity} to {$maximumQuantity} to match the current per-order limit and stock.", "كمية \"{$this->localizedCartProductName($product)}\" اتخفضت من {$currentQuantity} لـ {$maximumQuantity} حسب الحد المسموح والمخزون الحالي.");
             }
             if ($currentQuantity < $minimumQuantity) {
                 $item['qty'] = $minimumQuantity;
-                $item['_quantityMessage'] = "Quantity for \"{$product->name}\" was adjusted from {$currentQuantity} to the seller minimum of {$minimumQuantity}.";
+                $item['_quantityMessage'] = $this->localized("Quantity for \"{$product->name}\" was adjusted from {$currentQuantity} to the seller minimum of {$minimumQuantity}.", "كمية \"{$this->localizedCartProductName($product)}\" اتعدلت من {$currentQuantity} للحد الأدنى عند البائع: {$minimumQuantity}.");
             }
         }
         unset($item);
@@ -201,7 +206,7 @@ class CartController extends Controller
 
         $product = DB::table('products_data')->where('id', $productId)->first();
         if (!$product) {
-            return response()->json(['success' => false, 'message' => 'Product not found'], 404);
+            return response()->json(['success' => false, 'message' => $this->localized('Product not found', 'مش لاقيين المنتج ده.')], 404);
         }
 
         $variation = $variationId
@@ -215,12 +220,12 @@ class CartController extends Controller
                 ->first(['id', 'attributes', 'regular_price', 'sale_price', 'price', 'stock_quantity', 'stock_status', 'status']);
 
         if (! $variation || (($variation->status ?? 'publish') !== 'publish') || (($variation->stock_status ?? 'instock') !== 'instock')) {
-            return response()->json(['success' => false, 'message' => 'The selected product variation is unavailable.'], 422);
+            return response()->json(['success' => false, 'message' => $this->localized('The selected product variation is unavailable.', 'الاختيار اللي اخترته مش متاح.')], 422);
         }
 
         $stock = (int) ($variation->stock_quantity ?? 0);
         if ($stock < 1) {
-            return response()->json(['success' => false, 'message' => 'The selected product variation is out of stock.'], 422);
+            return response()->json(['success' => false, 'message' => $this->localized('The selected product variation is out of stock.', 'الاختيار اللي اخترته خلص من المخزون.')], 422);
         }
 
         $regularPrice = (float) ($variation->regular_price ?? 0);
@@ -254,7 +259,7 @@ class CartController extends Controller
                 'rowId'         => $rowId,
                 'product_id'    => (int) $productId,
                 'variation_id'  => $resolvedVariationId,
-                'name'          => $product->name,
+                'name'          => $this->localizedCartProductName($product),
                 'sku'           => $product->sku ?? null,
                 'price'         => $price,
                 'regular_price' => $regularPrice > $price ? $regularPrice : null,
@@ -269,7 +274,7 @@ class CartController extends Controller
 
         return response()->json([
             'success'    => true,
-            'message'    => 'Added to cart!',
+            'message'    => $this->localized('Added to cart!', 'اتضاف للسلة!'),
             'count'      => count($cart),
             'cart_total' => collect($cart)->sum(fn($i) => $i['price'] * $i['qty']),
             'items'      => array_values($cart),
@@ -313,7 +318,7 @@ class CartController extends Controller
         $cart = $this->getCart();
 
         if (! isset($cart[$rowId])) {
-            return response()->json(['success' => false, 'message' => 'Cart item not found.'], 404);
+            return response()->json(['success' => false, 'message' => $this->localized('Cart item not found.', 'مش لاقيين المنتج ده في السلة.')], 404);
         }
 
         $item = $cart[$rowId];
@@ -324,7 +329,7 @@ class CartController extends Controller
             ->first(['id', 'stock_quantity', 'stock_status', 'status']);
 
         if (! $product || ! $variation || (($variation->status ?? 'publish') !== 'publish') || (($variation->stock_status ?? 'instock') !== 'instock')) {
-            return response()->json(['success' => false, 'message' => 'This product variation is no longer available.'], 422);
+            return response()->json(['success' => false, 'message' => $this->localized('This product variation is no longer available.', 'الاختيار ده مبقاش متاح.')], 422);
         }
 
         $stock = (int) ($variation->stock_quantity ?? 0);
@@ -387,7 +392,7 @@ class CartController extends Controller
     {
         $this->saveCart([]);
         session()->forget('ramo_coupon');
-        return redirect()->route('cart')->with('success', 'Cart cleared.');
+        return redirect()->route('cart')->with('success', $this->localized('Cart cleared.', 'السلة اتفضّت.'));
     }
 
     public function applyCoupon(Request $r)
@@ -397,16 +402,16 @@ class CartController extends Controller
         $coupon = DB::table('coupons')->where('code', $code)->first();
 
         if (!$coupon) {
-            return response()->json(['success' => false, 'message' => 'Invalid coupon code.']);
+            return response()->json(['success' => false, 'message' => $this->localized('Invalid coupon code.', 'كود الخصم مش صحيح.')]);
         }
 
         $now = now();
         if ($coupon->date_expires && $now->isAfter($coupon->date_expires)) {
-            return response()->json(['success' => false, 'message' => 'This coupon has expired.']);
+            return response()->json(['success' => false, 'message' => $this->localized('This coupon has expired.', 'كود الخصم انتهت صلاحيته.')]);
         }
 
         if (!empty($coupon->vendor_id)) {
-            return response()->json(['success' => false, 'message' => 'This is a vendor-specific promo code.']);
+            return response()->json(['success' => false, 'message' => $this->localized('This is a vendor-specific promo code.', 'كود الخصم ده خاص بمتجر معين.')]);
         }
 
         session(['ramo_coupon' => [
@@ -416,7 +421,7 @@ class CartController extends Controller
             'description'   => $coupon->description ?? '',
         ]]);
 
-        return response()->json(['success' => true, 'message' => 'Coupon applied!', 'reload' => true]);
+        return response()->json(['success' => true, 'message' => $this->localized('Coupon applied!', 'كود الخصم اتطبق!'), 'reload' => true]);
     }
 
     public function removeCoupon()

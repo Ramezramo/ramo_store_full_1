@@ -11,6 +11,10 @@ use App\Services\OrderStatusService;
 
 class PaymentReceiptController extends Controller
 {
+    private function localized(string $english, string $arabic): string
+    {
+        return session('locale') === 'ar' ? $arabic : $english;
+    }
     public function uploadForAccount(Request $request, int $id)
     {
         $order = DB::table('orders')
@@ -41,11 +45,11 @@ class PaymentReceiptController extends Controller
     private function upload(Request $request, object $order, ?int $userId)
     {
         if (!PaymentConfig::isManualMethod($order->payment_method)) {
-            return back()->with('error', 'This order does not use a manual payment method.');
+            return back()->with('error', $this->localized('This order does not use a manual payment method.', 'الطلب ده مش بيستخدم طريقة دفع يدوي.'));
         }
 
         if ($order->payment_status === 'confirmed') {
-            return back()->with('error', 'This payment has already been confirmed.');
+            return back()->with('error', $this->localized('This payment has already been confirmed.', 'الدفع ده تم تأكيده بالفعل.'));
         }
 
         $request->validate([
@@ -89,7 +93,7 @@ class PaymentReceiptController extends Controller
             app(OrderStatusService::class)->sync($order->id);
         });
 
-        return back()->with('success', 'Receipt uploaded. Your payment is now pending verification.');
+        return back()->with('success', $this->localized('Receipt uploaded. Your payment is now pending verification.', 'الإيصال اترفع. الدفع دلوقتي في انتظار المراجعة.'));
     }
 
     public static function history(int $orderId)

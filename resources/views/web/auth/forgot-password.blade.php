@@ -1,12 +1,13 @@
 @extends('layouts.app')
-@section('title', 'Forgot Password — Ramo Store')
+@section('title', (session('locale') === 'ar' ? 'استرجاع كلمة السر' : 'Forgot Password') . ' — Ramo Store')
 
 @section('content')
-<div class="page" style="max-width:420px;margin:0 auto">
+@php $isAr = session('locale') === 'ar'; @endphp
+<div class="page" dir="{{ $isAr ? 'rtl' : 'ltr' }}" style="max-width:420px;margin:0 auto;{{ $isAr ? 'text-align:right;font-family:Tahoma,Arial,sans-serif' : '' }}">
   <div class="auth-card">
     <div class="auth-logo">Ramo<span>Store</span></div>
-    <h2 class="auth-title">Reset your password</h2>
-    <p class="auth-sub">Enter your email and we'll send you a reset link.</p>
+    <h2 class="auth-title">{{ $isAr ? 'غيّر كلمة السر' : 'Reset your password' }}</h2>
+    <p class="auth-sub">{{ $isAr ? 'اكتب إيميلك وهنبعتلك لينك تغيّر منه كلمة السر.' : "Enter your email and we'll send you a reset link." }}</p>
 
     @if(session('status'))
       <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:12px 16px;margin-bottom:16px;color:#15803d;font-size:14px;display:flex;align-items:center;gap:8px">
@@ -16,7 +17,7 @@
 
       @if(session('dev_reset_url'))
         <div style="background:#fffbeb;border:1.5px dashed #f59e0b;border-radius:10px;padding:14px;margin-bottom:16px">
-          <div style="font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Dev Mode — Reset Link</div>
+          <div style="font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">{{ $isAr ? 'وضع التطوير — لينك تغيير كلمة السر' : 'Dev Mode — Reset Link' }}</div>
           <a href="{{ session('dev_reset_url') }}"
              style="display:block;word-break:break-all;font-size:12px;color:#1d4ed8;text-decoration:underline;line-height:1.5">
             {{ session('dev_reset_url') }}
@@ -24,10 +25,10 @@
           <div style="margin-top:10px">
             <a href="{{ session('dev_reset_url') }}"
                style="display:inline-block;background:#1a1a1a;color:#fff;font-size:13px;font-weight:600;padding:9px 18px;border-radius:8px;text-decoration:none">
-              Open Reset Link →
+              {{ $isAr ? 'افتح لينك تغيير كلمة السر ←' : 'Open Reset Link →' }}
             </a>
           </div>
-          <div style="font-size:10px;color:#b45309;margin-top:8px">Not sent via real email · for development only</div>
+          <div style="font-size:10px;color:#b45309;margin-top:8px">{{ $isAr ? 'اللينك مش اتبعت على إيميل حقيقي — للتطوير بس' : 'Not sent via real email · for development only' }}</div>
         </div>
       @endif
     @endif
@@ -39,19 +40,19 @@
     <form method="POST" action="{{ route('password.forgot.send') }}">
       @csrf
       <div class="form-group">
-        <label>Email Address</label>
+        <label>{{ $isAr ? 'الإيميل' : 'Email Address' }}</label>
         <input type="email" name="email" value="{{ old('email') }}" required autofocus
                placeholder="you@example.com"
                style="border-radius:10px;border:1.5px solid #e5e7eb;padding:13px 14px;font-size:14px;width:100%;outline:none">
       </div>
       <button type="submit" class="btn btn-dark"
               style="width:100%;justify-content:center;border-radius:10px;padding:13px;margin-top:4px;font-size:14px">
-        Send Reset Link
+        {{ $isAr ? 'ابعت لينك تغيير كلمة السر' : 'Send Reset Link' }}
       </button>
     </form>
 
     <div style="text-align:center;margin-top:18px">
-      <a href="{{ route('login') }}" style="font-size:13px;color:#888">← Back to login</a>
+      <a href="{{ route('login') }}" style="font-size:13px;color:#888">{{ $isAr ? 'ارجع لتسجيل الدخول →' : '← Back to login' }}</a>
     </div>
   </div>
 </div>

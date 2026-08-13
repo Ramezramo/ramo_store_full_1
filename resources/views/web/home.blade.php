@@ -1,10 +1,11 @@
 @extends('layouts.app')
-@section('title', 'Ramo Store — Home')
+@section('title', session('locale') === 'ar' ? 'Ramo Store — الرئيسية' : 'Ramo Store — Home')
 
 @section('content')
 
 @php
   $timelineRtl = session('locale') === 'ar';
+  $isAr = $timelineRtl;
   $timelineSeeAllLabel = $timelineRtl ? 'شوف اكتر' : 'See all →';
 @endphp
 <div class="timeline-widgets{{ $timelineRtl ? ' timeline-widgets--rtl' : '' }}" @if($timelineRtl) dir="rtl" @endif>
@@ -128,7 +129,7 @@
     {{-- FLASH SALE TIMER --}}
     @elseif($layout === 'flash')
       @php
-        $fTitle    = $sec['title']    ?? 'Flash Sale';
+        $fTitle    = $sec['title']    ?? ($timelineRtl ? 'تخفيضات سريعة' : 'Flash Sale');
         $fDiscount = $sec['discount'] ?? 20;
         $fDuration = (int)($sec['duration'] ?? 4) * 3600;
         $fMinOrder = $sec['minOrder'] ?? 0;
@@ -140,19 +141,19 @@
           <span class="tl-flash-icon">⚡</span>
           <div class="tl-flash-text">
             <span class="tl-flash-title">{{ $fTitle }}</span>
-            <span class="tl-flash-disc">{{ $fDiscount }}% OFF</span>
-            @if($fMinOrder > 0)<span class="tl-flash-min">Min. order {{ number_format($fMinOrder, 0) }} EGP</span>@endif
+            <span class="tl-flash-disc">{{ $fDiscount }}% {{ $timelineRtl ? 'خصم' : 'OFF' }}</span>
+            @if($fMinOrder > 0)<span class="tl-flash-min">{{ $timelineRtl ? 'الحد الأدنى للطلب' : 'Min. order' }} {{ number_format($fMinOrder, 0) }} EGP</span>@endif
           </div>
           <div class="tl-flash-countdown" id="flash-cd-{{ $si }}">
-            <div class="tl-cd-unit"><span class="tl-cd-num" id="fh-{{ $si }}">00</span><span class="tl-cd-lbl">HRS</span></div>
+            <div class="tl-cd-unit"><span class="tl-cd-num" id="fh-{{ $si }}">00</span><span class="tl-cd-lbl">{{ $timelineRtl ? 'ساعة' : 'HRS' }}</span></div>
             <span class="tl-cd-sep">:</span>
-            <div class="tl-cd-unit"><span class="tl-cd-num" id="fm-{{ $si }}">00</span><span class="tl-cd-lbl">MIN</span></div>
+            <div class="tl-cd-unit"><span class="tl-cd-num" id="fm-{{ $si }}">00</span><span class="tl-cd-lbl">{{ $timelineRtl ? 'دقيقة' : 'MIN' }}</span></div>
             @if($fSeconds)
             <span class="tl-cd-sep">:</span>
-            <div class="tl-cd-unit"><span class="tl-cd-num" id="fs-{{ $si }}">00</span><span class="tl-cd-lbl">SEC</span></div>
+            <div class="tl-cd-unit"><span class="tl-cd-num" id="fs-{{ $si }}">00</span><span class="tl-cd-lbl">{{ $timelineRtl ? 'ثانية' : 'SEC' }}</span></div>
             @endif
           </div>
-          <a href="/shop" class="tl-flash-btn">Shop Now →</a>
+          <a href="/shop" class="tl-flash-btn">{{ $timelineRtl ? 'اتسوّق دلوقتي ←' : 'Shop Now →' }}</a>
         </div>
       </div>
       <script>
@@ -510,7 +511,7 @@
       @if($vendors->count())
       <div class="sec-head" style="margin-bottom:16px">
         <h2 class="sec-title">{{ $sec['headerText'] ?? 'Top Sellers' }}</h2>
-        <a href="{{ route('shop') }}" class="sec-link">Browse all →</a>
+        <a href="{{ route('shop') }}" class="sec-link">{{ $isAr ? 'شوف الكل ←' : 'Browse all →' }}</a>
       </div>
       <div class="tl-scroll-section" style="margin-bottom:40px">
         <div class="tl-scroll-track" style="gap:14px">
@@ -525,7 +526,7 @@
             </div>
             <div class="vendor-card-name">{{ Str::limit($v->shop_name, 20) }}</div>
             @if($v->product_count > 0)
-            <div class="vendor-card-count">{{ $v->product_count }} items</div>
+            <div class="vendor-card-count">{{ $v->product_count }} {{ $timelineRtl ? 'منتج' : 'items' }}</div>
             @endif
             @if((float)$v->rating > 0)
             <div class="vendor-card-rating">
@@ -542,8 +543,8 @@
     @elseif($layout === 'coupons')
       @php
         $couponsData = $sectionCoupons[$si] ?? collect();
-        $headerText  = $sec['headerText'] ?? "This Week's Deals";
-        $subLabel    = $sec['subLabel']   ?? 'Use code at checkout';
+        $headerText  = $sec['headerText'] ?? ($timelineRtl ? 'عروض الأسبوع' : "This Week's Deals");
+        $subLabel    = $sec['subLabel']   ?? ($timelineRtl ? 'استخدم الكود وقت إتمام الطلب' : 'Use code at checkout');
         $hideEmpty   = $sec['hideWhenEmpty'] ?? true;
       @endphp
       @if($couponsData->count() || !$hideEmpty)
@@ -560,23 +561,23 @@
           <div class="coupon-card coupon-card-{{ $ci % 6 }}">
             <div class="coupon-pct">
               @if($coupon->discount_type === 'percent')
-                {{ (int)$coupon->amount }}<sup>%</sup><div class="coupon-desc">Off your order</div>
+                {{ (int)$coupon->amount }}<sup>%</sup><div class="coupon-desc">{{ $timelineRtl ? 'خصم على طلبك' : 'Off your order' }}</div>
               @else
-                {{ number_format($coupon->amount, 0) }}<sup> EGP</sup><div class="coupon-desc">Off your order</div>
+                {{ number_format($coupon->amount, 0) }}<sup> EGP</sup><div class="coupon-desc">{{ $timelineRtl ? 'خصم على طلبك' : 'Off your order' }}</div>
               @endif
             </div>
             <div class="coupon-code-row">
               <span class="coupon-code">{{ strtoupper($coupon->code) }}</span>
-              <button class="coupon-copy-btn" onclick="copyCoupon(this,'{{ strtoupper($coupon->code) }}')">Copy</button>
+              <button class="coupon-copy-btn" onclick="copyCoupon(this,'{{ strtoupper($coupon->code) }}')">{{ $timelineRtl ? 'انسخ' : 'Copy' }}</button>
             </div>
             @if($coupon->minimum_amount > 0)
-            <div class="coupon-min">Min. order {{ number_format($coupon->minimum_amount, 0) }} EGP</div>
+            <div class="coupon-min">{{ $timelineRtl ? 'الحد الأدنى للطلب' : 'Min. order' }} {{ number_format($coupon->minimum_amount, 0) }} EGP</div>
             @endif
           </div>
           @endforeach
         </div>
         @else
-        <p style="color:var(--c-mid);font-size:14px;text-align:center;padding:20px 0">No active coupons at the moment.</p>
+        <p style="color:var(--c-mid);font-size:14px;text-align:center;padding:20px 0">{{ $timelineRtl ? 'مفيش أكواد خصم شغالة دلوقتي.' : 'No active coupons at the moment.' }}</p>
         @endif
       </div>
       @endif
@@ -611,9 +612,9 @@
       @php
         $bgColor  = $sec['bgColor'] ?? '#111111';
         $txtColor = $sec['textColor'] ?? '#ffffff';
-        $headline = $sec['headline'] ?? 'Special Offer';
+        $headline = $sec['headline'] ?? ($timelineRtl ? 'عرض مميز' : 'Special Offer');
         $subtext  = $sec['subtext'] ?? '';
-        $btnText  = $sec['btnText'] ?? 'Shop Now';
+        $btnText  = $sec['btnText'] ?? ($timelineRtl ? 'اتسوّق دلوقتي' : 'Shop Now');
         $btnLink  = $sec['btnLink'] ?? route('shop');
         $btnColor = $sec['btnColor'] ?? '#e85d26';
         $align    = $sec['align'] ?? 'center';
@@ -652,7 +653,7 @@
               <span style="color:{{ $s<=$rev->rating ? '#f5a623' : '#ddd' }}">★</span>
             @endfor
           </div>
-          <p class="tl-test-comment">@if($rev->comment)"{{ Str::limit($rev->comment, 160) }}"@else<em style="opacity:.5">No comment</em>@endif</p>
+          <p class="tl-test-comment">@if($rev->comment)"{{ Str::limit($rev->comment, 160) }}"@else<em style="opacity:.5">{{ $isAr ? 'من غير تعليق' : 'No comment' }}</em>@endif</p>
           <div class="tl-test-meta">
             <div class="tl-test-avatar">{{ strtoupper(substr($rev->reviewer_name, 0, 1)) }}</div>
             <div>
@@ -837,7 +838,7 @@
       @endphp
       @if(!$loggedOnly || auth()->check())
       <div id="recent-section-{{ $si }}" style="display:none;margin-bottom:36px">
-        <div class="sec-head"><h2 class="sec-title">Recently Viewed</h2></div>
+        <div class="sec-head"><h2 class="sec-title">{{ $timelineRtl ? 'شوفتها قبل كده' : 'Recently Viewed' }}</h2></div>
         <div class="tl-scroll-section"><div class="tl-scroll-track" id="recent-track-{{ $si }}"></div></div>
       </div>
       <script>
@@ -860,21 +861,21 @@
     {{-- BUNDLE DEAL --}}
     @elseif($layout === 'bundle')
       @php
-        $bTitle    = $sec['title']         ?? 'Bundle Deal';
+        $bTitle    = $sec['title']         ?? ($timelineRtl ? 'عرض الباكدج' : 'Bundle Deal');
         $bMinQty   = $sec['minQty']        ?? 2;
         $bFreeItems = $sec['freeItems']    ?? 1;
         $bCat      = $sec['category']      ?? '';
         $bSavings  = $sec['showSavingsBadge'] ?? true;
       @endphp
       <div class="tl-bundle-card" style="margin-bottom:36px">
-        @if($bSavings)<div class="tl-bundle-badge">Special Deal</div>@endif
+        @if($bSavings)<div class="tl-bundle-badge">{{ $timelineRtl ? 'عرض مميز' : 'Special Deal' }}</div>@endif
         <div class="tl-bundle-body">
           <div class="tl-bundle-icon">🎁</div>
           <div class="tl-bundle-info">
             <div class="tl-bundle-title">{{ $bTitle }}</div>
-            <div class="tl-bundle-desc">Buy <strong>{{ $bMinQty }}</strong> items, get <strong>{{ $bFreeItems }}</strong> FREE{{ $bCat ? ' from '.$bCat : '' }}!</div>
+            <div class="tl-bundle-desc">{{ $timelineRtl ? 'اشتري' : 'Buy' }} <strong>{{ $bMinQty }}</strong> {{ $timelineRtl ? 'منتجات وخد' : 'items, get' }} <strong>{{ $bFreeItems }}</strong> {{ $timelineRtl ? 'مجانًا' : 'FREE' }}{{ $bCat ? ($timelineRtl ? ' من '.$bCat : ' from '.$bCat) : '' }}!</div>
           </div>
-          <a href="/shop" class="tl-bundle-btn">Shop Now</a>
+          <a href="/shop" class="tl-bundle-btn">{{ $timelineRtl ? 'اتسوّق دلوقتي' : 'Shop Now' }}</a>
         </div>
       </div>
 
@@ -891,20 +892,20 @@
         <div class="tl-loyalty-inner">
           <span class="tl-loyalty-icon">⭐</span>
           <div class="tl-loyalty-text">
-            <strong>Earn {{ $lRate }} points per EGP spent!</strong>
-            <span>Redeem from {{ $lMin }} pts · {{ $lConv }}
-            @if($lDouble && $isWeekend) <span class="tl-loyalty-double">2× Points Weekend!</span>@endif
+            <strong>{{ $timelineRtl ? 'اكسب' : 'Earn' }} {{ $lRate }} {{ $timelineRtl ? 'نقطة مع كل جنيه بتصرفه!' : 'points per EGP spent!' }}</strong>
+            <span>{{ $timelineRtl ? 'استبدل من' : 'Redeem from' }} {{ $lMin }} {{ $timelineRtl ? 'نقطة' : 'pts' }} · {{ $lConv }}
+            @if($lDouble && $isWeekend) <span class="tl-loyalty-double">{{ $timelineRtl ? 'ويك إند بنقط مضاعفة ×2!' : '2× Points Weekend!' }}</span>@endif
             </span>
           </div>
-          <a href="/shop" class="tl-loyalty-btn">Start Earning</a>
+          <a href="/shop" class="tl-loyalty-btn">{{ $timelineRtl ? 'ابدأ تجمع نقاط' : 'Start Earning' }}</a>
         </div>
       </div>
 
     {{-- SEASONAL BANNER --}}
     @elseif($layout === 'seasonal')
       @php
-        $sTitle    = $sec['title']     ?? 'Special Season';
-        $sSub      = $sec['subtitle']  ?? 'Limited-time offers for this season';
+        $sTitle    = $sec['title']     ?? ($timelineRtl ? 'موسم مميز' : 'Special Season');
+        $sSub      = $sec['subtitle']  ?? ($timelineRtl ? 'عروض لفترة محدودة الموسم ده' : 'Limited-time offers for this season');
         $sStart    = $sec['startDate'] ?? null;
         $sEnd      = $sec['endDate']   ?? null;
         $sTheme    = $sec['theme']     ?? 'Gold & Purple';
@@ -929,7 +930,7 @@
           </div>
           @if($sCountdown && $sEnd)
           <div class="tl-seasonal-cd" id="seas-cd-{{ $si }}">
-            <span id="sd-d-{{ $si }}">00</span>d <span id="sd-h-{{ $si }}">00</span>h <span id="sd-m-{{ $si }}">00</span>m
+            <span id="sd-d-{{ $si }}">00</span>{{ $timelineRtl ? ' يوم' : 'd' }} <span id="sd-h-{{ $si }}">00</span>{{ $timelineRtl ? ' س' : 'h' }} <span id="sd-m-{{ $si }}">00</span>{{ $timelineRtl ? ' د' : 'm' }}
           </div>
           <script>
           (function(){
@@ -938,7 +939,7 @@
           })();
           </script>
           @endif
-          <a href="/shop" class="tl-seasonal-btn">Shop Now →</a>
+          <a href="/shop" class="tl-seasonal-btn">{{ $timelineRtl ? 'اتسوّق دلوقتي ←' : 'Shop Now →' }}</a>
         </div>
       </div>
       @endif
@@ -949,7 +950,7 @@
         $rRef   = $sec['rewardReferrer'] ?? 50;
         $rNew   = $sec['rewardNewUser']  ?? 30;
         $rMin   = $sec['minOrder']       ?? 200;
-        $rCta   = $sec['ctaText']        ?? 'Invite Friends & Earn!';
+        $rCta   = $sec['ctaText']        ?? ($timelineRtl ? 'اعزم صحابك واكسب!' : 'Invite Friends & Earn!');
         $rWa    = $sec['shareViaWhatsApp'] ?? true;
       @endphp
       <div class="tl-referral-card" style="margin-bottom:36px">
@@ -957,11 +958,11 @@
           <div class="tl-referral-icon">🎁</div>
           <div class="tl-referral-body">
             <div class="tl-referral-title">{{ $rCta }}</div>
-            <div class="tl-referral-desc">You earn <strong>{{ $rRef }} EGP</strong> and your friend gets <strong>{{ $rNew }} EGP</strong> off their first order over {{ $rMin }} EGP!</div>
+            <div class="tl-referral-desc">{{ $timelineRtl ? 'هتاخد' : 'You earn' }} <strong>{{ $rRef }} EGP</strong> {{ $timelineRtl ? 'وصاحبك هياخد خصم' : 'and your friend gets' }} <strong>{{ $rNew }} EGP</strong> {{ $timelineRtl ? 'على أول طلب فوق' : 'off their first order over' }} {{ $rMin }} EGP!</div>
             <div class="tl-referral-actions">
               <input type="text" class="tl-referral-link" value="{{ url('/') }}/ref/{{ auth()->id() ?? 'YOURCODE' }}" readonly onclick="this.select()">
               @if($rWa)
-              <a href="https://wa.me/?text={{ urlencode('Join Ramo Store and get '.($rNew).' EGP off your first order! '.url('/').'/ref/'.(auth()->id() ?? 'YOURCODE')) }}" target="_blank" class="tl-referral-wa-btn">Share via WhatsApp</a>
+              <a href="https://wa.me/?text={{ urlencode($timelineRtl ? 'انضم لـ Ramo Store وخد خصم '.($rNew).' جنيه على أول طلب! '.url('/').'/ref/'.(auth()->id() ?? 'YOURCODE') : 'Join Ramo Store and get '.($rNew).' EGP off your first order! '.url('/').'/ref/'.(auth()->id() ?? 'YOURCODE')) }}" target="_blank" class="tl-referral-wa-btn">{{ $timelineRtl ? 'شارك على واتساب' : 'Share via WhatsApp' }}</a>
               @endif
             </div>
           </div>
@@ -978,10 +979,10 @@
         <div class="tl-complete-inner">
           <span style="font-size:28px">👗</span>
           <div>
-            <div style="font-weight:700;font-size:16px;margin-bottom:4px">Complete the Look</div>
-            <div style="font-size:13px;color:var(--c-mid)">Find {{ strtolower($cStrategy) }} items that go perfectly together.@if($cDisc) Bundle discount applied at checkout!@endif</div>
+            <div style="font-weight:700;font-size:16px;margin-bottom:4px">{{ $timelineRtl ? 'كمّل اللوك' : 'Complete the Look' }}</div>
+            <div style="font-size:13px;color:var(--c-mid)">{{ $timelineRtl ? 'شوف منتجات راكبة على بعض بشكل حلو.' : 'Find '.strtolower($cStrategy).' items that go perfectly together.' }}@if($cDisc) {{ $timelineRtl ? 'الخصم بيتحسب وقت إتمام الطلب!' : 'Bundle discount applied at checkout!' }}@endif</div>
           </div>
-          <a href="/shop" class="btn btn-primary" style="font-size:13px;padding:10px 20px">Browse Collections →</a>
+          <a href="/shop" class="btn btn-primary" style="font-size:13px;padding:10px 20px">{{ $timelineRtl ? 'تصفّح التشكيلات ←' : 'Browse Collections →' }}</a>
         </div>
       </div>
 
@@ -990,7 +991,7 @@
       @php
         $products = $sectionTrending[$si] ?? collect();
         $recLabel = $sec['personalizedLabel'] ?? false;
-        $title    = $recLabel ? 'Picked For You' : ($sec['headerText'] ?? 'Recommended For You');
+        $title    = $recLabel ? ($timelineRtl ? 'مختارينهم ليك' : 'Picked For You') : ($sec['headerText'] ?? ($timelineRtl ? 'مقترحات ليك' : 'Recommended For You'));
       @endphp
       @if($products->count())
       <div class="sec-head"><h2 class="sec-title">{{ $title }}</h2><a href="{{ route('shop') }}" class="sec-link">{{ $timelineSeeAllLabel }}</a></div>
@@ -1030,7 +1031,7 @@
           $pcwRevs  = DB::table('product_reviews')->where('product_id', $fp->id)->where('approved', true)->get(['rating']);
           $pcwTotal = $pcwRevs->count();
           $pcwAvg   = $pcwTotal ? round($pcwRevs->avg('rating'), 1) : 0;
-          $pcwName     = $fp->timeline_name ?? $fp->name;
+          $pcwName     = ($timelineRtl && !empty($fp->tl_display_name)) ? $fp->tl_display_name : ($fp->timeline_name ?? $fp->name);
           $pcwDiscPct  = (float)($fp->discount_percentage ?? 0);
           $pcwHasDisc  = $pcwDiscPct > 0;
           $pcwMinEff   = $fv->min('price') ?? $fp->display_price;
@@ -1062,7 +1063,7 @@
             @else
               <div class="pcw-img-placeholder">🛍️</div>
             @endif
-            @if($pcwHasDisc)<span class="badge-sale">{{ round($pcwDiscPct) }}% OFF</span>@endif
+            @if($pcwHasDisc)<span class="badge-sale">{{ round($pcwDiscPct) }}% {{ $timelineRtl ? 'خصم' : 'OFF' }}</span>@endif
           </a>
           <div class="pcw-info">
             <div class="pcw-title-row">
@@ -1071,7 +1072,7 @@
               <button class="pcw-wish-btn {{ $pcwInWishlist ? 'wished' : '' }}"
                       data-wishlist-product-id="{{ $fp->id }}"
                       onclick="toggleWishlist(this, {{ $fp->id }})"
-                      title="{{ $pcwInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist' }}">{{ $pcwInWishlist ? '♥' : '♡' }}</button>
+                      title="{{ $pcwInWishlist ? ($timelineRtl ? 'شيل من المفضلة' : 'Remove from Wishlist') : ($timelineRtl ? 'ضيف للمفضلة' : 'Add to Wishlist') }}">{{ $pcwInWishlist ? '♥' : '♡' }}</button>
               @endif
             </div>
             @if($showRating)
@@ -1081,17 +1082,17 @@
               </div>
               @if($pcwTotal)
                 <span class="pcw-rating-val">{{ $pcwAvg }}</span>
-                <a href="{{ route('product', $fp->id) }}#reviews" class="pcw-rating-cnt">({{ $pcwTotal }} review{{ $pcwTotal!=1?'s':'' }})</a>
+                <a href="{{ route('product', $fp->id) }}#reviews" class="pcw-rating-cnt">({{ $pcwTotal }} {{ $timelineRtl ? 'تقييم' : 'review'.($pcwTotal!=1?'s':'') }})</a>
               @else
-                <span class="pcw-rating-none">No reviews yet</span>
+                <span class="pcw-rating-none">{{ $timelineRtl ? 'مفيش تقييمات لسه' : 'No reviews yet' }}</span>
               @endif
             </div>
             @endif
             <div class="pcw-stock">
               @if($fp->stock_quantity > 0)
-                <span class="pcw-stock-ok">✓ In Stock ({{ number_format($fp->stock_quantity) }} available)</span>
+                <span class="pcw-stock-ok">✓ {{ $timelineRtl ? 'متاح' : 'In Stock' }} ({{ number_format($fp->stock_quantity) }} {{ $timelineRtl ? 'قطعة' : 'available' }})</span>
               @else
-                <span class="pcw-stock-no">Out of Stock</span>
+                <span class="pcw-stock-no">{{ $timelineRtl ? 'مش متاح دلوقتي' : 'Out of Stock' }}</span>
               @endif
             </div>
             <div class="pcw-price-block">
@@ -1104,10 +1105,10 @@
                 @else
                   <span class="pcw-price">{{ number_format((float)$pcwMinEff,2) }} EGP</span>
                 @endif
-                @if($pcwHasDisc)<span class="pcw-disc-badge">{{ round($pcwDiscPct) }}% OFF</span>@endif
+                @if($pcwHasDisc)<span class="pcw-disc-badge">{{ round($pcwDiscPct) }}% {{ $timelineRtl ? 'خصم' : 'OFF' }}</span>@endif
               </div>
               @if($pcwHasDisc)
-              <div class="pcw-sale-note">🏷️ Sale price — you save {{ round($pcwDiscPct) }}% off the original price</div>
+              <div class="pcw-sale-note">🏷️ {{ $timelineRtl ? 'سعر العرض — وفّرت' : 'Sale price — you save' }} {{ round($pcwDiscPct) }}% {{ $timelineRtl ? 'من السعر الأصلي' : 'off the original price' }}</div>
               @endif
             </div>
             @if($showVariations && !empty($pcwAttrMap))
@@ -1133,30 +1134,30 @@
               @if($pcwCanQuickAdd)
                 <div class="qty-input">
                   <button type="button" onclick="this.nextElementSibling.value=Math.max(1,+this.nextElementSibling.value-1)">−</button>
-                  <input type="number" value="1" min="1" max="1" id="pcw-qty-{{ $si }}" readonly aria-label="Quantity">
-                  <button type="button" disabled aria-label="Maximum quantity reached">+</button>
+                  <input type="number" value="1" min="1" max="1" id="pcw-qty-{{ $si }}" readonly aria-label="{{ $timelineRtl ? 'الكمية' : 'Quantity' }}">
+                  <button type="button" disabled aria-label="{{ $timelineRtl ? 'وصلت لأقصى كمية' : 'Maximum quantity reached' }}">+</button>
                 </div>
                 <button class="pcw-atc-btn"
                         onclick="addToCart({{ $fp->id }}, '{{ addslashes($pcwName) }}', {{ (float)$pcwMinEff }}, '{{ $fp->thumbnail_url }}', null, 1)">
-                  🛒 Add to Cart
+                  🛒 {{ $timelineRtl ? 'ضيف للسلة' : 'Add to Cart' }}
                 </button>
               @else
                 <a class="pcw-atc-btn" href="{{ route('product', $fp->id) }}" style="text-align:center;text-decoration:none">
-                  {{ $pcwMaximumOrderQty < $pcwMinimumOrderQty ? 'Unavailable' : 'Select quantity (min '.$pcwMinimumOrderQty.')' }}
+                  {{ $pcwMaximumOrderQty < $pcwMinimumOrderQty ? ($timelineRtl ? 'مش متاح' : 'Unavailable') : ($timelineRtl ? 'اختار الكمية (الحد الأدنى '.$pcwMinimumOrderQty.')' : 'Select quantity (min '.$pcwMinimumOrderQty.')') }}
                 </a>
               @endif
             </div>
             @if($showCoupon)
             <div class="pcw-coupon-wrap">
-              <div class="pcw-coupon-label">🏷️ Have a coupon?</div>
+              <div class="pcw-coupon-label">🏷️ {{ $timelineRtl ? 'معاك كود خصم؟' : 'Have a coupon?' }}</div>
               <div class="pcw-coupon-row">
-                <input type="text" id="pcw-coupon-{{ $si }}" class="pcw-coupon-input" placeholder="Enter promo code" maxlength="50">
-                <button class="pcw-coupon-btn" onclick="applyPcwCoupon('pcw-coupon-{{ $si }}','pcw-msg-{{ $si }}')">Apply</button>
+                <input type="text" id="pcw-coupon-{{ $si }}" class="pcw-coupon-input" placeholder="{{ $timelineRtl ? 'اكتب كود الخصم' : 'Enter promo code' }}" maxlength="50">
+                <button class="pcw-coupon-btn" onclick="applyPcwCoupon('pcw-coupon-{{ $si }}','pcw-msg-{{ $si }}')">{{ $timelineRtl ? 'طبّق' : 'Apply' }}</button>
               </div>
               <div id="pcw-msg-{{ $si }}" class="pcw-coupon-msg"></div>
             </div>
             @endif
-            <a href="{{ route('product', $fp->id) }}" class="pcw-view-link">View full details →</a>
+            <a href="{{ route('product', $fp->id) }}" class="pcw-view-link">{{ $timelineRtl ? 'شوف التفاصيل كلها ←' : 'View full details →' }}</a>
           </div>
         </div>
       @endif
@@ -1174,10 +1175,10 @@
     {{-- Fallback when no timeline config --}}
     <div class="hero">
       <div class="hero-text">
-        <div class="hero-eyebrow">New Season</div>
-        <h1 class="hero-title">Style that speaks<br>for itself.</h1>
-        <p class="hero-sub">Discover the latest collections — premium quality, delivered to your door.</p>
-        <a href="{{ route('shop') }}" class="btn btn-white">Shop Now →</a>
+        <div class="hero-eyebrow">{{ $timelineRtl ? 'الموسم الجديد' : 'New Season' }}</div>
+        <h1 class="hero-title">{{ $timelineRtl ? 'ستايل بيعبّر<br>عنك.' : 'Style that speaks<br>for itself.' }}</h1>
+        <p class="hero-sub">{{ $timelineRtl ? 'اكتشف أحدث التشكيلات — جودة عالية لحد باب البيت.' : 'Discover the latest collections — premium quality, delivered to your door.' }}</p>
+        <a href="{{ route('shop') }}" class="btn btn-white">{{ $timelineRtl ? 'اتسوّق دلوقتي ←' : 'Shop Now →' }}</a>
       </div>
     </div>
   @endforelse

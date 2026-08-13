@@ -1,8 +1,9 @@
 @extends('layouts.app')
-@section('title', $vendor->shop_name . ' — Ramo Store')
+@php $isAr = session('locale') === 'ar'; @endphp
+@section('title', $vendor->shop_name . ($isAr ? ' — Ramo Store' : ' — Ramo Store'))
 
 @section('content')
-<div class="page">
+<div class="page vendor-storefront {{ $isAr ? 'vendor-storefront-ar' : '' }}" dir="{{ $isAr ? 'rtl' : 'ltr' }}">
 
   {{-- VENDOR HEADER --}}
   <div class="vendor-page-header">
@@ -29,7 +30,7 @@
             </span>
           @endif
           @if($vendor->product_count > 0)
-            <span class="vendor-stat">🛍️ {{ $vendor->product_count }} products</span>
+            <span class="vendor-stat">🛍️ {{ $vendor->product_count }} {{ $isAr ? 'منتج' : 'products' }}</span>
           @endif
           @if($vendor->shop_address)
             <span class="vendor-stat">📍 {{ $vendor->shop_address }}</span>
@@ -42,14 +43,14 @@
   {{-- SORT + PRODUCT GRID --}}
   <div class="vendor-page-toolbar">
     <div style="font-size:14px;color:var(--c-mid)">
-      {{ $products->total() }} product{{ $products->total() != 1 ? 's' : '' }}
+      {{ $products->total() }} {{ $isAr ? 'منتج' : 'product'.($products->total() != 1 ? 's' : '') }}
     </div>
     <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:13px;color:var(--c-mid)">Sort:</span>
+      <span style="font-size:13px;color:var(--c-mid)">{{ $isAr ? 'رتّب:' : 'Sort:' }}</span>
       <select onchange="location.href=this.value" class="sort-select" style="font-size:13px">
-        <option value="{{ request()->fullUrlWithQuery(['sort'=>'']) }}" {{ !request('sort') ? 'selected' : '' }}>Newest</option>
-        <option value="{{ request()->fullUrlWithQuery(['sort'=>'price_asc']) }}" {{ request('sort')==='price_asc' ? 'selected' : '' }}>Price: Low → High</option>
-        <option value="{{ request()->fullUrlWithQuery(['sort'=>'price_desc']) }}" {{ request('sort')==='price_desc' ? 'selected' : '' }}>Price: High → Low</option>
+        <option value="{{ request()->fullUrlWithQuery(['sort'=>'']) }}" {{ !request('sort') ? 'selected' : '' }}>{{ $isAr ? 'الأحدث' : 'Newest' }}</option>
+        <option value="{{ request()->fullUrlWithQuery(['sort'=>'price_asc']) }}" {{ request('sort')==='price_asc' ? 'selected' : '' }}>{{ $isAr ? 'السعر: من الأقل للأعلى' : 'Price: Low → High' }}</option>
+        <option value="{{ request()->fullUrlWithQuery(['sort'=>'price_desc']) }}" {{ request('sort')==='price_desc' ? 'selected' : '' }}>{{ $isAr ? 'السعر: من الأعلى للأقل' : 'Price: High → Low' }}</option>
       </select>
     </div>
   </div>
@@ -67,9 +68,9 @@
   @else
     <div style="text-align:center;padding:80px 20px;color:var(--c-mid)">
       <div style="font-size:48px;margin-bottom:16px">📦</div>
-      <div style="font-size:18px;font-weight:600">No products yet</div>
-      <div style="font-size:14px;margin-top:8px">This vendor hasn't listed any products.</div>
-      <a href="{{ route('shop') }}" class="btn btn-primary" style="margin-top:24px;display:inline-block">Browse Shop</a>
+      <div style="font-size:18px;font-weight:600">{{ $isAr ? 'مفيش منتجات لسه' : 'No products yet' }}</div>
+      <div style="font-size:14px;margin-top:8px">{{ $isAr ? 'المتجر ده ما نزلش منتجات لسه.' : "This vendor hasn't listed any products." }}</div>
+      <a href="{{ route('shop') }}" class="btn btn-primary" style="margin-top:24px;display:inline-block">{{ $isAr ? 'تصفّح المتجر' : 'Browse Shop' }}</a>
     </div>
   @endif
 
@@ -122,6 +123,8 @@
   padding: 6px 10px; border: 1px solid #ddd; border-radius: 6px;
   background: #fff; cursor: pointer; outline: none;
 }
+
+.vendor-storefront-ar{font-family:'Cairo','Tahoma',sans-serif;text-align:right}.vendor-storefront-ar .vendor-page-identity,.vendor-storefront-ar .vendor-page-toolbar{direction:rtl}.vendor-storefront-ar .vendor-page-toolbar{flex-direction:row}
 
 @media(max-width:640px) {
   .vendor-page-banner { height: 120px; margin-bottom: -36px; }

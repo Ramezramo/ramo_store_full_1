@@ -17,6 +17,11 @@ class EmailVerificationController extends Controller
     use CartTrait;
     private int $tokenExpiryMinutes = 60;
 
+    private function localized(string $english, string $arabic): string
+    {
+        return session('locale', 'en') === 'ar' ? $arabic : $english;
+    }
+
     private function generateAndStore(string $email): string
     {
         $token = Str::random(64);
@@ -78,7 +83,7 @@ class EmailVerificationController extends Controller
         if ($existing) {
             $ageSeconds = now()->diffInSeconds($existing->created_at);
             if ($ageSeconds < 60) {
-                return back()->with('resend_error', 'Please wait a moment before requesting another link.');
+                return back()->with('resend_error', $this->localized('Please wait a moment before requesting another link.', 'استنى شوية قبل ما تطلب لينك جديد.'));
             }
         }
 
@@ -97,13 +102,13 @@ class EmailVerificationController extends Controller
         $token = $request->query('token');
 
         if (!$email || !$token) {
-            return redirect()->route('login')->withErrors(['email' => 'Invalid verification link.']);
+            return redirect()->route('login')->withErrors(['email' => $this->localized('Invalid verification link.', 'لينك التأكيد مش صحيح.')]);
         }
 
         $record = DB::table('email_verification_tokens')->where('email', $email)->first();
 
         if (!$record) {
-            return redirect()->route('login')->withErrors(['email' => 'Verification link not found. Please request a new one.']);
+            return redirect()->route('login')->withErrors(['email' => $this->localized('Verification link not found. Please request a new one.', 'مش لاقيين لينك التأكيد. اطلب لينك جديد.')]);
         }
 
         $ageMinutes = now()->diffInMinutes($record->created_at);
@@ -111,16 +116,16 @@ class EmailVerificationController extends Controller
             DB::table('email_verification_tokens')->where('email', $email)->delete();
             return redirect()->route('email.verify.notice')
                 ->with('expired', true)
-                ->with('info', 'Your verification link has expired. Please request a new one.');
+                ->with('info', $this->localized('Your verification link has expired. Please request a new one.', 'لينك التأكيد انتهت صلاحيته. اطلب لينك جديد.'));
         }
 
         if (!Hash::check($token, $record->token)) {
-            return redirect()->route('login')->withErrors(['email' => 'Invalid verification link.']);
+            return redirect()->route('login')->withErrors(['email' => $this->localized('Invalid verification link.', 'لينك التأكيد مش صحيح.')]);
         }
 
         $user = User::where('email', $email)->first();
         if (!$user) {
-            return redirect()->route('login')->withErrors(['email' => 'Account not found.']);
+            return redirect()->route('login')->withErrors(['email' => $this->localized('Account not found.', 'مش لاقيين الحساب ده.')]);
         }
 
         $user->update(['email_verified_at' => now()]);
@@ -133,6 +138,6 @@ class EmailVerificationController extends Controller
         }
 
         return redirect()->route('account.profile')
-            ->with('success', 'Email verified! Welcome to Ramo Store.');
+            ->with('success', $this->localized('Email verified! Welcome to Ramo Store.', 'الإيميل اتأكد بنجاح! أهلاً بيك في Ramo Store.'));
     }
 }

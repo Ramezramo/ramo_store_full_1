@@ -95,7 +95,7 @@ class WishlistController extends Controller
         $ids = $this->getWishlistIds();
         $ids = array_values(array_diff($ids, [(int)$productId]));
         $this->saveWishlistIds($ids);
-        return redirect()->route('wishlist')->with('success', 'Removed from wishlist.');
+        return redirect()->route('wishlist')->with('success', session('locale', 'en') === 'ar' ? 'اتشال من المفضلة.' : 'Removed from wishlist.');
     }
 
 }
