@@ -33,6 +33,25 @@ class CartController extends Controller
         return [$minimum, $maximum];
     }
 
+    private function localizedCartProductName(object $product): string
+    {
+        $fallback = (string) ($product->name ?? '');
+        if (session('locale', 'en') !== 'ar' || empty($product->translations)) {
+            return $fallback;
+        }
+
+        $translations = is_string($product->translations)
+            ? json_decode($product->translations, true)
+            : $product->translations;
+        foreach (is_array($translations) ? $translations : [] as $translation) {
+            if (is_array($translation) && ($translation['locale'] ?? '') === 'ar') {
+                return trim((string) ($translation['name'] ?? '')) ?: $fallback;
+            }
+        }
+
+        return $fallback;
+    }
+
     private function quantityError(string $productName, int $quantity, int $minimum, int $maximum): ?string
     {
         if ($quantity < $minimum) {
@@ -100,7 +119,7 @@ class CartController extends Controller
 
         $products = DB::table('products_data')
             ->whereIn('id', $productIds)
-            ->get(['id', 'name', 'sku', 'discount_percentage', 'minimum_order_qty', 'max_orders_per_person', 'sold_individually'])
+            ->get(['id', 'name', 'translations', 'sku', 'discount_percentage', 'minimum_order_qty', 'max_orders_per_person', 'sold_individually'])
             ->keyBy('id');
 
         $variations = DB::table('product_variations')
@@ -121,6 +140,8 @@ class CartController extends Controller
                 unset($cart[$rowId]);
                 continue;
             }
+
+            $item['display_name'] = $this->localizedCartProductName($product);
 
             $discPct = (float) ($product->discount_percentage ?? 0);
             $varId   = $item['variation_id'] ?? null;

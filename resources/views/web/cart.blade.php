@@ -1,7 +1,8 @@
 @extends('layouts.app')
-@section('title', 'Cart — Ramo Store')
+@section('title', session('locale', 'en') === 'ar' ? 'سلتك — Ramo Store' : 'Cart — Ramo Store')
 
 @php
+  $cartRtl = session('locale', 'en') === 'ar';
   $itemCount = count($cart);
   $afterDiscount = max(0, (float) $subtotal - (float) $discount);
   $freeShippingProgress = ($freeShippingEnabled && $freeShippingThreshold > 0)
@@ -137,9 +138,23 @@
   .cart-checkout-button{min-width:0;flex:1;min-height:50px;font-size:13px;border-radius:12px;}
   .cart-empty-state{margin:12px auto 0;padding:52px 20px;border-radius:18px;}
 }
+/* Egyptian Arabic / RTL cart layout */
+.cart-screen[dir="rtl"]{text-align:right;}
+.cart-screen[dir="rtl"] .cart-screen-back:hover{transform:translateX(2px);}
+.cart-screen[dir="rtl"] .cart-screen-back svg,.cart-screen[dir="rtl"] .cart-checkout-button svg{transform:scaleX(-1);}
+.cart-screen[dir="rtl"] .cart-item-card.is-removing{transform:translateX(-16px);}
+.cart-screen[dir="rtl"] .cart-qty-stepper{direction:ltr;}
+.cart-screen[dir="rtl"] .cart-item-pricing,.cart-screen[dir="rtl"] .cart-total-row strong,.cart-screen[dir="rtl"] .cart-summary-row strong,.cart-screen[dir="rtl"] .cart-checkout-total strong{direction:ltr;unicode-bidi:embed;}
+@media(max-width:600px){
+  .cart-screen[dir="rtl"] .cart-items-panel{margin-left:0;margin-right:-14px;}
+  .cart-screen[dir="rtl"] .cart-item-name{padding-left:30px;padding-right:0;}
+  .cart-screen[dir="rtl"] .cart-item-controls{padding-left:0;padding-right:79px;}
+  .cart-screen[dir="rtl"] .cart-item-limit{text-align:right;}
+}
 @media(max-width:340px){
   .cart-screen-title{font-size:18px;}
   .cart-item-controls{padding-left:0;}
+  .cart-screen[dir="rtl"] .cart-item-controls{padding-right:0;}
   .cart-checkout-total span{font-size:10px;}
   .cart-checkout-button{padding:0 13px;}
 }
@@ -148,12 +163,12 @@
 
 @section('content')
 <div id="cart-loading-overlay" class="cart-loading-overlay"><div class="cart-spinner"></div></div>
-<div class="cart-screen" data-free-shipping-enabled="{{ $freeShippingEnabled ? '1' : '0' }}" data-free-shipping-threshold="{{ $freeShippingThreshold }}" data-discount="{{ $discount }}">
+<div class="cart-screen" dir="{{ $cartRtl ? 'rtl' : 'ltr' }}" data-free-shipping-enabled="{{ $freeShippingEnabled ? '1' : '0' }}" data-free-shipping-threshold="{{ $freeShippingThreshold }}" data-discount="{{ $discount }}">
   <header class="cart-screen-header">
-    <a href="{{ route('shop') }}" class="cart-screen-back" onclick="return cartGoBack(event)" aria-label="Go back">
+    <a href="{{ route('shop') }}" class="cart-screen-back" onclick="return cartGoBack(event)" aria-label="{{ $cartRtl ? 'ارجع' : 'Go back' }}">
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </a>
-    <h1 class="cart-screen-title">Your Cart <span>({{ $itemCount }} {{ $itemCount === 1 ? 'item' : 'items' }})</span></h1>
+    <h1 class="cart-screen-title">{{ $cartRtl ? 'سلتك' : 'Your Cart' }} <span>({{ $itemCount }} {{ $cartRtl ? ($itemCount === 1 ? 'منتج' : 'منتجات') : ($itemCount === 1 ? 'item' : 'items') }})</span></h1>
   </header>
 
   <main class="cart-screen-body">
@@ -167,22 +182,22 @@
         <div class="cart-empty-icon" aria-hidden="true">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 8H6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
         </div>
-        <h2>Your cart is empty</h2>
-        <p>Find something you love and it will appear here.</p>
-        <a href="{{ route('shop') }}" class="btn btn-dark">Continue Shopping</a>
+        <h2>{{ $cartRtl ? 'سلتك فاضية' : 'Your cart is empty' }}</h2>
+        <p>{{ $cartRtl ? 'اختار اللي يعجبك وهتلاقيه هنا.' : 'Find something you love and it will appear here.' }}</p>
+        <a href="{{ route('shop') }}" class="btn btn-dark">{{ $cartRtl ? 'كمّل تسوّق' : 'Continue Shopping' }}</a>
       </section>
     @else
       <div class="cart-screen-grid">
         <section class="cart-items-panel" aria-labelledby="cart-items-heading">
           <div class="cart-items-heading">
-            <h2 id="cart-items-heading">Items in your cart</h2>
-            <span>{{ $itemCount }} {{ $itemCount === 1 ? 'item' : 'items' }}</span>
+            <h2 id="cart-items-heading">{{ $cartRtl ? 'المنتجات اللي في سلتك' : 'Items in your cart' }}</h2>
+            <span>{{ $itemCount }} {{ $cartRtl ? ($itemCount === 1 ? 'منتج' : 'منتجات') : ($itemCount === 1 ? 'item' : 'items') }}</span>
           </div>
 
           <div id="cart-items-wrap">
             @foreach($cart as $rowId => $item)
               <article class="cart-item-card" id="row-{{ $rowId }}" data-row-id="{{ $rowId }}" data-unit-price="{{ $item['price'] }}">
-                <a href="{{ route('product', $item['product_id']) }}" class="cart-item-thumb" aria-label="View {{ $item['name'] }}">
+                <a href="{{ route('product', $item['product_id']) }}" class="cart-item-thumb" aria-label="{{ $cartRtl ? 'عرض' : 'View' }} {{ $item['display_name'] ?? $item['name'] }}">
                   @if($item['image'])
                     <img src="{{ $item['image'] }}" alt="{{ $item['name'] }}">
                   @else
@@ -190,28 +205,32 @@
                   @endif
                 </a>
                 <div class="cart-item-main">
-                  <a href="{{ route('product', $item['product_id']) }}" class="cart-item-name">{{ $item['name'] }}</a>
+                  <a href="{{ route('product', $item['product_id']) }}" class="cart-item-name">{{ $item['display_name'] ?? $item['name'] }}</a>
                   @if(!empty($item['attrs']) || !empty($item['sku']))
-                    <div class="cart-item-variants" aria-label="Selected options">
-                      @if(!empty($item['sku']))<span class="cart-item-variant"><strong>SKU</strong> {{ $item['sku'] }}</span>@endif
+                    <div class="cart-item-variants" aria-label="{{ $cartRtl ? 'الاختيارات المحددة' : 'Selected options' }}">
+                      @if(!empty($item['sku']))<span class="cart-item-variant"><strong>{{ $cartRtl ? 'كود المنتج' : 'SKU' }}</strong> {{ $item['sku'] }}</span>@endif
                       @foreach($item['attrs'] ?? [] as $k => $v)
-                        <span class="cart-item-variant"><strong>{{ ucfirst($k) }}</strong> {{ $v }}</span>
+                        @php
+                          $attributeLabel = $cartRtl ? (['color' => 'اللون', 'size' => 'المقاس'][strtolower($k)] ?? $k) : ucfirst($k);
+                          $attributeValue = $cartRtl ? (['black' => 'أسود', 'white' => 'أبيض', 'nude' => 'بيج', 'navy' => 'كحلي', 'red' => 'أحمر', 'blue' => 'أزرق', 'grey' => 'رمادي', 'gray' => 'رمادي', 'brown' => 'بني', 'khaki' => 'كاكي', 'sand' => 'رملي', 'green' => 'أخضر', 'pink' => 'وردي'][strtolower($v)] ?? $v) : $v;
+                        @endphp
+                        <span class="cart-item-variant"><strong>{{ $attributeLabel }}</strong> {{ $attributeValue }}</span>
                       @endforeach
                     </div>
                   @endif
                   <div class="cart-item-pricing">
-                    <span class="cart-item-unit">{{ number_format($item['price'], 2) }} EGP each</span>
+                    <span class="cart-item-unit">{{ number_format($item['price'], 2) }} EGP {{ $cartRtl ? 'للقطعة' : 'each' }}</span>
                     <strong class="cart-item-line" id="sub-{{ $rowId }}">{{ number_format($item['price'] * $item['qty'], 2) }} EGP</strong>
                     <span class="cart-item-old" id="sub-old-{{ $rowId }}" style="{{ (!empty($item['regular_price']) && $item['regular_price'] > $item['price']) ? '' : 'display:none' }}">{{ !empty($item['regular_price']) ? number_format($item['regular_price'] * $item['qty'], 2) . ' EGP' : '' }}</span>
                   </div>
                 </div>
                 <div class="cart-item-controls">
-                  <div class="cart-qty-stepper" aria-label="Quantity for {{ $item['name'] }}">
-                    <button type="button" onclick="updateQty('{{ $rowId }}', -1)" aria-label="Decrease quantity">−</button>
-                    <input type="number" id="qty-{{ $rowId }}" value="{{ $item['qty'] }}" min="{{ $item['minimum_qty'] ?? 1 }}" max="{{ max(1, $item['maximum_qty'] ?? $item['stock']) }}" data-approved-qty="{{ $item['qty'] }}" onchange="setQty('{{ $rowId }}', this.value)" aria-label="Quantity">
-                    <button type="button" onclick="updateQty('{{ $rowId }}', 1)" aria-label="Increase quantity">+</button>
+                  <div class="cart-qty-stepper" aria-label="{{ $cartRtl ? 'الكمية لـ' : 'Quantity for' }} {{ $item['display_name'] ?? $item['name'] }}">
+                    <button type="button" onclick="updateQty('{{ $rowId }}', -1)" aria-label="{{ $cartRtl ? 'قلّل الكمية' : 'Decrease quantity' }}">−</button>
+                    <input type="number" id="qty-{{ $rowId }}" value="{{ $item['qty'] }}" min="{{ $item['minimum_qty'] ?? 1 }}" max="{{ max(1, $item['maximum_qty'] ?? $item['stock']) }}" data-approved-qty="{{ $item['qty'] }}" onchange="setQty('{{ $rowId }}', this.value)" aria-label="{{ $cartRtl ? 'الكمية' : 'Quantity' }}">
+                    <button type="button" onclick="updateQty('{{ $rowId }}', 1)" aria-label="{{ $cartRtl ? 'زوّد الكمية' : 'Increase quantity' }}">+</button>
                   </div>
-                  <button type="button" class="cart-remove-icon" onclick="removeItem('{{ $rowId }}')" aria-label="Remove {{ $item['name'] }}" title="Remove item">
+                  <button type="button" class="cart-remove-icon" onclick="removeItem('{{ $rowId }}')" aria-label="{{ $cartRtl ? 'شيل' : 'Remove' }} {{ $item['display_name'] ?? $item['name'] }}" title="{{ $cartRtl ? 'شيل المنتج' : 'Remove item' }}">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                   </button>
                 </div>
@@ -220,18 +239,18 @@
           </div>
 
           <div class="cart-items-actions">
-            <a href="{{ route('shop') }}" class="btn btn-outline">← Continue Shopping</a>
+            <a href="{{ route('shop') }}" class="btn btn-outline">{{ $cartRtl ? 'كمّل تسوّق →' : '← Continue Shopping' }}</a>
             <form action="{{ route('cart.clear') }}" method="POST">
               @csrf @method('DELETE')
-              <button type="submit" class="cart-clear-btn" onclick="return confirm('Clear entire cart?')">Clear Cart</button>
+              <button type="submit" class="cart-clear-btn" onclick="return confirm('{{ $cartRtl ? 'عايز تفضّي السلة كلها؟' : 'Clear entire cart?' }}')">{{ $cartRtl ? 'فضّي السلة' : 'Clear Cart' }}</button>
             </form>
           </div>
         </section>
 
         <aside class="cart-summary-panel" aria-labelledby="cart-summary-heading">
           <div class="cart-summary-head">
-            <h2 id="cart-summary-heading">Order Summary</h2>
-            <span class="cart-summary-count">{{ $itemCount }} {{ $itemCount === 1 ? 'item' : 'items' }}</span>
+            <h2 id="cart-summary-heading">{{ $cartRtl ? 'ملخص الطلب' : 'Order Summary' }}</h2>
+            <span class="cart-summary-count">{{ $itemCount }} {{ $cartRtl ? ($itemCount === 1 ? 'منتج' : 'منتجات') : ($itemCount === 1 ? 'item' : 'items') }}</span>
           </div>
 
           @if($freeShippingEnabled)
@@ -239,9 +258,9 @@
               <div class="cart-shipping-copy">
                 <span id="cart-shipping-message">
                   @if($freeShippingRemaining > 0)
-                    Add <strong>{{ number_format($freeShippingRemaining, 2) }} EGP</strong> more for free shipping
+                    {{ $cartRtl ? 'زوّد' : 'Add' }} <strong>{{ number_format($freeShippingRemaining, 2) }} EGP</strong> {{ $cartRtl ? 'جنيه عشان الشحن يبقى مجاني' : 'more for free shipping' }}
                   @else
-                    <span class="cart-shipping-done">You unlocked free shipping.</span>
+                    <span class="cart-shipping-done">{{ $cartRtl ? 'الشحن بقى مجاني ليك.' : 'You unlocked free shipping.' }}</span>
                   @endif
                 </span>
                 <strong id="cart-shipping-percent">{{ round($freeShippingProgress) }}%</strong>
@@ -252,34 +271,34 @@
 
           @if($coupon)
             <div class="cart-applied-coupon">
-              <span>Coupon <strong>{{ strtoupper($coupon['code']) }}</strong> applied</span>
-              <form action="{{ route('cart.coupon.remove') }}" method="POST">@csrf @method('DELETE')<button type="submit">Remove</button></form>
+              <span>{{ $cartRtl ? 'كود الخصم' : 'Coupon' }} <strong>{{ strtoupper($coupon['code']) }}</strong> {{ $cartRtl ? 'اتطبّق' : 'applied' }}</span>
+              <form action="{{ route('cart.coupon.remove') }}" method="POST">@csrf @method('DELETE')<button type="submit">{{ $cartRtl ? 'شيل' : 'Remove' }}</button></form>
             </div>
           @else
             <details class="cart-promo">
-              <summary>Have a promo code?</summary>
+              <summary>{{ $cartRtl ? 'معاك كود خصم؟' : 'Have a promo code?' }}</summary>
               <form class="cart-promo-form" onsubmit="applyCoupon(event)">
-                <input type="text" id="coupon-input" placeholder="Enter promo code" autocomplete="off">
-                <button type="submit">Apply</button>
+                <input type="text" id="coupon-input" placeholder="{{ $cartRtl ? 'اكتب كود الخصم' : 'Enter promo code' }}" autocomplete="off">
+                <button type="submit">{{ $cartRtl ? 'طبّق' : 'Apply' }}</button>
               </form>
               <div id="coupon-msg" style="font-size:11px;margin-top:7px"></div>
             </details>
           @endif
 
-          <div class="cart-summary-row"><span>Subtotal</span><strong id="cart-subtotal">{{ number_format($subtotal, 2) }} EGP</strong></div>
-          @if($coupon)<div class="cart-summary-row cart-discount"><span>Discount</span><strong id="cart-discount">−{{ number_format($discount, 2) }} EGP</strong></div>@endif
-          <div class="cart-summary-row"><span>Shipping</span><strong id="cart-shipping" class="{{ $shippingFee == 0 ? 'summary-shipping-free' : '' }}">{{ $shippingFee > 0 ? number_format($shippingFee, 2) . ' EGP' : 'Free' }}</strong></div>
-          <div class="cart-summary-row"><span>Tax</span><strong style="color:var(--c-mid)">TBA</strong></div>
+          <div class="cart-summary-row"><span>{{ $cartRtl ? 'الإجمالي الفرعي' : 'Subtotal' }}</span><strong id="cart-subtotal">{{ number_format($subtotal, 2) }} EGP</strong></div>
+          @if($coupon)<div class="cart-summary-row cart-discount"><span>{{ $cartRtl ? 'الخصم' : 'Discount' }}</span><strong id="cart-discount">−{{ number_format($discount, 2) }} EGP</strong></div>@endif
+          <div class="cart-summary-row"><span>{{ $cartRtl ? 'الشحن' : 'Shipping' }}</span><strong id="cart-shipping" class="{{ $shippingFee == 0 ? 'summary-shipping-free' : '' }}">{{ $shippingFee > 0 ? number_format($shippingFee, 2) . ' EGP' : ($cartRtl ? 'مجاني' : 'Free') }}</strong></div>
+          <div class="cart-summary-row"><span>{{ $cartRtl ? 'الضرايب' : 'Tax' }}</span><strong style="color:var(--c-mid)">{{ $cartRtl ? 'هيتحدد' : 'TBA' }}</strong></div>
           <hr class="cart-summary-divider">
-          <div class="cart-total-row"><span>Total</span><strong id="cart-total">{{ number_format($total, 2) }} EGP</strong></div>
-          <p class="cart-summary-note">Final taxes and delivery details are confirmed during checkout.</p>
-          <a href="{{ route('checkout') }}" class="cart-checkout-button cart-summary-checkout">Checkout <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+          <div class="cart-total-row"><span>{{ $cartRtl ? 'الإجمالي' : 'Total' }}</span><strong id="cart-total">{{ number_format($total, 2) }} EGP</strong></div>
+          <p class="cart-summary-note">{{ $cartRtl ? 'الضرايب وتفاصيل التوصيل النهائية بتتأكد وقت إتمام الطلب.' : 'Final taxes and delivery details are confirmed during checkout.' }}</p>
+          <a href="{{ route('checkout') }}" class="cart-checkout-button cart-summary-checkout">{{ $cartRtl ? 'إتمام الطلب' : 'Checkout' }} <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
         </aside>
       </div>
 
       <div class="cart-checkout-bar">
-        <div class="cart-checkout-total"><span>Subtotal</span><strong id="cart-sticky-total">{{ number_format($total, 2) }} EGP</strong></div>
-        <a href="{{ route('checkout') }}" class="cart-checkout-button">Checkout <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+        <div class="cart-checkout-total"><span>{{ $cartRtl ? 'الإجمالي الفرعي' : 'Subtotal' }}</span><strong id="cart-sticky-total">{{ number_format($total, 2) }} EGP</strong></div>
+        <a href="{{ route('checkout') }}" class="cart-checkout-button">{{ $cartRtl ? 'إتمام الطلب' : 'Checkout' }} <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
       </div>
     @endif
   </main>
@@ -290,6 +309,36 @@
 @push('scripts')
 <script>
 const CSRF = '{{ csrf_token() }}';
+const CART_RTL = {{ $cartRtl ? 'true' : 'false' }};
+const CART_TEXT = CART_RTL ? {
+  free: 'مجاني',
+  freeShipping: 'الشحن بقى مجاني ليك.',
+  addMore: 'زوّد',
+  forFreeShipping: 'جنيه عشان الشحن يبقى مجاني',
+  quantityUpdated: 'اتحدّثت الكمية',
+  quantityRange: 'اختار كمية من',
+  quantityRangeTo: 'لحد',
+  unableUpdate: 'مش قادرين نحدّث الكمية دلوقتي. جرّب تاني.',
+  removeConfirm: 'عايز تشيل المنتج ده من السلة؟',
+  itemRemoved: 'اتشال المنتج من السلة',
+  unableRemove: 'مش قادرين نشيل المنتج دلوقتي. جرّب تاني.',
+  applying: 'بنعمل تطبيق للكود…',
+  unableCoupon: 'مش قادرين نطبّق الكود. جرّب تاني.'
+} : {
+  free: 'Free',
+  freeShipping: 'You unlocked free shipping.',
+  addMore: 'Add',
+  forFreeShipping: 'more for free shipping',
+  quantityUpdated: 'Quantity updated',
+  quantityRange: 'Choose a quantity from',
+  quantityRangeTo: 'to',
+  unableUpdate: 'Unable to update this quantity. Please try again.',
+  removeConfirm: 'Remove this item from your cart?',
+  itemRemoved: 'Item removed',
+  unableRemove: 'Unable to remove this item. Please try again.',
+  applying: 'Applying…',
+  unableCoupon: 'Unable to apply the code. Try again.'
+};
 const cartScreen = document.querySelector('.cart-screen');
 
 function showCartLoading(){ document.getElementById('cart-loading-overlay')?.classList.add('active'); }
@@ -322,7 +371,7 @@ function updateCartSummary(data){
   const total = document.getElementById('cart-total');
   const stickyTotal = document.getElementById('cart-sticky-total');
   if(subtotal && data.cart_subtotal !== undefined) subtotal.textContent = data.cart_subtotal + ' EGP';
-  if(shipping) { shipping.textContent = data.shipping_fee ? data.shipping_fee + ' EGP' : 'Free'; shipping.classList.toggle('summary-shipping-free', !data.shipping_fee); }
+  if(shipping) { shipping.textContent = data.shipping_fee ? data.shipping_fee + ' EGP' : CART_TEXT.free; shipping.classList.toggle('summary-shipping-free', !data.shipping_fee); }
   if(total && data.cart_total !== undefined) total.textContent = data.cart_total + ' EGP';
   if(stickyTotal && data.cart_total !== undefined) stickyTotal.textContent = data.cart_total + ' EGP';
   const discount = document.getElementById('cart-discount');
@@ -334,7 +383,7 @@ function updateCartSummary(data){
   if(percent && data.free_shipping_progress !== undefined) percent.textContent = Math.round(Number(data.free_shipping_progress)) + '%';
   if(message && data.free_shipping_remaining !== undefined){
     const remaining = Number(String(data.free_shipping_remaining).replace(/,/g,''));
-    message.innerHTML = remaining > 0 ? 'Add <strong>' + money(remaining) + '</strong> more for free shipping' : '<span class="cart-shipping-done">You unlocked free shipping.</span>';
+    message.innerHTML = remaining > 0 ? CART_TEXT.addMore + ' <strong>' + money(remaining) + '</strong> ' + CART_TEXT.forFreeShipping : '<span class="cart-shipping-done">' + CART_TEXT.freeShipping + '</span>';
   }
 }
 function optimisticLineTotal(rowId, qty){
@@ -361,7 +410,7 @@ async function setQty(rowId, val, previousVal = null){
   const restore = previousVal ?? approved;
   const minimum = parseInt(input.min,10) || 1;
   const maximum = parseInt(input.max,10) || minimum;
-  if(!Number.isInteger(requested) || requested < minimum || requested > maximum){ input.value=approved; showCartQuantityError(`Choose a quantity from ${minimum} to ${maximum} for this item.`); return; }
+  if(!Number.isInteger(requested) || requested < minimum || requested > maximum){ input.value=approved; showCartQuantityError(`${CART_TEXT.quantityRange} ${minimum} ${CART_TEXT.quantityRangeTo} ${maximum}.`); return; }
   clearCartQuantityError();
   input.value = requested;
   optimisticLineTotal(rowId, requested);
@@ -369,38 +418,38 @@ async function setQty(rowId, val, previousVal = null){
   try{
     const res = await fetch('/cart/update/' + encodeURIComponent(rowId), {method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'Accept':'application/json'},body:JSON.stringify({qty:requested})});
     const data = await res.json();
-    if(!data.success) throw new Error(data.message || 'Unable to update this quantity.');
+    if(!data.success) throw new Error(CART_RTL ? CART_TEXT.unableUpdate : (data.message || CART_TEXT.unableUpdate));
     input.dataset.approvedQty = requested;
     const oldEl=document.getElementById('sub-old-' + rowId);
     if(oldEl){ if(data.item_subtotal_old){oldEl.textContent=data.item_subtotal_old+' EGP';oldEl.style.display='';}else oldEl.style.display='none'; }
-    updateCartSummary(data); updateNavCount(data.count); showCartToast('Quantity updated');
+    updateCartSummary(data); updateNavCount(data.count); showCartToast(CART_TEXT.quantityUpdated);
   }catch(error){
-    input.value = restore; optimisticLineTotal(rowId, restore); showCartQuantityError(error.message || 'Unable to update this quantity. Please try again.');
+    input.value = restore; optimisticLineTotal(rowId, restore); showCartQuantityError(CART_RTL ? CART_TEXT.unableUpdate : (error.message || CART_TEXT.unableUpdate));
   }finally{ row.classList.remove('is-updating'); }
 }
 async function removeItem(rowId){
   const row=document.getElementById('row-' + rowId);
-  if(!row || !confirm('Remove this item from your cart?')) return;
+  if(!row || !confirm(CART_TEXT.removeConfirm)) return;
   row.classList.add('is-removing');
   try{
     const res=await fetch('/cart/remove/' + encodeURIComponent(rowId),{method:'DELETE',headers:{'X-CSRF-TOKEN':CSRF,'Accept':'application/json'}});
     const data=await res.json();
-    if(!data.success) throw new Error(data.message || 'Unable to remove this item.');
-    setTimeout(()=>row.remove(),220); updateCartSummary(data); updateNavCount(data.count); showCartToast('Item removed');
+    if(!data.success) throw new Error(CART_RTL ? CART_TEXT.unableRemove : (data.message || CART_TEXT.unableRemove));
+    setTimeout(()=>row.remove(),220); updateCartSummary(data); updateNavCount(data.count); showCartToast(CART_TEXT.itemRemoved);
     if(data.count === 0) setTimeout(()=>location.reload(),260);
-  }catch(error){ row.classList.remove('is-removing'); showCartQuantityError(error.message || 'Unable to remove this item. Please try again.'); }
+  }catch(error){ row.classList.remove('is-removing'); showCartQuantityError(CART_RTL ? CART_TEXT.unableRemove : (error.message || CART_TEXT.unableRemove)); }
 }
 async function applyCoupon(event){
   event?.preventDefault();
   const input=document.getElementById('coupon-input'); const msg=document.getElementById('coupon-msg');
   const code=(input?.value || '').trim(); if(!code) return;
-  if(msg){msg.textContent='Applying…';msg.style.color='var(--c-mid)';}
+  if(msg){msg.textContent=CART_TEXT.applying;msg.style.color='var(--c-mid)';}
   try{
     const res=await fetch('/cart/coupon',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'Accept':'application/json'},body:JSON.stringify({code})});
     const data=await res.json();
-    if(msg){msg.textContent=data.message || '';msg.style.color=data.success?'#208a4b':'#c02020';}
+    if(msg){msg.textContent=CART_RTL ? (data.success ? 'اتطبّق كود الخصم.' : 'الكود مش صالح أو منتهي.') : (data.message || '');msg.style.color=data.success?'#208a4b':'#c02020';}
     if(data.reload) setTimeout(()=>location.reload(),650);
-  }catch(error){if(msg){msg.textContent='Unable to apply the code. Try again.';msg.style.color='#c02020';}}
+  }catch(error){if(msg){msg.textContent=CART_TEXT.unableCoupon;msg.style.color='#c02020';}}
 }
 </script>
 @endpush
