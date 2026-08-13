@@ -31,13 +31,20 @@
   $headerMyOrdersLabel = $headerIsArabic ? 'طلباتي' : 'My Orders';
   $headerSignInLabel = $headerIsArabic ? 'سجّل دخول' : 'Sign In';
   $headerSignOutLabel = $headerIsArabic ? 'تسجيل الخروج' : 'Sign Out';
+  $storefrontNoIndex = request()->is([
+    'checkout', 'checkout/*', 'order-success/*', 'account', 'account/*',
+    'cart', 'wishlist', 'login', 'register', 'forgot-password', 'reset-password',
+    'my-order', 'track', 'auth/*',
+  ]);
 @endphp
 <!DOCTYPE html>
-<html lang="{{ $timelineLocale }}">
+<html lang="{{ $timelineLocale }}" dir="{{ $headerIsArabic ? 'rtl' : 'ltr' }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>@yield('title', 'Ramo Store') — Fashion & More</title>
+<meta name="robots" content="@yield('meta_robots', $storefrontNoIndex ? 'noindex,nofollow' : 'index,follow')">
+<link rel="canonical" href="@yield('canonical', url()->current())">
+<title>@yield('title', $headerIsArabic ? 'رامو ستور' : 'Ramo Store') — {{ $headerIsArabic ? 'موضة وأكثر' : 'Fashion & More' }}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
 <style>
@@ -1141,6 +1148,12 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
       <a href="{{ route('wishlist') }}">{{ $headerWishlistLabel }}</a>
       <a href="{{ route('cart') }}">{{ $headerCartLabel }}</a>
       @auth<a href="{{ route('account.orders') }}">{{ $headerMyOrdersLabel }}</a>@endauth
+      <a href="{{ route('policy.shipping') }}">{{ $headerIsArabic ? 'الشحن والتوصيل' : 'Shipping' }}</a>
+      <a href="{{ route('policy.returns') }}">{{ $headerIsArabic ? 'الاسترجاع والاستبدال' : 'Returns' }}</a>
+      <a href="{{ route('policy.payment') }}">{{ $headerIsArabic ? 'معلومات الدفع' : 'Payment' }}</a>
+      <a href="{{ route('policy.privacy') }}">{{ $headerIsArabic ? 'الخصوصية' : 'Privacy' }}</a>
+      <a href="{{ route('policy.terms') }}">{{ $headerIsArabic ? 'الشروط والأحكام' : 'Terms' }}</a>
+      <a href="{{ route('policy.contact') }}">{{ $headerIsArabic ? 'تواصل معانا' : 'Contact' }}</a>
       <a href="{{ route('vendor.register') }}" style="color:var(--c-orange);font-weight:600">{{ $headerIsArabic ? 'بيع على رامو' : 'Sell on Ramo' }}</a>
     </div>
     <div class="footer-note">© {{ date('Y') }} RamoStore. {{ $headerIsArabic ? 'كل الحقوق محفوظة.' : 'All rights reserved.' }}</div>

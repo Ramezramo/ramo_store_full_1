@@ -21,6 +21,7 @@ class Kernel extends HttpKernel
         // \App\Http\Middleware\TrustHosts::class,
         
         \App\Http\Middleware\TrustProxies::class,
+        \App\Http\Middleware\RequestCorrelation::class,
         \Illuminate\Http\Middleware\HandleCors::class,
         \App\Http\Middleware\PreventRequestsDuringMaintenance::class,
         \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
@@ -44,6 +45,7 @@ class Kernel extends HttpKernel
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\SetAuthFlagCookie::class,
             \App\Http\Middleware\PreventPageCaching::class,
+            \App\Http\Middleware\SetStorefrontCacheHeaders::class,
             \App\Http\Middleware\AddSecurityHeaders::class,
         ],
 

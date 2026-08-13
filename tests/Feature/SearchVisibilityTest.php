@@ -46,6 +46,48 @@ class SearchVisibilityTest extends TestCase
         }
     }
 
+    public function test_search_excludes_products_that_only_mention_the_query_in_description(): void
+    {
+        $suffix = substr(sha1(uniqid('search-relevance-', true)), 0, 12);
+        $needle = 'denim-token-' . $suffix;
+        $categoryId = null;
+        $productIds = [];
+
+        try {
+            $categoryId = DB::table('categories2')->insertGetId([
+                'name' => 'Search relevance ' . $suffix,
+                'slug' => 'search-relevance-' . $suffix,
+            ]);
+
+            $matchingName = 'Tailored ' . $needle . ' Trousers';
+            $incidentalName = 'Classic Sneakers ' . $suffix;
+            $productIds[] = $this->createProduct($matchingName, 'publish', 'approved', $categoryId);
+            $incidentalProductId = $this->createProduct($incidentalName, 'publish', 'approved', $categoryId);
+            $productIds[] = $incidentalProductId;
+
+            DB::table('products_data')->where('id', $incidentalProductId)->update([
+                'description' => 'Pairs nicely with ' . $needle . '.',
+                'search_text' => 'Classic sneakers. Pairs nicely with ' . $needle . '.',
+            ]);
+
+            $response = $this->get(route('search', ['q' => $needle]));
+
+            $response->assertOk();
+            $response->assertSee($matchingName);
+            $response->assertDontSee($incidentalName);
+        } finally {
+            foreach ($productIds as $productId) {
+                DB::table('product_variations')->where('product_id', $productId)->delete();
+                DB::table('product_category')->where('product_id', $productId)->delete();
+                DB::table('products_data')->where('id', $productId)->delete();
+            }
+
+            if ($categoryId) {
+                DB::table('categories2')->where('id', $categoryId)->delete();
+            }
+        }
+    }
+
     private function createProduct(string $name, string $status, string $acceptanceStatus, int $categoryId): int
     {
         $now = now();

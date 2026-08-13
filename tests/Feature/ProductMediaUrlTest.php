@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Constants\AppConstants;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -26,6 +27,26 @@ class ProductMediaUrlTest extends TestCase
             'thumbnail' => 'products/missing.jpg',
             'other_images' => ['products/secondary.jpg'],
         ]));
+    }
+
+    public function test_object_storage_media_uses_the_configured_cdn_base_when_present(): void
+    {
+        Storage::fake('s3');
+        Storage::disk('s3')->put('products/cdn-image.webp', 'image-content');
+        Config::set('filesystems.default', 's3');
+        Config::set('app.image_base_url', 'https://cdn.example.com/media');
+
+        $this->assertSame('https://cdn.example.com/media/products/cdn-image.webp', AppConstants::imageUrl('products/cdn-image.webp'));
+    }
+
+    public function test_object_storage_media_uses_the_disk_url_without_a_cdn_override(): void
+    {
+        Storage::fake('s3');
+        Storage::disk('s3')->put('products/object-image.webp', 'image-content');
+        Config::set('filesystems.default', 's3');
+        Config::set('app.image_base_url', null);
+
+        $this->assertSame(Storage::disk('s3')->url('products/object-image.webp'), AppConstants::imageUrl('products/object-image.webp'));
     }
 
     public function test_legacy_local_media_url_is_hidden_when_its_storage_file_is_missing(): void

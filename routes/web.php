@@ -1,7 +1,10 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\HealthController;
 use App\Http\Controllers\WebController;
+use App\Http\Controllers\Web\PolicyPageController;
+use App\Http\Controllers\Web\SitemapController;
 use App\Http\Controllers\Web\CartController;
 use App\Http\Controllers\Web\CheckoutController;
 use App\Http\Controllers\Web\AuthWebController;
@@ -24,7 +27,15 @@ use App\Http\Controllers\Web\PaymentReviewController;
 use App\Http\Controllers\Admin\PaymentMethodsController;
 use App\Http\Controllers\Admin\ImageGalleryController;
 
+Route::get('/health', HealthController::class)->name('health');
 Route::get('/', [WebController::class, 'home'])->name('home');
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+Route::get('/privacy', [PolicyPageController::class, 'show'])->defaults('page', 'privacy')->name('policy.privacy');
+Route::get('/terms', [PolicyPageController::class, 'show'])->defaults('page', 'terms')->name('policy.terms');
+Route::get('/shipping-policy', [PolicyPageController::class, 'show'])->defaults('page', 'shipping-policy')->name('policy.shipping');
+Route::get('/returns-policy', [PolicyPageController::class, 'show'])->defaults('page', 'returns-policy')->name('policy.returns');
+Route::get('/contact', [PolicyPageController::class, 'show'])->defaults('page', 'contact')->name('policy.contact');
+Route::get('/payment-info', [PolicyPageController::class, 'show'])->defaults('page', 'payment-info')->name('policy.payment');
 Route::get('/language/{lang}', [WebController::class, 'setLocale'])->where('lang', '[A-Za-z-]+')->name('language.switch');
 Route::get('/shop', [WebController::class, 'shop'])->name('shop');
 Route::get('/product/{id}', [WebController::class, 'product'])->name('product');

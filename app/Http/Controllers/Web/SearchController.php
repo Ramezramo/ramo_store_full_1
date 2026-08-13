@@ -55,13 +55,16 @@ class SearchController extends Controller
                 'p.minimum_order_qty', 'p.max_orders_per_person', 'p.sold_individually'
             );
 
-        // Search query
+        // Precision-first customer search: a product must match its own name,
+        // URL slug, or merchant-provided translation.  search_text includes the
+        // free-form description, where incidental phrases (for example, a sneaker
+        // description mentioning "jeans") previously surfaced unrelated products.
         if ($q !== '') {
-            $query->where(function ($sub) use ($q) {
-                $needle = '%' . $q . '%';
+            $needle = '%' . $q . '%';
+            $query->where(function ($sub) use ($needle) {
                 $sub->where('p.name', 'ILIKE', $needle)
-                    ->orWhere('p.description', 'ILIKE', $needle)
-                    ->orWhere('p.search_text', 'ILIKE', $needle);
+                    ->orWhere('p.slug', 'ILIKE', $needle)
+                    ->orWhere('p.translations', 'ILIKE', $needle);
             });
         }
 

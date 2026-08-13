@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Helpers\AuthConfig;
 use App\Helpers\PaymentConfig;
 use App\Helpers\ShippingConfig;
+use App\Helpers\TaxConfig;
 use App\Http\Controllers\Controller;
 use App\Http\Traits\CartTrait;
 use App\Models\User;
@@ -118,7 +119,10 @@ class CheckoutController extends Controller
         $discount   = $this->calcDiscount($subtotal, $coupon);
         $afterDiscount = max(0, $subtotal - $discount);
         $shippingFee = ShippingConfig::feeForSubtotal($afterDiscount);
-        $total      = $afterDiscount + $shippingFee;
+        $cartTax = TaxConfig::cartTax($afterDiscount);
+        $shippingTax = TaxConfig::shippingTax($shippingFee);
+        $totalTax = round($cartTax + $shippingTax, 2);
+        $total = round($afterDiscount + $shippingFee + $totalTax, 2);
 
         $user = Auth::user();
         $checkoutIdempotencyKey = session('checkout_idempotency_key');
@@ -137,7 +141,7 @@ class CheckoutController extends Controller
 
         $paymentMethods = PaymentConfig::checkoutMethods();
         return view('web.checkout', compact(
-            'cart', 'subtotal', 'discount', 'shippingFee', 'total', 'coupon',
+            'cart', 'subtotal', 'discount', 'shippingFee', 'cartTax', 'shippingTax', 'totalTax', 'total', 'coupon',
             'user', 'savedAddress', 'authConfig', 'paymentMethods', 'checkoutIdempotencyKey'
         ));
     }
@@ -331,7 +335,10 @@ class CheckoutController extends Controller
                 $discount = $this->calcDiscount($subtotal, $coupon);
                 $afterDiscount = max(0, $subtotal - $discount);
                 $shippingFee = ShippingConfig::feeForSubtotal($afterDiscount);
-                $total = $afterDiscount + $shippingFee;
+                $cartTax = TaxConfig::cartTax($afterDiscount);
+                $shippingTax = TaxConfig::shippingTax($shippingFee);
+                $totalTax = round($cartTax + $shippingTax, 2);
+                $total = round($afterDiscount + $shippingFee + $totalTax, 2);
 
                 // Stock is decremented only after each locked variation has passed validation.
                 foreach ($verifiedCart as $item) {
@@ -392,9 +399,9 @@ class CheckoutController extends Controller
                     'cart_hash'            => md5(json_encode($lineItems)),
                     'parent_id'            => 0,
                     'shipping_total'       => $shippingFee,
-                    'shipping_tax'         => 0,
-                    'cart_tax'             => 0,
-                    'total_tax'            => 0,
+                    'shipping_tax'         => $shippingTax,
+                    'cart_tax'             => $cartTax,
+                    'total_tax'            => $totalTax,
                 ]);
 
                 DB::table('orders')->where('id', $orderId)->update(['number' => $orderId]);
@@ -506,7 +513,16 @@ class CheckoutController extends Controller
 
     public function success($orderId)
     {
-        $order = DB::table('orders')->where('id', $orderId)->first();
+        // Checkout requires an account. Scope the receipt by that account so an
+        // incrementing order ID cannot disclose another customer's address or items.
+        if (! Auth::check()) {
+            abort(404);
+        }
+
+        $order = DB::table('orders')
+            ->where('id', $orderId)
+            ->where('customer_id', Auth::id())
+            ->first();
         if (! $order) {
             abort(404);
         }

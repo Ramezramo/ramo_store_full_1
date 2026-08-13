@@ -1,4 +1,7 @@
 @extends('layouts.app')
+
+@section('meta_robots', 'noindex,nofollow')
+
 @php
   $isAr = session('locale') === 'ar';
   $governoratesAr = [
@@ -225,6 +228,13 @@
         </div>
 
         <button type="submit" class="btn btn-dark place-order-btn">{{ $isAr ? 'أكّد الطلب ←' : 'Place Order →' }}</button>
+        <p style="margin:12px 2px 0;color:#667085;font-size:12px;line-height:1.7">
+          @if($isAr)
+            بتأكيد الطلب، إنت بتوافق على <a href="{{ route('policy.terms') }}" style="color:#c94717;text-decoration:underline">الشروط والأحكام</a> و<a href="{{ route('policy.privacy') }}" style="color:#c94717;text-decoration:underline">سياسة الخصوصية</a>. راجع كمان <a href="{{ route('policy.shipping') }}" style="color:#c94717;text-decoration:underline">الشحن</a> و<a href="{{ route('policy.returns') }}" style="color:#c94717;text-decoration:underline">الاسترجاع</a> و<a href="{{ route('policy.payment') }}" style="color:#c94717;text-decoration:underline">الدفع</a>.
+          @else
+            By placing your order, you agree to the <a href="{{ route('policy.terms') }}" style="color:#c94717;text-decoration:underline">Terms &amp; Conditions</a> and <a href="{{ route('policy.privacy') }}" style="color:#c94717;text-decoration:underline">Privacy Policy</a>. Review <a href="{{ route('policy.shipping') }}" style="color:#c94717;text-decoration:underline">shipping</a>, <a href="{{ route('policy.returns') }}" style="color:#c94717;text-decoration:underline">returns</a>, and <a href="{{ route('policy.payment') }}" style="color:#c94717;text-decoration:underline">payment information</a>.
+          @endif
+        </p>
       </form>
     </div>
 
@@ -266,6 +276,9 @@
         @endif
         <div class="summary-row"><span>{{ $isAr ? 'التوصيل المتوقع' : 'Estimated Delivery' }}</span><span>{{ $isAr ? 'من يومين لـ 4 أيام' : '2–4 days' }}</span></div>
         <div class="summary-row"><span>{{ $isAr ? 'الشحن' : 'Shipping' }}</span><span>{{ $shippingFee > 0 ? number_format($shippingFee, 2) . ' EGP' : ($isAr ? 'مجاني' : 'Free') }}</span></div>
+        @if($totalTax > 0)
+          <div class="summary-row"><span>{{ $isAr ? 'الضريبة' : 'Tax' }}</span><span>{{ number_format($totalTax, 2) }} EGP</span></div>
+        @endif
         <div class="summary-divider"></div>
         <div class="summary-row total-row"><span>{{ $isAr ? 'الإجمالي' : 'Total' }}</span><span>{{ number_format($total, 2) }} EGP</span></div>
       </div>

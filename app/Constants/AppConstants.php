@@ -93,7 +93,7 @@ class AppConstants
             $normalizedUrl = static::normalizeLegacyLocalUrl($path);
 
             if (str_starts_with($normalizedUrl, '/storage/')) {
-                return static::publicStoragePathExists($normalizedUrl) ? $normalizedUrl : null;
+                return static::mediaPathExists($normalizedUrl) ? $normalizedUrl : null;
             }
 
             return $normalizedUrl;
@@ -101,17 +101,41 @@ class AppConstants
 
         $normalizedPath = ltrim(str_replace('\\', '/', $path), '/');
 
-        return static::publicStoragePathExists($normalizedPath)
-            ? static::imageBase() . $normalizedPath
-            : null;
+        if (! static::mediaPathExists($normalizedPath)) {
+            return null;
+        }
+
+        // On object storage, let Laravel generate the native disk URL unless an
+        // explicit public CDN base was configured. Existing local media keeps the
+        // same stable `/storage/...` URL used by the storefront today.
+        if (! config('app.image_base_url') && static::mediaDisk() !== 'public') {
+            return \Illuminate\Support\Facades\Storage::disk(static::mediaDisk())->url($normalizedPath);
+        }
+
+        return static::imageBase() . $normalizedPath;
     }
 
-    /** Determine whether a public-disk media path exists without exposing a broken URL. */
-    private static function publicStoragePathExists(string $path): bool
+    /** Determine whether a configured object-storage or legacy public-disk path exists. */
+    private static function mediaPathExists(string $path): bool
     {
         $storagePath = preg_replace('/^\/storage\//', '', strtok($path, '?'));
+        if ($storagePath === '') {
+            return false;
+        }
 
-        return $storagePath !== '' && \Illuminate\Support\Facades\Storage::disk('public')->exists($storagePath);
+        foreach (array_unique([static::mediaDisk(), 'public']) as $disk) {
+            if (\Illuminate\Support\Facades\Storage::disk($disk)->exists($storagePath)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** The configured production filesystem disk, with public storage as a safe local fallback. */
+    private static function mediaDisk(): string
+    {
+        return (string) config('filesystems.default', 'public');
     }
 
     /**

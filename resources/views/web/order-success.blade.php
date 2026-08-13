@@ -41,6 +41,9 @@
     @endif
     <div class="od-row"><span class="od-label">{{ $isAr ? 'طريقة الدفع' : 'Payment' }}</span><span>{{ $order->payment_method_title }}</span></div>
     <div class="od-row"><span class="od-label">{{ $isAr ? 'التاريخ' : 'Date' }}</span><span>{{ $isAr ? \Carbon\Carbon::parse($order->date_created)->locale('ar')->translatedFormat('j F Y، g:i A') : \Carbon\Carbon::parse($order->date_created)->format('M d, Y h:i A') }}</span></div>
+    @if((float) ($order->total_tax ?? 0) > 0)
+      <div class="od-row"><span class="od-label">{{ $isAr ? 'الضريبة' : 'Tax' }}</span><span>{{ number_format($order->total_tax, 2) }} EGP</span></div>
+    @endif
     <div class="od-row"><span class="od-label">{{ $isAr ? 'الإجمالي' : 'Total' }}</span><span class="od-total">{{ number_format($order->final_total, 2) }} EGP</span></div>
   </div>
 

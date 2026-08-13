@@ -1,2 +1,22 @@
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /checkout
+Disallow: /checkout/
+Disallow: /health
+Disallow: /order-success/
+Disallow: /account/
+Disallow: /admin/
+Disallow: /seller/
+Disallow: /vendor-login
+Disallow: /vendor-logout
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /auth/
+Disallow: /cart
+Disallow: /wishlist
+Disallow: /my-order
+Disallow: /track
+
+Sitemap: /sitemap.xml
