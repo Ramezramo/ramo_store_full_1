@@ -1182,7 +1182,7 @@ const CSRF_TOKEN = '{{ csrf_token() }}';
 // next time. See public/sw.js for the caching strategy.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('/sw.js').catch(function () {});
+    navigator.serviceWorker.register('/sw.js?v=cache-disabled-v9').catch(function () {});
   });
 }
 

@@ -14,8 +14,10 @@
 
 // Versioned cache name: changing this value forces existing devices to purge
 // stale home HTML and load the latest client-side wishlist reconciler.
-const CACHE_NAME = 'ramo-page-cache-v8';
-const CACHEABLE_PATHS = ['/'];
+// Temporary visual-QA mode: disable page caching entirely. The new cache name
+// forces activation to delete the previous v8 cache on every visitor device.
+const CACHE_NAME = 'ramo-page-cache-disabled-v9';
+const CACHEABLE_PATHS = [];
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
