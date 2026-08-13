@@ -577,15 +577,18 @@ button{cursor:pointer;font-family:inherit}
 
 /* ── BOTTOM NAV ── */
 @media(max-width:768px){
-  :root{--mobile-nav-height:58px}
+  :root{--mobile-nav-height:58px;--mobile-nav-viewport-offset:0px}
   body{padding-bottom:var(--mobile-nav-height)}
   footer{display:none}
-  .toast{bottom:calc(var(--mobile-nav-height) + 14px);right:14px;left:14px;max-width:none;justify-content:center}
+  .toast{bottom:calc(var(--mobile-nav-height) + 14px + var(--mobile-nav-viewport-offset, 0px));right:14px;left:14px;max-width:none;justify-content:center}
   div.phpdebugbar,div.phpdebugbar-openhandler{display:none !important}
   #mob-nav{
     display:flex !important;
     position:fixed;
-    inset:auto 0 0;
+    top:auto;
+    right:0;
+    bottom:var(--mobile-nav-viewport-offset, 0px);
+    left:0;
     width:100%;
     height:var(--mobile-nav-height) !important;
     min-height:var(--mobile-nav-height) !important;
@@ -598,7 +601,6 @@ button{cursor:pointer;font-family:inherit}
     box-shadow:0 -2px 10px rgba(0,0,0,.07);
     z-index:9999;
     align-items:stretch;
-    transform:translateZ(0);
   }
   #mob-nav a{
     flex:1;
@@ -1251,6 +1253,30 @@ if ('serviceWorker' in navigator) {
   }, { passive: true });
   window.addEventListener('pagehide', saveScroll);
   window.addEventListener('beforeunload', saveScroll);
+})();
+
+// Keep fixed mobile controls attached to the visible page edge while Chrome's
+// address bar expands or collapses during scrolling on Android.
+(function syncMobileNavigationToVisualViewport() {
+  if (!window.visualViewport) return;
+
+  const root = document.documentElement;
+  let frameId = null;
+  const sync = function () {
+    if (frameId) cancelAnimationFrame(frameId);
+    frameId = requestAnimationFrame(function () {
+      const visualBottom = window.visualViewport.offsetTop + window.visualViewport.height;
+      const compensation = Math.round(root.clientHeight - visualBottom);
+      root.style.setProperty('--mobile-nav-viewport-offset', compensation + 'px');
+      frameId = null;
+    });
+  };
+
+  window.visualViewport.addEventListener('resize', sync);
+  window.visualViewport.addEventListener('scroll', sync);
+  window.addEventListener('resize', sync, { passive: true });
+  window.addEventListener('pageshow', sync, { passive: true });
+  sync();
 })();
 
 function toggleMobileMenu() {
