@@ -577,23 +577,32 @@ button{cursor:pointer;font-family:inherit}
 
 /* ── BOTTOM NAV ── */
 @media(max-width:768px){
-  body{padding-bottom:58px}
+  :root{--mobile-nav-height:58px}
+  body{padding-bottom:var(--mobile-nav-height)}
   footer{display:none}
-  .toast{bottom:72px;right:14px;left:14px;max-width:none;justify-content:center}
+  .toast{bottom:calc(var(--mobile-nav-height) + 14px);right:14px;left:14px;max-width:none;justify-content:center}
   div.phpdebugbar,div.phpdebugbar-openhandler{display:none !important}
   #mob-nav{
     display:flex !important;
     position:fixed;
-    bottom:0;left:0;right:0;
-    height:58px;
+    inset:auto 0 0;
+    width:100%;
+    height:var(--mobile-nav-height) !important;
+    min-height:var(--mobile-nav-height) !important;
+    max-height:var(--mobile-nav-height) !important;
+    box-sizing:border-box;
+    overflow:hidden;
+    padding:0 !important;
     background:#fff;
     border-top:1.5px solid var(--c-light);
     box-shadow:0 -2px 10px rgba(0,0,0,.07);
     z-index:9999;
     align-items:stretch;
+    transform:translateZ(0);
   }
   #mob-nav a{
     flex:1;
+    min-height:0;
     display:flex;
     flex-direction:column;
     align-items:center;
