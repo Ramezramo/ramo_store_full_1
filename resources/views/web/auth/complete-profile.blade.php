@@ -39,7 +39,7 @@
       {{ $isAr ? 'رقم الموبايل اتأكد:' : 'Phone verified:' }} {{ session('otp_temp_phone') }}
     </div>
 
-    <form method="POST" action="{{ route('auth.complete-profile.post') }}">
+    <form method="POST" action="{{ route('auth.complete-profile.post', [], false) }}">
       @csrf
       <input type="hidden" name="temp_token" value="{{ session('otp_temp_token') }}">
 
