@@ -41,10 +41,14 @@
   </div>
   @endif
 
-  <div class="search-layout">
+  <div class="search-layout" id="search-layout">
+
+    <button type="button" class="mobile-filter-toggle" id="mobile-filter-toggle" aria-expanded="false" aria-controls="search-sidebar">
+      <span>Filters</span><span class="mobile-filter-chevron" aria-hidden="true">⌄</span>
+    </button>
 
     {{-- ── SIDEBAR FILTERS ── --}}
-    <aside class="search-sidebar">
+    <aside class="search-sidebar" id="search-sidebar">
       <form method="GET" action="{{ route('search') }}" id="filter-form">
         @if($q) <input type="hidden" name="q" value="{{ $q }}"> @endif
 
@@ -215,6 +219,7 @@
 .filter-chip-clear:hover{background:var(--c-light);color:var(--c-dark)}
 
 .search-layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:28px;align-items:start}
+.mobile-filter-toggle{display:none}
 .search-sidebar,.search-results{min-width:0}
 .search-sidebar{background:var(--c-white);border:1.5px solid var(--c-light);border-radius:var(--radius-lg);padding:20px;position:sticky;top:84px}
 .filter-section{border-bottom:1px solid var(--c-light);padding-bottom:18px;margin-bottom:18px}
@@ -266,7 +271,11 @@ mark.search-hl{background:#fff3cd;color:inherit;border-radius:2px;padding:0 1px}
   .search-hero-bar button{padding:12px 18px;flex-shrink:0}
   .filter-chips{margin-bottom:16px}
   .search-layout{grid-template-columns:minmax(0,1fr);gap:16px}
-  .search-sidebar{position:static;padding:16px;border-radius:16px}
+  .mobile-filter-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:14px 16px;background:var(--c-white);border:1.5px solid var(--c-light);border-radius:14px;color:var(--c-dark);font:700 14px/1 inherit;cursor:pointer}
+  .mobile-filter-chevron{font-size:18px;line-height:1;transition:transform .18s}
+  .search-layout.filters-open .mobile-filter-chevron{transform:rotate(180deg)}
+  .search-sidebar{display:none;position:static;padding:16px;border-radius:16px}
+  .search-layout.filters-open .search-sidebar{display:block}
   .search-results{width:100%;min-width:0;overflow:hidden}
   .search-toolbar{gap:10px;flex-wrap:wrap;margin-bottom:14px}
   .search-toolbar>span:last-child{font-size:12px!important}
@@ -328,6 +337,14 @@ maxInput?.addEventListener('input', () => {
 
 // Auto-focus search
 document.getElementById('search-q')?.focus();
+
+// Mobile filters are collapsed by default and expand on demand.
+const searchLayout = document.getElementById('search-layout');
+const mobileFilterToggle = document.getElementById('mobile-filter-toggle');
+mobileFilterToggle?.addEventListener('click', () => {
+  const open = searchLayout.classList.toggle('filters-open');
+  mobileFilterToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+});
 
 // Init
 updateRange();
