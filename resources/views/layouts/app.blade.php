@@ -12,6 +12,21 @@
   $headerAdminPanelLabel = $headerIsArabic ? 'لوحة التحكم' : 'Admin Panel';
   $headerWishlistLabel = $headerIsArabic ? 'المفضلة' : 'Wishlist';
   $headerCartLabel = $headerIsArabic ? 'السلة' : 'Cart';
+  $mobileMenuLabel = $headerIsArabic ? 'القائمة' : 'Menu';
+  $mobileSearchLabel = $headerIsArabic ? 'دوّر في رامو ستور' : 'Search Ramo Store';
+  $mobileSearchPlaceholder = $headerIsArabic ? 'دوّر على منتجات…' : 'What are you looking for?';
+  $mobileSearchActionLabel = $headerIsArabic ? 'بحث' : 'Search products';
+  $mobileHomeLabel = $headerIsArabic ? 'الرئيسية' : 'Home';
+  $mobileShopLabel = $headerIsArabic ? 'تسوّق' : 'Shop';
+  $mobileCartLabel = $headerIsArabic ? 'السلة' : 'Cart';
+  $mobileWishlistLabel = $headerIsArabic ? 'المفضلة' : 'Wishlist';
+  $mobileTrackOrderLabel = $headerIsArabic ? 'تتبّع طلبك' : 'Track Order';
+  $mobileAccountLabel = $headerIsArabic ? 'حسابي' : 'Account';
+  $mobileMyOrdersLabel = $headerIsArabic ? 'طلباتي' : 'My Orders';
+  $mobileAdminPanelLabel = $headerIsArabic ? 'لوحة التحكم' : 'Admin Panel';
+  $mobileSignInLabel = $headerIsArabic ? 'سجّل دخول' : 'Sign In';
+  $mobileRegisterLabel = $headerIsArabic ? 'إنشاء حساب' : 'Register';
+  $mobileSignOutLabel = $headerIsArabic ? 'تسجيل الخروج' : 'Sign Out';
 @endphp
 <!DOCTYPE html>
 <html lang="{{ $timelineLocale }}">
@@ -644,7 +659,14 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 .nav-mobile-links a:hover,.nav-mobile-links a.active{background:var(--c-tag)}
 .nav-mobile-divider{border:none;border-top:1.5px solid var(--c-light);margin:10px 0}
 .nav-mobile-signout{width:100%;text-align:left;background:none;border:none;display:flex;align-items:center;gap:10px;padding:12px 14px;font-size:15px;font-weight:600;color:#e02020;border-radius:10px;cursor:pointer;font-family:inherit;transition:background .12s}
-.nav-mobile-signout:hover{background:#fff0f0}
+	.nav-mobile-signout:hover{background:#fff0f0}
+	.nav-mobile-menu--rtl .nav-mobile-panel,.nav-mobile-menu--rtl .nav-mobile-links{direction:rtl;text-align:right}
+	.nav-mobile-menu--rtl .nav-mobile-search>svg{margin-left:0!important;margin-right:13px!important}
+	.nav-mobile-menu--rtl .nav-mobile-search input{direction:rtl;text-align:right}
+	.nav-mobile-menu--rtl .nav-mobile-search button svg{transform:scaleX(-1)}
+	.nav-mobile-menu--rtl .nav-mobile-signout{text-align:right}
+	.nav-mobile-menu--rtl .nav-mobile-links span[style*="margin-left"]{margin-left:0!important;margin-right:4px!important}
+	#mob-nav.mob-nav--rtl{direction:rtl}
 
 /* ── SHOP FILTER TOGGLE (mobile only) ── */
 .shop-filter-toggle{display:none;align-items:center;gap:8px;padding:10px 18px;background:var(--c-white);border:1.5px solid var(--c-light);border-radius:50px;font-size:13.5px;font-weight:700;cursor:pointer;color:var(--c-dark);margin-bottom:14px;transition:all .15s;width:auto}
@@ -866,7 +888,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 <nav class="nav{{ $headerIsArabic ? ' nav--rtl' : '' }}" dir="{{ $headerIsArabic ? 'rtl' : 'ltr' }}">
   <div class="nav-inner">
     <a href="{{ route('home') }}" class="nav-logo">Ramo<span>Store</span></a>
-    <button class="nav-hamburger" id="nav-hamburger" onclick="toggleMobileMenu()" aria-label="Menu">
+    <button class="nav-hamburger" id="nav-hamburger" onclick="toggleMobileMenu()" aria-label="{{ $mobileMenuLabel }}">
       <span></span><span></span><span></span>
     </button>
     <div class="nav-links">
@@ -1024,47 +1046,47 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 </nav>
 
 <!-- MOBILE MENU -->
-<div class="nav-mobile-menu" id="nav-mobile-menu">
+  <div class="nav-mobile-menu{{ $headerIsArabic ? ' nav-mobile-menu--rtl' : '' }}" id="nav-mobile-menu" dir="{{ $headerIsArabic ? 'rtl' : 'ltr' }}">
   <div class="nav-mobile-backdrop" onclick="closeMobileMenu()"></div>
   <div class="nav-mobile-panel">
     <div class="nav-mobile-search-wrap">
-      <label class="nav-mobile-search-label" for="nav-mobile-search-input">Search Ramo Store</label>
+      <label class="nav-mobile-search-label" for="nav-mobile-search-input">{{ $mobileSearchLabel }}</label>
       <form action="{{ route('search') }}" method="GET" class="nav-mobile-search">
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input id="nav-mobile-search-input" type="text" name="q" placeholder="What are you looking for?" value="{{ request('q', request('search')) }}" autocomplete="off">
-        <button type="submit" aria-label="Search products">
+        <input id="nav-mobile-search-input" type="text" name="q" placeholder="{{ $mobileSearchPlaceholder }}" value="{{ request('q', request('search')) }}" autocomplete="off">
+        <button type="submit" aria-label="{{ $mobileSearchActionLabel }}">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>
       </form>
     </div>
     <div class="nav-mobile-links">
-      <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}">🏠 Home</a>
-      <a href="{{ route('shop') }}" class="{{ request()->routeIs('shop') ? 'active' : '' }}">🛍️ Shop</a>
+      <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}">🏠 {{ $mobileHomeLabel }}</a>
+      <a href="{{ route('shop') }}" class="{{ request()->routeIs('shop') ? 'active' : '' }}">🛍️ {{ $mobileShopLabel }}</a>
       <a href="{{ route('cart') }}" class="{{ request()->routeIs('cart') ? 'active' : '' }}">
-        🛒 Cart
+        🛒 {{ $mobileCartLabel }}
         @php
           $__mc = Auth::check()
             ? \Illuminate\Support\Facades\DB::table('cart_items')->where('user_id', Auth::id())->count()
             : count(session('ramo_cart', []));
         @endphp
-        @if($__mc) <span style="background:var(--c-orange);color:#fff;font-size:11px;font-weight:800;padding:1px 7px;border-radius:50px;margin-left:4px">{{ $__mc }}</span> @endif
+        @if($__mc) <span style="background:var(--c-orange);color:#fff;font-size:11px;font-weight:800;padding:1px 7px;border-radius:50px;margin-{{ $headerIsArabic ? 'right' : 'left' }}:4px">{{ $__mc }}</span> @endif
       </a>
-      <a href="{{ route('wishlist') }}" class="{{ request()->routeIs('wishlist') ? 'active' : '' }}">♡ Wishlist</a>
-      <a href="{{ route('order.track') }}" class="{{ request()->routeIs('order.track*') ? 'active' : '' }}">📦 Track Order</a>
+      <a href="{{ route('wishlist') }}" class="{{ request()->routeIs('wishlist') ? 'active' : '' }}">♡ {{ $mobileWishlistLabel }}</a>
+      <a href="{{ route('order.track') }}" class="{{ request()->routeIs('order.track*') ? 'active' : '' }}">📦 {{ $mobileTrackOrderLabel }}</a>
       <hr class="nav-mobile-divider">
       @auth
         @php $__mu = Auth::user(); @endphp
         <a href="{{ route('account.hub') }}">👤 {{ $__mu->first_name ?: $__mu->name }}</a>
-        <a href="{{ route('account.orders') }}">📋 My Orders</a>
+        <a href="{{ route('account.orders') }}">📋 {{ $mobileMyOrdersLabel }}</a>
         @php $__isAdm = $__mu->email === 'adminramoui@gmail.com' || str_contains((string)$__mu->role,'admin'); @endphp
-        @if($__isAdm)<a href="{{ route('admin.dashboard') }}">⚙️ Admin Panel</a>@endif
+        @if($__isAdm)<a href="{{ route('admin.dashboard') }}">⚙️ {{ $mobileAdminPanelLabel }}</a>@endif
         <form method="POST" action="{{ route('logout') }}">
           @csrf
-          <button type="submit" class="nav-mobile-signout">🚪 Sign Out</button>
+          <button type="submit" class="nav-mobile-signout">🚪 {{ $mobileSignOutLabel }}</button>
         </form>
       @else
-        <a href="{{ route('login') }}">👤 Sign In</a>
-        <a href="{{ route('register') }}" style="color:var(--c-orange)">✨ Register</a>
+        <a href="{{ route('login') }}">👤 {{ $mobileSignInLabel }}</a>
+        <a href="{{ route('register') }}" style="color:var(--c-orange)">✨ {{ $mobileRegisterLabel }}</a>
       @endauth
       @if(auth()->guard('vendor_web')->check())
         @php $__vmu = auth()->guard('vendor_web')->user(); @endphp
@@ -1072,7 +1094,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
         <a href="{{ route('vendor.dashboard') }}" style="color:var(--c-orange)">🏪 {{ Str::limit($__vmu->shop_name, 20) }}</a>
         <form method="POST" action="{{ route('vendor.logout') }}">
           @csrf
-          <button type="submit" class="nav-mobile-signout">🚪 Sign Out (Vendor)</button>
+          <button type="submit" class="nav-mobile-signout">🚪 {{ $mobileSignOutLabel }} (Vendor)</button>
         </form>
       @endif
     </div>
@@ -1123,29 +1145,29 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 </div>
 
 <!-- MOBILE BOTTOM NAV -->
-<nav id="mob-nav" style="display:none">
+<nav id="mob-nav" class="{{ $headerIsArabic ? 'mob-nav--rtl' : '' }}" style="display:none" dir="{{ $headerIsArabic ? 'rtl' : 'ltr' }}">
   <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'on' : '' }}">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
-    <span>Home</span>
+    <span>{{ $mobileHomeLabel }}</span>
   </a>
   <a href="{{ route('shop') }}" class="{{ request()->routeIs('shop') ? 'on' : '' }}">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-    <span>Shop</span>
+    <span>{{ $mobileShopLabel }}</span>
   </a>
   <a href="{{ route('cart') }}" class="{{ request()->routeIs('cart') ? 'on' : '' }}">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 001.95-1.57l1.65-8.42H6"/></svg>
     @if($cCount ?? 0)<span class="mn-badge" id="mn-cart-badge">{{ $cCount }}</span>@endif
-    <span>Cart</span>
+    <span>{{ $mobileCartLabel }}</span>
   </a>
   @auth
   <a href="{{ route('account.hub') }}" class="{{ request()->routeIs('account.*') ? 'on' : '' }}">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-    <span>Account</span>
+    <span>{{ $mobileAccountLabel }}</span>
   </a>
   @else
   <a href="{{ route('login') }}" class="{{ request()->routeIs('login') ? 'on' : '' }}">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-    <span>Sign In</span>
+    <span>{{ $mobileSignInLabel }}</span>
   </a>
   @endauth
 </nav>
