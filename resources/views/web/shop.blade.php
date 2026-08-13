@@ -1,5 +1,28 @@
 @extends('layouts.app')
-@section('title', 'Shop — Ramo Store')
+@section('title', session('locale', 'en') === 'ar' ? 'تسوّق — Ramo Store' : 'Shop — Ramo Store')
+
+@php
+  $shopRtl = session('locale', 'en') === 'ar';
+  $shopCopy = $shopRtl ? [
+    'home' => 'الرئيسية', 'shop' => 'تسوّق', 'search' => 'دوّر على منتجات…',
+    'filters' => 'الفلاتر والتصنيفات', 'closeFilters' => 'اقفل الفلاتر',
+    'loadingProducts' => 'بنحمّل المنتجات…', 'noProducts' => 'ملقيناش منتجات',
+    'noProductsHint' => 'جرّب تدوّر بكلمة تانية أو اتصفح كل التصنيفات.',
+    'clearFilters' => 'امسح الفلاتر', 'loadingMore' => 'بنحمّل منتجات أكتر…',
+    'allSeen' => 'شفت كل المنتجات', 'categories' => 'التصنيفات',
+    'allProducts' => 'كل المنتجات', 'brands' => 'الماركات', 'sortBy' => 'ترتيب حسب',
+    'latest' => 'الأحدث', 'lowHigh' => 'السعر: من الأقل للأعلى',
+    'highLow' => 'السعر: من الأعلى للأقل', 'products' => 'منتج',
+    'loadError' => 'حصلت مشكلة وإحنا بنحمّل المنتجات. حدّث الصفحة وجرب تاني.',
+    'unavailable' => 'المنتجات مش متاحة دلوقتي',
+  ] : [];
+  $shopJsCopy = $shopRtl ? $shopCopy : [
+    'filters' => 'Filters & Categories', 'closeFilters' => 'Close Filters',
+    'products' => 'product', 'productsPlural' => 'products',
+    'loadError' => 'Products could not be loaded. Please refresh and try again.',
+    'unavailable' => 'Products unavailable',
+  ];
+@endphp
 
 @push('styles')
 <style>
@@ -325,16 +348,37 @@
   .sidebar { display: none; position: static; }
   .sidebar.mobile-open { display: block; }
 }
+
+/* ── Arabic RTL shop page and phone search ────────────────── */
+.shop-mobile-search{display:none;}
+.shop-page[dir="rtl"]{direction:rtl;text-align:right;}
+.shop-page[dir="rtl"] .breadcrumb,.shop-page[dir="rtl"] .shop-toolbar{direction:rtl;}
+.shop-page[dir="rtl"] .cat-parent-btn{text-align:right;}
+.shop-page[dir="rtl"] .cat-children-inner{padding:3px 12px 6px 0;margin-left:0;margin-right:13px;border-left:0;border-right:2px solid var(--c-light);}
+.shop-page[dir="rtl"] .active-cat-strip{padding:4px 8px 4px 10px;}
+.shop-page[dir="rtl"] .active-cat-strip a{margin-left:0;margin-right:4px;}
+.shop-page[dir="rtl"] .widget-header-left{letter-spacing:0;text-transform:none;}
+.shop-page[dir="rtl"] .product-card-body{text-align:right;}
+.shop-page[dir="rtl"] .wish-btn{right:auto;left:5px;}
+.shop-page[dir="rtl"] #infinite-product-grid.shop-mobile-layout-horizontal .product-card-body{padding:0 0 0 14px;}
+@media (max-width: 860px) {
+  .shop-mobile-search{display:block;margin:0 0 12px;}
+  .shop-mobile-search form{display:flex;align-items:center;gap:8px;width:100%;padding:7px 8px 7px 12px;border:1.5px solid var(--c-light);border-radius:13px;background:#fff;box-sizing:border-box;box-shadow:0 3px 12px rgba(24,24,24,.04);}
+  .shop-mobile-search input{min-width:0;flex:1;border:0;outline:0;background:transparent;font:inherit;font-size:14px;color:var(--c-dark);padding:7px 3px;}
+  .shop-mobile-search button{width:38px;height:38px;border:0;border-radius:10px;background:var(--c-dark);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;}
+  .shop-page[dir="rtl"] .shop-mobile-search form{direction:rtl;}
+  .shop-page[dir="rtl"] .shop-mobile-search input{text-align:right;}
+}
 </style>
 @endpush
 
 @section('content')
-<div class="page">
+<div class="page shop-page" @if($shopRtl) lang="ar" dir="rtl" @endif>
 
   {{-- Breadcrumb --}}
   <div class="breadcrumb">
-    <a href="{{ route('home') }}">Home</a><span>/</span>
-    <a href="{{ route('shop') }}">Shop</a>
+    <a href="{{ route('home') }}">{{ $shopRtl ? $shopCopy['home'] : 'Home' }}</a><span>/</span>
+    <a href="{{ route('shop') }}">{{ $shopRtl ? $shopCopy['shop'] : 'Shop' }}</a>
     @if($activeCategoryId)
       @php
         $allCatsFlat  = $parentCats->merge($childCats->flatten());
@@ -353,9 +397,21 @@
     @if(request('search'))<span>/</span><span>"{{ request('search') }}"</span>@endif
   </div>
 
-  <button class="shop-filter-toggle" id="shop-filter-btn" onclick="toggleShopFilter()">
+  <div class="shop-mobile-search">
+    <form method="GET" action="{{ route('shop') }}">
+      @foreach(request()->except('search', 'page') as $key => $value)
+        <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+      @endforeach
+      <input type="search" name="search" value="{{ request('search') }}" placeholder="{{ $shopRtl ? $shopCopy['search'] : 'Search products…' }}" aria-label="{{ $shopRtl ? $shopCopy['search'] : 'Search products' }}">
+      <button type="submit" aria-label="{{ $shopRtl ? 'دوّر' : 'Search' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="17" height="17"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16" y2="16"/></svg>
+      </button>
+    </form>
+  </div>
+
+  <button class="shop-filter-toggle" id="shop-filter-btn" onclick="toggleShopFilter()" aria-expanded="false">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
-    Filters & Categories
+    {{ $shopRtl ? $shopCopy['filters'] : 'Filters & Categories' }}
   </button>
 
   <div class="shop-layout">
@@ -366,10 +422,10 @@
       {{-- ── Widget: Categories ───────────────────────────────── --}}
       <div class="widget" id="widget-categories">
 
-        <div class="widget-header" onclick="toggleWidget('widget-categories')" title="Click to collapse">
+        <div class="widget-header" onclick="toggleWidget('widget-categories')" title="{{ $shopRtl ? 'اضغط عشان تقفل القسم' : 'Click to collapse' }}">
           <span class="widget-header-left">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-            Categories
+            {{ $shopRtl ? $shopCopy['categories'] : 'Categories' }}
           </span>
           <span class="widget-fold-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="9" height="9"><polyline points="6 9 12 15 18 9"/></svg>
@@ -380,7 +436,7 @@
           {{-- All Products --}}
           <a href="{{ route('shop', array_filter(request()->except('category','page'))) }}"
              class="cat-all-pill {{ !$activeCategoryId ? 'active' : '' }}">
-            <span>All Products</span>
+            <span>{{ $shopRtl ? $shopCopy['allProducts'] : 'All Products' }}</span>
             <span class="cat-count-badge" id="shop-total-sidebar">…</span>
           </a>
 
@@ -411,7 +467,7 @@
                   </a>
                   <button onclick="toggleCatChildren('cc-{{ $parent->id }}', this)"
                           style="background:none;border:none;cursor:pointer;padding:9px 13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:{{ $isActive ? 'rgba(255,255,255,.7)' : 'var(--c-mid)' }};"
-                          aria-label="Toggle sub-categories">
+                          aria-label="{{ $shopRtl ? 'افتح أو اقفل التصنيفات الفرعية' : 'Toggle sub-categories' }}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"
                          class="cat-chevron-svg"
                          style="transition:transform .25s;{{ $isOpen ? 'transform:rotate(180deg)' : '' }}">
@@ -454,10 +510,10 @@
       {{-- ── Widget: Brands ───────────────────────────────────── --}}
       <div class="widget" id="widget-brands">
 
-        <div class="widget-header" onclick="toggleWidget('widget-brands')" title="Click to collapse">
+        <div class="widget-header" onclick="toggleWidget('widget-brands')" title="{{ $shopRtl ? 'اضغط عشان تقفل القسم' : 'Click to collapse' }}">
           <span class="widget-header-left">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Brands
+            {{ $shopRtl ? $shopCopy['brands'] : 'Brands' }}
           </span>
           <span class="widget-fold-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="9" height="9"><polyline points="6 9 12 15 18 9"/></svg>
@@ -486,10 +542,10 @@
       {{-- ── Widget: Sort By ──────────────────────────────────── --}}
       <div class="widget" id="widget-sort">
 
-        <div class="widget-header" onclick="toggleWidget('widget-sort')" title="Click to collapse">
+        <div class="widget-header" onclick="toggleWidget('widget-sort')" title="{{ $shopRtl ? 'اضغط عشان تقفل القسم' : 'Click to collapse' }}">
           <span class="widget-header-left">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="9" y2="18"/></svg>
-            Sort By
+            {{ $shopRtl ? $shopCopy['sortBy'] : 'Sort By' }}
           </span>
           <span class="widget-fold-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="9" height="9"><polyline points="6 9 12 15 18 9"/></svg>
@@ -502,9 +558,9 @@
               <input type="hidden" name="{{ $k }}" value="{{ $v }}">
             @endforeach
             <select class="sort-select" name="sort" onchange="document.getElementById('sort-form').submit()">
-              <option value=""          {{ !request('sort') ? 'selected' : '' }}>Latest</option>
-              <option value="price_asc" {{ request('sort')==='price_asc'  ? 'selected' : '' }}>Price: Low → High</option>
-              <option value="price_desc"{{ request('sort')==='price_desc' ? 'selected' : '' }}>Price: High → Low</option>
+              <option value=""          {{ !request('sort') ? 'selected' : '' }}>{{ $shopRtl ? $shopCopy['latest'] : 'Latest' }}</option>
+              <option value="price_asc" {{ request('sort')==='price_asc'  ? 'selected' : '' }}>{{ $shopRtl ? $shopCopy['lowHigh'] : 'Price: Low → High' }}</option>
+              <option value="price_desc"{{ request('sort')==='price_desc' ? 'selected' : '' }}>{{ $shopRtl ? $shopCopy['highLow'] : 'Price: High → Low' }}</option>
             </select>
           </form>
         </div>
@@ -523,8 +579,8 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
               {{ $activeCatName }}
               @php $isParentFilter = $parentCats->firstWhere('id', $activeCategoryId) && isset($childCats[$activeCategoryId]) && $childCats[$activeCategoryId]->count() > 0; @endphp
-              @if($isParentFilter)<span style="opacity:.6;font-weight:500">+ sub-categories</span>@endif
-              <a href="{{ route('shop', array_filter(request()->except('category','page'))) }}" title="Clear category">
+              @if($isParentFilter)<span style="opacity:.6;font-weight:500">{{ $shopRtl ? '+ تصنيفات فرعية' : '+ sub-categories' }}</span>@endif
+              <a href="{{ route('shop', array_filter(request()->except('category','page'))) }}" title="{{ $shopRtl ? 'امسح التصنيف' : 'Clear category' }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </a>
             </span>
@@ -532,8 +588,8 @@
           @if($activeBrandName ?? false)
             <span class="active-cat-strip">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              Brand: {{ $activeBrandName }}
-              <a href="{{ route('shop', array_filter(request()->except('brand','page'))) }}" title="Clear brand">
+              {{ $shopRtl ? 'الماركة:' : 'Brand:' }} {{ $activeBrandName }}
+              <a href="{{ route('shop', array_filter(request()->except('brand','page'))) }}" title="{{ $shopRtl ? 'امسح الماركة' : 'Clear brand' }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </a>
             </span>
@@ -542,7 +598,7 @@
         <div class="search-bar">
           <form method="GET" action="{{ route('shop') }}" style="display:contents">
             @if($activeCategoryId)<input type="hidden" name="category" value="{{ $activeCategoryId }}">@endif
-            <input type="text" name="search" placeholder="Search products…" value="{{ request('search') }}">
+            <input type="text" name="search" placeholder="{{ $shopRtl ? $shopCopy['search'] : 'Search products…' }}" value="{{ request('search') }}">
             <button type="submit">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             </button>
@@ -554,15 +610,15 @@
         <div id="product-loading-state" style="grid-column:1/-1;text-align:center;padding:48px 20px;color:var(--c-mid)">
           <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px">
             <svg style="animation:spin .8s linear infinite" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
-            Loading products…
+            {{ $shopRtl ? $shopCopy['loadingProducts'] : 'Loading products…' }}
           </span>
         </div>
       </div>
       <div id="product-empty-state" class="empty" style="display:none">
         <div class="empty-icon">🔍</div>
-        <h3>No products found</h3>
-        <p>Try a different search term or browse all categories.</p>
-        <a href="{{ route('shop') }}" class="btn btn-dark" style="margin-top:20px">Clear filters</a>
+        <h3>{{ $shopRtl ? $shopCopy['noProducts'] : 'No products found' }}</h3>
+        <p>{{ $shopRtl ? $shopCopy['noProductsHint'] : 'Try a different search term or browse all categories.' }}</p>
+        <a href="{{ route('shop') }}" class="btn btn-dark" style="margin-top:20px">{{ $shopRtl ? $shopCopy['clearFilters'] : 'Clear filters' }}</a>
       </div>
 
       {{-- Infinite scroll sentinel & loader --}}
@@ -570,11 +626,11 @@
       <div id="scroll-loader" style="display:none;text-align:center;padding:24px 0">
         <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--c-mid)">
           <svg style="animation:spin .8s linear infinite" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
-          Loading more products…
+          {{ $shopRtl ? $shopCopy['loadingMore'] : 'Loading more products…' }}
         </span>
       </div>
       <div id="scroll-end" style="display:none;text-align:center;padding:20px 0;font-size:13px;color:var(--c-mid)">
-        You've seen all products
+        {{ $shopRtl ? $shopCopy['allSeen'] : "You've seen all products" }}
       </div>
     </div>
 
@@ -584,6 +640,9 @@
 
 @push('scripts')
 <script>
+const shopRtl = @json($shopRtl);
+const shopI18n = @json($shopJsCopy);
+
 /* ── Widget fold/unfold ────────────────────────────────────── */
 const STORAGE_KEY = 'ramo_shop_widgets';
 
@@ -626,9 +685,10 @@ function toggleShopFilter() {
   const sidebar = document.getElementById('shop-sidebar');
   const btn = document.getElementById('shop-filter-btn');
   const open = sidebar.classList.toggle('mobile-open');
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
   btn.innerHTML = open
-    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Close Filters'
-    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg> Filters & Categories';
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> ' + shopI18n.closeFilters
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg> ' + shopI18n.filters;
 }
 
 /* ── Infinite scroll ────────────────────────────────────────── */
@@ -668,7 +728,9 @@ function toggleShopFilter() {
           grid.innerHTML = data.html || '';
           if (loadingState) loadingState.remove();
           if (resultCount) {
-            resultCount.textContent = `${data.total} product${data.total !== 1 ? 's' : ''}`;
+            resultCount.textContent = shopRtl
+              ? `${data.total} ${shopI18n.products}`
+              : `${data.total} ${data.total !== 1 ? shopI18n.productsPlural : shopI18n.products}`;
           }
           if (sidebarTotal) sidebarTotal.textContent = data.total;
           if (emptyState) emptyState.style.display = data.html ? 'none' : 'block';
@@ -691,8 +753,8 @@ function toggleShopFilter() {
         loader.style.display = 'none';
         loading = false;
         if (replace) {
-          if (loadingState) loadingState.innerHTML = '<span style="color:var(--c-mid)">Products could not be loaded. Please refresh and try again.</span>';
-          if (resultCount) resultCount.textContent = 'Products unavailable';
+          if (loadingState) loadingState.innerHTML = '<span style="color:var(--c-mid)">' + shopI18n.loadError + '</span>';
+          if (resultCount) resultCount.textContent = shopI18n.unavailable;
         }
       });
   }

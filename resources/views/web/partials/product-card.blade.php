@@ -20,6 +20,12 @@
   $coImgHeight      = $co['imgHeight']      ?? null;   // e.g. '180px'
   $coIdPrefix       = $co['idPrefix']       ?? 'pc';   // id prefix on outer div
   $coRemoveWishlist = $co['removeWishlist'] ?? false;  // show remove-from-wishlist form
+  $cardRtl = session('locale', 'en') === 'ar';
+  $cardCopy = $cardRtl ? [
+    'wishlist' => 'ضيف للمفضلة', 'add' => 'ضيف للسلة', 'details' => 'شوف التفاصيل',
+    'unavailable' => 'مش متاح', 'selectQty' => 'اختار كمية (الحد الأدنى ',
+    'removeWishlist' => 'شيل من المفضلة', 'coupon' => 'بكود', 'sale' => 'خصم',
+  ] : [];
 
   /* ── Per-product button_mode overrides section defaults ── */
   $buttonMode = $p->button_mode ?? 'both';
@@ -113,15 +119,15 @@
     @endif
     @if($coShowBadge && $p->on_sale)
       @if(!empty($p->flash_sale))
-        <span class="badge-sale badge-flash">⚡ {{ round($p->flash_discount_pct) }}% OFF</span>
+        <span class="badge-sale badge-flash">⚡ {{ $cardRtl ? $cardCopy['sale'].' '.round($p->flash_discount_pct).'%' : round($p->flash_discount_pct).'% OFF' }}</span>
       @elseif($p->discount_percentage > 0)
         <span class="badge-sale">-{{ round($p->discount_percentage) }}%</span>
       @else
-        <span class="badge-sale">SALE</span>
+        <span class="badge-sale">{{ $cardRtl ? $cardCopy['sale'] : 'SALE' }}</span>
       @endif
     @endif
     @if($coShowWishlist)
-    <button class="wish-btn" data-wishlist-product-id="{{ $pid }}" onclick="event.preventDefault();toggleWishlist(this,{{ $pid }})" title="Add to Wishlist">♡</button>
+    <button class="wish-btn" data-wishlist-product-id="{{ $pid }}" onclick="event.preventDefault();toggleWishlist(this,{{ $pid }})" title="{{ $cardRtl ? $cardCopy['wishlist'] : 'Add to Wishlist' }}">♡</button>
     @endif
   </a>
 
@@ -199,19 +205,21 @@
                 data-img="{{ $displayImg }}"
                 style="{{ $coRemoveWishlist ? 'flex:1' : '' }}"
                 onclick="pcAddToCart({{ $pid }})">
-          Add to Cart
+          {{ $cardRtl ? $cardCopy['add'] : 'Add to Cart' }}
         </button>
         @else
         <a class="card-add-btn{{ $coRemoveWishlist ? '' : '' }}" href="{{ route('product', $pid) }}"
            style="{{ $coRemoveWishlist ? 'flex:1' : '' }};text-align:center;text-decoration:none">
-          {{ $quickAddMaximum < $quickAddMinimum ? 'Unavailable' : 'Select quantity (min '.$quickAddMinimum.')' }}
+          {{ $quickAddMaximum < $quickAddMinimum
+              ? ($cardRtl ? $cardCopy['unavailable'] : 'Unavailable')
+              : ($cardRtl ? $cardCopy['selectQty'].$quickAddMinimum.')' : 'Select quantity (min '.$quickAddMinimum.')') }}
         </a>
         @endif
       @endif
       @if($coRemoveWishlist)
       <form action="{{ route('wishlist.remove', $pid) }}" method="POST" style="flex-shrink:0">
         @csrf @method('DELETE')
-        <button class="btn btn-outline" style="padding:9px 12px;font-size:13px;border-radius:8px;color:#e02020;border-color:#e02020;height:100%" title="Remove from wishlist">✕</button>
+        <button class="btn btn-outline" style="padding:9px 12px;font-size:13px;border-radius:8px;color:#e02020;border-color:#e02020;height:100%" title="{{ $cardRtl ? $cardCopy['removeWishlist'] : 'Remove from wishlist' }}">✕</button>
       </form>
       @endif
     </div>
@@ -219,7 +227,7 @@
 
     @if($coShowDetails)
     <a href="{{ route('product', $pid) }}" class="card-details-btn">
-      See details
+      {{ $cardRtl ? $cardCopy['details'] : 'See details' }}
     </a>
     @endif
 
@@ -234,7 +242,7 @@
     @endphp
     <a href="{{ route('cart') }}" class="pc-coupon-bar" onclick="event.preventDefault();saveCouponAndGo('{{ strtoupper($__coupon->code) }}','{{ route('cart') }}')" title="Click to apply this coupon at checkout">
       <span class="pc-coupon-left">
-        🏷️ WITH CODE <strong class="pc-coupon-code">{{ strtoupper($__coupon->code) }}</strong>
+        🏷️ {{ $cardRtl ? $cardCopy['coupon'] : 'WITH CODE' }} <strong class="pc-coupon-code">{{ strtoupper($__coupon->code) }}</strong>
       </span>
       <span class="pc-coupon-right">
         ↓ {{ number_format($__cprice, 0) }} EGP
