@@ -26,6 +26,7 @@
     'mapLoading' => $isAr ? 'بنحمّل الخريطة…' : 'Loading map…',
     'mapReady' => $isAr ? 'الخريطة جاهزة. اضغط أو اسحب العلامة عشان تعدّل مكان التوصيل.' : 'Map ready. Tap or drag the pin to adjust your delivery location.',
     'mapUnavailable' => $isAr ? 'ماقدرناش نحمّل الخريطة. تقدر تكتب عنوانك بنفسك.' : 'The map could not be loaded. You can still enter your address manually.',
+    'mapRetry' => $isAr ? 'جرّب تحميل الخريطة تاني' : 'Retry loading map',
     'locating' => $isAr ? 'بنحدد مكانك…' : 'Locating...',
     'detected' => $isAr ? 'اتحدد مكانك' : 'Location detected',
     'dragPin' => $isAr ? 'تقدر تسحب العلامة عشان تعدّله.' : 'You can drag the pin to adjust it.',
@@ -133,8 +134,8 @@
                 <div class="ck-map-placeholder-inner">
                   <span class="ck-map-placeholder-icon" aria-hidden="true">⌖</span>
                   <span class="ck-map-placeholder-title">{{ $isAr ? 'اختار مكان التوصيل' : 'Choose a delivery pin' }}</span>
-                  <span class="ck-map-placeholder-copy">{{ $isAr ? 'حمّل الخريطة وقت ما تحب تعدّل مكان التوصيل.' : 'Load the interactive map only when you want to adjust your delivery location.' }}</span>
-                  <button type="button" id="load-checkout-map-btn" class="ck-map-load-btn" aria-controls="checkout-map">{{ $isAr ? 'حمّل الخريطة' : 'Load map' }}</button>
+                  <span class="ck-map-placeholder-copy">{{ $isAr ? 'بنحمّل الخريطة تلقائيًا. تقدر تختار أو تعدّل مكان التوصيل أول ما تفتح.' : 'The interactive map loads automatically. You can choose or adjust your delivery location as soon as it opens.' }}</span>
+                  <button type="button" id="load-checkout-map-btn" class="ck-map-load-btn" aria-controls="checkout-map" hidden>{{ $checkoutText['mapRetry'] }}</button>
                 </div>
               </div>
               <div id="map-locating-overlay" style="display:none;position:absolute;inset:0;background:rgba(255,255,255,.75);border-radius:14px;z-index:999;flex-direction:column;align-items:center;justify-content:center;gap:10px">
@@ -402,14 +403,19 @@ document.addEventListener('DOMContentLoaded', () => {
     return mapLoadPromise;
   };
   if (mapEl) {
-    loadMapBtn?.addEventListener('click', () => {
+    const loadMap = () => {
       setStatus(checkoutText.mapLoading);
-      ensureMap().then(() => {
+      loadMapBtn?.setAttribute('hidden', '');
+      return ensureMap().then(() => {
         setStatus(checkoutText.mapReady);
       }).catch(() => {
         setStatus(checkoutText.mapUnavailable);
+        loadMapBtn?.removeAttribute('hidden');
       });
-    });
+    };
+
+    loadMapBtn?.addEventListener('click', loadMap);
+    loadMap();
     if (useLocationBtn && navigator.geolocation) {
       const mapOverlay = document.getElementById('map-locating-overlay');
       function showMapLoading() { if (mapOverlay) mapOverlay.style.display = 'flex'; }
