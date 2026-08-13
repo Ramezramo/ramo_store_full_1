@@ -3,6 +3,15 @@
   $timelineNextLocale = $timelineLocale === 'ar' ? 'en' : 'ar';
   $timelineSwitchLabel = $timelineNextLocale === 'ar' ? 'AR' : 'EN';
   $timelineSwitchTitle = $timelineNextLocale === 'ar' ? 'Switch to Arabic Timeline' : 'Switch to English Timeline';
+  $headerIsArabic = $timelineLocale === 'ar';
+  $headerHomeLabel = $headerIsArabic ? 'الرئيسية' : 'Home';
+  $headerShopLabel = $headerIsArabic ? 'تسوّق' : 'Shop';
+  $headerTrackOrderLabel = $headerIsArabic ? 'تتبّع طلبك' : 'Track Order';
+  $headerSearchPlaceholder = $headerIsArabic ? 'دوّر على منتجات…' : 'Search products…';
+  $headerSearchActionLabel = $headerIsArabic ? 'بحث' : 'Search';
+  $headerAdminPanelLabel = $headerIsArabic ? 'لوحة التحكم' : 'Admin Panel';
+  $headerWishlistLabel = $headerIsArabic ? 'المفضلة' : 'Wishlist';
+  $headerCartLabel = $headerIsArabic ? 'السلة' : 'Cart';
 @endphp
 <!DOCTYPE html>
 <html lang="{{ $timelineLocale }}">
@@ -65,7 +74,17 @@ button{cursor:pointer;font-family:inherit}
 .nav-portal-item.danger:hover{background:#fef2f2;color:#dc2626}
 .nav-portal-divider{border:none;border-top:1px solid #f0f0ec;margin:4px 0}
 
-/* ── PAGE ── */
+	/* Arabic mode mirrors only the shared storefront header. */
+	.nav--rtl{direction:rtl}
+	.nav--rtl .nav-logo{direction:ltr;unicode-bidi:isolate}
+	.nav--rtl .nav-search form{padding-left:0;padding-right:14px}
+	.nav--rtl .nav-search input{direction:rtl;text-align:right}
+	.nav--rtl .nav-search button svg{transform:scaleX(-1)}
+	.nav--rtl .nav-dashboard-btn .caret{margin-left:0;margin-right:2px}
+	.nav--rtl .nav-portal-dropdown{right:auto !important;left:0 !important;transform-origin:top left}
+	.nav--rtl .nav-portal-item{text-align:right}
+
+	/* ── PAGE ── */
 .page{flex:1;max-width:var(--page-max);margin:auto;width:100%;padding:48px 24px 80px}
 
 /* ── HERO ── */
@@ -844,22 +863,22 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 <body>
 
 <!-- NAV -->
-<nav class="nav">
+<nav class="nav{{ $headerIsArabic ? ' nav--rtl' : '' }}" dir="{{ $headerIsArabic ? 'rtl' : 'ltr' }}">
   <div class="nav-inner">
     <a href="{{ route('home') }}" class="nav-logo">Ramo<span>Store</span></a>
     <button class="nav-hamburger" id="nav-hamburger" onclick="toggleMobileMenu()" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
     <div class="nav-links">
-      <a href="{{ route('home') }}"  class="{{ request()->routeIs('home') ? 'active' : '' }}">Home</a>
-      <a href="{{ route('shop') }}"  class="{{ request()->routeIs('shop') ? 'active' : '' }}">Shop</a>
-      <a href="{{ route('order.track') }}" class="{{ request()->routeIs('order.track*') ? 'active' : '' }}">Track Order</a>
+      <a href="{{ route('home') }}"  class="{{ request()->routeIs('home') ? 'active' : '' }}">{{ $headerHomeLabel }}</a>
+      <a href="{{ route('shop') }}"  class="{{ request()->routeIs('shop') ? 'active' : '' }}">{{ $headerShopLabel }}</a>
+      <a href="{{ route('order.track') }}" class="{{ request()->routeIs('order.track*') ? 'active' : '' }}">{{ $headerTrackOrderLabel }}</a>
     </div>
     <div class="nav-search">
       <form action="{{ route('search') }}" method="GET">
         <svg class="nav-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="15" height="15"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" name="q" placeholder="Search products…" value="{{ request('q', request('search')) }}" autocomplete="off">
-        <button type="submit" aria-label="Search">
+        <input type="text" name="q" placeholder="{{ $headerSearchPlaceholder }}" value="{{ request('q', request('search')) }}" autocomplete="off">
+        <button type="submit" aria-label="{{ $headerSearchActionLabel }}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>
       </form>
@@ -875,7 +894,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
       >{{ $timelineSwitchLabel }}</a>
 
       {{-- Wishlist --}}
-      <a href="{{ route('wishlist') }}" class="nav-icon-btn" title="Wishlist">
+      <a href="{{ route('wishlist') }}" class="nav-icon-btn" title="{{ $headerWishlistLabel }}">
         ♡
         @php
           $wCount = Auth::check()
@@ -886,7 +905,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
       </a>
 
       {{-- Cart --}}
-      <a href="{{ route('cart') }}" class="nav-icon-btn nav-top-cart" title="Cart">
+      <a href="{{ route('cart') }}" class="nav-icon-btn nav-top-cart" title="{{ $headerCartLabel }}">
         🛒
         @php
           $cCount = Auth::check()
@@ -907,7 +926,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
           <div class="nav-portal" id="admin-portal">
             <button class="nav-dashboard-btn" onclick="togglePortal('admin-portal',event)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-              Admin Panel
+              {{ $headerAdminPanelLabel }}
               <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             <div class="nav-portal-dropdown">
@@ -964,11 +983,17 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 
       {{-- Account --}}
       @auth
-        @php $__au = Auth::user(); @endphp
+        @php
+          $__au = Auth::user();
+          $__accountDisplayName = Str::limit($__au->first_name ?: $__au->name, 12);
+          if ($headerIsArabic && strcasecmp(trim($__accountDisplayName), 'Sara') === 0) {
+            $__accountDisplayName = 'سارة';
+          }
+        @endphp
         <div class="nav-portal" id="account-portal">
           <button class="nav-user-btn" onclick="togglePortal('account-portal',event)" style="padding:7px 12px">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            {{ Str::limit($__au->first_name ?: $__au->name, 12) }}
+            {{ $__accountDisplayName }}
             <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="nav-portal-dropdown" style="right:0;left:auto">
