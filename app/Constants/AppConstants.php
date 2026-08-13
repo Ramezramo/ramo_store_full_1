@@ -96,10 +96,29 @@ class AppConstants
                 return static::mediaPathExists($normalizedUrl) ? $normalizedUrl : null;
             }
 
+            // Imported timeline/configuration data can contain an absolute URL for
+            // this application's own `/storage/...` path. Treat it as managed
+            // media—not as an arbitrary third-party URL—so missing files do not
+            // remain in customer HTML merely because the hostname is public.
+            $urlParts = parse_url($normalizedUrl);
+            $urlHost = strtolower((string) ($urlParts['host'] ?? ''));
+            $appHost = strtolower((string) (parse_url(static::domain(), PHP_URL_HOST) ?? ''));
+            $urlPath = (string) ($urlParts['path'] ?? '');
+            if ($urlHost !== '' && $urlHost === $appHost && str_starts_with($urlPath, '/storage/')) {
+                $query = isset($urlParts['query']) ? '?' . $urlParts['query'] : '';
+
+                return static::imageUrl($urlPath . $query);
+            }
+
             return $normalizedUrl;
         }
 
         $normalizedPath = ltrim(str_replace('\\', '/', $path), '/');
+        // Timeline and legacy customer configuration may store a same-origin
+        // `/storage/...` URL instead of a disk-relative path. Normalise it before
+        // checking the configured disk so it neither becomes `storage/storage/...`
+        // nor emits a broken customer-facing request.
+        $normalizedPath = preg_replace('/^storage\//', '', $normalizedPath);
 
         if (! static::mediaPathExists($normalizedPath)) {
             return null;
@@ -118,7 +137,7 @@ class AppConstants
     /** Determine whether a configured object-storage or legacy public-disk path exists. */
     private static function mediaPathExists(string $path): bool
     {
-        $storagePath = preg_replace('/^\/storage\//', '', strtok($path, '?'));
+        $storagePath = preg_replace('/^(?:\/?storage\/)/', '', strtok($path, '?'));
         if ($storagePath === '') {
             return false;
         }

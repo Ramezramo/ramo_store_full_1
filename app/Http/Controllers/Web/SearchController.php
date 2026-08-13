@@ -56,15 +56,24 @@ class SearchController extends Controller
             );
 
         // Precision-first customer search: a product must match its own name,
-        // URL slug, or merchant-provided translation.  search_text includes the
-        // free-form description, where incidental phrases (for example, a sneaker
-        // description mentioning "jeans") previously surfaced unrelated products.
+        // URL slug, or one of its localized *names*. `search_text`, descriptions,
+        // and translated descriptions are intentionally excluded because incidental
+        // phrases (for example, a sneaker description mentioning "jeans") are not
+        // product identity and should not surface unrelated merchandise.
         if ($q !== '') {
             $needle = '%' . $q . '%';
             $query->where(function ($sub) use ($needle) {
                 $sub->where('p.name', 'ILIKE', $needle)
                     ->orWhere('p.slug', 'ILIKE', $needle)
-                    ->orWhere('p.translations', 'ILIKE', $needle);
+                    ->orWhereRaw(<<<'SQL'
+                        EXISTS (
+                            SELECT 1
+                            FROM jsonb_array_elements(
+                                COALESCE(NULLIF(p.translations, '')::jsonb, '[]'::jsonb)
+                            ) AS translation
+                            WHERE COALESCE(translation->>'name', '') ILIKE ?
+                        )
+                    SQL, [$needle]);
             });
         }
 

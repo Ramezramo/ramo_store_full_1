@@ -402,13 +402,13 @@
       @php
         $allCatsFlat  = $parentCats->merge($childCats->flatten());
         $activeCatObj = $allCatsFlat->firstWhere('id', $activeCategoryId);
-        $activeCatName = $activeCatObj->name ?? '';
+        $activeCatName = \App\Support\StorefrontLabels::category($activeCatObj->name ?? '', $shopRtl);
         $isChildActive = $activeCatObj && $activeCatObj->parent > 0;
         if ($isChildActive) { $parentCatObj = $parentCats->firstWhere('id', $activeCatObj->parent); }
       @endphp
       @if($isChildActive && isset($parentCatObj))
         <span>/</span>
-        <a href="{{ route('shop', ['category' => $parentCatObj->id]) }}">{{ $parentCatObj->name }}</a>
+        <a href="{{ route('shop', ['category' => $parentCatObj->id]) }}">{{ \App\Support\StorefrontLabels::category($parentCatObj->name, $shopRtl) }}</a>
       @endif
       <span>/</span><strong>{{ $activeCatName }}</strong>
     @endif
@@ -479,7 +479,7 @@
                 <div style="display:flex;align-items:center;border-radius:9px;{{ $isActive ? 'background:var(--c-orange);' : ($isOpen ? 'background:var(--c-tag);' : '') }}">
                   <a href="{{ $parentUrl }}"
                      style="flex:1;display:flex;align-items:center;gap:8px;padding:9px 0 9px 13px;color:{{ $isActive ? '#fff' : 'var(--c-dark)' }};text-decoration:none;min-width:0;font-size:13.5px;font-weight:600;">
-                    <span class="cat-parent-name">{{ $parent->name }}</span>
+                    <span class="cat-parent-name">{{ \App\Support\StorefrontLabels::category($parent->name, $shopRtl) }}</span>
                     @if($totalCount > 0)
                       <span class="cat-count-badge" style="{{ $isActive ? 'background:rgba(255,255,255,.25);color:#fff;border-color:transparent;' : '' }}">{{ $totalCount }}</span>
                     @endif
@@ -496,7 +496,7 @@
                 </div>
               @else
                 <a href="{{ $parentUrl }}" class="cat-parent-btn {{ $isActive ? 'active' : '' }}">
-                  <span class="cat-parent-name">{{ $parent->name }}</span>
+                  <span class="cat-parent-name">{{ \App\Support\StorefrontLabels::category($parent->name, $shopRtl) }}</span>
                   @if($totalCount > 0)<span class="cat-count-badge">{{ $totalCount }}</span>@endif
                 </a>
               @endif
@@ -511,7 +511,7 @@
                         $childUrl    = route('shop', array_merge(request()->except('category','page'), ['category' => $child->id]));
                       @endphp
                       <a href="{{ $childUrl }}" class="cat-child-link {{ $childActive ? 'active' : '' }}">
-                        <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $child->name }}</span>
+                        <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ \App\Support\StorefrontLabels::category($child->name, $shopRtl) }}</span>
                         @if($childCount > 0)<span class="cat-count-badge">{{ $childCount }}</span>@endif
                       </a>
                     @endforeach

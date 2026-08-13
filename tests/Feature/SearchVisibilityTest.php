@@ -88,6 +88,61 @@ class SearchVisibilityTest extends TestCase
         }
     }
 
+    public function test_search_excludes_products_that_only_mention_the_query_in_a_translated_description(): void
+    {
+        $suffix = substr(sha1(uniqid('translated-search-relevance-', true)), 0, 12);
+        $needle = 'جينز-' . $suffix;
+        $categoryId = null;
+        $productIds = [];
+
+        try {
+            $categoryId = DB::table('categories2')->insertGetId([
+                'name' => 'Translated search relevance ' . $suffix,
+                'slug' => 'translated-search-relevance-' . $suffix,
+            ]);
+
+            $matchingEnglishName = 'Tailored trousers ' . $suffix;
+            $matchingArabicName = 'بنطلون ' . $needle;
+            $incidentalEnglishName = 'Classic sneakers ' . $suffix;
+            $incidentalArabicName = 'سنيكرز كلاسيكي ' . $suffix;
+
+            $matchingProductId = $this->createProduct($matchingEnglishName, 'publish', 'approved', $categoryId);
+            $incidentalProductId = $this->createProduct($incidentalEnglishName, 'publish', 'approved', $categoryId);
+            $productIds = [$matchingProductId, $incidentalProductId];
+
+            DB::table('products_data')->where('id', $matchingProductId)->update([
+                'translations' => json_encode([[
+                    'locale' => 'ar',
+                    'name' => $matchingArabicName,
+                    'description' => 'وصف بنطلون مناسب للاستخدام اليومي.',
+                ]], JSON_UNESCAPED_UNICODE),
+            ]);
+            DB::table('products_data')->where('id', $incidentalProductId)->update([
+                'translations' => json_encode([[
+                    'locale' => 'ar',
+                    'name' => $incidentalArabicName,
+                    'description' => 'سنيكرز مريح يليق مع ' . $needle . '.',
+                ]], JSON_UNESCAPED_UNICODE),
+            ]);
+
+            $response = $this->withSession(['locale' => 'ar'])->get(route('search', ['q' => $needle]));
+
+            $response->assertOk();
+            $response->assertSee($matchingArabicName);
+            $response->assertDontSee($incidentalArabicName);
+        } finally {
+            foreach ($productIds as $productId) {
+                DB::table('product_variations')->where('product_id', $productId)->delete();
+                DB::table('product_category')->where('product_id', $productId)->delete();
+                DB::table('products_data')->where('id', $productId)->delete();
+            }
+
+            if ($categoryId) {
+                DB::table('categories2')->where('id', $categoryId)->delete();
+            }
+        }
+    }
+
     private function createProduct(string $name, string $status, string $acceptanceStatus, int $categoryId): int
     {
         $now = now();

@@ -51,7 +51,11 @@
     if (isset($attrs['Color'])) {
       $c = $attrs['Color'];
       if (!isset($colorMap[$c])) {
-        $colorMap[$c] = ['img' => $imgUrl, 'hex' => ($swatchHex[strtolower($c)] ?? '#ccc')];
+        $colorMap[$c] = [
+          'img' => $imgUrl,
+          'hex' => ($swatchHex[strtolower($c)] ?? '#ccc'),
+          'display' => \App\Support\StorefrontLabels::color($c, $cardRtl),
+        ];
       }
     }
     if (isset($attrs['Size']) && !in_array($attrs['Size'], $sizeList)) {
@@ -99,7 +103,7 @@
 
   /* ── Displayed product name ─────────────────────────────── */
   // $cardNameHtml can be passed as a variable for raw HTML (e.g. search highlights)
-  $productDisplayName = $p->timeline_name ?? $p->name;
+  $productDisplayName = $p->timeline_name ?? $p->tl_display_name ?? $p->name;
   $displayName = $coNameLimit > 0 ? Str::limit($productDisplayName, $coNameLimit) : $productDisplayName;
 @endphp
 
@@ -159,8 +163,10 @@
     <div class="pc-swatches" id="pc-swatches-{{ $pid }}">
       @foreach($colorMap as $colorName => $cdata)
       <button class="pc-swatch"
-              title="{{ $colorName }}"
+              title="{{ $cdata['display'] ?? $colorName }}"
+              aria-label="{{ $cdata['display'] ?? $colorName }}"
               data-color="{{ $colorName }}"
+              data-display="{{ $cdata['display'] ?? $colorName }}"
               data-img="{{ $cdata['img'] ?? '' }}"
               style="background:{{ $cdata['hex'] }};{{ $cdata['hex'] === '#f5f5f5' ? 'border-color:#bbb' : '' }}"
               onclick="event.preventDefault();pcPickColor({{ $pid }},'{{ addslashes($colorName) }}',this)">

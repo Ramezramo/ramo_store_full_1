@@ -1487,9 +1487,11 @@ function pcPickColor(pid, colorVal, btn) {
   // Toggle off if same
   if (card.dataset.selColor === colorVal) {
     card.dataset.selColor = '';
+    card.dataset.selColorLabel = '';
     btn.classList.remove('selected');
   } else {
     card.dataset.selColor = colorVal;
+    card.dataset.selColorLabel = btn.dataset.display || colorVal;
     card.querySelectorAll('.pc-swatch').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
     // Swap image if variation has one
@@ -1584,13 +1586,14 @@ function _pcUpdateSummary(pid) {
   const el = document.getElementById('pc-selected-' + pid);
   if (!el) return;
   const color = card.dataset.selColor || '';
+  const colorLabel = card.dataset.selColorLabel || color;
   const size = card.dataset.selSize || '';
   if (!color && !size) {
     el.textContent = '';
     return;
   }
   const parts = [];
-  if (color) parts.push(STOREFRONT_COPY.color + ': ' + color);
+  if (color) parts.push(STOREFRONT_COPY.color + ': ' + colorLabel);
   if (size) parts.push(STOREFRONT_COPY.size + ': ' + size);
   el.textContent = parts.join(' • ');
 }

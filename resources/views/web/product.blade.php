@@ -195,10 +195,12 @@
                   <button class="var-swatch"
                           data-attr-key="{{ $attrKey }}"
                           data-attr-val="{{ $val }}"
+                          data-attr-display="{{ \App\Support\StorefrontLabels::color($val, $isAr) }}"
                           onclick="selectAttr('{{ $attrKey }}','{{ $val }}',this)"
                           onmouseenter="previewColorImage('{{ $attrKey }}','{{ $val }}')"
                           onmouseleave="restoreImage()"
-                          title="{{ $val }}"
+                          title="{{ \App\Support\StorefrontLabels::color($val, $isAr) }}"
+                          aria-label="{{ $isAr ? 'اللون: ' : 'Color: ' }}{{ \App\Support\StorefrontLabels::color($val, $isAr) }}"
                           style="background-color: var(--swatch-{{ Str::slug($val) }}, #999)">
                   </button>
                 @else
@@ -939,10 +941,20 @@ function renderPriceStock(v) {
   }
 }
 
+function displayAttributeKey(key) {
+  if (!PRODUCT_TEXT.isAr) return key;
+  return key.toLowerCase() === 'color' ? 'اللون' : (key.toLowerCase() === 'size' ? 'المقاس' : key);
+}
+
+function displayAttributeValue(key, value) {
+  const btn = document.querySelector(`[data-attr-key="${key}"][data-attr-val="${value}"]`);
+  return btn?.dataset.attrDisplay || value;
+}
+
 function updateSelectedSummary() {
   const el = document.getElementById('product-sel-summary');
   if (!el) return;
-  const parts = Object.entries(selectedAttrs).map(([k, v]) => `${k}: ${v}`);
+  const parts = Object.entries(selectedAttrs).map(([k, v]) => `${displayAttributeKey(k)}: ${displayAttributeValue(k, v)}`);
   el.textContent = parts.length ? parts.join(' • ') : '';
 }
 
@@ -953,7 +965,7 @@ function updateHints() {
     const missing = ATTR_KEYS.filter(k => !selectedAttrs[k]);
     if (missing.length === 0) { el.textContent = ''; return; }
     if (Object.keys(selectedAttrs).length > 0 && missing.includes(key)) {
-      el.textContent = PRODUCT_TEXT.isAr ? `${PRODUCT_TEXT.select} ${key}` : `Please select a ${key}`;
+      el.textContent = PRODUCT_TEXT.isAr ? `${PRODUCT_TEXT.select} ${displayAttributeKey(key)}` : `Please select a ${key}`;
     } else {
       el.textContent = '';
     }
@@ -963,7 +975,7 @@ function updateHints() {
 function updateSelectedLabels() {
   ATTR_KEYS.forEach(key => {
     const el = document.getElementById('sel-' + slugify(key));
-    if (el) el.textContent = selectedAttrs[key] ? ': ' + selectedAttrs[key] : '';
+    if (el) el.textContent = selectedAttrs[key] ? ': ' + displayAttributeValue(key, selectedAttrs[key]) : '';
   });
 }
 
@@ -978,7 +990,7 @@ function handleAddToCart(id, name, basePrice, image) {
     const missing = ATTR_KEYS.filter(k => !selectedAttrs[k]);
     missing.forEach(k => {
       const el = document.getElementById('hint-' + slugify(k));
-      if (el) { el.textContent = PRODUCT_TEXT.isAr ? `${PRODUCT_TEXT.select} ${k}` : `Please select a ${k}`; el.style.color = 'var(--c-orange)'; }
+      if (el) { el.textContent = PRODUCT_TEXT.isAr ? `${PRODUCT_TEXT.select} ${displayAttributeKey(k)}` : `Please select a ${k}`; el.style.color = 'var(--c-orange)'; }
     });
     // Shake the first unselected group
     const firstGroup = document.getElementById('opts-' + slugify(missing[0]));

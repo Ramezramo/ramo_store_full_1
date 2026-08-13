@@ -7,6 +7,26 @@
   $timelineRtl = session('locale') === 'ar';
   $isAr = $timelineRtl;
   $timelineSeeAllLabel = $timelineRtl ? 'شوف اكتر' : 'See all →';
+  // Resolve managed local/legacy storage media once for all customer timeline
+  // widgets. Missing local paths are hidden from shoppers, while their original
+  // configuration remains untouched for administrators to repair.
+  $resolveTimelineImage = static function ($image): ?string {
+    $image = trim((string) $image);
+    if ($image === '') return null;
+
+    $imageParts = parse_url($image);
+    $imageHost = strtolower((string) ($imageParts['host'] ?? ''));
+    $appHost = strtolower((string) (parse_url(config('app.url'), PHP_URL_HOST) ?? ''));
+    $imagePath = (string) ($imageParts['path'] ?? $image);
+    $isManagedStorageUrl = str_starts_with($imagePath, '/storage/')
+      && ($imageHost === '' || $imageHost === $appHost || (bool) preg_match('/^(?:localhost|127\.|10\.|192\.168\.|172\.(?:1[6-9]|2[0-9]|3[0-1])\.)/', $imageHost));
+
+    if (str_starts_with($image, 'storage/') || $isManagedStorageUrl) {
+      return \App\Constants\AppConstants::imageUrl($image);
+    }
+
+    return $image;
+  };
 @endphp
 <div class="timeline-widgets{{ $timelineRtl ? ' timeline-widgets--rtl' : '' }}" @if($timelineRtl) dir="rtl" @endif>
 {{-- ── ANNOUNCEMENT BARS (full-width, outside page) ── --}}
@@ -185,7 +205,11 @@
     {{-- BANNER IMAGE (Slider or Static) --}}
     @elseif($layout === 'bannerImage')
       @php
-        $items        = $sec['items'] ?? [];
+        $items        = collect($sec['items'] ?? [])->map(function ($item) use ($resolveTimelineImage) {
+          if (!is_array($item)) return null;
+          $url = $resolveTimelineImage($item['image'] ?? null);
+          return $url ? array_replace($item, ['image' => $url]) : null;
+        })->filter()->values()->all();
         $isSlider     = ($sec['design'] ?? 'default') !== 'static';
         $radius       = $sec['radius'] ?? 2;
         $sliderId     = 'slider-'.$si;
@@ -235,9 +259,11 @@
     {{-- FLEXIBLE BANNER GRID — separately configurable linked cards --}}
     @elseif($layout === 'flexBannerGrid')
       @php
-        $gridItems = collect($sec['items'] ?? [])->filter(function ($item) {
-          return is_array($item) && filled($item['image'] ?? null);
-        })->values();
+        $gridItems = collect($sec['items'] ?? [])->map(function ($item) use ($resolveTimelineImage) {
+          if (!is_array($item)) return null;
+          $url = $resolveTimelineImage($item['image'] ?? null);
+          return $url ? array_replace($item, ['image' => $url]) : null;
+        })->filter()->values();
         $gridGap = max(0, min(40, (int)($sec['gap'] ?? 12)));
         $gridRadius = max(0, min(40, (int)($sec['radius'] ?? 14)));
         $gridMobileColumns = (int)($sec['mobileColumns'] ?? 2) === 1 ? 1 : 2;
@@ -277,19 +303,21 @@
           @php
             $cid    = $ci['category'] ?? null;
             $label  = $ci['label'] ?? ($allCategories[$cid]->name ?? '');
-            $img    = $ci['image'] ?? '';
+            $displayLabel = \App\Support\StorefrontLabels::category($label, $timelineRtl);
+            $img    = $resolveTimelineImage($ci['image'] ?? null);
             $color  = ($ci['colors'][0] ?? '#e85d26');
             $href   = $cid ? route('shop', ['category' => $cid]) : route('shop');
           @endphp
           <a href="{{ $href }}" class="tl-cat-item">
             <div class="tl-cat-img-wrap" style="border-color:{{ $color }}22">
               @if($img)
-                <img src="{{ $img }}" alt="{{ $label }}" class="tl-cat-img" loading="lazy">
+                <img src="{{ $img }}" alt="{{ $displayLabel }}" class="tl-cat-img" loading="lazy" onerror="this.onerror=null;this.style.display='none';var fallback=this.parentElement.querySelector('.tl-cat-chip');if(fallback)fallback.style.display='flex';">
+                <div class="tl-cat-chip" style="background:{{ $color }}22;display:none">🛍️</div>
               @else
                 <div class="tl-cat-chip" style="background:{{ $color }}22">🛍️</div>
               @endif
             </div>
-            <span class="tl-cat-label">{{ $label }}</span>
+            <span class="tl-cat-label">{{ $displayLabel }}</span>
           </a>
         @endforeach
       </div>
@@ -322,13 +350,14 @@
              class="cc-card"
              style="border-radius:var(--tl-card-r,{{ $radius }}px);height:var(--tl-card-h,{{ $cardHeight }}px);background:{{ $bg ? '#111' : $fallColor }}">
             @if($bg)
-              <img src="{{ $bg }}" alt="{{ $cat->name }}" loading="lazy" class="cc-img">
+              <img src="{{ $bg }}" alt="{{ \App\Support\StorefrontLabels::category($cat->name, $timelineRtl) }}" loading="lazy" class="cc-img" onerror="this.onerror=null;this.style.display='none';var fallback=this.parentElement.querySelector('.cc-placeholder');if(fallback)fallback.style.display='flex';">
+              <div class="cc-placeholder" style="background:linear-gradient(135deg,{{ $fallColor }},{{ $fallColor }}99);display:none">🛍️</div>
             @else
               <div class="cc-placeholder" style="background:linear-gradient(135deg,{{ $fallColor }},{{ $fallColor }}99)">🛍️</div>
             @endif
             <div class="cc-overlay"></div>
             <div class="cc-label">
-              <div class="cc-name">{{ $cat->name }}</div>
+              <div class="cc-name">{{ \App\Support\StorefrontLabels::category($cat->name, $timelineRtl) }}</div>
               @if($showCount && $cat->product_count > 0)
                 <div class="cc-count">{{ number_format($cat->product_count) }} items</div>
               @endif

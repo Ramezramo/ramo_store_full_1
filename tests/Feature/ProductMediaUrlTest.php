@@ -18,6 +18,28 @@ class ProductMediaUrlTest extends TestCase
         $this->assertNull(AppConstants::imageUrl('products/missing.jpg'));
     }
 
+    public function test_direct_storage_gallery_paths_are_resolved_only_when_the_file_exists(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('image-gallery/present-banner.png', 'image-content');
+
+        $this->assertSame('/storage/image-gallery/present-banner.png', AppConstants::imageUrl('/storage/image-gallery/present-banner.png'));
+        $this->assertNull(AppConstants::imageUrl('/storage/image-gallery/missing-banner.png'));
+    }
+
+    public function test_same_origin_absolute_storage_gallery_path_is_hidden_when_missing(): void
+    {
+        Storage::fake('public');
+        Config::set('app.url', 'https://store.example.test');
+        Storage::disk('public')->put('image-gallery/present-absolute-banner.png', 'image-content');
+
+        $this->assertSame(
+            AppConstants::imageUrl('/storage/image-gallery/present-absolute-banner.png'),
+            AppConstants::imageUrl('https://store.example.test/storage/image-gallery/present-absolute-banner.png')
+        );
+        $this->assertNull(AppConstants::imageUrl('https://store.example.test/storage/image-gallery/missing-absolute-banner.png'));
+    }
+
     public function test_missing_primary_media_falls_back_to_an_available_secondary_image(): void
     {
         Storage::fake('public');

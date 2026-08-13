@@ -128,7 +128,7 @@
             @foreach($categories as $cat)
               <a href="{{ route('search', array_merge(request()->except('category'), ['category' => $cat->id])) }}"
                  class="cat-filter-item {{ $categoryId == $cat->id ? 'active' : '' }}">
-                {{ $cat->name }}
+                {{ \App\Support\StorefrontLabels::category($cat->name, $searchRtl) }}
               </a>
             @endforeach
           </div>

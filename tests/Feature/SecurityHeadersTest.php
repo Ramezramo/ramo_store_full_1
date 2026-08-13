@@ -33,6 +33,7 @@ class SecurityHeadersTest extends TestCase
             ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
             ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
             ->assertHeader('Permissions-Policy', 'camera=(), microphone=()')
+            ->assertHeader('Content-Security-Policy-Report-Only', "base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; upgrade-insecure-requests")
             ->assertHeaderMissing('Strict-Transport-Security');
     }
 
