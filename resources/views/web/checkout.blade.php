@@ -8,6 +8,7 @@
   .ck-auth-title{margin:0;color:#181818;font-size:15px;font-weight:800}.ck-auth-desc{margin:4px 0 0;color:#686868;font-size:12px;line-height:1.45}
   .ck-auth-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}.ck-auth-action{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:0 12px;border:1px solid #1b1b1b;border-radius:9px;background:#1b1b1b;color:#fff;font-size:12px;font-weight:750;line-height:1;text-decoration:none;white-space:nowrap;transition:.15s}.ck-auth-action:hover{background:#343434;border-color:#343434;color:#fff}.ck-auth-action-light{border-color:#d5d5d5;background:#fff;color:#272727}.ck-auth-action-light:hover{border-color:#aaa;background:#f6f6f6;color:#111}
   .ck-save-address{display:flex;align-items:center;gap:13px;min-height:64px;margin-top:4px;padding:12px 15px;border:1px solid #e4e4e4;border-radius:12px;background:#fcfcfc;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s}.ck-save-address:hover{border-color:#cfcfcf;background:#fff}.ck-save-address:has(input:focus-visible){border-color:#e85d26;box-shadow:0 0 0 3px rgba(232,93,38,.14)}.ck-save-address input[type="checkbox"]{width:20px!important;height:20px!important;min-width:20px;margin:0!important;flex:0 0 20px;accent-color:#e85d26;cursor:pointer}.ck-save-address-copy{display:flex;flex-direction:column;gap:3px;min-width:0}.ck-save-address-title{color:#202020;font-size:13px;font-weight:800;line-height:1.25}.ck-save-address-desc{color:#777;font-size:12px;line-height:1.35}
+  .ck-map-shell{position:relative;width:100%;height:280px;margin-bottom:12px;border:1px solid rgba(0,0,0,.08);border-radius:14px;overflow:hidden;background:#f8f8f8}.ck-map-canvas{width:100%;height:100%}.ck-map-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(145deg,#fffdfb,#f7f7f6);z-index:2;text-align:center}.ck-map-placeholder[hidden]{display:none}.ck-map-placeholder-inner{display:flex;max-width:240px;align-items:center;flex-direction:column;gap:8px}.ck-map-placeholder-icon{display:flex;width:40px;height:40px;align-items:center;justify-content:center;border-radius:50%;background:#fff1e9;color:#e85d26;font-size:21px}.ck-map-placeholder-title{color:#222;font-size:14px;font-weight:800}.ck-map-placeholder-copy{color:#757575;font-size:12px;line-height:1.4}.ck-map-load-btn{min-height:38px;margin-top:2px;padding:0 13px;border:1px solid #e85d26;border-radius:9px;background:#fff;color:#c94717;font-size:12px;font-weight:800;cursor:pointer}.ck-map-load-btn:hover{background:#fff4ef}.ck-map-load-btn:focus-visible{outline:3px solid rgba(232,93,38,.24);outline-offset:2px}
   @media(max-width:600px){.ck-auth-widget{align-items:flex-start;flex-direction:column;gap:13px;padding:15px}.ck-auth-actions{justify-content:flex-start;width:100%}.ck-auth-action{flex:1;padding:0 10px}.ck-save-address{min-height:58px;padding:11px 13px}}
 </style>
 @endpush
@@ -89,8 +90,16 @@
           <div class="form-group">
             <label>Pin Your Location on Map</label>
             <button type="button" class="btn btn-outline" id="use-current-location-btn" style="margin-bottom:12px">📍 Use My Current Location</button>
-            <div style="position:relative;width:100%;margin-bottom:12px">
-              <div id="checkout-map" style="width:100%;height:280px;border-radius:14px;overflow:hidden;border:1px solid rgba(0,0,0,.08)"></div>
+            <div class="ck-map-shell">
+              <div id="checkout-map" class="ck-map-canvas" aria-label="Interactive delivery location map"></div>
+              <div id="checkout-map-placeholder" class="ck-map-placeholder">
+                <div class="ck-map-placeholder-inner">
+                  <span class="ck-map-placeholder-icon" aria-hidden="true">⌖</span>
+                  <span class="ck-map-placeholder-title">Choose a delivery pin</span>
+                  <span class="ck-map-placeholder-copy">Load the interactive map only when you want to adjust your delivery location.</span>
+                  <button type="button" id="load-checkout-map-btn" class="ck-map-load-btn" aria-controls="checkout-map">Load map</button>
+                </div>
+              </div>
               <div id="map-locating-overlay" style="display:none;position:absolute;inset:0;background:rgba(255,255,255,.75);border-radius:14px;z-index:999;flex-direction:column;align-items:center;justify-content:center;gap:10px">
                 <div style="width:38px;height:38px;border:4px solid #e85d26;border-top-color:transparent;border-radius:50%;animation:map-spin .8s linear infinite"></div>
                 <span style="font-size:13px;font-weight:600;color:#e85d26">Getting your location…</span>
@@ -242,11 +251,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const cityInput = document.querySelector('input[name="city"]');
   const stateSelect = document.querySelector('select[name="state"]');
   const mapEl = document.getElementById('checkout-map');
+  const mapPlaceholder = document.getElementById('checkout-map-placeholder');
+  const loadMapBtn = document.getElementById('load-checkout-map-btn');
   const locationStatus = document.getElementById('location-status');
   const latitudeInput = document.getElementById('checkout-latitude');
   const longitudeInput = document.getElementById('checkout-longitude');
   let map = null;
   let marker = null;
+  let mapLoadPromise = null;
 
   const setStatus = (msg) => {
     if (locationStatus) locationStatus.textContent = msg;
@@ -290,7 +302,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
   const initMap = (lat, lng) => {
-    if (!window.L || !mapEl || map) return;
+    if (!window.L || !mapEl) return null;
+    if (map) {
+      map.setView([lat, lng], 14);
+      marker?.setLatLng([lat, lng]);
+      return map;
+    }
     map = L.map(mapEl, { zoomControl: true }).setView([lat, lng], 14);
     L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
       maxZoom: 20,
@@ -305,24 +322,55 @@ document.addEventListener('DOMContentLoaded', () => {
       marker.setLatLng(e.latlng);
       updateFields(e.latlng.lat, e.latlng.lng);
     });
+    mapPlaceholder?.setAttribute('hidden', '');
+    window.setTimeout(() => map.invalidateSize(), 0);
+    return map;
   };
   const savedLat = parseFloat(latitudeInput?.value || '');
   const savedLng = parseFloat(longitudeInput?.value || '');
   const startLat = Number.isFinite(savedLat) ? savedLat : 30.0444;
   const startLng = Number.isFinite(savedLng) ? savedLng : 31.2357;
-  const loadMap = () => {
-    const css = document.createElement('link');
-    css.rel = 'stylesheet';
-    css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-    document.head.appendChild(css);
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    script.onload = () => initMap(startLat, startLng);
-    document.body.appendChild(script);
+  const ensureMap = (lat = startLat, lng = startLng) => {
+    if (map) return Promise.resolve(initMap(lat, lng));
+    if (mapLoadPromise) return mapLoadPromise.then(() => initMap(lat, lng));
+
+    mapLoadPromise = new Promise((resolve, reject) => {
+      const complete = () => {
+        const initializedMap = initMap(lat, lng);
+        initializedMap ? resolve(initializedMap) : reject(new Error('Map could not be initialized.'));
+      };
+      if (window.L) {
+        complete();
+        return;
+      }
+      if (!document.querySelector('link[data-checkout-leaflet]')) {
+        const css = document.createElement('link');
+        css.rel = 'stylesheet';
+        css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        css.dataset.checkoutLeaflet = 'true';
+        document.head.appendChild(css);
+      }
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.dataset.checkoutLeaflet = 'true';
+      script.onload = complete;
+      script.onerror = () => reject(new Error('Map resources could not be loaded.'));
+      document.body.appendChild(script);
+    }).catch((error) => {
+      mapLoadPromise = null;
+      throw error;
+    });
+    return mapLoadPromise;
   };
   if (mapEl) {
-    if (window.L) initMap(startLat, startLng);
-    else loadMap();
+    loadMapBtn?.addEventListener('click', () => {
+      setStatus('Loading map…');
+      ensureMap().then(() => {
+        setStatus('Map ready. Tap or drag the pin to adjust your delivery location.');
+      }).catch(() => {
+        setStatus('The map could not be loaded. You can still enter your address manually.');
+      });
+    });
     if (useLocationBtn && navigator.geolocation) {
       const mapOverlay = document.getElementById('map-locating-overlay');
       function showMapLoading() { if (mapOverlay) mapOverlay.style.display = 'flex'; }
@@ -331,18 +379,18 @@ document.addEventListener('DOMContentLoaded', () => {
       function fetchLocation() {
         setStatus('Locating...');
         showMapLoading();
-        navigator.geolocation.getCurrentPosition((pos) => {
-          hideMapLoading();
+        navigator.geolocation.getCurrentPosition(async (pos) => {
           const { latitude, longitude, accuracy } = pos.coords;
           setCoords(latitude, longitude);
-          if (map) {
-            map.setView([latitude, longitude], 14);
-            marker?.setLatLng([latitude, longitude]);
-          } else {
-            initMap(latitude, longitude);
-          }
           updateFields(latitude, longitude);
-          setStatus(accuracy ? `Location detected (${Math.round(accuracy)}m accuracy). You can drag the pin to adjust it.` : 'Location detected. You can drag the pin to adjust it.');
+          try {
+            await ensureMap(latitude, longitude);
+            setStatus(accuracy ? `Location detected (${Math.round(accuracy)}m accuracy). You can drag the pin to adjust it.` : 'Location detected. You can drag the pin to adjust it.');
+          } catch (_) {
+            setStatus('Location detected. You can still enter or edit your address manually.');
+          } finally {
+            hideMapLoading();
+          }
         }, () => {
           hideMapLoading();
           setStatus('Could not detect your location. Please allow location access and try again.');
