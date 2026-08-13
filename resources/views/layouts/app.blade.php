@@ -1303,7 +1303,7 @@ if ('serviceWorker' in navigator) {
     if (frameId) cancelAnimationFrame(frameId);
     frameId = requestAnimationFrame(function () {
       const visualBottom = window.visualViewport.offsetTop + window.visualViewport.height;
-      const compensation = Math.round(root.clientHeight - visualBottom);
+      const compensation = Math.max(0, Math.round(root.clientHeight - visualBottom));
       root.style.setProperty('--mobile-nav-viewport-offset', compensation + 'px');
       frameId = null;
     });

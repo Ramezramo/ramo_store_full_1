@@ -591,8 +591,8 @@
 }
 .sticky-atc-btn:hover { background: #333; transform: scale(1.02); }
 @media(max-width:768px){
-  /* Sit above the 58px mobile bottom nav */
-  .sticky-atc-bar { bottom: 58px; border-radius: 12px 12px 0 0; }
+  /* Stay directly above the mobile navigation, including Android viewport changes. */
+  .sticky-atc-bar { bottom:calc(var(--mobile-nav-height, 58px) + var(--mobile-nav-viewport-offset, 0px)); border-radius: 12px 12px 0 0; }
 }
 @media(max-width:600px){
   .sticky-atc-inner { padding: 10px 16px; }
