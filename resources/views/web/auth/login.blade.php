@@ -1,11 +1,11 @@
 @extends('layouts.app')
-@section('title', session('locale', 'en') === 'ar' ? 'سجّل دخول — Ramo Store' : 'Sign In — Ramo Store')
+@section('title', session('locale', 'en') === 'ar' ? 'تأكيد رقم الموبايل — Ramo Store' : 'Sign In — Ramo Store')
 
 @php
   $loginRtl = session('locale', 'en') === 'ar';
   $loginCopy = $loginRtl ? [
-    'continue' => 'سجّل دخول عشان تكمّل', 'checkoutHint' => 'سجّل دخول لحسابك عشان تكمّل طلبك',
-    'welcome' => 'نورتنا تاني', 'accountHint' => 'سجّل دخول لحسابك',
+    'continue' => 'كمّل طلبك', 'checkoutHint' => 'اكتب رقم موبايلك وهنبعتلك كود التأكيد.',
+    'welcome' => 'اكتب رقم موبايلك', 'accountHint' => 'هنبعتلك كود التأكيد على رقمك.',
     'sendOtp' => 'ابعت كود التأكيد', 'sending' => 'بنَبعت الكود…', 'or' => 'أو',
     'google' => 'كمّل بجوجل', 'email' => 'البريد الإلكتروني', 'password' => 'كلمة السر',
     'remember' => 'افتكرني', 'forgot' => 'نسيت كلمة السر؟', 'signIn' => 'سجّل دخول',
@@ -131,9 +131,9 @@
       @endif
     </div>
 
-    @if(!$fromCheckout)
+    @if(!$fromCheckout && !$loginRtl)
     <p class="auth-register-copy" style="text-align:center;font-size:13px;color:#888;margin-top:18px">
-      {{ $loginRtl ? $loginCopy['newAccount'] : "Don't have an account?" }} <a href="{{ route('register') }}" style="color:#1a1a1a;font-weight:600">{{ $loginRtl ? $loginCopy['signUp'] : 'Sign up' }}</a>
+      Don't have an account? <a href="{{ route('register') }}" style="color:#1a1a1a;font-weight:600">Sign up</a>
     </p>
     @endif
   </div>
