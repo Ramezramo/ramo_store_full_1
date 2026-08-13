@@ -15,10 +15,19 @@ class OrderTrackingController extends Controller
 
     public function track(Request $request)
     {
+        $isAr = session('locale') === 'ar';
+
         $request->validate([
             'order_id' => 'required|integer|min:1',
             'phone'    => 'required|string|min:6|max:30',
-        ]);
+        ], $isAr ? [
+            'order_id.required' => 'اكتب رقم الطلب.',
+            'order_id.integer'  => 'رقم الطلب لازم يكون رقم صحيح.',
+            'order_id.min'      => 'رقم الطلب لازم يكون أكبر من صفر.',
+            'phone.required'    => 'اكتب رقم الموبايل.',
+            'phone.min'         => 'رقم الموبايل قصير جدًا.',
+            'phone.max'         => 'رقم الموبايل طويل جدًا.',
+        ] : []);
 
         $orderId    = (int) $request->input('order_id');
         $phoneInput = preg_replace('/\s+/', '', $request->input('phone'));
@@ -28,7 +37,9 @@ class OrderTrackingController extends Controller
         if (!$order) {
             return view('web.order-tracking', [
                 'order' => null,
-                'error' => 'Order #' . $orderId . ' was not found. Please check your order number.',
+                'error' => $isAr
+                    ? 'مش لاقيين طلب رقم ' . $orderId . '، تأكد من رقم الطلب'
+                    : 'Order #' . $orderId . ' was not found. Please check your order number.',
             ]);
         }
 
@@ -51,7 +62,9 @@ class OrderTrackingController extends Controller
         if (!$match) {
             return view('web.order-tracking', [
                 'order' => null,
-                'error' => 'The phone number does not match our records for order #' . $orderId . '. Please try again.',
+                'error' => $isAr
+                    ? 'رقم الموبايل مش مطابق لطلب رقم ' . $orderId . '، حاول تاني'
+                    : 'The phone number does not match our records for order #' . $orderId . '. Please try again.',
             ]);
         }
 
@@ -136,9 +149,30 @@ class OrderTrackingController extends Controller
         'shipped'    => ['label' => 'Shipped',           'color' => '#06b6d4', 'bg' => '#ecfeff', 'icon' => '🚚'],
     ];
 
-    public static function statusInfo(string $status): array
+    public static function statusInfo(string $status, bool $isAr = false): array
     {
-        return self::$statusMap[strtolower($status)]
+        $normalizedStatus = strtolower($status);
+        $info = self::$statusMap[$normalizedStatus]
             ?? ['label' => ucfirst($status), 'color' => '#6b7280', 'bg' => '#f9fafb', 'icon' => '📦'];
+
+        if (!$isAr) {
+            return $info;
+        }
+
+        $arabicLabels = [
+            'pending'    => 'في الانتظار',
+            'processing' => 'جاري التجهيز',
+            'on-hold'    => 'معلّق',
+            'completed'  => 'اتسلّم',
+            'delivered'  => 'اتسلّم',
+            'cancelled'  => 'اتلغى',
+            'refunded'   => 'اترجع',
+            'failed'     => 'فشل الدفع',
+            'shipped'    => 'اتشحن',
+        ];
+
+        $info['label'] = $arabicLabels[$normalizedStatus] ?? $info['label'];
+
+        return $info;
     }
 }

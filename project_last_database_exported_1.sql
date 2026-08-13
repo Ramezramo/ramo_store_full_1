@@ -2,10 +2,10 @@
 -- PostgreSQL database dump
 --
 
-\restrict sFlJnnCrw6CA0KkgP8G6JuIIyp8LRj8IDkI3WEsnI3gp05RWt0cOmjEuCucfKKr
+\restrict FtjTJkpP3qmua08hLkmLo7Wb6HedX6jWDTzOALk7ehMHhbAqRdXTUyCV5CYMutn
 
--- Dumped from database version 16.10
--- Dumped by pg_dump version 16.10
+-- Dumped from database version 16.14 (Ubuntu 16.14-0ubuntu0.24.04.1)
+-- Dumped by pg_dump version 16.14 (Ubuntu 16.14-0ubuntu0.24.04.1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -693,6 +693,47 @@ ALTER SEQUENCE public.idempotency_keys_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.idempotency_keys_id_seq OWNED BY public.idempotency_keys.id;
+
+
+--
+-- Name: image_gallery_images; Type: TABLE; Schema: public; Owner: ramo_app
+--
+
+CREATE TABLE public.image_gallery_images (
+    id bigint NOT NULL,
+    path character varying(255) NOT NULL,
+    original_name character varying(255) NOT NULL,
+    mime_type character varying(100) NOT NULL,
+    file_size bigint NOT NULL,
+    width integer,
+    height integer,
+    uploaded_by bigint,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
+
+
+ALTER TABLE public.image_gallery_images OWNER TO ramo_app;
+
+--
+-- Name: image_gallery_images_id_seq; Type: SEQUENCE; Schema: public; Owner: ramo_app
+--
+
+CREATE SEQUENCE public.image_gallery_images_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.image_gallery_images_id_seq OWNER TO ramo_app;
+
+--
+-- Name: image_gallery_images_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: ramo_app
+--
+
+ALTER SEQUENCE public.image_gallery_images_id_seq OWNED BY public.image_gallery_images.id;
 
 
 --
@@ -2111,6 +2152,13 @@ ALTER TABLE ONLY public.idempotency_keys ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
+-- Name: image_gallery_images id; Type: DEFAULT; Schema: public; Owner: ramo_app
+--
+
+ALTER TABLE ONLY public.image_gallery_images ALTER COLUMN id SET DEFAULT nextval('public.image_gallery_images_id_seq'::regclass);
+
+
+--
 -- Name: koto id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -2307,10 +2355,11 @@ COPY public.app_config (id, config_json, created_at, updated_at) FROM stdin;
 
 COPY public.app_configs (id, config_key, config_group, lang, value, label, description, is_public, sort_order, updated_at) FROM stdin;
 2	horizon_layout	layout	ar	[{"layout":"logo","showMenu":true,"showSearch":true,"showLogo":true,"showliked":true},{"layout":"category","type":"icon","wrap":false,"size":1,"radius":50,"items":[{"category":18,"label":"هواتف","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/phones_image.jpg","colors":["#3CC2BF","#3CC2BF"]},{"category":23,"label":"حقائب","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/bag_image_.jpg","colors":["#3E6AB5","#3E6AB5"]},{"category":25,"label":"بليزرات","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/women_blazers.webp","colors":["#53A2CC","#53A2CC"]},{"category":28,"label":"أحذية","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/sheos.jpg","colors":["#53688A","#53688A"]},{"category":29,"label":"جينز","image":"https:\\/\\/us.dockers.com\\/cdn\\/shop\\/files\\/Monte-Mid-Rise-Jeans-Relaxed-Fit-alt5-A64720005_360x450_crop_center.png?v=1741351564","colors":["#43506A","#43506A"]}]},{"layout":"bannerImage","isSlider":true,"autoPlay":true,"design":"default","radius":2,"items":[{"category":29,"image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/HP-Banner.webp","padding":7},{"category":28,"image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/Campaign-LP-07.webp","padding":7}]},{"layout":"saleImages","category":23,"headerText":"تسوق بالمظهر","maxItemsToShow":8,"productWidth":130,"productConfig":{"imageRatio":1.4,"borderRadius":10}},{"name":"مجموعات الرجال","layout":"twoColumn","headerText":"تخفيضات اليوم ⚡️","productWidth":200,"maxItemsToShow":7,"category":23,"productConfig":{"borderRadius":12.5,"showHeart":true,"imageRatio":1.5,"layout":"grid"}},{"layout":"category","name":"Men's Collection","type":"icon","wrap":false,"size":1,"radius":50,"items":[{"category":18,"label":"Men","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/men_cat.jpg","colors":["#3E6AB5","#3E6AB5"]},{"category":19,"label":"Shirts","image":"","colors":["#53A2CC","#53A2CC"]},{"category":21,"label":"T-Shirts","image":"","colors":["#3CC2BF","#3CC2BF"]},{"category":30,"label":"Jeans Man","image":"https:\\/\\/us.dockers.com\\/cdn\\/shop\\/files\\/Monte-Mid-Rise-Jeans-Relaxed-Fit-alt5-A64720005_360x450_crop_center.png?v=1741351564","colors":["#43506A","#43506A"]},{"category":28,"label":"Jackets","image":"","colors":["#53688A","#53688A"]}]},{"layout":"category","name":"Women's Collection","type":"icon","wrap":false,"size":1,"radius":50,"items":[{"category":22,"label":"Women","image":"","colors":["#EC4899","#EC4899"]},{"category":25,"label":"Blazers","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/women_blazers.webp","colors":["#8B5CF6","#8B5CF6"]},{"category":26,"label":"Dresses","image":"","colors":["#F59E0B","#F59E0B"]},{"category":29,"label":"Jeans","image":"https:\\/\\/us.dockers.com\\/cdn\\/shop\\/files\\/Monte-Mid-Rise-Jeans-Relaxed-Fit-alt5-A64720005_360x450_crop_center.png?v=1741351564","colors":["#43506A","#43506A"]},{"category":23,"label":"Bags","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/bag_image_.jpg","colors":["#3E6AB5","#3E6AB5"]}]},{"layout":"category","name":"All Categories","type":"icon","wrap":false,"size":1,"radius":50,"items":[{"category":208,"label":"Clothing","image":"","colors":["#E85D26","#E85D26"]},{"category":18,"label":"Men","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/men_cat.jpg","colors":["#3E6AB5","#3E6AB5"]},{"category":22,"label":"Women","image":"","colors":["#EC4899","#EC4899"]},{"category":23,"label":"Bags","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/bag_image_.jpg","colors":["#3CC2BF","#3CC2BF"]},{"category":311,"label":"Phones","image":"https:\\/\\/raw.githubusercontent.com\\/Ramezramo\\/projectxmedia1\\/refs\\/heads\\/main\\/phones_image.jpg","colors":["#22C55E","#22C55E"]}]}]	Homepage Layout (AR)	\N	t	0	2026-05-06 21:26:09
-4	auth_settings	auth	\N	{"email_login":false,"google_login":false,"phone_otp_login":true,"guest_checkout":false,"auto_register_google":true,"auto_register_otp":true,"require_name_on_register":true,"require_email_on_register":false,"require_email_verification":false,"otp_length":6,"otp_expiry_minutes":5,"max_otp_attempts":3,"resend_cooldown_seconds":60,"max_resends_per_hour":3,"max_login_attempts":5,"lockout_duration_minutes":15,"session_expiry_hours":24}	Auth Settings	Login methods and security configuration	f	0	2026-08-09 14:18:55
 5	shipping_settings	shipping	\N	{"free_shipping_enabled":false,"free_shipping_threshold":1000,"standard_shipping_fee":100}	Shipping Settings	Free shipping threshold and standard shipping fee	f	0	2026-08-09 14:53:16
 3	manual_payment_methods	payment	\N	{"cod_enabled":false,"cod_data":"Pay when your order arrives","vodafone_cash_enabled":false,"vodafone_cash_data":"Send to 01xxxxxxxxx","bank_transfer_enabled":false,"bank_transfer_data":"Transfer to our bank account","fawry_enabled":false,"fawry_data":"Pay at any Fawry outlet","credit_card_enabled":false,"credit_card_data":"Visa \\/ Mastercard","wallet_enabled":true,"wallet_number":"010065464565","instapay_enabled":true,"instapay_number":"010065464565","instapay_link":"https:\\/\\/ipn.eg\\/S\\/ramezasaad500\\/instapay\\/7lyGc3"}	Manual Payment Methods	Wallet and InstaPay transfer instructions for website orders	f	0	2026-08-09 14:55:55
-1	horizon_layout	layout	en	[{"layout":"logo","showMenu":true,"showSearch":true,"showLogo":true,"showliked":true,"hidden":false},{"layout":"category","type":"icon","wrap":false,"size":1,"radius":50,"items":[{"category":18,"label":"Phones","image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/phones_image.jpg","colors":["#3CC2BF","#3CC2BF"]},{"category":23,"label":"Bag","image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/bag_image_.jpg","colors":["#3E6AB5","#3E6AB5"]},{"category":25,"label":"Blazers","image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/women_blazers.webp","colors":["#53A2CC","#53A2CC"]},{"category":28,"label":"Shoes","image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/sheos.jpg","colors":["#53688A","#53688A"]},{"category":29,"label":"Jeans","image":"https://us.dockers.com/cdn/shop/files/Monte-Mid-Rise-Jeans-Relaxed-Fit-alt5-A64720005_360x450_crop_center.png?v=1741351564","colors":["#43506A","#43506A"]},{"category":30,"label":"Jeans Man","image":"https://images.squarespace-cdn.com/content/v1/58add8dd6a49639a87822092/1654105465923-95DJO7H19YLTGOSB4CLO/how-to-style-mens-jeans.jpg?format=750w","colors":["#12B58C","#12B58C"]}],"hidden":false},{"layout":"saleImages","category":null,"headerText":"Shop by Look","maxItemsToShow":8,"productWidth":200,"productConfig":{"imageRatio":1.4,"borderRadius":10},"hidden":false,"imageHeight":240,"responsive":{"mobile":{"productWidth":190,"imageHeight":160}}},{"layout":"brands"},{"layout":"bannerImage","isSlider":true,"autoPlay":true,"showNumber":false,"design":"default","showBackGround":true,"radius":10,"items":[{"category":29,"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/HP-Banner.webp","padding":7},{"product":30,"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/Campaign-LP-04.webp","padding":7,"category":18},{"category":28,"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/Campaign-LP-07.webp","padding":7}],"bannerHeight":260},{"name":"Man Collections","layout":"twoColumn","headerText":"On Sale Today ⚡️","productWidth":200,"maxItemsToShow":7,"category":23,"addToCartButtonStyle":{"style":"iconed","backgroundColor":"#E0E0E0","textColor":"#3D3D3D"},"productConfig":{"borderRadius":12.5,"hMargin":10,"vMargin":6,"showHeart":true,"imageRatio":1.5,"layout":"grid"},"responsive":{"mobile":{"imageHeight":100,"productWidth":130}}},{"layout":"bannerImage","design":"static","fit":"fitWidth","marginLeft":0,"marginRight":0,"marginTop":20,"marginBottom":0,"height":0.15,"items":[{"product":30,"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/kobunatkhasm.png","padding":7}],"bannerHeight":280,"radius":7},{"name":"SuperMarket Stars","layout":"seupermarketstars","category":18},{"name":"Brands","layout":"brands","category":21},{"layout":"topVendors","headerText":"Top Sellers","maxItemsToShow":6,"sortBy":"products"},{"layout":"seupermarketstars","name":"Featured","category":26},{"layout":"coupons","headerText":"This Week's Deals","subLabel":"Use code at checkout","maxItemsToShow":6,"sortBy":"amount","showExpiredFallback":true,"hideWhenEmpty":true}]	Homepage Layout (EN)	\N	t	0	2026-08-10 04:40:37
+4	auth_settings	auth	\N	{"otp_length": 6, "email_login": false, "google_login": false, "guest_checkout": false, "phone_otp_login": true, "max_otp_attempts": 3, "auto_register_otp": true, "max_login_attempts": 5, "otp_expiry_minutes": 5, "auto_register_google": true, "max_resends_per_hour": 3, "session_expiry_hours": 24, "resend_cooldown_seconds": 60, "lockout_duration_minutes": 15, "require_name_on_register": true, "require_email_on_register": false, "require_email_verification": false}	Auth Settings	Login methods and security configuration	f	0	2026-08-12 21:44:18
+6	shop_mobile_product_layout	layout	\N	"grid"	Shop mobile product layout	Choose two products per row or a horizontal product row on narrow phones.	f	100	2026-08-12 11:11:34
+1	horizon_layout	layout	en	[{"hidden":true,"layout":"logo","showLogo":true,"showMenu":true,"showliked":true,"showSearch":true},{"size":1,"type":"icon","wrap":false,"items":[{"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/phones_image.jpg","label":"Phones","colors":["#3CC2BF","#3CC2BF"],"category":18},{"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/bag_image_.jpg","label":"Bag","colors":["#3E6AB5","#3E6AB5"],"category":23},{"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/women_blazers.webp","label":"Blazers","colors":["#53A2CC","#53A2CC"],"category":25},{"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/sheos.jpg","label":"Shoes","colors":["#53688A","#53688A"],"category":28},{"image":"https://us.dockers.com/cdn/shop/files/Monte-Mid-Rise-Jeans-Relaxed-Fit-alt5-A64720005_360x450_crop_center.png?v=1741351564","label":"Jeans","colors":["#43506A","#43506A"],"category":29},{"image":"https://images.squarespace-cdn.com/content/v1/58add8dd6a49639a87822092/1654105465923-95DJO7H19YLTGOSB4CLO/how-to-style-mens-jeans.jpg?format=750w","label":"Jeans Man","colors":["#12B58C","#12B58C"],"category":30}],"hidden":false,"layout":"category","radius":50},{"gap":12,"items":[{"alt":"","link":"","image":"https://5000-iyqms9tcbk0ie59dd61nq-a577ee3b.sg1.manus.computer/storage/image-gallery/Oz5lvZeeXPHipbtH3n4tCJ20Lv5GxrFUBFn0lNst.png","width":"half"},{"alt":"","link":"","image":"https://5000-iyqms9tcbk0ie59dd61nq-a577ee3b.sg1.manus.computer/storage/image-gallery/JRsRpX1ME2SEp6UNZXwFb5JJeapo51tOT1QLncH3.jpg","width":"half"},{"alt":"","link":"","image":"https://5000-iyqms9tcbk0ie59dd61nq-a577ee3b.sg1.manus.computer/storage/image-gallery/wplKQURnGABGUo1uRrqykvc48AM5IQ7fO7fozO5y.png","width":"quarter"}],"layout":"flexBannerGrid","radius":14,"headerText":"Galary","mobileColumns":1},{"hidden":false,"layout":"saleImages","nameGap":15,"category":null,"buttonGap":15,"cardHeight":216,"headerText":"Shop by Look","imageWidth":0,"optionsGap":15,"responsive":{"mobile":{"imageHeight":140,"productWidth":150,"elementSpacing":7,"cardHeight":250},"desktop":{"nameGap":15,"buttonGap":15,"elementSpacing":6,"imageWidth":0,"imageHeight":267,"productWidth":230,"cardHeight":300,"paddingBottom":40},"breakpoint":600},"imageHeight":240,"productWidth":200,"productConfig":{"imageRatio":1.4,"borderRadius":10},"elementSpacing":0,"maxItemsToShow":8,"showDetails":false},{"layout":"brands"},{"items":[{"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/HP-Banner.webp","padding":7,"category":29},{"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/Campaign-LP-04.webp","padding":7,"product":30,"category":18},{"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/Campaign-LP-07.webp","padding":7,"category":28}],"design":"default","layout":"bannerImage","radius":10,"autoPlay":true,"isSlider":true,"showNumber":false,"bannerHeight":260,"showBackGround":true},{"name":"Man Collections","layout":"twoColumn","category":23,"headerText":"On Sale Today ⚡️","responsive":{"mobile":{"imageHeight":100,"productWidth":130}},"productWidth":200,"productConfig":{"layout":"grid","hMargin":10,"vMargin":6,"showHeart":true,"imageRatio":1.5,"borderRadius":12.5},"maxItemsToShow":7,"addToCartButtonStyle":{"style":"iconed","textColor":"#3D3D3D","backgroundColor":"#E0E0E0"}},{"fit":"fitWidth","items":[{"image":"https://raw.githubusercontent.com/Ramezramo/projectxmedia1/refs/heads/main/kobunatkhasm.png","padding":7,"product":30}],"design":"static","height":0.15,"layout":"bannerImage","radius":7,"marginTop":20,"marginLeft":0,"marginRight":0,"bannerHeight":280,"marginBottom":0},{"name":"SuperMarket Stars","layout":"seupermarketstars","category":18},{"name":"Brands","layout":"brands","category":21},{"layout":"topVendors","sortBy":"products","headerText":"Top Sellers","maxItemsToShow":6},{"name":"Featured","layout":"seupermarketstars","category":26},{"layout":"coupons","sortBy":"amount","subLabel":"Use code at checkout","headerText":"This Week's Deals","hideWhenEmpty":true,"maxItemsToShow":6,"showExpiredFallback":true},{"layout":"twoColumn","category":"","headerText":"New Section","maxItemsToShow":8},{"layout":"categoryCards","columns":3,"showCount":true,"cardHeight":220,"headerText":"Shop by Category","parentOnly":true,"maxItemsToShow":12,"cardBorderRadius":14}]	Homepage Layout (EN)	\N	t	0	2026-08-12 18:17:58
 \.
 
 
@@ -2354,6 +2403,17 @@ COPY public.cart_items (id, user_id, product_id, variation_id, qty, created_at, 
 24	3	14	\N	1	2026-08-09 14:52:37	2026-08-09 14:52:37
 25	3	13	\N	1	2026-08-09 14:52:37	2026-08-09 14:52:37
 26	3	22	\N	1	2026-08-09 14:52:37	2026-08-09 14:52:37
+103	9	12	40	1	2026-08-12 12:21:23	2026-08-12 12:21:23
+104	9	8	23	2	2026-08-12 12:21:23	2026-08-12 12:21:23
+105	9	19	71	1	2026-08-12 12:21:23	2026-08-12 12:21:23
+106	9	17	62	1	2026-08-12 12:21:23	2026-08-12 12:21:23
+70	8	2	4	39	2026-08-12 10:40:34	2026-08-12 10:40:34
+71	8	2	5	1	2026-08-12 10:40:34	2026-08-12 10:40:34
+72	8	3	7	15	2026-08-12 10:40:34	2026-08-12 10:40:34
+142	1	8	24	1	2026-08-13 08:24:20	2026-08-13 08:24:20
+143	1	11	36	1	2026-08-13 08:24:20	2026-08-13 08:24:20
+144	1	8	23	35	2026-08-13 08:24:20	2026-08-13 08:24:20
+150	78	22	85	1	2026-08-13 10:49:42	2026-08-13 10:49:42
 \.
 
 
@@ -2448,6 +2508,18 @@ COPY public.idempotency_keys (id, key, user_id, order_id, created_at) FROM stdin
 
 
 --
+-- Data for Name: image_gallery_images; Type: TABLE DATA; Schema: public; Owner: ramo_app
+--
+
+COPY public.image_gallery_images (id, path, original_name, mime_type, file_size, width, height, uploaded_by, created_at, updated_at) FROM stdin;
+18	image-gallery/TS3jg0Uwd2cOWGo7107QhMXOpGk0bkE8roB7qFsY.png	Firefly_create a lot of roots that matches the same type of roots (1).png	image/png	1350332	1536	1046	1	2026-08-12 14:31:10	2026-08-12 14:31:10
+19	image-gallery/wplKQURnGABGUo1uRrqykvc48AM5IQ7fO7fozO5y.png	ChatGPT Image May 22, 2026, 09_06_49 PM.png	image/png	1851744	1024	1024	1	2026-08-12 14:31:46	2026-08-12 14:31:46
+20	image-gallery/Oz5lvZeeXPHipbtH3n4tCJ20Lv5GxrFUBFn0lNst.png	thumbnail_Esigns_Additional_Banner_Image_Gallery.png	image/png	497375	815	384	1	2026-08-12 14:33:35	2026-08-12 14:33:35
+21	image-gallery/JRsRpX1ME2SEp6UNZXwFb5JJeapo51tOT1QLncH3.jpg	images (1).jfif	image/jpeg	38821	570	350	1	2026-08-12 14:33:42	2026-08-12 14:33:42
+\.
+
+
+--
 -- Data for Name: koto; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -2512,6 +2584,7 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 18	2026_08_09_000001_add_computed_order_statuses	3
 19	2026_08_09_000001_make_user_email_nullable_for_phone_otp	4
 20	2026_08_10_000001_add_vendor_id_to_coupons_table	5
+21	2026_08_12_000002_create_image_gallery_images_table	6
 \.
 
 
@@ -2542,6 +2615,12 @@ COPY public.order_sub_orders (id, parent_order_id, vendor_id, customer_id, statu
 9	9	12	7	pending	[{"product_id":3,"variation_id":null,"name":"Quilted Chain Shoulder Bag","sku":null,"quantity":1,"price":2200,"subtotal":2200,"attributes":[]}]	2200.00	0.00	2200.00	\N	\N	[]	\N	2026-08-10 04:37:19	2026-08-10 04:37:19	pending
 10	10	12	1	pending	[{"product_id":2,"variation_id":null,"name":"Mini Crossbody Bag","sku":null,"quantity":1,"price":637.5,"subtotal":637.5,"attributes":[]}]	637.50	0.00	637.50	\N	\N	[]	\N	2026-08-10 12:07:01	2026-08-10 12:07:01	pending
 11	11	12	1	pending	[{"product_id":3,"variation_id":7,"name":"Quilted Chain Shoulder Bag","sku":null,"quantity":1,"price":2200,"subtotal":2200,"attributes":{"Color":"Black"}}]	2200.00	0.00	2200.00	\N	\N	[]	\N	2026-08-11 09:49:04	2026-08-11 09:49:04	pending
+12	12	12	8	pending	[{"product_id":2,"variation_id":4,"name":"Mini Crossbody Bag","sku":null,"quantity":1,"price":637.5,"subtotal":637.5,"attributes":{"Color":"Beige"}}]	637.50	0.00	637.50	\N	\N	[]	\N	2026-08-12 10:11:02	2026-08-12 10:11:02	pending
+13	13	16	10	shipped	[{"product_id":11,"variation_id":36,"name":"Women's Tailored Blazer","sku":null,"quantity":1,"price":1250,"subtotal":1250,"attributes":{"Color":"Black","Size":"S"}}]	1250.00	0.00	1250.00	\N	\N	[{"status":"shipped","note":"","by":"admin:1","at":"2026-08-12 11:26:13"}]	\N	2026-08-12 11:24:08	2026-08-12 11:26:13	shipped
+14	14	16	\N	pending	[{"product_id":12,"variation_id":40,"name":"Men's Double-Breasted Blazer","sku":null,"quantity":1,"price":1512,"subtotal":1512,"attributes":{"Color":"Navy","Size":"M"}}]	1512.00	0.00	1512.00	\N	\N	[]	\N	2026-08-12 21:42:14	2026-08-12 21:42:14	pending
+15	15	16	75	pending	[{"product_id":20,"variation_id":76,"name":"Floral Wrap Dress","sku":null,"quantity":1,"price":890,"subtotal":890,"attributes":{"Color":"Multi","Size":"XS"}}]	890.00	0.00	890.00	\N	\N	[]	\N	2026-08-12 21:49:10	2026-08-12 21:49:10	pending
+16	16	12	131	pending	[{"product_id":1,"variation_id":1,"name":"Classic Leather Tote Bag","sku":null,"quantity":1,"price":1850,"subtotal":1850,"attributes":{"Color":"Black"}}]	1850.00	0.00	1850.00	\N	\N	[]	\N	2026-08-13 11:13:13	2026-08-13 11:13:13	pending
+17	16	16	131	pending	[{"product_id":21,"variation_id":83,"name":"Midi Slip Dress","sku":null,"quantity":1,"price":880,"subtotal":880,"attributes":{"Color":"Nude","Size":"S"}}]	880.00	0.00	880.00	\N	\N	[]	\N	2026-08-13 11:13:13	2026-08-13 11:13:13	pending
 \.
 
 
@@ -2561,6 +2640,11 @@ COPY public.orders (id, parent_id, parent_vendors_ids, parent_vendors_data, stat
 8	0	\N	\N	pending	EGP	\N	f	2026-08-10 04:34:02	2026-08-10 04:34:55	0.00	0.00	0.00	0.00	0.00	\N	1850.00	1850	0	0.00	6	wc_X2GEH2scvThgGMRVxYaG	{"first_name":"Ramo","last_name":"Ramez","email":null,"phone":"+200196464666","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.4457836","longitude":"30.8046024"}	{"first_name":"Ramo","last_name":"Ramez","email":null,"phone":"+200196464666","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.4457836","longitude":"30.8046024"}	manual_instapay	Pay by InstaPay	\N	10.28.8.185	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Mobile Safari/537.36	website		\N	\N	7159e64201fe43c2be043d0d73a77314	\N	[{"product_id":1,"variation_id":null,"name":"Classic Leather Tote Bag","sku":null,"quantity":1,"price":1850,"subtotal":1850,"attributes":[]}]	\N	\N	\N	\N	\N		t	t	t	\N	ج.م	\N	2026-08-10 04:34:02	2026-08-10 04:34:02			f	8	[{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-10 04:34:55"}]	2026-08-10 04:34:55	2026-08-10 04:34:02	pending_verification	payment-receipts/gK07XR4w2DItYrO42ulj66D67V0RGSOToe2TdUCV.png	Screenshot_20260808-194630.png	2026-08-10 04:34:55	\N	\N	\N	pending	\N	\N	\N	\N
 10	0	\N	\N	pending	EGP	\N	f	2026-08-10 12:07:01	2026-08-10 12:23:40	0.00	0.00	0.00	0.00	0.00	\N	637.50	638	0	0.00	1	wc_limnt51d9ubAxGsamuQp	{"first_name":"Sara","last_name":"Ehab","email":"adminramoui@gmail.com","phone":"7865876587","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.445440824393827","longitude":"30.805906818883177"}	{"first_name":"Sara","last_name":"Ehab","email":"adminramoui@gmail.com","phone":"7865876587","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.445440824393827","longitude":"30.805906818883177"}	manual_wallet	Pay by Wallet	\N	197.59.76.10	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36	website		\N	\N	97f31b1cff812dfd9260d5bbabc0a6b3	\N	[{"product_id":2,"variation_id":null,"name":"Mini Crossbody Bag","sku":null,"quantity":1,"price":637.5,"subtotal":637.5,"attributes":[]}]	\N	\N	\N	\N	\N		t	t	t	\N	ج.م	\N	2026-08-10 12:07:01	2026-08-10 12:07:01			f	10	[{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-10 12:23:40"}]	2026-08-10 12:23:40	2026-08-10 12:07:01	pending_verification	payment-receipts/Nv5KlnZaAg5ZABGn5IjqygrCAXCSqm1hdhBX0Lvw.png	download.png	2026-08-10 12:23:40	\N	\N	\N	pending	\N	\N	\N	\N
 11	0	\N	\N	pending	EGP	\N	f	2026-08-11 09:49:04	2026-08-11 09:49:16	0.00	0.00	0.00	0.00	0.00	\N	2200.00	2200	0	0.00	1	wc_y1OBryxSUm0Z43OxtXCD	{"first_name":"Sara","last_name":"Ehab","email":"adminramoui@gmail.com","phone":"7865876587","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.445440824393827","longitude":"30.805906818883177"}	{"first_name":"Sara","last_name":"Ehab","email":"adminramoui@gmail.com","phone":"7865876587","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.445440824393827","longitude":"30.805906818883177"}	manual_wallet	Pay by Wallet	\N	10.64.12.102	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36	website		\N	\N	5c5f4aa5a60cf4913213430341e77b3f	\N	[{"product_id":3,"variation_id":7,"name":"Quilted Chain Shoulder Bag","sku":null,"quantity":1,"price":2200,"subtotal":2200,"attributes":{"Color":"Black"}}]	\N	\N	\N	\N	\N		t	t	t	\N	ج.م	\N	2026-08-11 09:49:04	2026-08-11 09:49:04			f	11	[{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-11 09:49:16"}]	2026-08-11 09:49:16	2026-08-11 09:49:04	pending_verification	payment-receipts/cAkI4vcTdDGvBFOFdQMfP2JUbKSRbEcDseB1vyjo.png	Screenshot (6).png	2026-08-11 09:49:16	\N	\N	\N	pending	\N	\N	\N	\N
+12	0	\N	\N	pending	EGP	\N	f	2026-08-12 10:11:02	2026-08-12 10:11:02	0.00	0.00	100.00	0.00	0.00	\N	737.50	638	0	0.00	8	wc_1VpMcXzArSJfnS4PR3Xp	{"first_name":"Ramez","last_name":"malak","email":null,"phone":"+34523452444","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.445439501836887","longitude":"30.80590917009552"}	{"first_name":"Ramez","last_name":"malak","email":null,"phone":"+34523452444","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.445439501836887","longitude":"30.80590917009552"}	manual_wallet	Pay by Wallet	\N	172.16.0.210	Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36	website		\N	\N	663d9e23e198acc3e27d16d4c3990877	\N	[{"product_id":2,"variation_id":4,"name":"Mini Crossbody Bag","sku":null,"quantity":1,"price":637.5,"subtotal":637.5,"attributes":{"Color":"Beige"}}]	\N	\N	\N	\N	\N		t	t	t	\N	ج.م	\N	2026-08-12 10:11:02	2026-08-12 10:11:02			f	12	[]	2026-08-12 10:11:02	2026-08-12 10:11:02	pending_verification	\N	\N	\N	\N	\N	\N	pending	\N	\N	\N	\N
+13	0	\N	\N	processing	EGP	\N	f	2026-08-12 11:24:08	2026-08-12 12:53:30	0.00	0.00	100.00	0.00	0.00	\N	1350.00	1250	0	0.00	10	wc_nFtLNiJgvtrEl8FfD6bg	{"first_name":"Kkkhh","last_name":"Hgfgh","email":"gggf@gmail.com","phone":"+20123654525","address_1":"\\u0643\\u0641\\u0648\\u0631 \\u0627\\u0644\\u0635\\u0648\\u0644\\u064a\\u0629","address_2":null,"city":"\\u0643\\u0641\\u0648\\u0631 \\u0627\\u0644\\u0635\\u0648\\u0644\\u064a\\u0629","state":"Aswan","country":"EG","latitude":"28.445801","longitude":"30.804578"}	{"first_name":"Kkkhh","last_name":"Hgfgh","email":"gggf@gmail.com","phone":"+20123654525","address_1":"\\u0643\\u0641\\u0648\\u0631 \\u0627\\u0644\\u0635\\u0648\\u0644\\u064a\\u0629","address_2":null,"city":"\\u0643\\u0641\\u0648\\u0631 \\u0627\\u0644\\u0635\\u0648\\u0644\\u064a\\u0629","state":"Aswan","country":"EG","latitude":"28.445801","longitude":"30.804578"}	manual_instapay	Pay by InstaPay	\N	172.16.0.210	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36	website		\N	2026-08-12 11:25:59	316a5a5ca1fc2df3a269335d6adeba90	\N	[{"product_id":11,"variation_id":36,"name":"Women's Tailored Blazer","sku":null,"quantity":1,"price":1250,"subtotal":1250,"attributes":{"Color":"Black","Size":"S"}}]	\N	\N	\N	\N	\N		t	f	t	\N	ج.م	\N	2026-08-12 11:24:08	2026-08-12 11:24:08		2026-08-12 11:25:59	t	13	[{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-12 11:24:31"},{"status":"confirmed","note":"Payment receipt approved.","by":"admin:1","at":"2026-08-12 11:25:59"},{"status":"processing","note":"General order status force-overridden to processing.","by":"admin:1","at":"2026-08-12 11:26:05","type":"general_status_override"}]	2026-08-12 12:53:30	2026-08-12 11:24:08	confirmed	payment-receipts/dvICGcMQsz06WPnOCuXpukECXtDF1dY83HronUqV.jpg	1000321976.jpg	2026-08-12 11:24:31	2026-08-12 11:25:59	1	\N	shipped	processing	\N	1	2026-08-12 11:26:05
+14	0	\N	\N	pending	EGP	\N	f	2026-08-12 21:42:14	2026-08-12 21:42:14	0.00	0.00	100.00	0.00	0.00	\N	1612.00	1512	0	0.00	\N	wc_97ZxvRLQYueTKbglOIK4	{"first_name":"Ramez","last_name":"Asaad","email":"ramezmfarouk@gmail.com","phone":"01002722375","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.445442","longitude":"30.8059005"}	{"first_name":"Ramez","last_name":"Asaad","email":"ramezmfarouk@gmail.com","phone":"01002722375","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.445442","longitude":"30.8059005"}	manual_wallet	Pay by Wallet	\N	172.16.0.210	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36	website		\N	\N	45a2d5bddf51103b5f909c7fa4e74ee0	\N	[{"product_id":12,"variation_id":40,"name":"Men's Double-Breasted Blazer","sku":null,"quantity":1,"price":1512,"subtotal":1512,"attributes":{"Color":"Navy","Size":"M"}}]	\N	\N	\N	\N	\N		t	t	t	\N	ج.م	\N	2026-08-12 21:42:14	2026-08-12 21:42:14			f	14	[]	2026-08-12 21:42:14	2026-08-12 21:42:14	pending_verification	\N	\N	\N	\N	\N	\N	pending	\N	\N	\N	\N
+16	0	\N	\N	pending	EGP	\N	f	2026-08-13 11:13:13	2026-08-13 11:13:13	0.00	0.00	100.00	0.00	0.00	\N	2830.00	2730	0	0.00	131	wc_w79kEYzKGD4EIXS24dgh	{"first_name":"Ramez","last_name":"malak","email":null,"phone":"+200000086666","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.445777","longitude":"30.8046012"}	{"first_name":"Ramez","last_name":"malak","email":null,"phone":"+200000086666","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.445777","longitude":"30.8046012"}	manual_wallet	Pay by Wallet	\N	172.16.0.210	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Mobile Safari/537.36	website		\N	\N	80ea97717037c60a9c3d4d5538a2da0d	\N	[{"product_id":1,"variation_id":1,"name":"Classic Leather Tote Bag","sku":null,"quantity":1,"price":1850,"subtotal":1850,"attributes":{"Color":"Black"}},{"product_id":21,"variation_id":83,"name":"Midi Slip Dress","sku":null,"quantity":1,"price":880,"subtotal":880,"attributes":{"Color":"Nude","Size":"S"}}]	\N	\N	\N	\N	\N		t	t	t	\N	ج.م	\N	2026-08-13 11:13:13	2026-08-13 11:13:13			f	16	[]	2026-08-13 11:13:13	2026-08-13 11:13:13	pending_verification	\N	\N	\N	\N	\N	\N	pending	\N	\N	\N	\N
+15	0	\N	\N	pending	EGP	\N	f	2026-08-12 21:49:10	2026-08-12 21:49:25	0.00	0.00	100.00	0.00	0.00	\N	990.00	890	0	0.00	75	wc_wuvLgkOLglOAe9TGhJso	{"first_name":"Ramez","last_name":"malak","email":null,"phone":"+78608769876","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.445441886428167","longitude":"30.805899818569"}	{"first_name":"Ramez","last_name":"malak","email":null,"phone":"+78608769876","address_1":"Al Kufur","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.445441886428167","longitude":"30.805899818569"}	manual_wallet	Pay by Wallet	\N	172.16.0.210	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36	website		\N	\N	bebbdbd636ad93f7ec9ac00fcc8a33c8	\N	[{"product_id":20,"variation_id":76,"name":"Floral Wrap Dress","sku":null,"quantity":1,"price":890,"subtotal":890,"attributes":{"Color":"Multi","Size":"XS"}}]	\N	\N	\N	\N	\N		t	t	t	\N	ج.م	\N	2026-08-12 21:49:10	2026-08-12 21:49:10			f	15	[{"status":"pending_verification","note":"Payment receipt uploaded for review.","at":"2026-08-12 21:49:25"}]	2026-08-12 21:49:25	2026-08-12 21:49:10	pending_verification	payment-receipts/hiiCCGHQm0LP3bqTXQJRFnr1pfZBFwvaVdaxmjqu.png	thumbnail_Esigns_Additional_Banner_Image_Gallery.png	2026-08-12 21:49:25	\N	\N	\N	pending	\N	\N	\N	\N
 \.
 
 
@@ -2576,6 +2660,16 @@ COPY public.otp_verifications (id, phone, otp_code, expires_at, attempts, resend
 5	+200196464666	876163	2026-08-10 04:38:15	0	0	\N	t	2026-08-10 04:33:15	2026-08-10 04:33:22
 6	+200885255566	192005	2026-08-10 04:41:37	0	0	\N	t	2026-08-10 04:36:37	2026-08-10 04:36:47
 7	+200885255566	208198	2026-08-10 04:42:59	0	0	\N	t	2026-08-10 04:37:59	2026-08-10 04:38:08
+8	+34523452444	274230	2026-08-12 10:05:45	0	0	\N	t	2026-08-12 10:00:45	2026-08-12 10:00:52
+9	+205888558888	284018	2026-08-12 11:22:59	0	0	\N	t	2026-08-12 11:17:59	2026-08-12 11:18:17
+10	+20123654525	629349	2026-08-12 11:25:20	0	0	\N	t	2026-08-12 11:20:20	2026-08-12 11:20:40
+11	+78608769876	171757	2026-08-12 21:51:11	0	0	\N	t	2026-08-12 21:46:11	2026-08-12 21:46:19
+12	+201123456789	676892	2026-08-13 06:25:36	0	0	\N	t	2026-08-13 06:20:36	2026-08-13 06:20:46
+13	+205556655555	994730	2026-08-13 11:13:42	0	0	\N	t	2026-08-13 11:08:42	2026-08-13 11:08:52
+15	+85566699988	041486	2026-08-13 11:16:50	0	1	2026-08-13 11:11:50	f	2026-08-13 11:11:50	2026-08-13 11:11:50
+16	+200000086666	769328	2026-08-13 11:17:14	0	0	\N	t	2026-08-13 11:12:14	2026-08-13 11:12:25
+17	+6998888899	054330	2026-08-13 11:18:53	0	0	\N	f	2026-08-13 11:13:53	2026-08-13 11:13:53
+18	+208555688888	911105	2026-08-13 11:22:52	0	0	\N	t	2026-08-13 11:17:52	2026-08-13 11:18:03
 \.
 
 
@@ -2605,6 +2699,8 @@ COPY public.payment_receipts (id, order_id, payment_method, file_path, original_
 11	8	manual_instapay	payment-receipts/gK07XR4w2DItYrO42ulj66D67V0RGSOToe2TdUCV.png	Screenshot_20260808-194630.png	pending	\N	6	\N	2026-08-10 04:34:55	\N	2026-08-10 04:34:55	2026-08-10 04:34:55
 12	10	manual_wallet	payment-receipts/Nv5KlnZaAg5ZABGn5IjqygrCAXCSqm1hdhBX0Lvw.png	download.png	pending	\N	1	\N	2026-08-10 12:23:40	\N	2026-08-10 12:23:40	2026-08-10 12:23:40
 13	11	manual_wallet	payment-receipts/cAkI4vcTdDGvBFOFdQMfP2JUbKSRbEcDseB1vyjo.png	Screenshot (6).png	pending	\N	1	\N	2026-08-11 09:49:16	\N	2026-08-11 09:49:16	2026-08-11 09:49:16
+14	13	manual_instapay	payment-receipts/dvICGcMQsz06WPnOCuXpukECXtDF1dY83HronUqV.jpg	1000321976.jpg	confirmed	\N	10	1	2026-08-12 11:24:31	2026-08-12 11:25:59	2026-08-12 11:24:31	2026-08-12 11:25:59
+15	15	manual_wallet	payment-receipts/hiiCCGHQm0LP3bqTXQJRFnr1pfZBFwvaVdaxmjqu.png	thumbnail_Esigns_Additional_Banner_Image_Gallery.png	pending	\N	75	\N	2026-08-12 21:49:25	\N	2026-08-12 21:49:25	2026-08-12 21:49:25
 \.
 
 
@@ -2660,10 +2756,8 @@ COPY public.product_reviews (id, product_id, user_id, rating, title, body, creat
 --
 
 COPY public.product_variations (id, product_id, main_variation, attributes, price, regular_price, sale_price, stock_quantity, images, created_at, updated_at, stock_status, status) FROM stdin;
-1	1	t	{"Color":"Black"}	1850.00	1850.00	\N	25	[]	2026-02-12 17:10:14	2026-02-12 17:10:14	instock	publish
 2	1	f	{"Color":"Tan"}	1850.00	1850.00	\N	18	[]	2026-02-12 17:10:14	2026-02-12 17:10:14	instock	publish
 3	1	f	{"Color":"Brown"}	1850.00	1850.00	\N	12	[]	2026-02-12 17:10:14	2026-02-12 17:10:14	instock	publish
-4	2	t	{"Color":"Beige"}	637.50	750.00	637.50	40	[]	2025-12-18 17:10:14	2025-12-18 17:10:14	instock	publish
 5	2	f	{"Color":"Black"}	637.50	750.00	637.50	35	[]	2025-12-18 17:10:14	2025-12-18 17:10:14	instock	publish
 6	2	f	{"Color":"Red"}	637.50	750.00	637.50	20	[]	2025-12-18 17:10:14	2025-12-18 17:10:14	instock	publish
 7	3	t	{"Color":"Black"}	2200.00	2200.00	\N	15	[]	2025-08-16 17:10:14	2025-08-16 17:10:14	instock	publish
@@ -2695,11 +2789,9 @@ COPY public.product_variations (id, product_id, main_variation, attributes, pric
 33	10	f	{"Color":"Navy","Size":"M"}	323.00	380.00	323.00	55	[]	2024-06-03 17:10:14	2024-06-03 17:10:14	instock	publish
 34	10	f	{"Color":"Red","Size":"M"}	323.00	380.00	323.00	35	[]	2024-06-03 17:10:14	2024-06-03 17:10:14	instock	publish
 35	10	f	{"Color":"White","Size":"L"}	323.00	380.00	323.00	30	[]	2024-06-03 17:10:14	2024-06-03 17:10:14	instock	publish
-36	11	t	{"Color":"Black","Size":"S"}	1250.00	1250.00	\N	18	[]	2024-02-14 17:10:14	2024-02-14 17:10:14	instock	publish
 37	11	f	{"Color":"Black","Size":"M"}	1250.00	1250.00	\N	22	[]	2024-02-14 17:10:14	2024-02-14 17:10:14	instock	publish
 38	11	f	{"Color":"Black","Size":"L"}	1250.00	1250.00	\N	15	[]	2024-02-14 17:10:14	2024-02-14 17:10:14	instock	publish
 39	11	f	{"Color":"Camel","Size":"M"}	1250.00	1250.00	\N	12	[]	2024-02-14 17:10:14	2024-02-14 17:10:14	instock	publish
-40	12	t	{"Color":"Navy","Size":"M"}	1512.00	1890.00	1512.00	10	[]	2023-12-10 17:10:14	2023-12-10 17:10:14	instock	publish
 41	12	f	{"Color":"Navy","Size":"L"}	1512.00	1890.00	1512.00	12	[]	2023-12-10 17:10:14	2023-12-10 17:10:14	instock	publish
 42	12	f	{"Color":"Grey","Size":"M"}	1512.00	1890.00	1512.00	8	[]	2023-12-10 17:10:14	2023-12-10 17:10:14	instock	publish
 43	12	f	{"Color":"Grey","Size":"L"}	1512.00	1890.00	1512.00	9	[]	2023-12-10 17:10:14	2023-12-10 17:10:14	instock	publish
@@ -2723,6 +2815,9 @@ COPY public.product_variations (id, product_id, main_variation, attributes, pric
 61	16	f	{"Color":"Grey","Size":"L"}	280.00	280.00	\N	50	[]	2023-06-18 17:10:14	2023-06-18 17:10:14	instock	publish
 62	17	t	{"Color":"Sand","Size":"S"}	455.00	650.00	455.00	30	[]	2023-03-09 17:10:14	2023-03-09 17:10:14	instock	publish
 63	17	f	{"Color":"Sand","Size":"M"}	455.00	650.00	455.00	45	[]	2023-03-09 17:10:14	2023-03-09 17:10:14	instock	publish
+4	2	t	{"Color":"Beige"}	637.50	750.00	637.50	39	[]	2025-12-18 17:10:14	2025-12-18 17:10:14	instock	publish
+36	11	t	{"Color":"Black","Size":"S"}	1250.00	1250.00	\N	17	[]	2024-02-14 17:10:14	2024-02-14 17:10:14	instock	publish
+40	12	t	{"Color":"Navy","Size":"M"}	1512.00	1890.00	1512.00	9	[]	2023-12-10 17:10:14	2023-12-10 17:10:14	instock	publish
 64	17	f	{"Color":"Black","Size":"M"}	455.00	650.00	455.00	50	[]	2023-03-09 17:10:14	2023-03-09 17:10:14	instock	publish
 65	17	f	{"Color":"Black","Size":"L"}	455.00	650.00	455.00	40	[]	2023-03-09 17:10:14	2023-03-09 17:10:14	instock	publish
 66	17	f	{"Color":"Grey","Size":"XL"}	455.00	650.00	455.00	25	[]	2023-03-09 17:10:14	2023-03-09 17:10:14	instock	publish
@@ -2735,16 +2830,17 @@ COPY public.product_variations (id, product_id, main_variation, attributes, pric
 73	19	f	{"Color":"Khaki","Size":"L"}	550.00	550.00	\N	35	[]	2022-10-07 17:10:14	2022-10-07 17:10:14	instock	publish
 74	19	f	{"Color":"Navy","Size":"M"}	550.00	550.00	\N	40	[]	2022-10-07 17:10:14	2022-10-07 17:10:14	instock	publish
 75	19	f	{"Color":"Navy","Size":"L"}	550.00	550.00	\N	30	[]	2022-10-07 17:10:14	2022-10-07 17:10:14	instock	publish
-76	20	t	{"Color":"Multi","Size":"XS"}	890.00	890.00	\N	20	[]	2022-08-23 17:10:14	2022-08-23 17:10:14	instock	publish
 77	20	f	{"Color":"Multi","Size":"S"}	890.00	890.00	\N	35	[]	2022-08-23 17:10:14	2022-08-23 17:10:14	instock	publish
 78	20	f	{"Color":"Multi","Size":"M"}	890.00	890.00	\N	40	[]	2022-08-23 17:10:14	2022-08-23 17:10:14	instock	publish
 79	20	f	{"Color":"Multi","Size":"L"}	890.00	890.00	\N	25	[]	2022-08-23 17:10:14	2022-08-23 17:10:14	instock	publish
 80	21	t	{"Color":"Black","Size":"XS"}	880.00	1100.00	880.00	15	[]	2022-05-22 17:10:14	2022-05-22 17:10:14	instock	publish
 81	21	f	{"Color":"Black","Size":"S"}	880.00	1100.00	880.00	22	[]	2022-05-22 17:10:14	2022-05-22 17:10:14	instock	publish
 82	21	f	{"Color":"Black","Size":"M"}	880.00	1100.00	880.00	28	[]	2022-05-22 17:10:14	2022-05-22 17:10:14	instock	publish
-83	21	f	{"Color":"Nude","Size":"S"}	880.00	1100.00	880.00	18	[]	2022-05-22 17:10:14	2022-05-22 17:10:14	instock	publish
 84	21	f	{"Color":"Nude","Size":"M"}	880.00	1100.00	880.00	20	[]	2022-05-22 17:10:14	2022-05-22 17:10:14	instock	publish
 85	22	t	{}	2526.00	2526.00	2526.00	142	[]	2026-08-09 14:39:05	2026-08-09 14:39:05	instock	publish
+76	20	t	{"Color":"Multi","Size":"XS"}	890.00	890.00	\N	19	[]	2022-08-23 17:10:14	2022-08-23 17:10:14	instock	publish
+1	1	t	{"Color":"Black"}	1850.00	1850.00	\N	24	[]	2026-02-12 17:10:14	2026-02-12 17:10:14	instock	publish
+83	21	f	{"Color":"Nude","Size":"S"}	880.00	1100.00	880.00	17	[]	2022-05-22 17:10:14	2022-05-22 17:10:14	instock	publish
 \.
 
 
@@ -2753,28 +2849,28 @@ COPY public.product_variations (id, product_id, main_variation, attributes, pric
 --
 
 COPY public.products_data (id, name, slug, search_text, permalink, date_created, date_created_gmt, date_modified, date_modified_gmt, type, status, featured, catalog_visibility, description, discount_percentage, short_description, sku, date_on_sale_from, date_on_sale_from_gmt, date_on_sale_to, date_on_sale_to_gmt, on_sale, purchasable, total_sales, virtual, downloadable, downloads, download_limit, download_expiry, external_url, button_text, manage_stock, stock_quantity, backorders, backorders_allowed, backordered, low_stock_amount, sold_individually, dimensions, shipping_required, shipping_taxable, shipping_class, shipping_class_id, reviews_allowed, average_rating, rating_count, upsell_ids, cross_sell_ids, parent_id, purchase_note, categories, tags, images, attributes, default_attributes, variations, grouped_products, menu_order, related_ids, meta_data, stock_status, has_options, has_variations, global_unique_id, better_featured_image, is_purchased, "attributesData", is_wallet_product, _links, lang, min_price, brand_id, max_price, created_at, updated_at, minimum_order_qty, max_orders_per_person, product_type, vendor_id, translations, acceptance_status, unit, whatsapp, button_mode) FROM stdin;
-1	Classic Leather Tote Bag	classic-leather-tote-bag	classic leather tote bag premium full-grain leather tote perfect for everyday use. spacious interior with magnetic closure.		2026-02-12 17:10:14		2026-02-12 17:10:14		variable	publish	f		Premium full-grain leather tote perfect for everyday use. Spacious interior with magnetic closure.	0	Premium full-grain leather tote perfect for everyday use. Spacious interior with magnetic closure.	\N	\N	\N	\N	\N	f	t	142	f	f	[]	0	0	\N		t	55		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":23}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1584917865442-de89df76afd3?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	12		approved			both
-2	Mini Crossbody Bag	mini-crossbody-bag	mini crossbody bag compact crossbody bag with adjustable strap. fits your phone, keys, and essentials.		2025-12-18 17:10:14		2025-12-18 17:10:14		variable	publish	f		Compact crossbody bag with adjustable strap. Fits your phone, keys, and essentials.	15	Compact crossbody bag with adjustable strap. Fits your phone, keys, and essentials.	\N	\N	\N	\N	\N	t	t	98	f	f	[]	0	0	\N		t	95		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":23}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1548036328-c9fa89d128fa?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	12		approved			both
-3	Quilted Chain Shoulder Bag	quilted-chain-shoulder-bag	quilted chain shoulder bag elegant quilted bag with gold-tone chain strap. a timeless piece for any outfit.		2025-08-16 17:10:14		2025-08-16 17:10:14		variable	publish	f		Elegant quilted bag with gold-tone chain strap. A timeless piece for any outfit.	0	Elegant quilted bag with gold-tone chain strap. A timeless piece for any outfit.	\N	\N	\N	\N	\N	f	t	67	f	f	[]	0	0	\N		t	25		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":23}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1591561954555-607968c989ab?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	12		approved			both
-4	Canvas Backpack	canvas-backpack	canvas backpack durable canvas backpack with laptop sleeve and multiple pockets. perfect for work or travel.		2025-07-21 17:10:14		2025-07-21 17:10:14		variable	publish	f		Durable canvas backpack with laptop sleeve and multiple pockets. Perfect for work or travel.	20	Durable canvas backpack with laptop sleeve and multiple pockets. Perfect for work or travel.	\N	\N	\N	\N	\N	t	t	210	f	f	[]	0	0	\N		t	160		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":23}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1553062407-98eeb64c6a62?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	12		approved			both
-5	Slim Fit Blue Denim Jeans	slim-fit-blue-denim-jeans	slim fit blue denim jeans classic slim-fit jeans in mid-wash blue denim. stretch fabric for all-day comfort.		2025-01-29 17:10:14		2025-01-29 17:10:14		variable	publish	f		Classic slim-fit jeans in mid-wash blue denim. Stretch fabric for all-day comfort.	0	Classic slim-fit jeans in mid-wash blue denim. Stretch fabric for all-day comfort.	\N	\N	\N	\N	\N	f	t	325	f	f	[]	0	0	\N		t	130		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":29}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1542272454315-4c01d7abdf4a?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	17		approved			both
-6	Black Skinny Jeans	black-skinny-jeans	black skinny jeans sleek black skinny jeans with a high-rise waist. a wardrobe essential for every season.		2024-12-05 17:10:14		2024-12-05 17:10:14		variable	publish	f		Sleek black skinny jeans with a high-rise waist. A wardrobe essential for every season.	10	Sleek black skinny jeans with a high-rise waist. A wardrobe essential for every season.	\N	\N	\N	\N	\N	t	t	280	f	f	[]	0	0	\N		t	145		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":29}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1541099649105-f69ad21f3246?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	17		approved			both
-7	Distressed Boyfriend Jeans	distressed-boyfriend-jeans	distressed boyfriend jeans relaxed boyfriend fit with authentic distressed detailing. effortlessly cool streetwear look.		2024-11-17 17:10:14		2024-11-17 17:10:14		variable	publish	f		Relaxed boyfriend fit with authentic distressed detailing. Effortlessly cool streetwear look.	25	Relaxed boyfriend fit with authentic distressed detailing. Effortlessly cool streetwear look.	\N	\N	\N	\N	\N	t	t	189	f	f	[]	0	0	\N		t	88		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":29}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1580651315530-69c8e0026377?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	17		approved			both
-8	Classic White Oxford Shirt	classic-white-oxford-shirt	classic white oxford shirt crisp white oxford shirt crafted from 100% cotton. timeless style suitable for work or weekend.		2024-09-12 17:10:14		2024-09-12 17:10:14		variable	publish	f		Crisp white Oxford shirt crafted from 100% cotton. Timeless style suitable for work or weekend.	0	Crisp white Oxford shirt crafted from 100% cotton. Timeless style suitable for work or weekend.	\N	\N	\N	\N	\N	f	t	175	f	f	[]	0	0	\N		t	165		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":19}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1598033129183-c4f50c736f10?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	10		approved			both
-9	Linen Casual Shirt	linen-casual-shirt	linen casual shirt breathable linen shirt perfect for warm weather. relaxed fit with a button-down collar.		2024-06-06 17:10:14		2024-06-06 17:10:14		variable	publish	f		Breathable linen shirt perfect for warm weather. Relaxed fit with a button-down collar.	0	Breathable linen shirt perfect for warm weather. Relaxed fit with a button-down collar.	\N	\N	\N	\N	\N	f	t	134	f	f	[]	0	0	\N		t	105		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":19}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1607962837359-5e7e89f86776?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	10		approved			both
-10	Polo Shirt	polo-shirt	polo shirt classic piqué polo shirt with ribbed collar and cuffs. available in vibrant colors.		2024-06-03 17:10:14		2024-06-03 17:10:14		variable	publish	f		Classic piqué polo shirt with ribbed collar and cuffs. Available in vibrant colors.	15	Classic piqué polo shirt with ribbed collar and cuffs. Available in vibrant colors.	\N	\N	\N	\N	\N	t	t	201	f	f	[]	0	0	\N		t	160		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":19}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1586363104862-3a5e2ab60d99?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	10		approved			both
-11	Women's Tailored Blazer	womens-tailored-blazer	women's tailored blazer sharp tailored blazer with a modern slim fit. perfect for the office or a night out.		2024-02-14 17:10:14		2024-02-14 17:10:14		variable	publish	f		Sharp tailored blazer with a modern slim fit. Perfect for the office or a night out.	0	Sharp tailored blazer with a modern slim fit. Perfect for the office or a night out.	\N	\N	\N	\N	\N	f	t	88	f	f	[]	0	0	\N		t	67		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":25}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1594938298603-c8148c4dae35?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	16		approved			both
-12	Men's Double-Breasted Blazer	mens-double-breasted-blazer	men's double-breasted blazer sophisticated double-breasted blazer in premium wool blend. a statement piece for any wardrobe.		2023-12-10 17:10:14		2023-12-10 17:10:14		variable	publish	f		Sophisticated double-breasted blazer in premium wool blend. A statement piece for any wardrobe.	20	Sophisticated double-breasted blazer in premium wool blend. A statement piece for any wardrobe.	\N	\N	\N	\N	\N	t	t	55	f	f	[]	0	0	\N		t	39		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":25}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1507003211169-0a1dd7228f2d?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	16		approved			both
-13	Men's Classic Sneakers	mens-classic-sneakers	men's classic sneakers iconic low-top leather sneakers with cushioned sole. goes with anything, from jeans to chinos.		2023-11-07 17:10:14		2023-11-07 17:10:14		variable	publish	f		Iconic low-top leather sneakers with cushioned sole. Goes with anything, from jeans to chinos.	0	Iconic low-top leather sneakers with cushioned sole. Goes with anything, from jeans to chinos.	\N	\N	\N	\N	\N	f	t	412	f	f	[]	0	0	\N		t	125		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":28}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1542291026-7eec264c27ff?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	13		approved			both
-14	Women's Ankle Boots	womens-ankle-boots	women's ankle boots sleek leather ankle boots with a block heel. versatile enough for day or night wear.		2023-11-06 17:10:14		2023-11-06 17:10:14		variable	publish	f		Sleek leather ankle boots with a block heel. Versatile enough for day or night wear.	10	Sleek leather ankle boots with a block heel. Versatile enough for day or night wear.	\N	\N	\N	\N	\N	t	t	167	f	f	[]	0	0	\N		t	65		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":28}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1543163521-1bf539c55dd2?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	13		approved			both
-15	Formal Oxford Shoes	formal-oxford-shoes	formal oxford shoes hand-crafted leather oxford shoes with goodyear welt construction. built to last a lifetime.		2023-08-07 17:10:14		2023-08-07 17:10:14		variable	publish	f		Hand-crafted leather Oxford shoes with Goodyear welt construction. Built to last a lifetime.	0	Hand-crafted leather Oxford shoes with Goodyear welt construction. Built to last a lifetime.	\N	\N	\N	\N	\N	f	t	93	f	f	[]	0	0	\N		t	40		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":28}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1533867617858-e7b97e060509?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	13		approved			both
-16	Graphic Print T-Shirt	graphic-print-tshirt	graphic print t-shirt bold graphic tee printed on 100% organic cotton. express your style with attitude.		2023-06-18 17:10:14		2023-06-18 17:10:14		variable	publish	f		Bold graphic tee printed on 100% organic cotton. Express your style with attitude.	0	Bold graphic tee printed on 100% organic cotton. Express your style with attitude.	\N	\N	\N	\N	\N	f	t	398	f	f	[]	0	0	\N		t	330		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":21}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1521572163474-6864f9cf17ab?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	14		approved			both
-17	Oversized Hoodie	oversized-hoodie	oversized hoodie super-soft heavyweight fleece hoodie with a relaxed oversized fit. cozy all day long.		2023-03-09 17:10:14		2023-03-09 17:10:14		variable	publish	f		Super-soft heavyweight fleece hoodie with a relaxed oversized fit. Cozy all day long.	30	Super-soft heavyweight fleece hoodie with a relaxed oversized fit. Cozy all day long.	\N	\N	\N	\N	\N	t	t	244	f	f	[]	0	0	\N		t	190		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":21}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1556821840-3a63f15732ce?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	14		approved			both
-18	Striped Long-Sleeve Tee	striped-long-sleeve-tee	striped long-sleeve tee classic breton stripes on a breathable long-sleeve tee. a french-inspired everyday essential.		2022-10-24 17:10:14		2022-10-24 17:10:14		variable	publish	f		Classic Breton stripes on a breathable long-sleeve tee. A French-inspired everyday essential.	0	Classic Breton stripes on a breathable long-sleeve tee. A French-inspired everyday essential.	\N	\N	\N	\N	\N	f	t	156	f	f	[]	0	0	\N		t	155		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":21}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1581655353564-df123a1eb820?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	14		approved			both
-19	Slim-Fit Chino Trousers	slim-fit-chino-trousers	slim-fit chino trousers smart-casual chinos in stretch cotton twill. office-ready yet weekend-worthy.		2022-10-07 17:10:14		2022-10-07 17:10:14		variable	publish	f		Smart-casual chinos in stretch cotton twill. Office-ready yet weekend-worthy.	0	Smart-casual chinos in stretch cotton twill. Office-ready yet weekend-worthy.	\N	\N	\N	\N	\N	f	t	188	f	f	[]	0	0	\N		t	180		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":30}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1552902865-b72c031ac5ea?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	17		approved			both
-20	Floral Wrap Dress	floral-wrap-dress	floral wrap dress feminine wrap dress in a vibrant floral print. v-neckline and adjustable tie waist for a flattering fit.		2022-08-23 17:10:14		2022-08-23 17:10:14		variable	publish	f		Feminine wrap dress in a vibrant floral print. V-neckline and adjustable tie waist for a flattering fit.	0	Feminine wrap dress in a vibrant floral print. V-neckline and adjustable tie waist for a flattering fit.	\N	\N	\N	\N	\N	f	t	223	f	f	[]	0	0	\N		t	120		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":26}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1595777457583-95e059d581b8?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	16		approved			both
-21	Midi Slip Dress	midi-slip-dress	midi slip dress satin midi slip dress with thin adjustable straps. effortlessly elegant for any occasion.		2022-05-22 17:10:14		2022-05-22 17:10:14		variable	publish	f		Satin midi slip dress with thin adjustable straps. Effortlessly elegant for any occasion.	20	Satin midi slip dress with thin adjustable straps. Effortlessly elegant for any occasion.	\N	\N	\N	\N	\N	t	t	145	f	f	[]	0	0	\N		t	103		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":26}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1614170153058-7a8e04b58f76?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]		0		0	2026-05-06 17:10:15	2026-05-06 17:10:15	0	0	physical	16		approved			both
-22	Luxe Velvet Jeans — Olive	luxe-velvet-jeans-olive	luxe velvet jeans — olive high-quality linen skirt perfect for everyday wear. comfortable fit with a modern look. features: • premium leather fabric • available in multiple sizes • machine washable • true to size fit care instructions: wash at 30°c, do not tumble dry. high-quality linen skirt perfect for everyday wear. comfortable fit with a modern look. summer trending gift بنطلون جينز أنيق منتج مصنوع من أجود الخامات، مريح وعملي للاستخدام اليومي. المميزات: • خامة ممتازة • مقاسات متعددة • سهل العناية تعليمات العناية: اغسل على 30 درجة مئوية.	luxe-velvet-jeans-olive					physical	publish	f	visible	High-quality linen skirt perfect for everyday wear. Comfortable fit with a modern look.\r\n\r\nFeatures:\r\n• Premium leather fabric\r\n• Available in multiple sizes\r\n• Machine washable\r\n• True to size fit\r\n\r\nCare instructions: Wash at 30°C, do not tumble dry.	0	High-quality linen skirt perfect for everyday wear. Comfortable fit with a modern look.	SKU-BZL2XA	\N	\N	\N	\N	f	t	0	f	f	[]	0	0	\N		t	142		f	f	0	f	[]	t	f		0	t	0	0	[]	[]	0		[]	["summer","trending","gift"]	{"thumbnail":"products\\/thumbnails\\/jWxe2g5AHxyoQJgVxo8FknSBZq8ohIJy3W1G29QP.jpg","other_images":["products\\/other_images\\/nVBVb7y51SbUZuaEfKPlJVsYmzUAbbUdQrGlOQRF.jpg"],"natural_images":["products\\/natural_images\\/ILzxE3ijlarqJIbl6BJGyWZXcgTun45P5ydqzWMh.jpg"]}	[]	[]	[]	[]	0	[]	[]	instock	f	f		\N	f	[]	f	[]	["en","ar"]	0	1	0	2026-08-09 14:39:05	2026-08-09 14:39:16	1	0	physical	3	[{"locale":"ar","name":"\\u0628\\u0646\\u0637\\u0644\\u0648\\u0646 \\u062c\\u064a\\u0646\\u0632 \\u0623\\u0646\\u064a\\u0642","description":"\\u0645\\u0646\\u062a\\u062c \\u0645\\u0635\\u0646\\u0648\\u0639 \\u0645\\u0646 \\u0623\\u062c\\u0648\\u062f \\u0627\\u0644\\u062e\\u0627\\u0645\\u0627\\u062a\\u060c \\u0645\\u0631\\u064a\\u062d \\u0648\\u0639\\u0645\\u0644\\u064a \\u0644\\u0644\\u0627\\u0633\\u062a\\u062e\\u062f\\u0627\\u0645 \\u0627\\u0644\\u064a\\u0648\\u0645\\u064a.\\r\\n\\r\\n\\u0627\\u0644\\u0645\\u0645\\u064a\\u0632\\u0627\\u062a:\\r\\n\\u2022 \\u062e\\u0627\\u0645\\u0629 \\u0645\\u0645\\u062a\\u0627\\u0632\\u0629\\r\\n\\u2022 \\u0645\\u0642\\u0627\\u0633\\u0627\\u062a \\u0645\\u062a\\u0639\\u062f\\u062f\\u0629\\r\\n\\u2022 \\u0633\\u0647\\u0644 \\u0627\\u0644\\u0639\\u0646\\u0627\\u064a\\u0629\\r\\n\\r\\n\\u062a\\u0639\\u0644\\u064a\\u0645\\u0627\\u062a \\u0627\\u0644\\u0639\\u0646\\u0627\\u064a\\u0629: \\u0627\\u063a\\u0633\\u0644 \\u0639\\u0644\\u0649 30 \\u062f\\u0631\\u062c\\u0629 \\u0645\\u0626\\u0648\\u064a\\u0629."}]	approved	{"piece":1}	{"whatsapp":{"available":false,"number":null}}	both
+1	Classic Leather Tote Bag	classic-leather-tote-bag	classic leather tote bag premium full-grain leather tote perfect for everyday use. spacious interior with magnetic closure.		2026-02-12 17:10:14		2026-02-12 17:10:14		variable	publish	f		Premium full-grain leather tote perfect for everyday use. Spacious interior with magnetic closure.	0	Premium full-grain leather tote perfect for everyday use. Spacious interior with magnetic closure.	\N	\N	\N	\N	\N	f	t	142	f	f	[]	0	0	\N		t	55		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":23}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1584917865442-de89df76afd3?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	12	[{"name": "حقيبة توت جلدية كلاسيكية", "locale": "ar", "description": "حقيبة توت من جلد كامل الحبوب الفاخر، مثالية للاستخدام اليومي. تتميز بداخل واسع وإغلاق مغناطيسي."}]	approved			both
+2	Mini Crossbody Bag	mini-crossbody-bag	mini crossbody bag compact crossbody bag with adjustable strap. fits your phone, keys, and essentials.		2025-12-18 17:10:14		2025-12-18 17:10:14		variable	publish	f		Compact crossbody bag with adjustable strap. Fits your phone, keys, and essentials.	15	Compact crossbody bag with adjustable strap. Fits your phone, keys, and essentials.	\N	\N	\N	\N	\N	t	t	98	f	f	[]	0	0	\N		t	95		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":23}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1548036328-c9fa89d128fa?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	12	[{"name": "حقيبة كروس بودي صغيرة", "locale": "ar", "description": "حقيبة كروس بودي مدمجة بحزام قابل للتعديل. تتسع لهاتفك ومفاتيحك والأساسيات."}]	approved			both
+3	Quilted Chain Shoulder Bag	quilted-chain-shoulder-bag	quilted chain shoulder bag elegant quilted bag with gold-tone chain strap. a timeless piece for any outfit.		2025-08-16 17:10:14		2025-08-16 17:10:14		variable	publish	f		Elegant quilted bag with gold-tone chain strap. A timeless piece for any outfit.	0	Elegant quilted bag with gold-tone chain strap. A timeless piece for any outfit.	\N	\N	\N	\N	\N	f	t	67	f	f	[]	0	0	\N		t	25		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":23}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1591561954555-607968c989ab?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	12	[{"name": "حقيبة كتف مبطنة بسلسلة", "locale": "ar", "description": "حقيبة مبطنة أنيقة بحزام سلسلة بلون ذهبي. قطعة خالدة تناسب أي إطلالة."}]	approved			both
+10	Polo Shirt	polo-shirt	polo shirt classic piqué polo shirt with ribbed collar and cuffs. available in vibrant colors.		2024-06-03 17:10:14		2024-06-03 17:10:14		variable	publish	f		Classic piqué polo shirt with ribbed collar and cuffs. Available in vibrant colors.	15	Classic piqué polo shirt with ribbed collar and cuffs. Available in vibrant colors.	\N	\N	\N	\N	\N	t	t	201	f	f	[]	0	0	\N		t	160		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":19}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1586363104862-3a5e2ab60d99?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	10	[{"name": "قميص بولو", "locale": "ar", "description": "قميص بولو بيكيه كلاسيكي بياقة وأساور مضلعة. متوفر بألوان زاهية."}]	approved			both
+4	Canvas Backpack	canvas-backpack	canvas backpack durable canvas backpack with laptop sleeve and multiple pockets. perfect for work or travel.		2025-07-21 17:10:14		2025-07-21 17:10:14		variable	publish	f		Durable canvas backpack with laptop sleeve and multiple pockets. Perfect for work or travel.	20	Durable canvas backpack with laptop sleeve and multiple pockets. Perfect for work or travel.	\N	\N	\N	\N	\N	t	t	210	f	f	[]	0	0	\N		t	160		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":23}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1553062407-98eeb64c6a62?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	12	[{"name": "حقيبة ظهر من الكانفاس", "locale": "ar", "description": "حقيبة ظهر متينة من الكانفاس مع جراب للابتوب والعديد من الجيوب. مثالية للعمل أو السفر."}]	approved			both
+5	Slim Fit Blue Denim Jeans	slim-fit-blue-denim-jeans	slim fit blue denim jeans classic slim-fit jeans in mid-wash blue denim. stretch fabric for all-day comfort.		2025-01-29 17:10:14		2025-01-29 17:10:14		variable	publish	f		Classic slim-fit jeans in mid-wash blue denim. Stretch fabric for all-day comfort.	0	Classic slim-fit jeans in mid-wash blue denim. Stretch fabric for all-day comfort.	\N	\N	\N	\N	\N	f	t	325	f	f	[]	0	0	\N		t	130		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":29}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1542272454315-4c01d7abdf4a?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	17	[{"name": "جينز دنيم أزرق بقصة ضيقة", "locale": "ar", "description": "جينز بقصة ضيقة كلاسيكية بلون أزرق متوسط الغسيل. قماش مرن لراحة طوال اليوم."}]	approved			both
+6	Black Skinny Jeans	black-skinny-jeans	black skinny jeans sleek black skinny jeans with a high-rise waist. a wardrobe essential for every season.		2024-12-05 17:10:14		2024-12-05 17:10:14		variable	publish	f		Sleek black skinny jeans with a high-rise waist. A wardrobe essential for every season.	10	Sleek black skinny jeans with a high-rise waist. A wardrobe essential for every season.	\N	\N	\N	\N	\N	t	t	280	f	f	[]	0	0	\N		t	145		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":29}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1541099649105-f69ad21f3246?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	17	[{"name": "جينز سكيني أسود", "locale": "ar", "description": "جينز سكيني أسود بخصر مرتفع. قطعة أساسية لخزانة الملابس في كل موسم."}]	approved			both
+7	Distressed Boyfriend Jeans	distressed-boyfriend-jeans	distressed boyfriend jeans relaxed boyfriend fit with authentic distressed detailing. effortlessly cool streetwear look.		2024-11-17 17:10:14		2024-11-17 17:10:14		variable	publish	f		Relaxed boyfriend fit with authentic distressed detailing. Effortlessly cool streetwear look.	25	Relaxed boyfriend fit with authentic distressed detailing. Effortlessly cool streetwear look.	\N	\N	\N	\N	\N	t	t	189	f	f	[]	0	0	\N		t	88		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":29}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1580651315530-69c8e0026377?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	17	[{"name": "جينز بوي فريند ممزق", "locale": "ar", "description": "قصة بوي فريند مريحة بتفاصيل ممزقة أصلية. مظهر شارع عصري وأنيق بلا مجهود."}]	approved			both
+8	Classic White Oxford Shirt	classic-white-oxford-shirt	classic white oxford shirt crisp white oxford shirt crafted from 100% cotton. timeless style suitable for work or weekend.		2024-09-12 17:10:14		2024-09-12 17:10:14		variable	publish	f		Crisp white Oxford shirt crafted from 100% cotton. Timeless style suitable for work or weekend.	0	Crisp white Oxford shirt crafted from 100% cotton. Timeless style suitable for work or weekend.	\N	\N	\N	\N	\N	f	t	175	f	f	[]	0	0	\N		t	165		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":19}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1598033129183-c4f50c736f10?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	10	[{"name": "قميص أوكسفورد أبيض كلاسيكي", "locale": "ar", "description": "قميص أوكسفورد أبيض ناصع مصنوع من 100% قطن. طراز كلاسيكي مناسب للعمل أو لعطلة نهاية الأسبوع."}]	approved			both
+9	Linen Casual Shirt	linen-casual-shirt	linen casual shirt breathable linen shirt perfect for warm weather. relaxed fit with a button-down collar.		2024-06-06 17:10:14		2024-06-06 17:10:14		variable	publish	f		Breathable linen shirt perfect for warm weather. Relaxed fit with a button-down collar.	0	Breathable linen shirt perfect for warm weather. Relaxed fit with a button-down collar.	\N	\N	\N	\N	\N	f	t	134	f	f	[]	0	0	\N		t	105		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":19}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1607962837359-5e7e89f86776?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	10	[{"name": "قميص كتان كاجوال", "locale": "ar", "description": "قميص من الكتان قابل للتنفس مثالي للطقس الحار. قصة مريحة مع ياقة بأزرار."}]	approved			both
+11	Women's Tailored Blazer	womens-tailored-blazer	women's tailored blazer sharp tailored blazer with a modern slim fit. perfect for the office or a night out.		2024-02-14 17:10:14		2024-02-14 17:10:14		variable	publish	f		Sharp tailored blazer with a modern slim fit. Perfect for the office or a night out.	0	Sharp tailored blazer with a modern slim fit. Perfect for the office or a night out.	\N	\N	\N	\N	\N	f	t	88	f	f	[]	0	0	\N		t	67		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":25}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1594938298603-c8148c4dae35?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	16	[{"name": "بليزر نسائي مفصل بقصة ضيقة عصرية", "locale": "ar", "description": "بليزر مُفصّل بقصة عصرية ضيقة. مثالي للمكتب أو لأمسية خارجية."}]	approved			both
+12	Men's Double-Breasted Blazer	mens-double-breasted-blazer	men's double-breasted blazer sophisticated double-breasted blazer in premium wool blend. a statement piece for any wardrobe.		2023-12-10 17:10:14		2023-12-10 17:10:14		variable	publish	f		Sophisticated double-breasted blazer in premium wool blend. A statement piece for any wardrobe.	20	Sophisticated double-breasted blazer in premium wool blend. A statement piece for any wardrobe.	\N	\N	\N	\N	\N	t	t	55	f	f	[]	0	0	\N		t	39		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":25}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1507003211169-0a1dd7228f2d?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	16	[{"name": "بليزر رجالي مزدوج الصدر", "locale": "ar", "description": "بليزر رجالي أنيق مزدوج الصدر من مزيج صوف فاخر. قطعة مميزة لأي خزانة ملابس."}]	approved			both
+13	Men's Classic Sneakers	mens-classic-sneakers	men's classic sneakers iconic low-top leather sneakers with cushioned sole. goes with anything, from jeans to chinos.		2023-11-07 17:10:14		2023-11-07 17:10:14		variable	publish	f		Iconic low-top leather sneakers with cushioned sole. Goes with anything, from jeans to chinos.	0	Iconic low-top leather sneakers with cushioned sole. Goes with anything, from jeans to chinos.	\N	\N	\N	\N	\N	f	t	412	f	f	[]	0	0	\N		t	125		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":28}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1542291026-7eec264c27ff?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	13	[{"name": "سنيكرز كلاسيكي رجالي", "locale": "ar", "description": "سنيكرز جلدية منخفضة الكاحل أيقونية بنعل مبطّن. ينسق مع أي شيء، من الجينز إلى الشينو."}]	approved			both
+14	Women's Ankle Boots	womens-ankle-boots	women's ankle boots sleek leather ankle boots with a block heel. versatile enough for day or night wear.		2023-11-06 17:10:14		2023-11-06 17:10:14		variable	publish	f		Sleek leather ankle boots with a block heel. Versatile enough for day or night wear.	10	Sleek leather ankle boots with a block heel. Versatile enough for day or night wear.	\N	\N	\N	\N	\N	t	t	167	f	f	[]	0	0	\N		t	65		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":28}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1543163521-1bf539c55dd2?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	13	[{"name": "بوت كاحل نسائي", "locale": "ar", "description": "بوت كاحل جلدي أنيق بكعب بلوك. متعدد الاستخدامات لارتداء نهاراً أو ليلاً."}]	approved			both
+15	Formal Oxford Shoes	formal-oxford-shoes	formal oxford shoes hand-crafted leather oxford shoes with goodyear welt construction. built to last a lifetime.		2023-08-07 17:10:14		2023-08-07 17:10:14		variable	publish	f		Hand-crafted leather Oxford shoes with Goodyear welt construction. Built to last a lifetime.	0	Hand-crafted leather Oxford shoes with Goodyear welt construction. Built to last a lifetime.	\N	\N	\N	\N	\N	f	t	93	f	f	[]	0	0	\N		t	40		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":28}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1533867617858-e7b97e060509?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	13	[{"name": "حذاء أوكسفورد رسمي", "locale": "ar", "description": "أحذية أوكسفورد جلدية مصنوعة يدوياً بتطويق جووديار (Goodyear welt). مصممة لتدوم مدى الحياة."}]	approved			both
+16	Graphic Print T-Shirt	graphic-print-tshirt	graphic print t-shirt bold graphic tee printed on 100% organic cotton. express your style with attitude.		2023-06-18 17:10:14		2023-06-18 17:10:14		variable	publish	f		Bold graphic tee printed on 100% organic cotton. Express your style with attitude.	0	Bold graphic tee printed on 100% organic cotton. Express your style with attitude.	\N	\N	\N	\N	\N	f	t	398	f	f	[]	0	0	\N		t	330		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":21}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1521572163474-6864f9cf17ab?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	14	[{"name": "تيشيرت بطبعة جرافيك", "locale": "ar", "description": "تيشيرت بطبعة جريئة مطبوع على قطن عضوي 100%. عبّر عن أسلوبك بثقة."}]	approved			both
+17	Oversized Hoodie	oversized-hoodie	oversized hoodie super-soft heavyweight fleece hoodie with a relaxed oversized fit. cozy all day long.		2023-03-09 17:10:14		2023-03-09 17:10:14		variable	publish	f		Super-soft heavyweight fleece hoodie with a relaxed oversized fit. Cozy all day long.	30	Super-soft heavyweight fleece hoodie with a relaxed oversized fit. Cozy all day long.	\N	\N	\N	\N	\N	t	t	244	f	f	[]	0	0	\N		t	190		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":21}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1556821840-3a63f15732ce?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	14	[{"name": "هودي واسع من فليس ثقيل", "locale": "ar", "description": "هودي من فليس ثقيل ناعم جداً بقصة واسعة ومريحة. دافئ ومريح طوال اليوم."}]	approved			both
+18	Striped Long-Sleeve Tee	striped-long-sleeve-tee	striped long-sleeve tee classic breton stripes on a breathable long-sleeve tee. a french-inspired everyday essential.		2022-10-24 17:10:14		2022-10-24 17:10:14		variable	publish	f		Classic Breton stripes on a breathable long-sleeve tee. A French-inspired everyday essential.	0	Classic Breton stripes on a breathable long-sleeve tee. A French-inspired everyday essential.	\N	\N	\N	\N	\N	f	t	156	f	f	[]	0	0	\N		t	155		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":21}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1581655353564-df123a1eb820?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	14	[{"name": "تيشيرت مخطط بأكمام طويلة", "locale": "ar", "description": "خطوط بريتون الكلاسيكية على تيشيرت بأكمام طويلة قابل للتنفس. قطعة يومية مستوحاة من الأناقة الفرنسية."}]	approved			both
+19	Slim-Fit Chino Trousers	slim-fit-chino-trousers	slim-fit chino trousers smart-casual chinos in stretch cotton twill. office-ready yet weekend-worthy.		2022-10-07 17:10:14		2022-10-07 17:10:14		variable	publish	f		Smart-casual chinos in stretch cotton twill. Office-ready yet weekend-worthy.	0	Smart-casual chinos in stretch cotton twill. Office-ready yet weekend-worthy.	\N	\N	\N	\N	\N	f	t	188	f	f	[]	0	0	\N		t	180		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":30}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1552902865-b72c031ac5ea?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	17	[{"name": "بنطال تشينو بقصة ضيقة", "locale": "ar", "description": "تشينو ذكي كاجوال من تويل قطني مرن. جاهز للمكتب وفي عطلة نهاية الأسبوع."}]	approved			both
+20	Floral Wrap Dress	floral-wrap-dress	floral wrap dress feminine wrap dress in a vibrant floral print. v-neckline and adjustable tie waist for a flattering fit.		2022-08-23 17:10:14		2022-08-23 17:10:14		variable	publish	f		Feminine wrap dress in a vibrant floral print. V-neckline and adjustable tie waist for a flattering fit.	0	Feminine wrap dress in a vibrant floral print. V-neckline and adjustable tie waist for a flattering fit.	\N	\N	\N	\N	\N	f	t	223	f	f	[]	0	0	\N		t	120		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":26}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1595777457583-95e059d581b8?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	16	[{"name": "فستان ملفوف بنقشة زهور", "locale": "ar", "description": "فستان ملفوف أنثوي بنقشة زهور زاهية. ياقة على شكل V وحزام قابل للتعديل عند الخصر لمقاس ملائم وجذاب."}]	approved			both
+21	Midi Slip Dress	midi-slip-dress	midi slip dress satin midi slip dress with thin adjustable straps. effortlessly elegant for any occasion.		2022-05-22 17:10:14		2022-05-22 17:10:14		variable	publish	f		Satin midi slip dress with thin adjustable straps. Effortlessly elegant for any occasion.	20	Satin midi slip dress with thin adjustable straps. Effortlessly elegant for any occasion.	\N	\N	\N	\N	\N	t	t	145	f	f	[]	0	0	\N		t	103		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":26}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1614170153058-7a8e04b58f76?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	16	[{"name": "فستان سليب ميدي", "locale": "ar", "description": "فستان ساتان ميدي بحمالات رفيعة قابلة للتعديل. أنيق بسهولة لأي مناسبة."}]	approved			both
+22	Luxe Velvet Jeans — Olive	luxe-velvet-jeans-olive	luxe velvet jeans — olive high-quality linen skirt perfect for everyday wear. comfortable fit with a modern look. features: • premium leather fabric • available in multiple sizes • machine washable • true to size fit care instructions: wash at 30°c, do not tumble dry. high-quality linen skirt perfect for everyday wear. comfortable fit with a modern look. summer trending gift بنطلون جينز أنيق منتج مصنوع من أجود الخامات، مريح وعملي للاستخدام اليومي. المميزات: • خامة ممتازة • مقاسات متعددة • سهل العناية تعليمات العناية: اغسل على 30 درجة مئوية.	luxe-velvet-jeans-olive					physical	publish	f	visible	High-quality linen skirt perfect for everyday wear. Comfortable fit with a modern look.\r\n\r\nFeatures:\r\n• Premium leather fabric\r\n• Available in multiple sizes\r\n• Machine washable\r\n• True to size fit\r\n\r\nCare instructions: Wash at 30°C, do not tumble dry.	0	High-quality linen skirt perfect for everyday wear. Comfortable fit with a modern look.	SKU-BZL2XA	\N	\N	\N	\N	f	t	0	f	f	[]	0	0	\N		t	142		f	f	0	f	[]	t	f		0	t	0	0	[]	[]	0		[]	["summer","trending","gift"]	{"thumbnail":"products\\/thumbnails\\/jWxe2g5AHxyoQJgVxo8FknSBZq8ohIJy3W1G29QP.jpg","other_images":["products\\/other_images\\/nVBVb7y51SbUZuaEfKPlJVsYmzUAbbUdQrGlOQRF.jpg"],"natural_images":["products\\/natural_images\\/ILzxE3ijlarqJIbl6BJGyWZXcgTun45P5ydqzWMh.jpg"]}	[]	[]	[]	[]	0	[]	[]	instock	f	f		\N	f	[]	f	[]	["en", "0", "ar"]	0	1	0	2026-08-09 14:39:05	2026-08-13 08:10:56	1	0	physical	3	[{"name": "بنطلون جينز أنيق", "locale": "0", "description": "منتج مصنوع من أجود الخامات، مريح وعملي للاستخدام اليومي.\\r\\n\\r\\nالمميزات:\\r\\n• خامة ممتازة\\r\\n• مقاسات متعددة\\r\\n• سهل العناية\\r\\n\\r\\nتعليمات العناية: اغسل على 30 درجة مئوية."}, {"name": "جينز مخملي فاخر — زيتي", "locale": "ar", "description": "تنورة كتان عالية الجودة مثالية للارتداء اليومي. ملاءمة مريحة بمظهر عصري.\\r\\n\\r\\nالميزات:\\r\\n• قماش جلدي فاخر\\r\\n• متوفر بمقاسات متعددة\\r\\n• قابل للغسل في الغسالة\\r\\n• يتناسب مع المقاس المعتاد\\r\\n\\r\\nتعليمات العناية: اغسل على درجة حرارة 30°C، لا تجفف في المجفف."}]	approved	{"piece":1}	{"whatsapp":{"available":false,"number":null}}	both
 \.
 
 
@@ -2846,6 +2942,13 @@ COPY public.users (id, name, email, email_verified_at, password, remember_token,
 5	Ramez Malak	\N	\N	$2y$12$1Uu.SRqoEfjzBD7w4qSVXO4pljtc5cwbqKLX9pgmW4sHvKJXkrgfm	\N	2026-08-09 15:04:00	2026-08-09 15:04:29	\N	\N	\N	\N	Ramez	Malak	\N	\N	+201002722375	["customer"]	ramez-malak-2375	2026-08-09 15:04:00	Ramez	Malak		{"customer":true}	{"first_name":"Ramez","last_name":"Malak","address":"Al Kufur","address_note":null,"city":"Al Kufur","state":"Minya","email":null,"phone":"+201002722375","latitude":"28.4457762","longitude":"30.804594"}	phone_otp	t	f	\N	\N
 6	Ramo	\N	\N	$2y$12$lC.ojYc6/k6Zs2ch/FUhU./fovlKVD1yVJOls7uTBmnKvRbA1uDXG	\N	2026-08-10 04:33:30	2026-08-10 04:34:02	\N	\N	\N	\N	Ramo	Ramez	\N	\N	+200196464666	["customer"]	ramo-4666	2026-08-10 04:33:30	Ramo			{"customer":true}	{"first_name":"Ramo","last_name":"Ramez","address":"Al Kufur","address_note":null,"city":"Al Kufur","state":"Minya","email":null,"phone":"+200196464666","latitude":"28.4457836","longitude":"30.8046024"}	phone_otp	t	f	\N	\N
 7	Ramez Malak	\N	\N	$2y$12$0neRnrwZtGMtDuSZqEsK.uPtY6TdEMZSR/YID5z8ORuwR.jRG0R5.	\N	2026-08-10 04:36:54	2026-08-10 04:37:19	\N	\N	\N	\N	Ramez	Malak	\N	\N	+200885255566	["customer"]	ramez-malak-5566	2026-08-10 04:36:54	Ramez	Malak		{"customer":true}	{"first_name":"Ramez","last_name":"Malak","address":"Al Kufur","address_note":null,"city":"Al Kufur","state":"Minya","email":null,"phone":"+200885255566","latitude":"28.4457688","longitude":"30.8046002"}	phone_otp	t	f	\N	\N
+8	Ramez malak	\N	\N	$2y$12$64f7ge2BDuG376T3ryCz/u7bwQXqwPhVlgr9EMubo3uz00wVH2xbi	\N	2026-08-12 10:00:58	2026-08-12 10:11:02	\N	\N	\N	\N	Ramez	malak	\N	\N	+34523452444	["customer"]	ramez-malak-2444	2026-08-12 10:00:58	Ramez	malak		{"customer":true}	{"first_name":"Ramez","last_name":"malak","address":"Al Kufur","address_note":null,"city":"Al Kufur","state":"Minya","email":null,"phone":"+34523452444","latitude":"28.445439501836887","longitude":"30.80590917009552"}	phone_otp	t	f	\N	\N
+9	Ramez Malak	\N	\N	$2y$12$noKU4YpmNmm1prOxKPO6vedzBNtTW4on75yarfpHnB6yhIhwU88zG	\N	2026-08-12 11:18:28	2026-08-12 11:18:28	\N	\N	\N	\N	Ramez	Malak	\N	\N	+205888558888	["customer"]	ramez-malak-8888	2026-08-12 11:18:28	Ramez	Malak		{"customer":true}	[]	phone_otp	t	f	\N	\N
+10	Kkkhh	gggf@gmail.com	\N	$2y$12$MXs.q4sF4PhLWh99ZYXPkObz4MDSjpLuziXjgdE1k0KVcTdxj.pDW	\N	2026-08-12 11:21:09	2026-08-12 11:24:08	\N	\N	\N	\N	Kkkhh	Hgfgh	\N	\N	+20123654525	["customer"]	kkkhh-4525	2026-08-12 11:21:09	Kkkhh			{"customer":true}	{"first_name":"Kkkhh","last_name":"Hgfgh","address":"\\u0643\\u0641\\u0648\\u0631 \\u0627\\u0644\\u0635\\u0648\\u0644\\u064a\\u0629","address_note":null,"city":"\\u0643\\u0641\\u0648\\u0631 \\u0627\\u0644\\u0635\\u0648\\u0644\\u064a\\u0629","state":"Aswan","email":"gggf@gmail.com","phone":"+20123654525","latitude":"28.445801","longitude":"30.804578"}	phone_otp	t	f	\N	\N
+131	Ramez malak	\N	\N	$2y$12$sh0kPFb9B0Y/XjkStFMQ7u5r.OlgIXKcHTWzVKgyhFtkDeYDoPDem	\N	2026-08-13 11:12:37	2026-08-13 11:13:13	\N	\N	\N	\N	Ramez	malak	\N	\N	+200000086666	["customer"]	ramez-malak-6666	2026-08-13 11:12:37	Ramez	malak		{"customer":true}	{"first_name":"Ramez","last_name":"malak","address":"Al Kufur","address_note":null,"city":"Al Kufur","state":"Minya","email":null,"phone":"+200000086666","latitude":"28.445777","longitude":"30.8046012"}	phone_otp	t	f	\N	\N
+75	Ramez malak	\N	\N	$2y$12$CqTT2v2KWDKR5.N7Z4V1Xumiu.EaIe/niSier.WILJR4QS85ZTRYu	\N	2026-08-12 21:46:25	2026-08-12 21:49:10	\N	\N	\N	\N	Ramez	malak	\N	\N	+78608769876	["customer"]	ramez-malak-9876	2026-08-12 21:46:25	Ramez	malak		{"customer":true}	{"first_name":"Ramez","last_name":"malak","address":"Al Kufur","address_note":null,"city":"Al Kufur","state":"Minya","email":null,"phone":"+78608769876","latitude":"28.445441886428167","longitude":"30.805899818569"}	phone_otp	t	f	\N	\N
+78	Checkout QA	qa-checkout-test@example.invalid	\N	$2y$12$u2tQzfxg9/flsYwKKMKxGuI9T.06T3QKwPK5vz7MJ0X06CGAuShTW	\N	2026-08-13 06:21:10	2026-08-13 06:21:10	\N	\N	\N	\N	Checkout	QA	\N	\N	+201123456789	["customer"]	checkout-qa-6789	2026-08-13 06:21:10	Checkout	QA		{"customer":true}	[]	phone_otp	t	f	\N	\N
+136	Ramez malak	\N	\N	$2y$12$IvYsBQBAx3RyLm0rxX.oiOELv470cXQAfKRhjeecFpW.d0.DRCwOG	\N	2026-08-13 11:18:12	2026-08-13 11:18:12	\N	\N	\N	\N	Ramez	malak	\N	\N	+208555688888	["customer"]	ramez-malak-8888	2026-08-13 11:18:12	Ramez	malak		{"customer":true}	[]	phone_otp	t	f	\N	\N
 \.
 
 
@@ -2873,6 +2976,11 @@ COPY public.version_config (id, supported_ver_from, supported_ver_to) FROM stdin
 
 COPY public.wishlists (id, user_id, product_id, created_at) FROM stdin;
 1	1	2	2026-05-06 17:43:14
+32	9	8	2026-08-12 12:27:10
+33	9	19	2026-08-12 12:27:10
+34	9	21	2026-08-12 12:27:10
+35	9	4	2026-08-12 12:27:10
+36	9	11	2026-08-12 12:27:10
 \.
 
 
@@ -2894,7 +3002,7 @@ SELECT pg_catalog.setval('public.app_config_id_seq', 1, false);
 -- Name: app_configs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.app_configs_id_seq', 5, true);
+SELECT pg_catalog.setval('public.app_configs_id_seq', 6, true);
 
 
 --
@@ -2922,7 +3030,7 @@ SELECT pg_catalog.setval('public.brands_id_seq', 1, false);
 -- Name: cart_items_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.cart_items_id_seq', 32, true);
+SELECT pg_catalog.setval('public.cart_items_id_seq', 152, true);
 
 
 --
@@ -2989,6 +3097,13 @@ SELECT pg_catalog.setval('public.idempotency_keys_id_seq', 1, false);
 
 
 --
+-- Name: image_gallery_images_id_seq; Type: SEQUENCE SET; Schema: public; Owner: ramo_app
+--
+
+SELECT pg_catalog.setval('public.image_gallery_images_id_seq', 74, true);
+
+
+--
 -- Name: koto_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -3027,7 +3142,7 @@ SELECT pg_catalog.setval('public.links_logs_two_id_seq', 1, false);
 -- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.migrations_id_seq', 20, true);
+SELECT pg_catalog.setval('public.migrations_id_seq', 21, true);
 
 
 --
@@ -3041,28 +3156,28 @@ SELECT pg_catalog.setval('public.order_messages_id_seq', 3, true);
 -- Name: order_sub_orders_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.order_sub_orders_id_seq', 11, true);
+SELECT pg_catalog.setval('public.order_sub_orders_id_seq', 17, true);
 
 
 --
 -- Name: orders_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.orders_id_seq', 11, true);
+SELECT pg_catalog.setval('public.orders_id_seq', 16, true);
 
 
 --
 -- Name: otp_verifications_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.otp_verifications_id_seq', 7, true);
+SELECT pg_catalog.setval('public.otp_verifications_id_seq', 18, true);
 
 
 --
 -- Name: payment_receipts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.payment_receipts_id_seq', 13, true);
+SELECT pg_catalog.setval('public.payment_receipts_id_seq', 15, true);
 
 
 --
@@ -3139,7 +3254,7 @@ SELECT pg_catalog.setval('public.user_notes_id_seq', 1, false);
 -- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.users_id_seq', 7, true);
+SELECT pg_catalog.setval('public.users_id_seq', 140, true);
 
 
 --
@@ -3160,7 +3275,7 @@ SELECT pg_catalog.setval('public.version_config_id_seq', 1, false);
 -- Name: wishlists_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.wishlists_id_seq', 1, true);
+SELECT pg_catalog.setval('public.wishlists_id_seq', 37, true);
 
 
 --
@@ -3313,6 +3428,22 @@ ALTER TABLE ONLY public.idempotency_keys
 
 ALTER TABLE ONLY public.idempotency_keys
     ADD CONSTRAINT idempotency_keys_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: image_gallery_images image_gallery_images_path_unique; Type: CONSTRAINT; Schema: public; Owner: ramo_app
+--
+
+ALTER TABLE ONLY public.image_gallery_images
+    ADD CONSTRAINT image_gallery_images_path_unique UNIQUE (path);
+
+
+--
+-- Name: image_gallery_images image_gallery_images_pkey; Type: CONSTRAINT; Schema: public; Owner: ramo_app
+--
+
+ALTER TABLE ONLY public.image_gallery_images
+    ADD CONSTRAINT image_gallery_images_pkey PRIMARY KEY (id);
 
 
 --
@@ -3570,6 +3701,13 @@ CREATE INDEX idempotency_keys_created_at_index ON public.idempotency_keys USING 
 
 
 --
+-- Name: image_gallery_images_created_at_index; Type: INDEX; Schema: public; Owner: ramo_app
+--
+
+CREATE INDEX image_gallery_images_created_at_index ON public.image_gallery_images USING btree (created_at);
+
+
+--
 -- Name: otp_verifications_phone_index; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -3598,8 +3736,632 @@ CREATE INDEX product_variations_product_id_index ON public.product_variations US
 
 
 --
+-- Name: image_gallery_images image_gallery_images_uploaded_by_foreign; Type: FK CONSTRAINT; Schema: public; Owner: ramo_app
+--
+
+ALTER TABLE ONLY public.image_gallery_images
+    ADD CONSTRAINT image_gallery_images_uploaded_by_foreign FOREIGN KEY (uploaded_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: SCHEMA public; Type: ACL; Schema: -; Owner: pg_database_owner
+--
+
+GRANT ALL ON SCHEMA public TO ramo_app;
+
+
+--
+-- Name: TABLE api_keys; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.api_keys TO ramo_app;
+
+
+--
+-- Name: SEQUENCE api_keys_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.api_keys_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE app_config; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.app_config TO ramo_app;
+
+
+--
+-- Name: SEQUENCE app_config_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.app_config_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE app_configs; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.app_configs TO ramo_app;
+
+
+--
+-- Name: SEQUENCE app_configs_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.app_configs_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE attributes; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.attributes TO ramo_app;
+
+
+--
+-- Name: SEQUENCE attributes_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.attributes_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE blogposts; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.blogposts TO ramo_app;
+
+
+--
+-- Name: SEQUENCE blogposts_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.blogposts_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE brands; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.brands TO ramo_app;
+
+
+--
+-- Name: SEQUENCE brands_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.brands_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE cart_items; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.cart_items TO ramo_app;
+
+
+--
+-- Name: SEQUENCE cart_items_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.cart_items_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE categories2; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.categories2 TO ramo_app;
+
+
+--
+-- Name: SEQUENCE categories2_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.categories2_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE category_brand_requests; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.category_brand_requests TO ramo_app;
+
+
+--
+-- Name: SEQUENCE category_brand_requests_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.category_brand_requests_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE countries; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.countries TO ramo_app;
+
+
+--
+-- Name: SEQUENCE countries_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.countries_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE coupon_user_limits; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.coupon_user_limits TO ramo_app;
+
+
+--
+-- Name: SEQUENCE coupon_user_limits_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.coupon_user_limits_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE coupons; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.coupons TO ramo_app;
+
+
+--
+-- Name: SEQUENCE coupons_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.coupons_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE device_access_tokens; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.device_access_tokens TO ramo_app;
+
+
+--
+-- Name: SEQUENCE device_access_tokens_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.device_access_tokens_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE failed_jobs; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.failed_jobs TO ramo_app;
+
+
+--
+-- Name: SEQUENCE failed_jobs_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.failed_jobs_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE getposttest; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.getposttest TO ramo_app;
+
+
+--
+-- Name: SEQUENCE getposttest_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.getposttest_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE idempotency_keys; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.idempotency_keys TO ramo_app;
+
+
+--
+-- Name: SEQUENCE idempotency_keys_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.idempotency_keys_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE koto; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.koto TO ramo_app;
+
+
+--
+-- Name: SEQUENCE koto_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.koto_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE link_access_logs; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.link_access_logs TO ramo_app;
+
+
+--
+-- Name: SEQUENCE link_access_logs_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.link_access_logs_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE links; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.links TO ramo_app;
+
+
+--
+-- Name: SEQUENCE links_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.links_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE links_json_res; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.links_json_res TO ramo_app;
+
+
+--
+-- Name: SEQUENCE links_json_res_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.links_json_res_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE links_logs_two; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.links_logs_two TO ramo_app;
+
+
+--
+-- Name: SEQUENCE links_logs_two_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.links_logs_two_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE migrations; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.migrations TO ramo_app;
+
+
+--
+-- Name: SEQUENCE migrations_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.migrations_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE order_messages; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.order_messages TO ramo_app;
+
+
+--
+-- Name: SEQUENCE order_messages_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.order_messages_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE order_sub_orders; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.order_sub_orders TO ramo_app;
+
+
+--
+-- Name: SEQUENCE order_sub_orders_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.order_sub_orders_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE orders; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.orders TO ramo_app;
+
+
+--
+-- Name: SEQUENCE orders_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.orders_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE otp_verifications; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.otp_verifications TO ramo_app;
+
+
+--
+-- Name: SEQUENCE otp_verifications_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.otp_verifications_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE password_reset_tokens; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.password_reset_tokens TO ramo_app;
+
+
+--
+-- Name: TABLE payment_receipts; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.payment_receipts TO ramo_app;
+
+
+--
+-- Name: SEQUENCE payment_receipts_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.payment_receipts_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE personal_access_tokens; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.personal_access_tokens TO ramo_app;
+
+
+--
+-- Name: SEQUENCE personal_access_tokens_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.personal_access_tokens_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE product_category; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.product_category TO ramo_app;
+
+
+--
+-- Name: TABLE product_reviews; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.product_reviews TO ramo_app;
+
+
+--
+-- Name: SEQUENCE product_reviews_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.product_reviews_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE product_variations; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.product_variations TO ramo_app;
+
+
+--
+-- Name: SEQUENCE product_variations_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.product_variations_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE products_data; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.products_data TO ramo_app;
+
+
+--
+-- Name: SEQUENCE products_data_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.products_data_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE products_data_main; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.products_data_main TO ramo_app;
+
+
+--
+-- Name: SEQUENCE products_data_main_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.products_data_main_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE rate_limits; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.rate_limits TO ramo_app;
+
+
+--
+-- Name: TABLE refund_requests; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.refund_requests TO ramo_app;
+
+
+--
+-- Name: SEQUENCE refund_requests_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.refund_requests_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE shops; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.shops TO ramo_app;
+
+
+--
+-- Name: SEQUENCE shops_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.shops_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE tags; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.tags TO ramo_app;
+
+
+--
+-- Name: SEQUENCE tags_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.tags_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE time_line_configs; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.time_line_configs TO ramo_app;
+
+
+--
+-- Name: SEQUENCE time_line_configs_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.time_line_configs_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE user_notes; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.user_notes TO ramo_app;
+
+
+--
+-- Name: SEQUENCE user_notes_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.user_notes_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE users; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.users TO ramo_app;
+
+
+--
+-- Name: SEQUENCE users_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.users_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE vendor_users; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.vendor_users TO ramo_app;
+
+
+--
+-- Name: SEQUENCE vendor_users_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.vendor_users_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE version_config; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.version_config TO ramo_app;
+
+
+--
+-- Name: SEQUENCE version_config_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.version_config_id_seq TO ramo_app;
+
+
+--
+-- Name: TABLE wishlists; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLE public.wishlists TO ramo_app;
+
+
+--
+-- Name: SEQUENCE wishlists_id_seq; Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON SEQUENCE public.wishlists_id_seq TO ramo_app;
+
+
+--
+-- Name: DEFAULT PRIVILEGES FOR SEQUENCES; Type: DEFAULT ACL; Schema: public; Owner: postgres
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON SEQUENCES TO ramo_app;
+
+
+--
+-- Name: DEFAULT PRIVILEGES FOR TABLES; Type: DEFAULT ACL; Schema: public; Owner: postgres
+--
+
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,UPDATE ON TABLES TO ramo_app;
+
+
+--
 -- PostgreSQL database dump complete
 --
 
-\unrestrict sFlJnnCrw6CA0KkgP8G6JuIIyp8LRj8IDkI3WEsnI3gp05RWt0cOmjEuCucfKKr
+\unrestrict FtjTJkpP3qmua08hLkmLo7Wb6HedX6jWDTzOALk7ehMHhbAqRdXTUyCV5CYMutn
 

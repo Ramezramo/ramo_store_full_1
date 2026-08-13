@@ -1,20 +1,21 @@
 @extends('layouts.app')
-@section('title', isset($order) && $order ? 'Order #'.$order->id.' — Tracking' : 'Track Your Order')
+@section('title', isset($order) && $order ? ((session('locale') === 'ar' ? 'طلب رقم #' : 'Order #') . $order->id . (session('locale') === 'ar' ? ' — تتبّع الطلب' : ' — Tracking')) : (session('locale') === 'ar' ? 'تتبّع طلبك' : 'Track Your Order'))
 
 @section('content')
-<div class="page">
+@php $isAr = session('locale') === 'ar'; @endphp
+<div class="page order-tracking-page" @if($isAr) lang="ar" dir="rtl" @endif>
 
   <div class="breadcrumb">
-    <a href="{{ route('home') }}">Home</a><span>/</span>
-    <strong>Order Tracking</strong>
+    <a href="{{ route('home') }}">{{ $isAr ? 'الرئيسية' : 'Home' }}</a><span>/</span>
+    <strong>{{ $isAr ? 'تتبّع طلبك' : 'Order Tracking' }}</strong>
   </div>
 
   {{-- ── LOOKUP FORM ── --}}
   <div class="track-hero">
     <div class="track-form-card">
       <div class="track-icon">📦</div>
-      <h1 class="track-title">Track Your Order</h1>
-      <p class="track-sub">Enter your order number and the phone number used at checkout.</p>
+      <h1 class="track-title">{{ $isAr ? 'تتبّع طلبك' : 'Track Your Order' }}</h1>
+      <p class="track-sub">{{ $isAr ? 'اكتب رقم الطلب ورقم موبايلك اللي اشتريت بيه' : 'Enter your order number and the phone number used at checkout.' }}</p>
 
       @if($error ?? null)
         <div class="track-error">
@@ -26,24 +27,30 @@
         @csrf
         <div class="track-fields">
           <div class="track-field">
-            <label>Order Number</label>
-            <input type="number" name="order_id" placeholder="e.g. 1042"
+            <label>{{ $isAr ? 'رقم الطلب' : 'Order Number' }}</label>
+            <input type="number" name="order_id" placeholder="{{ $isAr ? 'مثال: 1042' : 'e.g. 1042' }}"
                    value="{{ old('order_id', request('order_id')) }}"
                    min="1" required autofocus>
             @error('order_id')<span class="field-err">{{ $message }}</span>@enderror
           </div>
           <div class="track-field">
-            <label>Phone Number</label>
-            <input type="tel" name="phone" placeholder="e.g. 01012345678"
+            <label>{{ $isAr ? 'رقم الموبايل' : 'Phone Number' }}</label>
+            <input type="tel" name="phone" placeholder="{{ $isAr ? 'مثال: 01012345678' : 'e.g. 01012345678' }}"
                    value="{{ old('phone') }}" required>
             @error('phone')<span class="field-err">{{ $message }}</span>@enderror
           </div>
         </div>
-        <button type="submit" class="track-submit">Track Order →</button>
+        <button type="submit" class="track-submit">{{ $isAr ? 'تتبّع الطلب' : 'Track Order →' }}</button>
       </form>
 
       @auth
-        <p class="track-alt">Or <a href="{{ route('account.orders') }}" class="track-link">view all your orders</a> in your account.</p>
+        <p class="track-alt">
+          @if($isAr)
+            <a href="{{ route('account.orders') }}" class="track-link">شوف كل طلباتك في حسابك</a>
+          @else
+            Or <a href="{{ route('account.orders') }}" class="track-link">view all your orders</a> in your account.
+          @endif
+        </p>
       @endauth
     </div>
   </div>
@@ -57,7 +64,7 @@
       ? $subOrders->first()
       : null;
     $displayStatus = $singleStoreSubOrder->status ?? $order->status ?? 'pending';
-    $status = \App\Http\Controllers\Web\OrderTrackingController::statusInfo($displayStatus);
+    $status = \App\Http\Controllers\Web\OrderTrackingController::statusInfo($displayStatus, $isAr);
     $steps  = ['pending','processing','shipped','completed'];
     $curIdx = array_search(strtolower($displayStatus), $steps);
     if ($curIdx === false) $curIdx = 0;
@@ -69,8 +76,14 @@
     {{-- Header --}}
     <div class="or-header">
       <div>
-        <h2 class="or-title">Order <span>#{{ $order->id }}</span></h2>
-        <div class="or-date">Placed on {{ $order->date_created ? \Carbon\Carbon::parse($order->date_created)->format('d M Y, g:i A') : \Carbon\Carbon::parse($order->created_at)->format('d M Y') }}</div>
+        <h2 class="or-title">{{ $isAr ? 'طلب رقم' : 'Order' }} <span>#{{ $order->id }}</span></h2>
+        @php
+          $orderDate = \Carbon\Carbon::parse($order->date_created ?: $order->created_at);
+          $orderDateText = $isAr
+            ? $orderDate->locale('ar')->translatedFormat($order->date_created ? 'j F Y، g:i A' : 'j F Y')
+            : $orderDate->format($order->date_created ? 'd M Y, g:i A' : 'd M Y');
+        @endphp
+        <div class="or-date">{{ $isAr ? 'تاريخ الطلب: ' : 'Placed on ' }}{{ $orderDateText }}</div>
       </div>
       <div class="or-status-pill" style="background:{{ $status['bg'] }};color:{{ $status['color'] }};border:1.5px solid {{ $status['color'] }}20">
         {{ $status['icon'] }} {{ $status['label'] }}
@@ -83,7 +96,7 @@
       <div class="or-progress">
         @foreach($steps as $i => $step)
         @php
-          $stepStatus = \App\Http\Controllers\Web\OrderTrackingController::statusInfo($step);
+          $stepStatus = \App\Http\Controllers\Web\OrderTrackingController::statusInfo($step, $isAr);
           $done   = $i <= $curIdx;
           $active = $i === $curIdx;
         @endphp
@@ -99,20 +112,25 @@
     </div>
     @else
     <div class="or-cancelled-banner" style="background:{{ $status['bg'] }};color:{{ $status['color'] }}">
-      {{ $status['icon'] }} This order has been <strong>{{ $status['label'] }}</strong>.
-      @if(strtolower($displayStatus) === 'refunded') A refund has been processed. @endif
+      @if($isAr)
+        {{ $status['icon'] }} الطلب ده <strong>{{ $status['label'] }}</strong>.
+        @if(strtolower($displayStatus) === 'refunded') تم رد المبلغ. @endif
+      @else
+        {{ $status['icon'] }} This order has been <strong>{{ $status['label'] }}</strong>.
+        @if(strtolower($displayStatus) === 'refunded') A refund has been processed. @endif
+      @endif
     </div>
     @endif
 
     {{-- Per-store shipment statuses --}}
     @if(isset($subOrders) && $subOrders->count() > 1)
     <div class="or-store-statuses">
-      <div class="or-section-title">Store Shipments</div>
-      <p class="or-store-intro">This order may arrive in separate packages. Each store has its own delivery status.</p>
+      <div class="or-section-title">{{ $isAr ? 'شحنات المتاجر' : 'Store Shipments' }}</div>
+      <p class="or-store-intro">{{ $isAr ? 'الطلب ده ممكن يوصلك في أكتر من شحنة، وكل متجر له حالة توصيل خاصة بيه.' : 'This order may arrive in separate packages. Each store has its own delivery status.' }}</p>
       <div class="or-store-list">
         @foreach($subOrders as $sub)
           @php
-            $subStatus = \App\Http\Controllers\Web\OrderTrackingController::statusInfo($sub->status ?? 'pending');
+            $subStatus = \App\Http\Controllers\Web\OrderTrackingController::statusInfo($sub->status ?? 'pending', $isAr);
             $subSteps = ['pending', 'processing', 'shipped', 'delivered'];
             $subIndex = array_search(strtolower($sub->status ?? 'pending'), $subSteps);
             $subIndex = $subIndex === false ? 0 : $subIndex;
@@ -121,8 +139,8 @@
           <div class="or-store-card">
             <div class="or-store-head">
               <div>
-                <strong>{{ $sub->vendor_shop_name ?: 'Store' }}</strong>
-                <span>Sub-order #{{ $sub->id }}</span>
+                <strong>{{ $sub->vendor_shop_name ?: ($isAr ? 'المتجر' : 'Store') }}</strong>
+                <span>{{ $isAr ? 'طلب فرعي رقم' : 'Sub-order' }} #{{ $sub->id }}</span>
               </div>
               <span class="or-store-pill" style="background:{{ $subStatus['bg'] }};color:{{ $subStatus['color'] }}">
                 {{ $subStatus['icon'] }} {{ $subStatus['label'] }}
@@ -130,18 +148,22 @@
             </div>
             @if($subCancelled)
               <div class="or-store-cancelled" style="color:{{ $subStatus['color'] }}">
-                {{ $subStatus['icon'] }} This store shipment has been {{ strtolower($subStatus['label']) }}.
+                @if($isAr)
+                  {{ $subStatus['icon'] }} شحنة المتجر دي <strong>{{ $subStatus['label'] }}</strong>.
+                @else
+                  {{ $subStatus['icon'] }} This store shipment has been {{ strtolower($subStatus['label']) }}.
+                @endif
               </div>
             @else
               <div class="or-store-progress">
                 @foreach($subSteps as $i => $subStep)
                   @php
-                    $subStepInfo = \App\Http\Controllers\Web\OrderTrackingController::statusInfo($subStep);
+                    $subStepInfo = \App\Http\Controllers\Web\OrderTrackingController::statusInfo($subStep, $isAr);
                     $subDone = $i <= $subIndex;
                   @endphp
                   <div class="or-store-step {{ $subDone ? 'done' : '' }}">
                     <span>{{ $subDone ? '✓' : ($i + 1) }}</span>
-                    <small>{{ $subStep === 'delivered' ? 'Delivered' : $subStepInfo['label'] }}</small>
+                    <small>{{ $subStepInfo['label'] }}</small>
                   </div>
                   @if($i < count($subSteps) - 1)
                     <div class="or-store-line {{ $i < $subIndex ? 'done' : '' }}"></div>
@@ -151,15 +173,15 @@
             @endif
             @if($sub->tracking_number)
               <div class="or-store-tracking">
-                Tracking: <strong>{{ $sub->tracking_number }}</strong>
-                @if($sub->tracking_carrier) via {{ $sub->tracking_carrier }} @endif
+                {{ $isAr ? 'رقم التتبّع:' : 'Tracking:' }} <strong>{{ $sub->tracking_number }}</strong>
+                @if($sub->tracking_carrier) {{ $isAr ? 'عن طريق' : 'via' }} {{ $sub->tracking_carrier }} @endif
               </div>
             @endif
             @if(!empty($sub->items))
               <div class="or-store-items">
                 @foreach($sub->items as $subItem)
                   <div>
-                    <span>{{ $subItem['name'] ?? 'Item' }} × {{ $subItem['quantity'] ?? 1 }}</span>
+                    <span>{{ $subItem['name'] ?? ($isAr ? 'منتج' : 'Item') }} × {{ $subItem['quantity'] ?? 1 }}</span>
                     <strong>{{ number_format($subItem['subtotal'] ?? 0, 2) }} EGP</strong>
                   </div>
                 @endforeach
@@ -175,7 +197,7 @@
 
       {{-- Order Items --}}
       <div class="or-section">
-        <div class="or-section-title">Order Items</div>
+        <div class="or-section-title">{{ $isAr ? 'منتجات الطلب' : 'Order Items' }}</div>
         <div class="or-items">
           @forelse($lineItems ?? [] as $item)
           <div class="or-item">
@@ -196,15 +218,15 @@
                 </div>
               @endif
               <div class="or-item-meta">
-                Qty: <strong>{{ $item['quantity'] }}</strong>
+                {{ $isAr ? 'الكمية:' : 'Qty:' }} <strong>{{ $item['quantity'] }}</strong>
                 &nbsp;·&nbsp;
-                {{ number_format($item['price'] ?? 0, 2) }} EGP each
+                {{ number_format($item['price'] ?? 0, 2) }} EGP {{ $isAr ? 'للقطعة' : 'each' }}
               </div>
             </div>
             <div class="or-item-total">{{ number_format(($item['price'] ?? 0) * ($item['quantity'] ?? 1), 2) }} EGP</div>
           </div>
           @empty
-          <div style="color:var(--c-mid);font-size:13px;padding:16px 0">No item details available.</div>
+          <div style="color:var(--c-mid);font-size:13px;padding:16px 0">{{ $isAr ? 'تفاصيل المنتجات مش متاحة.' : 'No item details available.' }}</div>
           @endforelse
         </div>
       </div>
@@ -213,30 +235,30 @@
 
         {{-- Order Summary --}}
         <div class="or-section">
-          <div class="or-section-title">Order Summary</div>
+          <div class="or-section-title">{{ $isAr ? 'ملخص الطلب' : 'Order Summary' }}</div>
           <div class="or-summary">
             <div class="or-summary-row">
-              <span>Subtotal</span>
+              <span>{{ $isAr ? 'الإجمالي الفرعي' : 'Subtotal' }}</span>
               <span>{{ number_format($order->original_total ?? 0, 2) }} EGP</span>
             </div>
             @if(($order->discount_total ?? 0) > 0)
             <div class="or-summary-row" style="color:#22a35c">
-              <span>Discount @if($order->coupon_code)(<code>{{ $order->coupon_code }}</code>)@endif</span>
+              <span>{{ $isAr ? 'الخصم' : 'Discount' }} @if($order->coupon_code)(<code>{{ $order->coupon_code }}</code>)@endif</span>
               <span>−{{ number_format($order->discount_total, 2) }} EGP</span>
             </div>
             @endif
             @if(($order->shipping_total ?? 0) > 0)
             <div class="or-summary-row">
-              <span>Shipping</span>
+              <span>{{ $isAr ? 'الشحن' : 'Shipping' }}</span>
               <span>{{ number_format($order->shipping_total, 2) }} EGP</span>
             </div>
             @endif
             <div class="or-summary-row or-summary-total">
-              <span>Total</span>
+              <span>{{ $isAr ? 'الإجمالي' : 'Total' }}</span>
               <span>{{ number_format($order->final_total ?? $order->original_total, 2) }} EGP</span>
             </div>
             <div class="or-summary-row" style="font-size:12px;color:var(--c-mid)">
-              <span>Payment</span>
+              <span>{{ $isAr ? 'طريقة الدفع' : 'Payment' }}</span>
               <span>{{ $order->payment_method_title ?? ucfirst($order->payment_method ?? 'N/A') }}</span>
             </div>
           </div>
@@ -244,21 +266,21 @@
 
         {{-- Shipping Address --}}
         <div class="or-section">
-          <div class="or-section-title">Shipping Address</div>
+          <div class="or-section-title">{{ $isAr ? 'عنوان الشحن' : 'Shipping Address' }}</div>
           <div class="or-address">
             @php $sh = $shipping ?? $billing ?? []; @endphp
             <div class="or-address-name">{{ ($sh['first_name'] ?? '') . ' ' . ($sh['last_name'] ?? '') }}</div>
             @if($sh['address_1'] ?? null)<div>{{ $sh['address_1'] }}</div>@endif
             @if($sh['city'] ?? null)<div>{{ $sh['city'] }}@if($sh['state'] ?? null), {{ $sh['state'] }}@endif</div>@endif
             @if($sh['country'] ?? null)<div>{{ $sh['country'] }}</div>@endif
-            @if($sh['phone'] ?? null)<div style="margin-top:6px;font-weight:600">📞 {{ $sh['phone'] }}</div>@endif
+            @if($sh['phone'] ?? null)<div class="or-address-phone">📞 {{ $sh['phone'] }}</div>@endif
           </div>
         </div>
 
         {{-- Customer Note --}}
         @if($order->customer_note ?? null)
         <div class="or-section">
-          <div class="or-section-title">Your Note</div>
+          <div class="or-section-title">{{ $isAr ? 'ملاحظتك' : 'Your Note' }}</div>
           <div class="or-note">{{ $order->customer_note }}</div>
         </div>
         @endif
@@ -268,8 +290,8 @@
 
     {{-- Footer actions --}}
     <div class="or-footer">
-      <a href="{{ route('order.track') }}" class="btn btn-outline" style="border-radius:10px;padding:11px 20px;font-size:13.5px">Track Another Order</a>
-      <a href="{{ route('shop') }}" class="btn btn-dark" style="border-radius:10px;padding:11px 20px;font-size:13.5px">Continue Shopping</a>
+      <a href="{{ route('order.track') }}" class="btn btn-outline" style="border-radius:10px;padding:11px 20px;font-size:13.5px">{{ $isAr ? 'تتبّع طلب تاني' : 'Track Another Order' }}</a>
+      <a href="{{ route('shop') }}" class="btn btn-dark" style="border-radius:10px;padding:11px 20px;font-size:13.5px">{{ $isAr ? 'كمّل تسوّق' : 'Continue Shopping' }}</a>
     </div>
   </div>
   @endif
@@ -373,10 +395,23 @@
 /* Address */
 .or-address{font-size:13.5px;color:var(--c-mid);line-height:1.7}
 .or-address-name{font-weight:700;color:var(--c-dark);margin-bottom:2px}
+.or-address-phone{margin-top:6px;font-weight:600}
 .or-note{font-size:13.5px;color:var(--c-mid);line-height:1.6;background:var(--c-bg);padding:12px;border-radius:8px;font-style:italic}
 
 /* Footer */
 .or-footer{padding:20px 28px;display:flex;gap:12px;flex-wrap:wrap;border-top:1.5px solid var(--c-light)}
+
+/* Egyptian Arabic / RTL order tracking */
+.order-tracking-page[dir="rtl"]{direction:rtl;text-align:right}
+.order-tracking-page[dir="rtl"] .breadcrumb,.order-tracking-page[dir="rtl"] .track-form,.order-tracking-page[dir="rtl"] .track-error{direction:rtl;text-align:right}
+.order-tracking-page[dir="rtl"] .track-fields{direction:rtl}
+.order-tracking-page[dir="rtl"] .track-field label,.order-tracking-page[dir="rtl"] .or-section-title{text-transform:none;letter-spacing:0}
+.order-tracking-page[dir="rtl"] .track-field input{direction:ltr;text-align:left}
+.order-tracking-page[dir="rtl"] .or-progress,.order-tracking-page[dir="rtl"] .or-store-progress{direction:rtl}
+.order-tracking-page[dir="rtl"] .or-right-col{border-left:0;border-right:1.5px solid var(--c-light)}
+.order-tracking-page[dir="rtl"] .or-store-items div,.order-tracking-page[dir="rtl"] .or-summary-row{direction:rtl}
+.order-tracking-page[dir="rtl"] .or-item-total,.order-tracking-page[dir="rtl"] .or-summary-row span:last-child,.order-tracking-page[dir="rtl"] .or-store-items strong,.order-tracking-page[dir="rtl"] .or-address-phone{direction:ltr;unicode-bidi:embed}
+.order-tracking-page[dir="rtl"] .or-address-phone{text-align:right}
 
 @media(max-width:700px){
   .track-fields{grid-template-columns:1fr}
@@ -387,6 +422,7 @@
   .or-store-progress{overflow-x:auto;padding-bottom:4px}
   .or-store-step{min-width:64px}
   .track-form-card{padding:28px 20px}
+  .order-tracking-page[dir="rtl"] .or-right-col{border-right:0;border-top:1.5px solid var(--c-light)}
 }
 </style>
 @endpush
