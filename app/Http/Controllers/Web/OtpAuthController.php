@@ -128,9 +128,12 @@ class OtpAuthController extends Controller
 
         $response = ['success' => true, 'message' => $this->localized('OTP sent successfully.', 'الكود اتبعت بنجاح.'), 'expires_in' => $expiryMinutes * 60];
 
-        if ($isLogDriver && config('app.debug')) {
+        // The preview is an explicit, default-off development aid. It is never
+        // returned for a real SMS provider, and the production template keeps
+        // OTP_DEVELOPMENT_PREVIEW disabled even if the log driver is selected.
+        if ($isLogDriver && config('sms.development_preview')) {
             $response['dev_otp']  = $otp;
-            $response['dev_note'] = 'SMS_GATEWAY=log — OTP shown here for development only.';
+            $response['dev_note'] = 'Development OTP preview — not sent via real SMS.';
         }
 
         return response()->json($response);

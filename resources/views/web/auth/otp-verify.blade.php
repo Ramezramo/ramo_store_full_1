@@ -8,7 +8,7 @@
     'verify' => 'تأكيد الكود', 'verifyLoading' => 'جاري التأكيد',
     'resendIn' => 'إعادة الإرسال خلال', 'seconds' => 'ثانية', 'resend' => 'إعادة إرسال الكود',
     'changePhone' => 'تغيير رقم الموبايل', 'devTitle' => 'وضع التجربة — كود التأكيد',
-    'devNote' => 'SMS_GATEWAY=log · لم يتم الإرسال برسالة SMS حقيقية',
+    'devNote' => 'وضع تجربة فقط · الكود ما اتبعتش برسالة SMS حقيقية',
     'incomplete' => 'اكتب الـ6 أرقام كلها.', 'verified' => 'تم التأكيد. جاري التحويل…',
     'incorrect' => 'الكود غير صحيح.', 'networkError' => 'في مشكلة في النت. جرّب تاني.',
     'resending' => 'جاري إعادة الإرسال', 'resent' => 'تم إعادة إرسال الكود.',
@@ -19,7 +19,7 @@
     'verify' => 'Verify Code', 'verifyLoading' => 'Verifying',
     'resendIn' => 'Resend in', 'seconds' => 's', 'resend' => 'Resend OTP',
     'changePhone' => 'Change phone number', 'devTitle' => 'Dev Mode — OTP Code',
-    'devNote' => 'SMS_GATEWAY=log · not sent via real SMS',
+    'devNote' => 'Development preview only · not sent via real SMS',
     'incomplete' => 'Please enter all 6 digits.', 'verified' => 'Verified! Redirecting…',
     'incorrect' => 'Incorrect code.', 'networkError' => 'Network error. Please try again.',
     'resending' => 'Resending', 'resent' => 'OTP resent!', 'resendFailed' => 'Could not resend OTP.',
@@ -88,7 +88,7 @@
       <a href="{{ route('login') }}">{{ $otpRtl ? '→' : '←' }} {{ $otpCopy['changePhone'] }}</a>
     </div>
 
-    <div id="dev-otp-box" style="display:none;margin-top:16px;padding:12px 14px;background:#fffbeb;border:1.5px dashed #f59e0b;border-radius:10px;text-align:center">
+    <div id="dev-otp-box" aria-live="polite" style="display:none;margin-top:16px;padding:12px 14px;background:#fffbeb;border:1.5px dashed #f59e0b;border-radius:10px;text-align:center">
       <div style="font-size:11px;color:#92400e;font-weight:600;letter-spacing:.5px;margin-bottom:4px">{{ $otpCopy['devTitle'] }}</div>
       <div id="dev-otp-val" style="font-size:26px;font-weight:800;letter-spacing:6px;color:#92400e;font-family:monospace"></div>
       <div style="font-size:10px;color:#b45309;margin-top:4px">{{ $otpCopy['devNote'] }}</div>
@@ -191,6 +191,7 @@ async function resendOtp() {
     const data = contentType.includes('application/json') ? await resp.json() : { success: false, message: await resp.text() };
     if (data.success) {
       setOk(otpCopy.resent);
+      showDevelopmentOtp(data.dev_otp);
       startCountdown(60);
     } else {
       setErr(data.message || otpCopy.resendFailed);
@@ -221,15 +222,18 @@ function startCountdown(seconds) {
 function setErr(msg) { document.getElementById('otp-err').textContent = msg; document.getElementById('otp-ok').textContent = ''; }
 function setOk(msg) { document.getElementById('otp-ok').textContent = msg; document.getElementById('otp-err').textContent = ''; }
 
+function showDevelopmentOtp(devOtp) {
+  if (!devOtp || !/^\d{6}$/.test(String(devOtp))) return;
+  document.getElementById('dev-otp-box').style.display = 'block';
+  document.getElementById('dev-otp-val').textContent = String(devOtp);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   boxes[0].focus();
   startCountdown(60);
   const devOtp = sessionStorage.getItem('dev_otp');
-  if (devOtp) {
-    document.getElementById('dev-otp-box').style.display = 'block';
-    document.getElementById('dev-otp-val').textContent = devOtp;
-    sessionStorage.removeItem('dev_otp');
-  }
+  showDevelopmentOtp(devOtp);
+  sessionStorage.removeItem('dev_otp');
 });
 </script>
 @endsection

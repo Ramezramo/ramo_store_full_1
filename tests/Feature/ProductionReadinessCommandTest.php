@@ -19,6 +19,7 @@ class ProductionReadinessCommandTest extends TestCase
             'queue.default' => 'redis',
             'filesystems.default' => 's3',
             'sms.driver' => 'log',
+            'sms.development_preview' => false,
         ]);
 
         $this->artisan('production:check')
@@ -41,6 +42,27 @@ class ProductionReadinessCommandTest extends TestCase
         ]);
 
         $this->artisan('production:check')
+            ->expectsOutputToContain('Production configuration check failed.')
+            ->assertExitCode(1);
+    }
+
+    public function test_it_fails_when_development_otp_preview_is_enabled(): void
+    {
+        config([
+            'app.debug' => false,
+            'app.url' => 'https://store.example.com',
+            'debugbar.enabled' => false,
+            'trustedproxy.proxies' => [],
+            'session.secure' => true,
+            'session.driver' => 'redis',
+            'cache.default' => 'redis',
+            'queue.default' => 'redis',
+            'filesystems.default' => 's3',
+            'sms.development_preview' => true,
+        ]);
+
+        $this->artisan('production:check')
+            ->expectsOutputToContain('Development OTP preview is disabled')
             ->expectsOutputToContain('Production configuration check failed.')
             ->assertExitCode(1);
     }

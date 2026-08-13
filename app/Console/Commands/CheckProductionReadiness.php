@@ -83,6 +83,12 @@ class CheckProductionReadiness extends Command
                 'expected' => 's3 or another shared persistent disk',
                 'actual' => (string) config('filesystems.default'),
             ],
+            [
+                'name' => 'Development OTP preview is disabled',
+                'passed' => config('sms.development_preview') !== true,
+                'expected' => 'OTP_DEVELOPMENT_PREVIEW=false',
+                'actual' => config('sms.development_preview') ? 'true' : 'false',
+            ],
         ];
 
         $rows = array_map(static fn (array $check): array => [

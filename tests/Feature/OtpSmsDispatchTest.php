@@ -47,7 +47,7 @@ class OtpSmsDispatchTest extends TestCase
     protected function tearDown(): void
     {
         OtpVerification::query()
-            ->whereIn('phone', ['+201000000001', '+201000000002'])
+            ->whereIn('phone', ['+201000000001', '+201000000002', '+201000000003'])
             ->delete();
 
         if ($this->originalAuthSettings) {
@@ -65,11 +65,12 @@ class OtpSmsDispatchTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_log_driver_keeps_the_visible_development_otp_response(): void
+    public function test_log_driver_exposes_otp_only_when_development_preview_is_explicitly_enabled(): void
     {
         config([
-            'app.debug' => true,
+            'app.debug' => false,
             'sms.driver' => 'log',
+            'sms.development_preview' => true,
         ]);
 
         $csrfToken = 'otp-log-driver-test';
@@ -81,8 +82,27 @@ class OtpSmsDispatchTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('dev_note', 'SMS_GATEWAY=log — OTP shown here for development only.');
+            ->assertJsonPath('dev_note', 'Development OTP preview — not sent via real SMS.');
         $this->assertMatchesRegularExpression('/^\d{6}$/', (string) $response->json('dev_otp'));
+    }
+
+    public function test_log_driver_hides_otp_when_development_preview_is_disabled(): void
+    {
+        config([
+            'sms.driver' => 'log',
+            'sms.development_preview' => false,
+        ]);
+
+        $csrfToken = 'otp-preview-disabled-test';
+        $response = $this->withSession(['_token' => $csrfToken])
+            ->postJson(route('auth.send-otp'), [
+                '_token' => $csrfToken,
+                'phone' => '01000000003',
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonMissing(['dev_otp', 'dev_note']);
     }
 
     public function test_real_sms_provider_delivery_is_queued(): void
@@ -90,6 +110,7 @@ class OtpSmsDispatchTest extends TestCase
         Queue::fake();
         config([
             'sms.driver' => 'msegat',
+            'sms.development_preview' => true,
             'sms.msegat.username' => 'test-user',
             'sms.msegat.password' => 'test-key',
         ]);
