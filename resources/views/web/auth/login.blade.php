@@ -6,7 +6,7 @@
   $loginCopy = $loginRtl ? [
     'continue' => 'كمّل طلبك', 'checkoutHint' => 'اكتب رقم موبايلك وهنبعتلك كود التأكيد.',
     'welcome' => 'اكتب رقم موبايلك', 'accountHint' => 'هنبعتلك كود التأكيد على رقمك.',
-    'sendOtp' => 'ابعت كود التأكيد', 'sending' => 'بنَبعت الكود…', 'or' => 'أو',
+    'sendOtp' => 'ابعت كود التأكيد', 'or' => 'أو',
     'google' => 'كمّل بجوجل', 'email' => 'البريد الإلكتروني', 'password' => 'كلمة السر',
     'remember' => 'افتكرني', 'forgot' => 'نسيت كلمة السر؟', 'signIn' => 'سجّل دخول',
     'guest' => 'كمّل كضيف', 'newAccount' => 'لسه معندكش حساب؟', 'signUp' => 'اعمل حساب',
@@ -14,7 +14,7 @@
     'networkError' => 'في مشكلة في النت. جرّب تاني.',
   ] : [];
   $loginJsCopy = $loginRtl ? $loginCopy : [
-    'sendOtp' => 'Send OTP Code', 'sending' => 'Sending...',
+    'sendOtp' => 'Send OTP Code',
     'invalidPhone' => 'Please enter a valid phone number.',
     'otpFailed' => 'Failed to send OTP.', 'networkError' => 'Network error. Please try again.',
   ];
@@ -31,6 +31,16 @@
 .google-btn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:13px; border-radius:10px; border:1.5px solid #e5e7eb; background:#fff; color:#333; font-size:14px; font-weight:600; cursor:pointer; transition:.15s; text-decoration:none; }
 .google-btn:hover { border-color:#aaa; background:#fafafa; }
 .google-btn svg { width:20px; height:20px; }
+
+/* ── OTP request loading state ────────────────────────────── */
+#send-otp-btn{position:relative;min-height:47px;}
+#send-otp-btn .otp-btn-label{transition:opacity .15s ease;}
+#send-otp-btn .otp-loading-indicator{display:none;width:20px;height:20px;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:otp-spin .7s linear infinite;}
+#send-otp-btn.is-loading{cursor:wait;}
+#send-otp-btn.is-loading .otp-btn-label{display:none;}
+#send-otp-btn.is-loading .otp-loading-indicator{display:block;}
+@keyframes otp-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){#send-otp-btn .otp-loading-indicator{animation:none;border-color:#fff;}}
 
 /* ── Egyptian Arabic sign-in layout ───────────────────────── */
 .auth-page[dir="rtl"]{direction:rtl;text-align:right;}
@@ -80,7 +90,10 @@
           <div class="country-prefix">🇪🇬 +20</div>
           <input type="tel" id="otp-phone" placeholder="01xxxxxxxxx" maxlength="11" style="border-radius:10px;border:1.5px solid #e5e7eb;padding:13px 14px;font-size:14px;outline:none;width:100%;transition:.15s" oninput="this.value=this.value.replace(/[^0-9]/,'')">
         </div>
-        <button onclick="sendOtp()" id="send-otp-btn" class="btn btn-dark" style="width:100%;justify-content:center;border-radius:10px;padding:13px;margin-top:10px;font-size:14px">{{ $loginRtl ? $loginCopy['sendOtp'] : 'Send OTP Code' }}</button>
+        <button onclick="sendOtp()" id="send-otp-btn" class="btn btn-dark" style="width:100%;justify-content:center;border-radius:10px;padding:13px;margin-top:10px;font-size:14px" aria-busy="false">
+          <span class="otp-btn-label">{{ $loginRtl ? $loginCopy['sendOtp'] : 'Send OTP Code' }}</span>
+          <span class="otp-loading-indicator" role="status" aria-label="{{ $loginRtl ? 'جاري التحميل' : 'Loading' }}"></span>
+        </button>
         <div id="otp-msg" style="font-size:12px;margin-top:6px;text-align:center;color:#888"></div>
       </div>
       @endif
@@ -152,7 +165,8 @@ async function sendOtp() {
     return;
   }
   btn.disabled = true;
-  btn.textContent = loginCopy.sending;
+  btn.classList.add('is-loading');
+  btn.setAttribute('aria-busy', 'true');
   try {
     const resp = await fetch('/auth/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN }, body: JSON.stringify({ phone: rawPhone }) });
     const contentType = resp.headers.get('content-type') || '';
@@ -165,7 +179,8 @@ async function sendOtp() {
       msg.style.color = '#e53e3e';
       msg.textContent = data.message || loginCopy.otpFailed;
       btn.disabled = false;
-      btn.textContent = loginCopy.sendOtp;
+      btn.classList.remove('is-loading');
+      btn.setAttribute('aria-busy', 'false');
     }
   } catch (e) {
     msg.style.color = '#e53e3e';
