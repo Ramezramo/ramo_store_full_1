@@ -44,6 +44,7 @@ class Kernel extends HttpKernel
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\SetAuthFlagCookie::class,
             \App\Http\Middleware\PreventPageCaching::class,
+            \App\Http\Middleware\AddSecurityHeaders::class,
         ],
 
         'api' => [

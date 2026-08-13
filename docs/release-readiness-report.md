@@ -14,11 +14,11 @@
 |---|---|---|
 | Arabic/English first-visit locale | Egypt and all Arab League countries resolve to Arabic; other countries resolve to English. A manual selection always wins. | **Ready**, when a trusted CDN header is supplied. |
 | Framework and dependency security | Laravel was upgraded from 10.50.2 to **12.66.0**; `composer audit` reports no advisories. | **Resolved.** |
-| Automated regression | `php artisan test`: **16 passed, 47 assertions**. | Passed; wider checkout/payment test coverage remains required. |
+| Automated regression | `php artisan test`: **18 passed, 60 assertions**. | Passed; wider checkout/payment test coverage remains required. |
 | Production configuration gate | `php artisan production:check` fails a release if debug, HTTPS, secure cookies, shared state, queues, or shared storage are unsafe. | **Implemented**, but current development runtime correctly fails the gate. |
 | Redis/queue preparation | Predis 2.4.1 is bundled; the Redis queue has bounded blocking and after-commit defaults. Real-provider OTP delivery is queued. | **Code-ready; external Redis and workers are still required.** |
 | OTP development experience | `SMS_GATEWAY=log` remains synchronous and returns `dev_otp` only when debug is enabled. | Preserved by request; **not production-ready** until a provider is selected. |
-| Edge and headers | The temporary development URL is not behind a trusted CDN and does not yet supply the required security headers. | **Remaining blocker.** |
+| Edge and headers | The storefront now returns baseline `nosniff`, frame, referrer, permissions, and HTTPS HSTS headers. A trusted CDN/origin restriction and tested CSP remain outstanding. | **Partially resolved; deployment gate remains.** |
 
 ## Completed fixes
 
@@ -29,7 +29,8 @@ The following commits are published on GitHub branch `main`:
 | `02d6122` and `9ee083a` | Country-based locale selection, safe config caching, development-only no-cache policy, production template, and audit documentation. |
 | `de9aff9` and `c385f23` | Laravel 12 dependency upgrade, regenerated package manifests, and a clean Composer audit. |
 | `c5ab727` | `production:check` command and test coverage for effective production configuration. |
-| Current incremental change | Bundled Predis Redis client, queue defaults, asynchronous real-provider OTP job, and OTP dispatch tests. |
+| `df4eeb9` | Bundled Predis Redis client, queue defaults, asynchronous real-provider OTP job, and OTP dispatch tests. |
+| Current incremental change | Baseline storefront security headers with regression coverage; public header verification completed. |
 
 > The development OTP fallback is intentionally unchanged: with `SMS_GATEWAY=log` and `APP_DEBUG=true`, the OTP is still shown to the developer. When `SMS_GATEWAY` is changed to a real provider, the request queues `SendOtpSms` instead and returns immediately. The job skips expired or already-verified OTP records, uses a short timeout, and has bounded retries.
 
@@ -63,7 +64,7 @@ No provider selection has been made, so `SMS_GATEWAY=log` remains by design. Bef
 
 Place the site behind Cloudflare, CloudFront, or an equivalent trusted edge; terminate HTTPS there; redirect HTTP to HTTPS; and reject direct public origin access. Cloudflare can provide `CF-IPCountry` when IP Geolocation is enabled, while CloudFront can pass `CloudFront-Viewer-Country` via an origin-request policy. [4] [5] Restrict those country headers to traffic originating at the chosen edge.
 
-Add and test HSTS, `X-Content-Type-Options: nosniff`, a clickjacking policy (`X-Frame-Options` or CSP `frame-ancestors`), `Referrer-Policy`, and a Content Security Policy compatible with payment, maps, images, and storefront scripts. Do not deploy a CSP in report-only-free form without confirming checkout, payment, and map operation in staging.
+The storefront now sends HSTS for HTTPS requests, `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin`, and a restrictive camera/microphone permissions policy. The remaining browser-control gate is a Content Security Policy compatible with payment, maps, images, and storefront scripts. Do not deploy a CSP without confirming checkout, payment, and map operation in staging.
 
 ### 4. Prove business-critical journeys
 
