@@ -2,13 +2,31 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Http\Middleware\TrustProxies;
 use Tests\TestCase;
 
 class SecurityHeadersTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config([
+            'app.force_https' => false,
+            'trustedproxy.proxies' => null,
+        ]);
+        TrustProxies::flushState();
+    }
+
+    protected function tearDown(): void
+    {
+        TrustProxies::flushState();
+
+        parent::tearDown();
+    }
     public function test_storefront_responses_include_baseline_security_headers(): void
     {
-        $response = $this->get('/');
+        $response = $this->get('http://localhost/');
 
         $response->assertOk()
             ->assertHeader('X-Content-Type-Options', 'nosniff')

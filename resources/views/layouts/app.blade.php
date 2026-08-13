@@ -594,7 +594,6 @@ button{cursor:pointer;font-family:inherit}
   body{padding-bottom:var(--mobile-nav-height)}
   footer{display:none}
   .toast{bottom:calc(var(--mobile-nav-height) + 14px + var(--mobile-nav-viewport-offset, 0px));right:14px;left:14px;max-width:none;justify-content:center}
-  div.phpdebugbar,div.phpdebugbar-openhandler{display:none !important}
   #mob-nav{
     display:flex !important;
     position:fixed;
@@ -1684,18 +1683,13 @@ async function toggleWishlist(btn, productId) {
 
 refreshWishlistState();
 
-// Mobile bottom nav — show on narrow screens, hide debugbar
+// Mobile bottom nav — show on narrow screens.
 (function mobNav() {
   var nav = document.getElementById('mob-nav');
   if (!nav) return;
   function check() {
     var mobile = window.innerWidth <= 768;
     nav.style.display = mobile ? 'flex' : 'none';
-    if (mobile) {
-      document.querySelectorAll('div.phpdebugbar,div.phpdebugbar-openhandler').forEach(function(e){
-        e.style.cssText += ';display:none!important';
-      });
-    }
   }
   check();
   window.addEventListener('resize', check);

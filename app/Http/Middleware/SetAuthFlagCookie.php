@@ -23,11 +23,15 @@ class SetAuthFlagCookie
         $response = $next($request);
 
         $flag = Auth::check() ? '1' : '0';
+        $secure = (bool) config('session.secure', false) || $request->isSecure();
 
         // Plain, readable-by-JS, short-path cookie — must NOT be added to
         // EncryptCookies' except-list requirement since we build it raw here.
+        // It is still marked Secure whenever the session policy or request
+        // requires HTTPS, preventing a production downgrade through this
+        // customer-facing cache-state flag.
         $response->headers->setCookie(
-            new Cookie('ramo_auth_flag', $flag, 0, '/', null, false, false, false, 'Lax')
+            new Cookie('ramo_auth_flag', $flag, 0, '/', null, $secure, false, false, 'Lax')
         );
 
         return $response;

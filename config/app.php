@@ -57,6 +57,11 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    // Opt in only after HTTPS is terminated and enforced by the deployment edge.
+    // This keeps `php artisan serve` usable over local HTTP while guaranteeing
+    // absolute public links, canonicals, redirects, and sitemap URLs are HTTPS.
+    'force_https' => (bool) env('FORCE_HTTPS', false),
+
     // Optional CDN or asset-host origin for files stored under /storage.
     'image_base_url' => env('IMAGE_BASE_URL'),
 
