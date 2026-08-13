@@ -13,12 +13,13 @@ The development environment continues to show the OTP when `SMS_GATEWAY=log` and
 | Area | Verified remediation status | Launch status |
 |---|---|---|
 | Framework and dependency security | Laravel is 12.66.0 and `composer audit` reported no security advisories. | **Resolved in code.** |
-| Automated regression suite | `php artisan test` passed **52 tests and 214 assertions** on 13 August 2026. | **Passed for covered behavior.** |
+| Automated regression suite | `php artisan test` passed **61 tests and 246 assertions** after the final favicon/head update on 13 August 2026. | **Passed for covered behavior.** |
+| Transport and browser security | The application permanently redirects HTTP to HTTPS when enabled, emits HSTS on HTTPS, Secure cookies, report-only CSP, and baseline frame protection. The public temporary proxy currently strips `X-Frame-Options`. | **Code-ready; edge preservation is required.** |
 | Locale and RTL | Egypt and Arab League first visits resolve to Arabic; other countries resolve to English; a manual choice prevails. Customer HTML has an RTL direction in Arabic. | **Code-ready**, subject to trusted edge country headers. |
 | Public policy, errors, and SEO | Six policy routes, footer and checkout links, branded 404/500 pages, sitemap, robots policy, canonical/no-index metadata, and HTML direction checks are covered. | **Code-ready; policy text needs owner approval.** |
 | Catalog integrity | Publication and search require published, approved, sellable products. Search identity matching no longer includes description-only false positives. Placeholder taxonomy labels and unrelated placeholder brands were corrected in the staged data. | **Code-ready; merchant content remains a governance responsibility.** |
 | Cache and lookup performance | Anonymous public pages have short, locale/session-varying cache headers; transactional and authenticated routes are `no-store`. Targeted PostgreSQL indexes were applied to the staged database. | **Code-ready; production schema-owner rollout and load validation are required.** |
-| Media and operations | The media helper now supports a configured object-storage disk and CDN base. JSON production logging, request IDs, and a non-sensitive `/health` probe are available. | **Code-ready; real storage, log shipping, uptime monitor, and alerts are required.** |
+| Media and operations | The media helper now supports a configured object-storage disk and CDN base. JSON production logging, request IDs, and a non-sensitive `/health` probe are available. The public favicon is a valid multi-size ICO with PNG and Apple touch-icon derivatives. | **Code-ready; real storage, log shipping, uptime monitor, and alerts are required.** |
 
 > **Important:** The current temporary development server correctly fails `php artisan production:check` because it uses debug mode, HTTP, file-based session/cache state, a synchronous queue, local media storage, and visible-development OTP delivery. This expected failure is evidence that the deployment gate is operating; it is not permission to launch the current runtime.
 
@@ -49,11 +50,17 @@ The production logging channel writes daily JSON records with bounded retention.
 
 The existing media paths can be read through the configured `FILESYSTEM_DISK`; with `FILESYSTEM_DISK=s3` and `IMAGE_BASE_URL=https://cdn.example…`, product images resolve through the CDN without changing stored media paths. Local public disk fallback remains available for development and the imported catalog. This is rollout support, not evidence that existing media has already been copied or converted to responsive WebP variants.
 
+### Fourth retest reconciliation
+
+The supplied comparison report was reconciled against the current temporary public deployment and source tree; the detailed evidence is retained in [`fourth-retest-intake-2026-08-13.md`](fourth-retest-intake-2026-08-13.md). Its observed HTTP responses, HTTP sitemap locations, non-Secure cookies, stale local gallery paths, missing HSTS/CSP, and public Debugbar indications are **not reproducible in the current build**. The previous zero-byte favicon was corrected with a valid multi-resolution ICO, a PNG fallback, and an Apple touch icon linked from the shared customer layout.
+
+The public temporary proxy still fails to preserve `X-Frame-Options`, although the application-level header is present in the security middleware. This is an edge configuration requirement, not a rationale for removing the application protection. It remains a launch blocker until validated at the final HTTPS edge.
+
 ## Verification record
 
 | Check | Result on 13 August 2026 |
 |---|---|
-| Full Laravel suite | **52 passed, 214 assertions**. |
+| Full Laravel suite | **61 passed, 246 assertions** after favicon/head remediation. |
 | Dependency advisory check | `composer audit`: **no security vulnerability advisories found**. |
 | Index migration ledger | `2026_08_13_173000_add_production_lookup_indexes`: **Ran**, batch 8 in staging. |
 | Production index audit | All eleven targeted indexes present after owner-applied DDL. |
@@ -62,6 +69,9 @@ The existing media paths can be read through the configured `FILESYSTEM_DISK`; w
 | Cache policy tests | Passed: public guest cache, personalized no-store, debug no-cache. |
 | Media URL tests | Passed: local fallback, configured CDN URL, native object-storage URL, and missing media handling. |
 | Health and request-ID tests | Passed: safe status responses and request-ID generation/validation. |
+| Final public response reconciliation | HTTP → HTTPS returned `308`; HTTPS returned HSTS, CSP report-only, Secure cookies, short public cache on catalog, no-store/private on checkout, 0 HTTP sitemap locations, 0 stale gallery filenames, and 0 active Debugbar assets. |
+| Favicon integrity | Valid 17 KB multi-image `favicon.ico` plus PNG and Apple touch-icon assets; linked in shared customer head. |
+| Frame protection at temporary edge | **Still blocked:** temporary proxy does not retain `X-Frame-Options`; validate final CDN/load balancer behavior before launch. |
 
 ## Remaining external launch gates
 
@@ -73,9 +83,9 @@ The production release process must include a schema-owner or dedicated migratio
 
 ### 2. Complete media migration and edge configuration
 
-Provision the S3-compatible bucket, restrict write access, configure `FILESYSTEM_DISK=s3`, configure the CDN-backed `IMAGE_BASE_URL`, copy every current object with checksums, and verify every product/receipt reference. Generate and validate responsive image variants, including WebP where supported, before enforcing a responsive image rollout. Retain the original objects until reconciliation, backup, rollback, and representative storefront checks complete.
+Provision the S3-compatible bucket, restrict write access, configure `FILESYSTEM_DISK=s3`, configure the CDN-backed `IMAGE_BASE_URL`, copy every current object with checksums, and verify every product/receipt reference. Replace the unapproved listing/cart imagery, including the product 22 placeholder, with merchant-approved assets. Generate and validate responsive image variants, including WebP where supported, before enforcing a responsive image rollout. Retain the original objects until reconciliation, backup, rollback, and representative storefront checks complete.
 
-Place the origin behind a trusted CDN/load balancer, allow only exact proxy CIDRs in `TRUSTED_PROXIES`, redirect HTTP to HTTPS, and restrict direct-origin access. If country locale selection is enabled, use a trusted edge-provided country header only after the edge is configured to overwrite any client-supplied value. Cloudflare and CloudFront both document country header capabilities. [3] [4]
+Place the origin behind a trusted CDN/load balancer, allow only exact proxy CIDRs in `TRUSTED_PROXIES`, preserve the application’s `X-Frame-Options` response header, redirect HTTP to HTTPS, and restrict direct-origin access. If country locale selection is enabled, use a trusted edge-provided country header only after the edge is configured to overwrite any client-supplied value. Cloudflare and CloudFront both document country header capabilities. [3] [4]
 
 ### 3. Configure real delivery and monitoring services
 
