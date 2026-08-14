@@ -115,3 +115,14 @@ The latest user-supplied static audit reviewed dynamic `orderBy()` calls, bound 
 PHP syntax checks passed for the changed controllers and guard script. The focused coupon sorting and SQL-injection suites passed with **6 tests and 54 assertions**. The complete Laravel suite passed with **79 tests and 357 assertions**, and `composer run-script check-sql` passed in the final clean state.
 
 No deployment or production-order activation was performed as part of this audit work.
+
+### Authorized staging parameter check
+
+After the code and automated suite passed, a non-destructive request check was performed against the provided staging URL. Representative SQL-like values were sent only to the public `search` and `shop` filters; no state-changing endpoint, time-delay payload, administrative endpoint, order workflow, or production credential was used.
+
+| Endpoint group | Result |
+|---|---|
+| `/search` query, category, and sort inputs | Returned HTTP 200 and contained no `SQLSTATE`, PDO, PostgreSQL, or SQL syntax-error marker. |
+| `/shop` search, category, brand, and sort inputs | Returned HTTP 200 and contained no `SQLSTATE`, PDO, PostgreSQL, or SQL syntax-error marker. |
+
+This check corroborates the static and automated findings for the exercised public query surfaces. It is not a substitute for a scoped, authenticated security assessment of administrative and vendor-only endpoints.
