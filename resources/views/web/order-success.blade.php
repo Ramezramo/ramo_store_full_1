@@ -87,9 +87,12 @@
         @guest
           <input type="hidden" name="email" value="{{ $successBilling['email'] ?? '' }}">
         @endguest
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-          <input type="file" name="receipt" accept="image/jpeg,image/png,image/webp" required style="font-size:12px">
-          <button class="btn btn-dark" style="font-size:12px">{{ $isAr ? 'ارفع الإيصال' : 'Upload receipt' }}</button>
+      <label for="success-receipt-{{ $order->id }}" style="display:block;font-size:12px;font-weight:700;color:#6b7280;margin-bottom:7px">
+        {{ $order->payment_receipt_path ? ($isAr ? 'ارفع إيصال بديل لو محتاج تغيّر الحالي' : 'Upload a replacement receipt only if you need to change the current one') : ($isAr ? 'اختار صورة للإيصال' : 'Choose a receipt image') }}
+      </label>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <input id="success-receipt-{{ $order->id }}" type="file" name="receipt" accept="image/jpeg,image/png,image/webp" required style="font-size:12px">
+        <button class="btn btn-dark" style="font-size:12px">{{ $order->payment_receipt_path ? ($isAr ? 'ارفع بديل' : 'Upload replacement') : ($isAr ? 'ارفع الإيصال' : 'Upload receipt') }}</button>
         </div>
       </form>
     </div>

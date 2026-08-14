@@ -57,7 +57,10 @@
 </div>
 
 @if(\App\Helpers\PaymentConfig::isManualMethod($order->payment_method ?? null))
-@php $accountPaymentMethod = \App\Helpers\PaymentConfig::detailsFor($order->payment_method); @endphp
+@php
+  $accountPaymentMethod = \App\Helpers\PaymentConfig::detailsFor($order->payment_method);
+  $accountHasUploadedReceipt = filled($order->payment_receipt_path);
+@endphp
 <div class="order-detail-card" style="margin-top:16px;border:1.5px solid #fed7aa;background:#fffaf5">
   <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
     <div>
@@ -75,21 +78,32 @@
   </div>
   @if($order->payment_status === 'rejected')
     <div style="margin-top:12px;padding:10px 12px;border-radius:8px;background:#fef2f2;color:#991b1b;font-size:13px">
-      {{ $isAr ? 'الإيصال اترفض' : 'Receipt rejected' }}{{ $order->payment_rejection_reason ? ': '.$order->payment_rejection_reason : '.' }} {{ $isAr ? 'ارفع إيصال أوضح تحت.' : 'Upload a clearer receipt below.' }}
+      {{ $isAr ? 'الإيصال اترفض' : 'Receipt rejected' }}{{ $order->payment_rejection_reason ? ': '.$order->payment_rejection_reason : '.' }} {{ $isAr ? 'ارفع إيصال جديد أوضح تحت.' : 'Upload a clearer new receipt below.' }}
+    </div>
+  @elseif($accountHasUploadedReceipt)
+    <div style="margin-top:12px;padding:12px 14px;border-radius:9px;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;font-size:13px;line-height:1.6">
+      <strong>✓ {{ $isAr ? 'تم رفع الإيصال وهو تحت المراجعة.' : 'Your receipt has been uploaded and is pending review.' }}</strong>
+      <div style="margin-top:3px">{{ $isAr ? 'مش محتاج ترفع حاجة تاني، إلا لو عايز تستبدل الإيصال الحالي.' : 'You do not need to upload another file unless you want to replace the current receipt.' }}</div>
     </div>
   @endif
   @if($order->payment_status !== 'confirmed')
     @if($accountPaymentMethod)
       <p style="font-size:13px;color:#6b7280;line-height:1.6;margin-top:12px">
-        {{ $isAr ? 'حوّل' : 'Transfer' }} <strong>{{ number_format($order->final_total, 2) }} EGP</strong> {{ $isAr ? 'إلى' : 'to' }} <strong>{{ $accountPaymentMethod['destination'] }}</strong>{{ $isAr ? '، وبعدها ارفع الإيصال تحت.' : ', then upload the receipt below.' }}
+        @if($accountHasUploadedReceipt)
+          {{ $isAr ? 'بنراجع تحويل' : 'We are reviewing your transfer of' }} <strong>{{ number_format($order->final_total, 2) }} EGP</strong>{{ $isAr ? ' إلى ' : ' to ' }}<strong>{{ $accountPaymentMethod['destination'] }}</strong>{{ $isAr ? ' حسب الإيصال المرفوع.' : ' using the uploaded receipt.' }}
+        @else
+          {{ $isAr ? 'حوّل' : 'Transfer' }} <strong>{{ number_format($order->final_total, 2) }} EGP</strong> {{ $isAr ? 'إلى' : 'to' }} <strong>{{ $accountPaymentMethod['destination'] }}</strong>{{ $isAr ? '، وبعدها ارفع الإيصال تحت.' : ', then upload the receipt below.' }}
+        @endif
       </p>
     @endif
     <form method="POST" action="{{ route('account.order.payment-receipt', $order->id) }}" enctype="multipart/form-data" style="margin-top:16px">
       @csrf
-      <label style="display:block;font-size:12px;font-weight:700;color:#6b7280;margin-bottom:7px">{{ $isAr ? 'ارفع إيصال الدفع (JPG أو PNG أو WEBP، لحد 10 ميجابايت)' : 'Upload payment receipt (JPG, PNG or WEBP, up to 10MB)' }}</label>
+      <label for="account-receipt-{{ $order->id }}" style="display:block;font-size:12px;font-weight:700;color:#6b7280;margin-bottom:7px">
+        {{ $accountHasUploadedReceipt ? ($isAr ? 'ارفع إيصال بديل لو محتاج تغيّر الحالي (JPG أو PNG أو WEBP، لحد 10 ميجابايت)' : 'Upload a replacement receipt only if you need to change the current one (JPG, PNG or WEBP, up to 10MB)') : ($isAr ? 'ارفع إيصال الدفع (JPG أو PNG أو WEBP، لحد 10 ميجابايت)' : 'Upload payment receipt (JPG, PNG or WEBP, up to 10MB)') }}
+      </label>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <input type="file" name="receipt" accept="image/jpeg,image/png,image/webp" required style="font-size:12px">
-        <button class="btn btn-dark" style="font-size:12px">{{ $isAr ? 'ابعت الإيصال' : 'Submit receipt' }}</button>
+        <input id="account-receipt-{{ $order->id }}" type="file" name="receipt" accept="image/jpeg,image/png,image/webp" required style="font-size:12px">
+        <button class="btn btn-dark" style="font-size:12px">{{ $accountHasUploadedReceipt ? ($isAr ? 'ارفع بديل' : 'Upload replacement') : ($isAr ? 'ابعت الإيصال' : 'Submit receipt') }}</button>
       </div>
       @error('receipt')<div class="err" style="margin-top:6px">{{ $message }}</div>@enderror
     </form>

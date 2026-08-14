@@ -32,8 +32,10 @@ class OrderSuccessAuthorizationTest extends TestCase
                 'payment_status' => 'pending',
                 'currency' => 'EGP',
                 'currency_symbol' => 'ج.م',
-                'payment_method' => 'cod',
-                'payment_method_title' => 'Cash on delivery',
+                'payment_method' => 'vodafone_cash',
+                'payment_method_title' => 'Vodafone Cash',
+                'payment_receipt_path' => 'payment-receipts/already-uploaded.png',
+                'payment_receipt_name' => 'already-uploaded.png',
                 'billing' => '{}',
                 'shipping' => '{}',
                 'line_items' => '[]',
@@ -69,6 +71,11 @@ class OrderSuccessAuthorizationTest extends TestCase
             $this->get(route('order.success', $orderId))->assertNotFound();
             $this->actingAs($otherCustomer)->get(route('order.success', $orderId))->assertNotFound();
             $this->actingAs($owner)->get(route('order.success', $orderId))->assertOk();
+            $this->actingAs($owner)->get(route('account.order', $orderId))
+                ->assertOk()
+                ->assertSee('Your receipt has been uploaded and is pending review.', false)
+                ->assertSee('Upload a replacement receipt only if you need to change the current one', false)
+                ->assertSee('Upload replacement', false);
         } finally {
             if ($orderId) {
                 DB::table('order_sub_orders')->where('parent_order_id', $orderId)->delete();
