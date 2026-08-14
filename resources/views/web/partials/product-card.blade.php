@@ -137,8 +137,10 @@
 
   <div class="product-card-body" @if($bodyPad) style="{{ $bodyPad }}" @endif>
     <a href="{{ route('product', $pid) }}" class="product-card-name" @if($nameStyle) style="{{ $nameStyle }}" @endif>
-      @if(!empty($cardNameHtml))
-        {!! $cardNameHtml !!}
+      @if(!empty($cardNameSegments))
+        @foreach($cardNameSegments as $nameSegment)
+          @if($nameSegment['match'] ?? false)<mark class="search-hl">{{ $nameSegment['text'] }}</mark>@else{{ $nameSegment['text'] }}@endif
+        @endforeach
       @else
         {{ $displayName }}
       @endif

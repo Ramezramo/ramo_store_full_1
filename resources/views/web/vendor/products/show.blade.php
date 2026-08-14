@@ -1255,8 +1255,9 @@ function siPreviewMulti(input, labelId, previewId) {
 </div>
 
 {{-- ─── DATA FOR JS ─── --}}
+<script type="application/json" id="vendor-show-edit-color-rows-data">{!! json_encode($editColorRows4, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
 <script>
-const SHOW_EDIT_COLOR_ROWS = {!! json_encode($editColorRows4, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!};
+const SHOW_EDIT_COLOR_ROWS = JSON.parse(document.getElementById('vendor-show-edit-color-rows-data').textContent);
 let showColorIdx = 0;
 
 function showEscHtml(value) {

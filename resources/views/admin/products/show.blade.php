@@ -1117,8 +1117,9 @@ function adminSiPreviewMulti(input, labelId, prevId) {
 </div>
 
 {{-- JS DATA + LOGIC --}}
+<script type="application/json" id="admin-edit-color-rows-data">{!! json_encode($adminEditColorRows, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
 <script>
-const ADMIN_EDIT_COLOR_ROWS = {!! json_encode($adminEditColorRows, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!};
+const ADMIN_EDIT_COLOR_ROWS = JSON.parse(document.getElementById('admin-edit-color-rows-data').textContent);
 let adminColorIdx = 0;
 let adminAttrIdx  = {{ count($attributes) }};
 let adminTrIdx    = {{ count($translations) }};

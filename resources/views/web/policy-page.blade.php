@@ -32,6 +32,7 @@
     @if($isPolicyDraft)
       <p class="policy-draft">{{ $isAr ? 'تنبيه قبل الإطلاق: ده محتوى مبدئي ظاهر بشكل شفاف لحد ما مالك المتجر يعتمد النص النهائي.' : 'Pre-launch notice: this transparent interim copy remains visible until the store owner approves final policy text.' }}</p>
     @endif
+    {{-- Policy copy is plain text; keep e() before nl2br(). Do not render admin content as raw HTML without Purifier. --}}
     <div class="policy-copy">{!! nl2br(e($copy)) !!}</div>
     <nav class="policy-actions" aria-label="{{ $isAr ? 'روابط مساعدة' : 'Helpful links' }}">
       <a href="{{ route('shop') }}">{{ $isAr ? 'كمّل تسوق' : 'Continue shopping' }}</a>

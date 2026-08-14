@@ -781,11 +781,13 @@ textarea.vs-input{resize:vertical;min-height:100px}
   $editColorRows = array_values($editColorRows);
 @endphp
 
+<script type="application/json" id="vendor-edit-product-data">{!! json_encode(['colors' => $editColorRows, 'translations' => $translations], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
 <script>
 const EDIT_HAS_VARIATIONS = {{ $hasVariations ? 'true' : 'false' }};
-const EDIT_COLOR_ROWS     = {!! json_encode($editColorRows, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!};
+const EDIT_PRODUCT_DATA   = JSON.parse(document.getElementById('vendor-edit-product-data').textContent);
+const EDIT_COLOR_ROWS     = EDIT_PRODUCT_DATA.colors;
 const EDIT_PRODUCT_ID     = {{ $editProductId }};
-const EXISTING_TRANSLATIONS = {!! json_encode($translations, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!};
+const EXISTING_TRANSLATIONS = EDIT_PRODUCT_DATA.translations;
 
 // ─── Discount hint + live effective price recalc ──────────────────
 function updateDiscountHint(val) {

@@ -166,14 +166,24 @@
           @foreach($products as $p)
             @php
               $displayName = $p->tl_display_name ?? $p->name;
-              $cardNameHtml = $q
-                ? preg_replace('/(' . preg_quote(e($q), '/') . ')/i', '<mark class="search-hl">$1</mark>', e($displayName))
-                : null;
+              $cardNameSegments = [['text' => $displayName, 'match' => false]];
+              if ($q !== '') {
+                $parts = preg_split('/(' . preg_quote($q, '/') . ')/iu', $displayName, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+                if ($parts !== false && count($parts) > 0) {
+                  $cardNameSegments = array_map(
+                    fn ($part) => [
+                      'text' => $part,
+                      'match' => preg_match('/^' . preg_quote($q, '/') . '$/iu', $part) === 1,
+                    ],
+                    $parts
+                  );
+                }
+              }
             @endphp
             @include('web.partials.product-card', [
-              'p'              => $p,
-              'cardVariations' => $cardVariations[$p->id] ?? [],
-              'cardNameHtml'   => $cardNameHtml,
+              'p'                => $p,
+              'cardVariations'   => $cardVariations[$p->id] ?? [],
+              'cardNameSegments' => $cardNameSegments,
             ])
           @endforeach
         </div>

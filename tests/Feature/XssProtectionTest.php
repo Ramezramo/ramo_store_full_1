@@ -117,7 +117,8 @@ class XssProtectionTest extends TestCase
             $response = $this->actingAs($admin)->get(route('admin.products.show', $productId));
 
             $response->assertOk();
-            $response->assertSee('ADMIN_EDIT_COLOR_ROWS', false);
+            $response->assertSee('admin-edit-color-rows-data', false);
+            $response->assertSee('JSON.parse(document.getElementById(\'admin-edit-color-rows-data\').textContent)', false);
             $response->assertSee('adminEscHtml', false);
             $response->assertDontSee('<img src=x onerror=alert(1)>', false);
             $response->assertSee('\\u003Cimg', false);
@@ -128,6 +129,63 @@ class XssProtectionTest extends TestCase
                 DB::table('products_data')->where('id', $productId)->delete();
             }
             $admin->delete();
+        }
+    }
+
+    public function test_search_product_card_escapes_legacy_name_before_safe_highlighting(): void
+    {
+        $categoryId = null;
+        $productId = null;
+        $legacyName = 'Legacy <img src=x onerror=alert(1)> product';
+
+        try {
+            $categoryId = DB::table('categories2')->insertGetId([
+                'name' => 'XSS search test ' . uniqid(),
+                'slug' => 'xss-search-test-' . uniqid(),
+            ]);
+            $now = now();
+            $productId = DB::table('products_data')->insertGetId([
+                'name' => $legacyName,
+                'slug' => 'legacy-xss-search-' . uniqid(),
+                'search_text' => $legacyName,
+                'sku' => 'XSS-SEARCH-' . uniqid(),
+                'images' => json_encode(['thumbnail' => 'https://cdn.example.test/products/xss-search.jpg']),
+                'status' => 'publish',
+                'acceptance_status' => 'approved',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+            DB::table('product_category')->insert([
+                'product_id' => $productId,
+                'category_id' => $categoryId,
+            ]);
+            DB::table('product_variations')->insert([
+                'product_id' => $productId,
+                'main_variation' => true,
+                'attributes' => '{}',
+                'price' => 100,
+                'regular_price' => 100,
+                'sale_price' => 100,
+                'stock_quantity' => 1,
+                'images' => '[]',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            $response = $this->get(route('search', ['q' => 'alert(1)']));
+
+            $response->assertOk();
+            $response->assertSee('&lt;img src=x onerror=', false);
+            $response->assertDontSee('<img src=x onerror=alert(1)>', false);
+        } finally {
+            if ($productId) {
+                DB::table('product_variations')->where('product_id', $productId)->delete();
+                DB::table('product_category')->where('product_id', $productId)->delete();
+                DB::table('products_data')->where('id', $productId)->delete();
+            }
+            if ($categoryId) {
+                DB::table('categories2')->where('id', $categoryId)->delete();
+            }
         }
     }
 
