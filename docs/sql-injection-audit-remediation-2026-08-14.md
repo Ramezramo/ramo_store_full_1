@@ -93,3 +93,25 @@ The audit’s LIKE-wildcard observation remains a **low-priority search-semantic
 | Complete Laravel test suite | Passed: **72 tests, 332 assertions**. |
 
 No permanent deployment, production publication, or real-order activation was performed.
+
+## Reconciliation — latest static SQL audit
+
+### Conclusion
+
+The latest user-supplied static audit reviewed dynamic `orderBy()` calls, bound `whereRaw()` values, CLI maintenance scripts, and remaining raw SQL helpers. It found **no confirmed exploitable SQL injection**. The coupon listing’s dynamic sort column and direction are allowlisted before they reach the query builder. The review purchase query continues to use a bound placeholder; its `product_id` value is now explicitly cast to an integer for clarity.
+
+### Completed preventive controls
+
+| Finding | Verified status and completed action |
+|---|---|
+| Coupon dynamic sorting | `sort_by` remains restricted to `Coupon::getFillable()` and `sort_dir` to `asc` or `desc`. A route-level regression test now proves SQL-like payloads in both parameters return HTTP 422 before query construction. The endpoint now handles its validation exception explicitly, so rejected input cannot be misreported as a 500 response. |
+| Other dynamic ordering | The remaining `orderBy($orderCol, ...)` cases map application configuration values through closed `match` expressions. The only commented legacy occurrence is not executable. |
+| Bound review lookup | The `whereRaw()` SQL text remains static and the search term is bound through `?`; `product_id` is now cast to `(int)` before being incorporated into the bound value. |
+| Maintenance scripts | `sync_postgres_sequences.php`, `audit_database_ownership.php`, and `audit_production_indexes.php` have no references outside `scripts/`. They are CLI maintenance utilities and are not registered in application routes. |
+| Raw SQL CI guard | The existing guardrail now also detects a variable on the left side of a concatenated `Raw()` SQL argument. A controlled, non-executed fixture was detected at the expected path and the clean repository subsequently passed. |
+
+### Validation evidence
+
+PHP syntax checks passed for the changed controllers and guard script. The focused coupon sorting and SQL-injection suites passed with **6 tests and 54 assertions**. The complete Laravel suite passed with **79 tests and 357 assertions**, and `composer run-script check-sql` passed in the final clean state.
+
+No deployment or production-order activation was performed as part of this audit work.

@@ -28,6 +28,9 @@ $sqlLiteralWithVariablePattern =
 
 $callPatterns = [
     '/(?:(?:DB|\\\\Illuminate\\\\Support\\\\Facades\\\\DB)::)?' . $methodPattern . '\\s*\\(\\s*' . $sqlLiteralWithVariablePattern . '/s',
+    // Also reject a variable used as the left side of a concatenated Raw SQL
+    // argument, such as whereRaw($column . ' = ?', [$value]).
+    '/(?:(?:DB|\\\\Illuminate\\\\Support\\\\Facades\\\\DB)::)?' . $methodPattern . '\\s*\\(\\s*' . $variablePattern . '\\s*\\.\\s*[\'\"]/s',
     '/(?:->|\\bPDO::)\\s*(?:query|exec)\\s*\\(\\s*' . $sqlLiteralWithVariablePattern . '/s',
     '/\\b(?:pg_query|mysqli_query)\\s*\\(\\s*(?:[^,\\r\\n]*,\\s*)?' . $sqlLiteralWithVariablePattern . '/s',
 ];

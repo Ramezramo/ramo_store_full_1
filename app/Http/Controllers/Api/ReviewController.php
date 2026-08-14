@@ -65,7 +65,7 @@ class ReviewController extends Controller
 
         $verified = DB::table('orders')
             ->where('customer_id', Auth::id())
-            ->whereRaw("line_items::text LIKE ?", ['%"product_id":' . $r->product_id . '%'])
+            ->whereRaw("line_items::text LIKE ?", ['%"product_id":' . (int) $r->product_id . '%'])
             ->whereIn('general_order_status', ['completed'])
             ->exists();
 
@@ -105,7 +105,7 @@ class ReviewController extends Controller
 
         $verified = DB::table('orders')
             ->where('customer_id', Auth::id())
-            ->whereRaw("line_items::text LIKE ?", ['%"product_id":' . $r->product_id . '%'])
+            ->whereRaw("line_items::text LIKE ?", ['%"product_id":' . (int) $r->product_id . '%'])
             ->whereIn('general_order_status', ['completed'])
             ->exists();
 

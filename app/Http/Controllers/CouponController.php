@@ -172,6 +172,11 @@ class CouponController extends Controller
                 message: 'Coupons retrieved successfully'
             );
 
+        } catch (ValidationException $e) {
+            return $this->failureResponse(
+                message: 'Invalid coupon query parameters.',
+                code: 422
+            );
         } catch (\Exception $e) {
             return $this->failureResponse(
                 message: 'Failed to retrieve coupons',
