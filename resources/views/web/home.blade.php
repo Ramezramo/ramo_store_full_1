@@ -885,7 +885,31 @@
           var track = document.getElementById('recent-track-'+sid);
           var section = document.getElementById('recent-section-'+sid);
           viewed.slice(0, max).forEach(function(p){
-            track.innerHTML += '<div class="tl-scroll-card"><a href="/product/'+p.id+'" style="text-decoration:none"><div style="width:120px;text-align:center"><img src="'+p.img+'" style="width:110px;height:110px;object-fit:cover;border-radius:8px" onerror="this.style.display=\'none\'">'+'<div style="font-size:11px;color:#333;margin-top:5px;line-height:1.3">'+p.name+'</div><div style="font-size:12px;font-weight:700;color:#e85d26;margin-top:2px">'+p.price+' EGP</div></div></a></div>';
+            var productId = Number(p && p.id);
+            if (!Number.isInteger(productId) || productId < 1) return;
+
+            var card = document.createElement('div');
+            card.className = 'tl-scroll-card';
+            var link = document.createElement('a');
+            link.href = '/product/' + productId;
+            link.style.textDecoration = 'none';
+            var content = document.createElement('div');
+            content.style.cssText = 'width:120px;text-align:center';
+            var image = document.createElement('img');
+            var imageUrl = typeof p.img === 'string' && /^(?:https?:\\/\\/|\\/)/i.test(p.img) ? p.img : '';
+            if (imageUrl) image.src = imageUrl;
+            image.style.cssText = 'width:110px;height:110px;object-fit:cover;border-radius:8px';
+            image.addEventListener('error', function(){ image.style.display = 'none'; });
+            var name = document.createElement('div');
+            name.style.cssText = 'font-size:11px;color:#333;margin-top:5px;line-height:1.3';
+            name.textContent = String(p.name ?? '');
+            var price = document.createElement('div');
+            price.style.cssText = 'font-size:12px;font-weight:700;color:#e85d26;margin-top:2px';
+            price.textContent = String(p.price ?? '') + ' EGP';
+            content.append(image, name, price);
+            link.appendChild(content);
+            card.appendChild(link);
+            track.appendChild(card);
           });
           if (track.children.length) section.style.display = 'block';
         } catch(e) {}
@@ -1686,11 +1710,18 @@ window.addEventListener('resize', () => {
 
     var label = document.createElement('div');
     label.className = 'tl-pw-label';
-    label.innerHTML =
-      '<span class="tl-pw-idx">' + (parseInt(si) + 1) + '</span>' +
-      '<span>' + name + '</span>' +
-      '<span style="opacity:.65;font-size:10px;font-weight:500;margin-left:2px">· ' + typeLabel + '</span>' +
-      '<span style="opacity:.8;font-size:10px;margin-left:8px;background:rgba(232,93,38,.25);border:1px solid rgba(232,93,38,.5);padding:1px 7px;border-radius:8px;color:#e85d26;font-weight:700">✏ Edit</span>';
+    var indexEl = document.createElement('span');
+    indexEl.className = 'tl-pw-idx';
+    indexEl.textContent = String(parseInt(si, 10) + 1);
+    var nameEl = document.createElement('span');
+    nameEl.textContent = name;
+    var typeEl = document.createElement('span');
+    typeEl.style.cssText = 'opacity:.65;font-size:10px;font-weight:500;margin-left:2px';
+    typeEl.textContent = '· ' + typeLabel;
+    var editEl = document.createElement('span');
+    editEl.style.cssText = 'opacity:.8;font-size:10px;margin-left:8px;background:rgba(232,93,38,.25);border:1px solid rgba(232,93,38,.5);padding:1px 7px;border-radius:8px;color:#e85d26;font-weight:700';
+    editEl.textContent = '✏ Edit';
+    label.append(indexEl, nameEl, typeEl, editEl);
     el.prepend(label);
 
     el.addEventListener('click', function(e) {

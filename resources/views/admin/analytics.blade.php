@@ -168,11 +168,18 @@ if (osData.length > 0) {
   });
   const leg = document.getElementById('statusLegend');
   osLabels.forEach((l,i) => {
-    leg.innerHTML += `<div style="display:flex;align-items:center;gap:6px;font-size:12px">
-      <span style="width:10px;height:10px;border-radius:50%;background:${osColors[i]};flex-shrink:0"></span>
-      <span style="color:#8892a4">${l}</span>
-      <span style="margin-left:auto;font-weight:700">${osData[i]}</span>
-    </div>`;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:12px';
+    const swatch = document.createElement('span');
+    swatch.style.cssText = `width:10px;height:10px;border-radius:50%;background:${osColors[i]};flex-shrink:0`;
+    const label = document.createElement('span');
+    label.style.color = '#8892a4';
+    label.textContent = String(l ?? '');
+    const count = document.createElement('span');
+    count.style.cssText = 'margin-left:auto;font-weight:700';
+    count.textContent = String(osData[i] ?? 0);
+    row.append(swatch, label, count);
+    leg.appendChild(row);
   });
 } else {
   document.getElementById('orderStatusChart').parentElement.innerHTML += '<p style="color:var(--muted);font-size:13px;margin-top:8px">No order data yet.</p>';
@@ -222,11 +229,18 @@ if (pmData.length > 0) {
   });
   const pl = document.getElementById('paymentLegend');
   pmLabels.forEach((l,i) => {
-    pl.innerHTML += `<div style="display:flex;align-items:center;gap:5px;font-size:12px">
-      <span style="width:10px;height:10px;border-radius:2px;background:${palette[i % palette.length]};flex-shrink:0"></span>
-      <span style="color:#8892a4">${l || 'Unknown'}</span>
-      <span style="font-weight:700;margin-left:4px">${pmData[i]}</span>
-    </div>`;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:5px;font-size:12px';
+    const swatch = document.createElement('span');
+    swatch.style.cssText = `width:10px;height:10px;border-radius:2px;background:${palette[i % palette.length]};flex-shrink:0`;
+    const label = document.createElement('span');
+    label.style.color = '#8892a4';
+    label.textContent = String(l || 'Unknown');
+    const count = document.createElement('span');
+    count.style.cssText = 'font-weight:700;margin-left:4px';
+    count.textContent = String(pmData[i] ?? 0);
+    row.append(swatch, label, count);
+    pl.appendChild(row);
   });
 }
 

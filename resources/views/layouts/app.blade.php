@@ -1445,16 +1445,38 @@ function openAtcDrawer({ image, oldPrice, varLabel, items, count, cartTotal, row
 
     const row = document.createElement('div');
     row.className = 'atc-item' + (isNew ? ' atc-item-new' : '');
-    row.innerHTML = `
-      <img src="${item.image || ''}" alt="${(item.name||'').replace(/"/g,'&quot;')}">
-      <div class="atc-item-info">
-        <div class="atc-item-name">${item.name || ''}</div>
-        <div class="atc-item-meta">${metaParts.join(' • ')}</div>
-        <div class="atc-item-price">
-          <span>EGP ${Number(item.price).toFixed(2)}</span>
-          ${isNew && oldPrice && Number(oldPrice) > Number(item.price) ? `<span class="atc-item-price-old">EGP ${Number(oldPrice).toFixed(2)}</span>` : ''}
-        </div>
-      </div>`;
+
+    const image = document.createElement('img');
+    const imageUrl = typeof item.image === 'string' && /^(?:https?:\/\/|\/)/i.test(item.image) ? item.image : '';
+    if (imageUrl) image.src = imageUrl;
+    image.alt = String(item.name ?? '');
+
+    const info = document.createElement('div');
+    info.className = 'atc-item-info';
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'atc-item-name';
+    nameEl.textContent = String(item.name ?? '');
+
+    const metaEl = document.createElement('div');
+    metaEl.className = 'atc-item-meta';
+    metaEl.textContent = metaParts.join(' • ');
+
+    const priceEl = document.createElement('div');
+    priceEl.className = 'atc-item-price';
+    const currentPriceEl = document.createElement('span');
+    currentPriceEl.textContent = 'EGP ' + Number(item.price).toFixed(2);
+    priceEl.appendChild(currentPriceEl);
+
+    if (isNew && oldPrice && Number(oldPrice) > Number(item.price)) {
+      const oldPriceEl = document.createElement('span');
+      oldPriceEl.className = 'atc-item-price-old';
+      oldPriceEl.textContent = 'EGP ' + Number(oldPrice).toFixed(2);
+      priceEl.appendChild(oldPriceEl);
+    }
+
+    info.append(nameEl, metaEl, priceEl);
+    row.append(image, info);
     list.appendChild(row);
   });
 

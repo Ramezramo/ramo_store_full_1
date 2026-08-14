@@ -289,7 +289,7 @@ const TYPE_META = {
 function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function escAttr(s){ return String(s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function catOptions(selected){
-  return CATEGORIES.map(c=>`<option value="${c.id}" ${c.id==selected?'selected':''}>${c.name}</option>`).join('');
+  return CATEGORIES.map(c=>`<option value="${c.id}" ${c.id==selected?'selected':''}>${escHtml(c.name)}</option>`).join('');
 }
 
 // ── BUILD CARD ────────────────────────────────────────────────────
@@ -839,7 +839,7 @@ function addStatsItem(idx){
   const item=sections[idx].items[ii];
   const row=document.createElement('div');
   row.className='item-row'; row.id=`statsItem-${idx}-${ii}`;
-  row.innerHTML=`<select style="width:130px" onchange="updateStatsItem(${idx},${ii},'key',this.value)">${statKeys.map(k=>`<option value="${k}" ${item.key===k?'selected':''}>${k.charAt(0).toUpperCase()+k.slice(1)}</option>`).join('')}</select><input type="text" value="${item.label||''}" placeholder="Label" style="flex:1" onchange="updateStatsItem(${idx},${ii},'label',this.value)"><button class="btn btn-danger btn-sm" onclick="removeStatsItem(${idx},${ii})">×</button>`;
+  row.innerHTML=`<select style="width:130px" onchange="updateStatsItem(${idx},${ii},'key',this.value)">${statKeys.map(k=>`<option value="${k}" ${item.key===k?'selected':''}>${k.charAt(0).toUpperCase()+k.slice(1)}</option>`).join('')}</select><input type="text" value="${escAttr(item.label||'')}" placeholder="Label" style="flex:1" onchange="updateStatsItem(${idx},${ii},'label',this.value)"><button class="btn btn-danger btn-sm" onclick="removeStatsItem(${idx},${ii})">×</button>`;
   document.getElementById('statsItems-'+idx).appendChild(row);
 }
 function removeStatsItem(idx,ii){ sections[idx].items.splice(ii,1); renderAll(); setTimeout(()=>{ const b=document.getElementById('body-'+idx); if(b) b.classList.add('open'); },50); }

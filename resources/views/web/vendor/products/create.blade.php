@@ -782,7 +782,7 @@ textarea.vs-input{resize:vertical;min-height:100px}
 @endphp
 
 {{-- Safe JSON transport: JSON_HEX_* prevents script-tag breakouts; the payload is read via textContent + JSON.parse below. --}}
-<script type="application/json" id="vendor-edit-product-data">{!! json_encode(['colors' => $editColorRows, 'translations' => $translations], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
+<script type="application/json" id="vendor-edit-product-data">@json(['colors' => $editColorRows, 'translations' => $translations])</script>
 <script>
 const EDIT_HAS_VARIATIONS = {{ $hasVariations ? 'true' : 'false' }};
 const EDIT_PRODUCT_DATA   = JSON.parse(document.getElementById('vendor-edit-product-data').textContent);

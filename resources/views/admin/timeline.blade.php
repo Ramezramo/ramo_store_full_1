@@ -221,7 +221,7 @@ const TYPE_META = {
 // ── CATEGORY OPTIONS HTML ──────────────────────────────────────────
 function catOptions(selected) {
   return CATEGORIES.map(c =>
-    `<option value="${c.id}" ${c.id == selected ? 'selected' : ''}>${c.name}</option>`
+    `<option value="${c.id}" ${c.id == selected ? 'selected' : ''}>${escHtml(c.name)}</option>`
   ).join('');
 }
 
@@ -907,7 +907,7 @@ function addStatsItem(idx) {
   const row = document.createElement('div');
   row.className = 'item-row';
   row.id = `statsItem-${idx}-${ii}`;
-  row.innerHTML = `<select style="width:140px" onchange="updateStatsItem(${idx},${ii},'key',this.value)">${statKeys2.map(k=>`<option value="${k}" ${item.key===k?'selected':''}>${k.charAt(0).toUpperCase()+k.slice(1)}</option>`).join('')}</select><input type="text" value="${item.label||''}" placeholder="Label" style="flex:1" onchange="updateStatsItem(${idx},${ii},'label',this.value)"><button class="btn btn-danger btn-sm" onclick="removeStatsItem(${idx},${ii})">×</button>`;
+  row.innerHTML = `<select style="width:140px" onchange="updateStatsItem(${idx},${ii},'key',this.value)">${statKeys2.map(k=>`<option value="${k}" ${item.key===k?'selected':''}>${k.charAt(0).toUpperCase()+k.slice(1)}</option>`).join('')}</select><input type="text" value="${escAttr(item.label||'')}" placeholder="Label" style="flex:1" onchange="updateStatsItem(${idx},${ii},'label',this.value)"><button class="btn btn-danger btn-sm" onclick="removeStatsItem(${idx},${ii})">×</button>`;
   container.appendChild(row);
 }
 
@@ -1236,13 +1236,23 @@ function flashSearchProducts(idx, q) {
       const data = await resp.json();
       if (!data.length) { resultsEl.innerHTML = '<div style="padding:10px;font-size:12px;color:var(--muted)">No products found.</div>'; return; }
       const selected = Array.isArray(sections[idx].targetProductIds) ? sections[idx].targetProductIds.map(Number) : [];
-      resultsEl.innerHTML = data.map(p => {
-        const isSel = selected.includes(Number(p.id));
-        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.07);font-size:13px">
-          <span>${escHtml(p.name)}</span>
-          <button onclick="flashAddProduct(${idx},${p.id},'${escAttr(p.name)}')" style="background:${isSel?'rgba(34,197,94,.15)':'rgba(232,93,38,.15)'};border:1px solid ${isSel?'rgba(34,197,94,.3)':'rgba(232,93,38,.3)'};color:${isSel?'#22c55e':'#e85d26'};border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer">${isSel?'✓ Added':'+ Add'}</button>
-        </div>`;
-      }).join('');
+      resultsEl.replaceChildren();
+      data.forEach(p => {
+        const productId = Number(p.id);
+        if (!Number.isInteger(productId) || productId < 1) return;
+        const isSel = selected.includes(productId);
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.07);font-size:13px';
+        const name = document.createElement('span');
+        name.textContent = String(p.name ?? '');
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.style.cssText = `background:${isSel?'rgba(34,197,94,.15)':'rgba(232,93,38,.15)'};border:1px solid ${isSel?'rgba(34,197,94,.3)':'rgba(232,93,38,.3)'};color:${isSel?'#22c55e':'#e85d26'};border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer`;
+        button.textContent = isSel ? '✓ Added' : '+ Add';
+        button.addEventListener('click', () => flashAddProduct(idx, productId, String(p.name ?? '')));
+        row.append(name, button);
+        resultsEl.appendChild(row);
+      });
     } catch(e) {
       resultsEl.innerHTML = '<div style="padding:10px;font-size:12px;color:#ef4444">Search failed.</div>';
     }

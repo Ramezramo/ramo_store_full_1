@@ -1256,7 +1256,7 @@ function siPreviewMulti(input, labelId, previewId) {
 
 {{-- ─── DATA FOR JS ─── --}}
 {{-- Safe JSON transport: JSON_HEX_* prevents script-tag breakouts; the payload is read via textContent + JSON.parse below. --}}
-<script type="application/json" id="vendor-show-edit-color-rows-data">{!! json_encode($editColorRows4, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
+<script type="application/json" id="vendor-show-edit-color-rows-data">@json($editColorRows4)</script>
 <script>
 const SHOW_EDIT_COLOR_ROWS = JSON.parse(document.getElementById('vendor-show-edit-color-rows-data').textContent);
 let showColorIdx = 0;

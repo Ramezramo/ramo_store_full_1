@@ -121,6 +121,7 @@ class XssProtectionTest extends TestCase
             $response->assertSee('JSON.parse(document.getElementById(\'admin-edit-color-rows-data\').textContent)', false);
             $response->assertSee('adminEscHtml', false);
             $response->assertDontSee('<img src=x onerror=alert(1)>', false);
+            $response->assertDontSee('</script><script>alert(1)</script>', false);
             $response->assertSee('\\u003Cimg', false);
         } finally {
             if ($productId) {
@@ -226,6 +227,35 @@ class XssProtectionTest extends TestCase
         $this->assertStringContainsString('&lt;script&gt;alert(1)&lt;/script&gt;', $html);
         $this->assertStringNotContainsString('<script>alert(1)</script>', $html);
         $this->assertStringContainsString('white-space:pre-line', $html);
+    }
+
+    public function test_json_payloads_use_safe_blade_json_directive(): void
+    {
+        $adminShow = file_get_contents(resource_path('views/admin/products/show.blade.php'));
+        $vendorCreate = file_get_contents(resource_path('views/web/vendor/products/create.blade.php'));
+        $vendorShow = file_get_contents(resource_path('views/web/vendor/products/show.blade.php'));
+
+        foreach ([$adminShow, $vendorCreate, $vendorShow] as $view) {
+            $this->assertStringContainsString('@json(', $view);
+            $this->assertStringNotContainsString('json_encode(', $view);
+        }
+    }
+
+    public function test_dynamic_html_audit_escapes_or_avoids_user_controlled_values(): void
+    {
+        $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
+        $home = file_get_contents(resource_path('views/web/home.blade.php'));
+        $livePreview = file_get_contents(resource_path('views/admin/live_preview.blade.php'));
+        $timeline = file_get_contents(resource_path('views/admin/timeline.blade.php'));
+
+        $this->assertStringContainsString("nameEl.textContent = String(item.name ?? '');", $layout);
+        $this->assertStringNotContainsString('<div class="atc-item-name">${item.name || \'\'}</div>', $layout);
+        $this->assertStringContainsString("name.textContent = String(p.name ?? '');", $home);
+        $this->assertStringNotContainsString("'+p.name+'</div>", $home);
+        $this->assertStringContainsString('value="${escAttr(item.label||\'\')}"', $livePreview);
+        $this->assertStringContainsString('value="${escAttr(item.label||\'\')}"', $timeline);
+        $this->assertStringContainsString('${escHtml(c.name)}</option>', $livePreview);
+        $this->assertStringContainsString('${escHtml(c.name)}</option>', $timeline);
     }
 
     private function createVendor(): VendorUser
