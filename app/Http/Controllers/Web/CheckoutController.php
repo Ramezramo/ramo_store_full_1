@@ -566,7 +566,9 @@ class CheckoutController extends Controller
             return $sub;
         });
 
-        return view('web.order-success', compact('order', 'lineItems', 'subOrders', 'manualPaymentMethods'));
+        $paymentReceiptCount = DB::table('payment_receipts')->where('order_id', $order->id)->count();
+
+        return view('web.order-success', compact('order', 'lineItems', 'subOrders', 'manualPaymentMethods', 'paymentReceiptCount'));
     }
 
     private function calcDiscount(float $subtotal, ?array $coupon): float

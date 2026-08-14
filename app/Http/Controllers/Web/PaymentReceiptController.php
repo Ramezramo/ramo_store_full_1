@@ -11,6 +11,8 @@ use App\Services\OrderStatusService;
 
 class PaymentReceiptController extends Controller
 {
+    public const MAX_UPLOADS_PER_ORDER = 3;
+
     private function localized(string $english, string $arabic): string
     {
         return session('locale') === 'ar' ? $arabic : $english;
@@ -44,25 +46,39 @@ class PaymentReceiptController extends Controller
 
     private function upload(Request $request, object $order, ?int $userId)
     {
-        if (!PaymentConfig::isManualMethod($order->payment_method)) {
-            return back()->with('error', $this->localized('This order does not use a manual payment method.', 'الطلب ده مش بيستخدم طريقة دفع يدوي.'));
-        }
-
-        if ($order->payment_status === 'confirmed') {
-            return back()->with('error', $this->localized('This payment has already been confirmed.', 'الدفع ده تم تأكيده بالفعل.'));
-        }
-
         $request->validate([
             'receipt' => 'required|image|mimes:jpg,jpeg,png,webp|max:10240',
         ]);
 
-        $path = $request->file('receipt')->store('payment-receipts', 'public');
-        $now = now();
+        $result = DB::transaction(function () use ($order, $userId, $request) {
+            // Every upload path locks the same order row before it counts or
+            // creates receipt records, so concurrent requests cannot exceed
+            // the customer-facing three-upload limit.
+            $lockedOrder = DB::table('orders')->where('id', $order->id)->lockForUpdate()->first();
+            abort_if(!$lockedOrder, 404);
 
-        DB::transaction(function () use ($order, $userId, $path, $request, $now) {
+            if (!PaymentConfig::isManualMethod($lockedOrder->payment_method)) {
+                return ['error' => $this->localized('This order does not use a manual payment method.', 'الطلب ده مش بيستخدم طريقة دفع يدوي.')];
+            }
+
+            if ($lockedOrder->payment_status === 'confirmed') {
+                return ['error' => $this->localized('This payment has already been confirmed.', 'الدفع ده تم تأكيده بالفعل.')];
+            }
+
+            $uploadCount = DB::table('payment_receipts')->where('order_id', $lockedOrder->id)->count();
+            if ($uploadCount >= self::MAX_UPLOADS_PER_ORDER) {
+                return ['error' => $this->localized(
+                    'You have reached the maximum of 3 receipt uploads for this order. Please wait for payment review.',
+                    'وصلت للحد الأقصى وهو 3 إيصالات للطلب ده. من فضلك استنى مراجعة الدفع.'
+                )];
+            }
+
+            $path = $request->file('receipt')->store('payment-receipts', 'public');
+            $now = now();
+
             DB::table('payment_receipts')->insert([
-                'order_id' => $order->id,
-                'payment_method' => $order->payment_method,
+                'order_id' => $lockedOrder->id,
+                'payment_method' => $lockedOrder->payment_method,
                 'file_path' => $path,
                 'original_name' => $request->file('receipt')->getClientOriginalName(),
                 'status' => 'pending',
@@ -72,14 +88,14 @@ class PaymentReceiptController extends Controller
                 'updated_at' => $now,
             ]);
 
-            $timeline = json_decode($order->timeline ?? '[]', true) ?: [];
+            $timeline = json_decode($lockedOrder->timeline ?? '[]', true) ?: [];
             $timeline[] = [
                 'status' => 'pending_verification',
                 'note' => 'Payment receipt uploaded for review.',
                 'at' => $now->toDateTimeString(),
             ];
 
-            DB::table('orders')->where('id', $order->id)->update([
+            DB::table('orders')->where('id', $lockedOrder->id)->update([
                 'payment_status' => 'pending_verification',
                 'payment_receipt_path' => $path,
                 'payment_receipt_name' => $request->file('receipt')->getClientOriginalName(),
@@ -90,8 +106,14 @@ class PaymentReceiptController extends Controller
                 'updated_at' => $now,
             ]);
 
-            app(OrderStatusService::class)->sync($order->id);
+            app(OrderStatusService::class)->sync($lockedOrder->id);
+
+            return ['success' => true];
         });
+
+        if (!empty($result['error'])) {
+            return back()->with('error', $result['error']);
+        }
 
         return back()->with('success', $this->localized('Receipt uploaded. Your payment is now pending verification.', 'الإيصال اترفع. الدفع دلوقتي في انتظار المراجعة.'));
     }

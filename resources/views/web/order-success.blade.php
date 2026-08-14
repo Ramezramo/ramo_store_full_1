@@ -51,6 +51,10 @@
     @php
       $paymentMethod = \App\Helpers\PaymentConfig::detailsFor($order->payment_method);
       $successBilling = json_decode($order->billing ?? '{}', true) ?: [];
+      $successReceiptUploadLimit = \App\Http\Controllers\Web\PaymentReceiptController::MAX_UPLOADS_PER_ORDER;
+      $successReceiptUploadCount = $paymentReceiptCount ?? 0;
+      $successReceiptUploadsRemaining = max(0, $successReceiptUploadLimit - $successReceiptUploadCount);
+      $successCanUploadReceipt = $successReceiptUploadCount < $successReceiptUploadLimit;
     @endphp
     @if($paymentMethod)
     <div class="order-detail-card" style="margin-top:16px;background:#fffaf5;border:1.5px solid #fed7aa">
@@ -72,6 +76,7 @@
             @if($order->payment_receipt_name)
               {{ $isAr ? 'الملف:' : 'File:' }} <strong>{{ $order->payment_receipt_name }}</strong>
             @endif
+            <div style="margin-top:4px">{{ $isAr ? 'متاح لك '.$successReceiptUploadsRemaining.' من أصل '.$successReceiptUploadLimit.' محاولات رفع.' : $successReceiptUploadsRemaining.' of '.$successReceiptUploadLimit.' upload attempts remain.' }}</div>
           </div>
           <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($order->payment_receipt_path) }}"
              target="_blank" rel="noopener" style="display:inline-block;margin-top:7px;font-size:12px;font-weight:700;color:#047857">
@@ -79,24 +84,31 @@
           </a>
         </div>
       @endif
-      <p style="font-size:12px;color:#6b7280;margin:12px 0">
-        {{ $order->payment_receipt_path ? ($isAr ? 'عاوز تغيّر الإيصال؟ اختار صورة جديدة تحت:' : 'Need to replace the receipt? Choose a new image below:') : ($isAr ? 'بعد التحويل، ارفع سكرين شوت أو صورة للإيصال:' : 'After transferring, upload a screenshot or photo of the receipt:') }}
-      </p>
-      <form method="POST" action="{{ auth()->check() ? route('account.order.payment-receipt', $order->id) : route('guest.order.payment-receipt', $order->id) }}" enctype="multipart/form-data">
-        @csrf
-        @guest
-          <input type="hidden" name="email" value="{{ $successBilling['email'] ?? '' }}">
-        @endguest
-      <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:7px">
-        {{ $order->payment_receipt_path ? ($isAr ? 'لو عايز تغيّر الإيصال الحالي، اختار صورة بديلة.' : 'Choose a replacement image only if you need to change the current receipt.') : ($isAr ? 'اختار صورة الإيصال وسيتم رفعها تلقائياً.' : 'Choose the receipt image and it will upload automatically.') }}
-      </div>
-      <input id="success-receipt-{{ $order->id }}" type="file" name="receipt" accept="image/jpeg,image/png,image/webp" required style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0" onchange="if(this.files.length){document.getElementById('success-receipt-status-{{ $order->id }}').textContent='{{ $isAr ? 'جارٍ رفع الإيصال…' : 'Uploading receipt…' }}';this.form.requestSubmit();}">
-      <label for="success-receipt-{{ $order->id }}" class="btn btn-dark" style="display:inline-flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer">
-        {{ $order->payment_receipt_path ? ($isAr ? 'ارفع إيصال بديل' : 'Upload replacement receipt') : ($isAr ? 'ارفع الإيصال' : 'Upload receipt') }}
-      </label>
-      <div id="success-receipt-status-{{ $order->id }}" aria-live="polite" style="display:inline-block;margin-inline-start:8px;font-size:12px;color:#6b7280"></div>
-      <noscript><button class="btn btn-dark" style="font-size:12px;margin-top:8px">{{ $isAr ? 'ابعت الإيصال' : 'Submit receipt' }}</button></noscript>
-      </form>
+      @if($successCanUploadReceipt)
+        <p style="font-size:12px;color:#6b7280;margin:12px 0">
+          {{ $order->payment_receipt_path ? ($isAr ? 'عاوز تغيّر الإيصال؟ اختار صورة جديدة تحت. متبقي '.$successReceiptUploadsRemaining.' من '.$successReceiptUploadLimit.'.' : 'Need to replace the receipt? Choose a new image below. '.$successReceiptUploadsRemaining.' of '.$successReceiptUploadLimit.' attempts remain.') : ($isAr ? 'بعد التحويل، ارفع سكرين شوت أو صورة للإيصال. متبقي '.$successReceiptUploadsRemaining.' من '.$successReceiptUploadLimit.'.' : 'After transferring, upload a screenshot or photo of the receipt. '.$successReceiptUploadsRemaining.' of '.$successReceiptUploadLimit.' attempts remain.') }}
+        </p>
+        <form method="POST" action="{{ auth()->check() ? route('account.order.payment-receipt', $order->id) : route('guest.order.payment-receipt', $order->id) }}" enctype="multipart/form-data">
+          @csrf
+          @guest
+            <input type="hidden" name="email" value="{{ $successBilling['email'] ?? '' }}">
+          @endguest
+          <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:7px">
+            {{ $order->payment_receipt_path ? ($isAr ? 'لو عايز تغيّر الإيصال الحالي، اختار صورة بديلة.' : 'Choose a replacement image only if you need to change the current receipt.') : ($isAr ? 'اختار صورة الإيصال وسيتم رفعها تلقائياً.' : 'Choose the receipt image and it will upload automatically.') }}
+          </div>
+          <input id="success-receipt-{{ $order->id }}" type="file" name="receipt" accept="image/jpeg,image/png,image/webp" required style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0" onchange="if(this.files.length){document.getElementById('success-receipt-status-{{ $order->id }}').textContent='{{ $isAr ? 'جارٍ رفع الإيصال…' : 'Uploading receipt…' }}';this.form.requestSubmit();}">
+          <label for="success-receipt-{{ $order->id }}" class="btn btn-dark" style="display:inline-flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer">
+            {{ $order->payment_receipt_path ? ($isAr ? 'ارفع إيصال بديل' : 'Upload replacement receipt') : ($isAr ? 'ارفع الإيصال' : 'Upload receipt') }}
+          </label>
+          <div id="success-receipt-status-{{ $order->id }}" aria-live="polite" style="display:inline-block;margin-inline-start:8px;font-size:12px;color:#6b7280"></div>
+          <noscript><button class="btn btn-dark" style="font-size:12px;margin-top:8px">{{ $isAr ? 'ابعت الإيصال' : 'Submit receipt' }}</button></noscript>
+        </form>
+      @else
+        <div style="margin-top:12px;padding:12px 14px;border-radius:9px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;font-size:13px;line-height:1.6">
+          <strong>{{ $isAr ? 'وصلت للحد الأقصى لرفع الإيصالات.' : 'You have reached the receipt upload limit.' }}</strong>
+          <div>{{ $isAr ? 'تم استخدام 3 من 3 محاولات. من فضلك استنى مراجعة الدفع.' : 'All 3 of 3 upload attempts have been used. Please wait for payment review.' }}</div>
+        </div>
+      @endif
     </div>
     @endif
   @endif

@@ -101,6 +101,7 @@ class GuestOrderController extends Controller
             'billing'   => $billing,
             'shipping'  => $shipping,
             'lineItems' => $lineItems,
+            'paymentReceiptCount' => DB::table('payment_receipts')->where('order_id', $order->id)->count(),
             'error'     => null,
         ]);
     }
