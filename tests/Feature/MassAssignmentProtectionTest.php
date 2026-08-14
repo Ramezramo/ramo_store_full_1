@@ -94,7 +94,7 @@ class MassAssignmentProtectionTest extends TestCase
         $this->assertNull($vendor->getAttribute('bank_name'));
     }
 
-    public function test_order_model_blocks_ownership_and_paid_state_mass_assignment(): void
+    public function test_order_model_blocks_ownership_paid_state_financial_and_lifecycle_mass_assignment(): void
     {
         $order = new Order;
 
@@ -103,14 +103,45 @@ class MassAssignmentProtectionTest extends TestCase
             'set_paid' => true,
             'payment_status' => 'paid',
             'payment_reviewed_by' => 999,
+            'status' => 'completed',
+            'general_order_status' => 'refunded',
+            'general_order_status_override' => true,
+            'general_order_status_override_by' => 999,
+            'original_total' => '1.00',
+            'discount_total' => '999.00',
+            'shipping_total' => '0.00',
+            'cart_tax' => '0.00',
+            'total_tax' => '0.00',
+            'final_total' => '1.00',
             'customer_note' => 'Allowed customer input',
         ]);
 
-        $this->assertNull($order->getAttribute('customer_id'));
-        $this->assertNull($order->getAttribute('set_paid'));
-        $this->assertNull($order->getAttribute('payment_status'));
-        $this->assertNull($order->getAttribute('payment_reviewed_by'));
+        foreach ([
+            'customer_id',
+            'set_paid',
+            'payment_status',
+            'payment_reviewed_by',
+            'status',
+            'general_order_status',
+            'general_order_status_override',
+            'general_order_status_override_by',
+            'original_total',
+            'discount_total',
+            'shipping_total',
+            'cart_tax',
+            'total_tax',
+            'final_total',
+        ] as $protectedAttribute) {
+            $this->assertNull($order->getAttribute($protectedAttribute));
+        }
+
         $this->assertSame('Allowed customer input', $order->customer_note);
+
+        // Trusted server code can still set calculated values and lifecycle state explicitly.
+        $order->status = 'order_placed';
+        $order->final_total = '250.00';
+        $this->assertSame('order_placed', $order->status);
+        $this->assertSame('250.00', $order->final_total);
     }
 
     public function test_legacy_models_explicitly_deny_all_mass_assignment(): void

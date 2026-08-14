@@ -455,12 +455,11 @@ class OrdersController extends Controller
                 $timelineEntry['vendor_note'] = $validated['note'];
             }
 
-            // === Update Order ===
-            $order->update([
-                'status' => $newStatus,
-                'tracking_number' => $newStatus === 'shipped' ? ($validated['tracking_number'] ?? null) : $order->tracking_number,
-                'carrier' => $newStatus === 'shipped' ? ($validated['carrier'] ?? null) : $order->carrier,
-            ]);
+            // Lifecycle state is platform-controlled, never mass assigned.
+            $order->status = $newStatus;
+            $order->tracking_number = $newStatus === 'shipped' ? ($validated['tracking_number'] ?? null) : $order->tracking_number;
+            $order->carrier = $newStatus === 'shipped' ? ($validated['carrier'] ?? null) : $order->carrier;
+            $order->save();
 
             // === Append to Timeline ===
             $timeline = $order->fresh()->timeline ?? [];
@@ -873,24 +872,28 @@ class OrdersController extends Controller
                     $vendorsById[$vendorId] = $this->shopController->getUserLocally($vendorId);
                 }
 
+                $protectedOrderAttributes = [
+                    // Platform-calculated or lifecycle-controlled values: never mass assign.
+                    'set_paid'       => false,
+                    'status'         => 'order_placed',
+                    'original_total' => $originalTotalFormatted,
+                    'discount_total' => $discountTotal,
+                    'discount_tax'   => '0.00',
+                    'shipping_total' => '0.00',
+                    'shipping_tax'   => '0.00',
+                    'cart_tax'       => '0.00',
+                    'total_tax'      => '0.00',
+                    'final_total'    => $finalTotalFormatted,
+                ];
+
                 $orderDbData = [
-                    'set_paid'            => false,
                     'parent_id'           => 0,
                     'timeline'            => $timeLine,
-                    'status'              => 'order_placed',
                     'currency'            => $validatedData['currency'],
                     'version'             => '0.0.0',
                     'prices_include_tax'  => false,
                     'date_created'        => now(),
                     'date_modified'       => now(),
-                    'original_total'      => $originalTotalFormatted,
-                    'discount_total'      => $discountTotal,
-                    'discount_tax'        => '0.00',
-                    'shipping_total'      => '0.00',
-                    'shipping_tax'        => '0.00',
-                    'cart_tax'            => '0.00',
-                    'total_tax'           => '0.00',
-                    'final_total'         => $finalTotalFormatted,
                     'order_key'           => 'RAMORDER'.Str::upper(Str::random(8)).now()->format('ymd'),
                     'billing'             => $validatedData['billing'],
                     'shipping'            => $validatedData['shipping'],
@@ -972,6 +975,9 @@ class OrdersController extends Controller
 
                 // ──────── Create Order ────────
                 $order = new Order($orderDbData);
+                foreach ($protectedOrderAttributes as $attribute => $value) {
+                    $order->{$attribute} = $value;
+                }
                 // The authenticated customer owns the order; never mass assign ownership.
                 $order->customer_id = $userId;
                 $order->save();

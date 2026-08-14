@@ -61,3 +61,26 @@ No customer, vendor, admin, payment, or production data was used in validation.
 ---
 
 *Follow-up reconciliation completed on 2026-08-14.*
+
+
+## Order financial and lifecycle allowlist hardening
+
+A subsequent report confirmed that no active mass-assignment path exists, but identified `Order::$fillable` as a defense-in-depth concern because it still permitted calculated totals and lifecycle fields. The following preventive controls were applied.
+
+| Control | Implementation |
+|---|---|
+| Financial totals | Removed `original_total`, `discount_total`, `discount_tax`, `shipping_total`, `shipping_tax`, `cart_tax`, `total_tax`, and `final_total` from `$fillable`. Checkout now assigns each calculated value explicitly before saving the order. |
+| Lifecycle and administration | Removed `status`, general-order override fields, and paid/completed timestamps from `$fillable`. The validated vendor status transition now uses direct property assignments and `save()`. |
+| Regression gate | Expanded the model-policy test to verify generic `fill()` cannot populate ownership, paid state, lifecycle, administrative override, or financial-total fields, while explicit trusted assignments remain functional. |
+
+### Validation
+
+- Focused mass-assignment suite: **6 tests, 40 assertions**.
+- Complete Laravel suite: **85 tests, 397 assertions**.
+- PHP syntax checks passed for `Order` and `OrdersController`.
+
+This is a preventative control; the audit found no existing request-to-model mass-assignment vulnerability. No deployment, production order, payment, or customer data action was performed.
+
+---
+
+*Order hardening reconciliation completed on 2026-08-14.*
