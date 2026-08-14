@@ -15,9 +15,12 @@ class SearchController extends Controller
         $minPrice   = $request->input('min_price') !== null && $request->input('min_price') !== '' ? (float) $request->input('min_price') : null;
         $maxPrice   = $request->input('max_price') !== null && $request->input('max_price') !== '' ? (float) $request->input('max_price') : null;
         $inStock    = $request->boolean('in_stock');
-        $sort       = $request->input('sort', 'relevance');
-        $categoryId = $request->input('category');
-        $perPage    = 12;
+        $sort = $request->input('sort', 'relevance');
+        $categoryId = filter_var($request->input('category'), FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 1],
+        ]);
+        $categoryId = $categoryId === false ? null : $categoryId;
+        $perPage = 12;
 
         // Global price range for products that are actually sellable on the storefront.
         $priceRange = DB::table('product_variations as pv')
@@ -78,7 +81,7 @@ class SearchController extends Controller
         }
 
         // Category filter
-        if ($categoryId) {
+        if ($categoryId !== null) {
             $query->join('product_category as pc', 'pc.product_id', '=', 'p.id')
                   ->where('pc.category_id', $categoryId);
         }

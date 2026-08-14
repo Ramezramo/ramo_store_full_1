@@ -44,3 +44,27 @@ The native-PHP layer consistently uses PDO prepared statements with emulated pre
 ## Release impact
 
 This revised audit does **not** identify an exploitable SQL-injection issue and its hardening actions are complete. The SQL-injection audit is therefore no longer a blocker. The overall launch decision remains **NO-GO** until the separate production-readiness gates documented in `release-readiness-report.md` are completed; this change does not publish the application or accept real orders.
+
+## Follow-up audit: `SQL_INJECTION_AUDIT_REPORT.md`
+
+A further user-supplied audit was reconciled against commit `1137a8c`. It confirmed that no exploitable classic SQL injection exists in the Laravel or native-PHP code. Its actionable findings were defense-in-depth measures, which are now complete as follows.
+
+| Follow-up audit item | Status | Remediation and evidence |
+|---|---|---|
+| Do not return raw database exception text from the native app-configuration endpoint | **Remediated** | `routes/ramo-native-php/config/app-config.php` now records the PDO exception through `error_log()` and returns only the existing generic JSON error message to the client. |
+| Exercise injection-sensitive endpoints with automated tests | **Implemented** | `SqlInjectionRegressionTest` submits four representative SQLi payloads through the public search and shop query surfaces (`q`, `category`, sort, price, brand, and search inputs). Responses remain successful and do not contain common SQL/PDO error markers. The test also guards the native error-redaction and raw-SQL scanner coverage. |
+| Remove remaining duplicate native database bootstrap code | **Remediated** | The final duplicate `v4` `serveraouth/connectfile.php` is now a compatibility wrapper requiring the canonical `v1/serveraouth/connectfile.php`. The remaining `get-app-startup-config.php` is a distinct legacy endpoint with a different table and response contract, so it was intentionally not replaced by an incompatible wrapper. |
+| Preserve safe sort whitelists in future code review | **Documented** | `docs/security-code-review-checklist.md` specifies the allowlist/mapping pattern required for dynamic sort columns and directions, and prohibits raw request values in query identifiers. |
+
+During the payload exercise, the search page exposed a separate robustness issue: a non-numeric `category` value was correctly bound, but PostgreSQL rejected it when comparing against the numeric category column and returned a 500 response. `SearchController` now parses that filter as a positive integer before applying it. Invalid values are ignored safely, preserving the normal category filter for valid identifiers and avoiding an unnecessary database error.
+
+### Follow-up verification
+
+| Check | Result |
+|---|---|
+| Changed PHP syntax checks | Passed. |
+| Raw SQL interpolation guardrail | Passed. |
+| Focused SQL-injection and search regression tests | Passed: **7 tests, 57 assertions**. |
+| Complete Laravel test suite | Passed: **72 tests, 329 assertions**. |
+
+The follow-up audit does not change the overall release decision. It confirms the SQL-injection review is complete, while the separate production-readiness gates in `release-readiness-report.md` continue to govern whether the storefront can accept real orders.

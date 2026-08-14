@@ -16,10 +16,11 @@ try {
     echo json_encode($configData);
 
 } catch (PDOException $e) {
+    error_log('Native app-config database error: ' . $e->getMessage());
+
     http_response_code(500);
     echo json_encode([
         'error' => 'Database error occurred.',
-        'message' => $e->getMessage(),
-        'success' => false
+        'success' => false,
     ]);
 }
