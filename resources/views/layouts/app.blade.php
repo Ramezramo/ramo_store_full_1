@@ -36,6 +36,11 @@
     'cart', 'wishlist', 'login', 'register', 'forgot-password', 'reset-password',
     'my-order', 'track', 'auth/*',
   ]);
+  // Fixed customer navigation competes with mobile keyboards on credential and
+  // OTP forms. Keep it available everywhere else, but remove it on auth flows.
+  $suppressMobileNav = request()->is([
+    'login', 'register', 'forgot-password', 'reset-password', 'auth/*',
+  ]);
 @endphp
 <!DOCTYPE html>
 <html lang="{{ $timelineLocale }}" dir="{{ $headerIsArabic ? 'rtl' : 'ltr' }}">
@@ -596,6 +601,10 @@ button{cursor:pointer;font-family:inherit}
 @media(max-width:768px){
   :root{--mobile-nav-height:58px;--mobile-nav-viewport-offset:0px}
   body{padding-bottom:var(--mobile-nav-height)}
+  /* Authentication controls must remain reachable when the mobile keyboard opens. */
+  body.mobile-auth-screen{padding-bottom:0}
+  body.mobile-auth-screen #mob-nav{display:none !important}
+  body.mobile-auth-screen .auth-card{margin-top:24px;padding:28px 20px}
   footer{display:none}
   .toast{bottom:calc(var(--mobile-nav-height) + 14px + var(--mobile-nav-viewport-offset, 0px));right:14px;left:14px;max-width:none;justify-content:center}
   #mob-nav{
@@ -912,7 +921,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 </style>
 @stack('styles')
 </head>
-<body>
+<body class="{{ $suppressMobileNav ? 'mobile-auth-screen' : '' }}">
 
 <!-- NAV -->
 <nav class="nav{{ $headerIsArabic ? ' nav--rtl' : '' }}" dir="{{ $headerIsArabic ? 'rtl' : 'ltr' }}">
@@ -1696,7 +1705,8 @@ refreshWishlistState();
   if (!nav) return;
   function check() {
     var mobile = window.innerWidth <= 768;
-    nav.style.display = mobile ? 'flex' : 'none';
+    var suppress = document.body.classList.contains('mobile-auth-screen');
+    nav.style.display = mobile && !suppress ? 'flex' : 'none';
   }
   check();
   window.addEventListener('resize', check);
