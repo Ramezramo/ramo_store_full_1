@@ -10,7 +10,6 @@ class AttributesModel extends Model
     use HasFactory;
     protected $table = 'attributes';
     protected $fillable = [
-        'id',
         'name',
         'slug',
         'type',

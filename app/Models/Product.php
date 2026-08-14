@@ -31,7 +31,6 @@ class Product extends Model
      *  -------------------------------------------------------------- */
     // protected $hidden = ['search_text'];
     protected $fillable = [
-        'id',
         'acceptance_status',
         'vendor_id',
         'digital_file_ready',

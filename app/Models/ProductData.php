@@ -11,7 +11,12 @@ class ProductData extends Model
         // Specify the table name if it doesn't follow Laravel's naming convention
         protected $table = 'products_data';
 
-
-    
+        /**
+         * This legacy data model has no approved mass-assignment write path.
+         * Keep all attributes protected unless an explicit, reviewed path is added.
+         *
+         * @var array<int, string>
+         */
+        protected $guarded = ['*'];
 
 }

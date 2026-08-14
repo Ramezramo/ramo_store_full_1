@@ -27,7 +27,6 @@ class AttributesController extends Controller
         
         
         $rules = [
-            'id'=>'required',
             'name'=>'required',
             'slug'=>'required',
             'type'=>'required',
@@ -43,15 +42,14 @@ class AttributesController extends Controller
         // Check if validation fails
         if ($validator->fails()) {
 
-           ResponseHandlerRam::validationError(
-            errors: $validator->errors(),
-            message: 'Validation failed'
-        );
+           return ResponseHandlerRam::validationError(
+                errors: $validator->errors(),
+                message: 'Validation failed'
+            );
         }
 
         $validatedData = $validator->validated();
         $validatedData['_links'] = json_encode($validatedData['_links']);
-        
 
         AttributesModel::create($validatedData);
         // If validation passes, you can proceed with storing the product
