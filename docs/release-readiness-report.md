@@ -13,8 +13,8 @@ The development environment continues to show the OTP when `SMS_GATEWAY=log` and
 | Area | Verified remediation status | Launch status |
 |---|---|---|
 | Framework and dependency security | Laravel is 12.66.0 and `composer audit` reported no security advisories. | **Resolved in code.** |
-| Automated regression suite | `php artisan test` passed **89 tests and 423 assertions** after follow-up XSS hardening on 14 August 2026. | **Passed for covered behavior.** |
-| Product-text XSS controls | Vendor and administrator product write boundaries strip markup from plain-text fields. Search cards no longer accept raw HTML; editor payloads are inert JSON with explicit parsing, and dynamic color inputs are HTML-escaped. | **Resolved in code and regression-tested.** |
+| Automated regression suite | `php artisan test` passed **91 tests and 433 assertions** after the third XSS-audit remediation on 14 August 2026. | **Passed for covered behavior.** |
+| Product-text XSS controls | Vendor and administrator product write boundaries strip markup from plain-text fields. Search cards no longer accept raw HTML; editor payloads are inert JSON with explicit parsing; vendor/admin size tags use text nodes and event listeners; generated size-table values are escaped; and policy copy uses escaped Blade output with CSS line breaks. | **Resolved in code and regression-tested.** |
 | Transport and browser security | The application permanently redirects HTTP to HTTPS when enabled, emits HSTS on HTTPS, Secure cookies, report-only CSP, and baseline frame protection. The public temporary proxy currently strips `X-Frame-Options`. | **Code-ready; edge preservation is required.** |
 | Locale and RTL | Egypt and Arab League first visits resolve to Arabic; other countries resolve to English; a manual choice prevails. Customer HTML has an RTL direction in Arabic. | **Code-ready**, subject to trusted edge country headers. |
 | Public policy, errors, and SEO | Six policy routes, footer and checkout links, branded 404/500 pages, sitemap, robots policy, canonical/no-index metadata, and HTML direction checks are covered. | **Code-ready; policy text needs owner approval.** |
@@ -61,8 +61,8 @@ The public temporary proxy still fails to preserve `X-Frame-Options`, although t
 
 | Check | Result as of 14 August 2026 |
 |---|---|
-| Full Laravel suite | **89 passed, 423 assertions** after follow-up XSS hardening. |
-| XSS regression suite | **3 passed, 23 assertions** across real vendor submission, storefront rendering, search-card rendering, and administrator editor payloads. |
+| Full Laravel suite | **91 passed, 433 assertions** after the third XSS-audit remediation. |
+| XSS regression suite | **5 passed, 33 assertions** across real vendor submission, storefront rendering, search-card rendering, administrator editor payloads, size-row DOM sinks, and policy rendering. |
 | Raw-SQL guardrail | `composer run-script check-sql`: **passed**. |
 | Dependency advisory check | `composer audit`: **no security vulnerability advisories found**. |
 | Index migration ledger | `2026_08_13_173000_add_production_lookup_indexes`: **Ran**, batch 8 in staging. |

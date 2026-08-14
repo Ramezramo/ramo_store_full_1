@@ -1220,13 +1220,21 @@ function adminAddSize(idx, size, price, stock) {
   const tag = document.createElement('span');
   tag.className = 'size-tag';
   tag.dataset.size = size;
-  tag.innerHTML = `${size}<button type="button" onclick="adminRemoveSize(${idx},'${size}')">×</button>`;
+  tag.appendChild(document.createTextNode(size));
+
+  const removeButton = document.createElement('button');
+  removeButton.type = 'button';
+  removeButton.textContent = '×';
+  removeButton.addEventListener('click', () => adminRemoveSize(idx, size));
+  tag.appendChild(removeButton);
+
   wrap.insertBefore(tag, input);
   adminRefreshPriceTable(idx);
 }
 
 function adminRemoveSize(idx, size) {
-  const tag = document.querySelector(`#acstags-${idx} [data-size="${size}"]`);
+  const tag = Array.from(document.querySelectorAll(`#acstags-${idx} .size-tag`))
+    .find(candidate => candidate.dataset.size === size);
   if (tag) tag.remove();
   if (adminSizeData[idx]) delete adminSizeData[idx][size];
   adminRefreshPriceTable(idx);
@@ -1242,10 +1250,13 @@ function adminRefreshPriceTable(idx) {
   tags.forEach(tag => {
     const s = tag.dataset.size;
     const d = (adminSizeData[idx]||{})[s] || {};
+    const safeSize = adminEscHtml(s);
+    const safePrice = adminEscHtml(d.price || '');
+    const safeStock = adminEscHtml(d.stock || 0);
     html += `<tr>
-      <td><strong>${s}</strong><input type="hidden" name="colors[${idx}][sizes][]" value="${s}"></td>
-      <td><input type="number" name="colors[${idx}][price_map][${s}]" value="${d.price||''}" step="0.01" min="0" placeholder="0.00" style="width:100px;padding:3px 7px;border:1px solid var(--light);border-radius:6px;font-size:12px"></td>
-      <td><input type="number" name="colors[${idx}][stock][${s}]" value="${d.stock||0}" min="0" placeholder="0" style="width:80px;padding:3px 7px;border:1px solid var(--light);border-radius:6px;font-size:12px"></td>
+      <td><strong>${safeSize}</strong><input type="hidden" name="colors[${idx}][sizes][]" value="${safeSize}"></td>
+      <td><input type="number" name="colors[${idx}][price_map][${safeSize}]" value="${safePrice}" step="0.01" min="0" placeholder="0.00" style="width:100px;padding:3px 7px;border:1px solid var(--light);border-radius:6px;font-size:12px"></td>
+      <td><input type="number" name="colors[${idx}][stock][${safeSize}]" value="${safeStock}" min="0" placeholder="0" style="width:80px;padding:3px 7px;border:1px solid var(--light);border-radius:6px;font-size:12px"></td>
     </tr>`;
   });
   html += '</tbody></table>';

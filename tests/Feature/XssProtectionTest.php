@@ -189,6 +189,35 @@ class XssProtectionTest extends TestCase
         }
     }
 
+    public function test_authenticated_size_editors_do_not_build_tags_from_raw_inner_html(): void
+    {
+        $vendorShow = file_get_contents(resource_path('views/web/vendor/products/show.blade.php'));
+        $adminShow = file_get_contents(resource_path('views/admin/products/show.blade.php'));
+
+        $this->assertStringContainsString('document.createTextNode(size)', $vendorShow);
+        $this->assertStringContainsString('document.createTextNode(size)', $adminShow);
+        $this->assertStringNotContainsString('tag.innerHTML  = `${size}', $vendorShow);
+        $this->assertStringNotContainsString('tag.innerHTML = `${size}', $adminShow);
+        $this->assertStringNotContainsString('onclick="removeSizeShow', $vendorShow);
+        $this->assertStringNotContainsString('onclick="adminRemoveSize', $adminShow);
+    }
+
+    public function test_policy_page_escapes_configured_plain_text_without_raw_html_echo(): void
+    {
+        $html = view('web.policy-page', [
+            'page' => ['title' => 'Policy', 'summary' => 'Summary'],
+            'pageKey' => 'privacy',
+            'isAr' => false,
+            'isPolicyDraft' => false,
+            'copy' => "Safe line\n<script>alert(1)</script>",
+        ])->render();
+
+        $this->assertStringContainsString('Safe line', $html);
+        $this->assertStringContainsString('&lt;script&gt;alert(1)&lt;/script&gt;', $html);
+        $this->assertStringNotContainsString('<script>alert(1)</script>', $html);
+        $this->assertStringContainsString('white-space:pre-line', $html);
+    }
+
     private function createVendor(): VendorUser
     {
         $vendor = new VendorUser;

@@ -1356,8 +1356,9 @@ function recalcEffectiveShow(idx, size) {
   const container = document.getElementById('csprice-' + idx);
   if (!container) return;
   const effCell   = container.querySelector(`.eff-price-cell[data-size-key="${CSS.escape(size)}"]`);
-  const regInput  = container.querySelector(`input[data-role="regular"][data-size="${size}"]`);
-  const saleInput = container.querySelector(`input[data-role="sale"][data-size="${size}"]`);
+  const escapedSize = CSS.escape(size);
+  const regInput  = container.querySelector(`input[data-role="regular"][data-size="${escapedSize}"]`);
+  const saleInput = container.querySelector(`input[data-role="sale"][data-size="${escapedSize}"]`);
   if (!effCell || !regInput) return;
   const reg  = parseFloat(regInput.value) || 0;
   const sale = parseFloat(saleInput?.value || '') || 0;
@@ -1448,15 +1449,23 @@ function addSizeShow(idx, size, price, salePrice, stock, stockStatus, status) {
 
   const wrap  = document.getElementById('csstags-' + idx);
   const input = document.getElementById('cssize-' + idx);
-  const tag   = document.createElement('span');
-  tag.className  = 'size-tag';
+  const tag = document.createElement('span');
+  tag.className = 'size-tag';
   tag.dataset.size = size;
-  tag.innerHTML  = `${size}<button type="button" onclick="removeSizeShow(${idx},'${size.replace(/'/g,"\\'")}')">×</button>`;
+  tag.appendChild(document.createTextNode(size));
+
+  const removeButton = document.createElement('button');
+  removeButton.type = 'button';
+  removeButton.textContent = '×';
+  removeButton.addEventListener('click', () => removeSizeShow(idx, size));
+  tag.appendChild(removeButton);
+
   wrap.insertBefore(tag, input);
   refreshPriceTableShow(idx);
 }
 function removeSizeShow(idx, size) {
-  const tag = document.querySelector(`#csstags-${idx} [data-size="${size}"]`);
+  const tag = Array.from(document.querySelectorAll(`#csstags-${idx} .size-tag`))
+    .find(candidate => candidate.dataset.size === size);
   if (tag) tag.remove();
   if (showSizeData[idx]) delete showSizeData[idx][size];
   refreshPriceTableShow(idx);
@@ -1483,39 +1492,44 @@ function refreshPriceTableShow(idx) {
     const d  = (showSizeData[idx]||{})[s] || {};
     const ss = d.stockStatus || 'instock';
     const st = d.status || 'publish';
+    const safeSize = showEscHtml(s);
+    const safePrice = showEscHtml(d.price || '');
+    const safeSalePrice = showEscHtml(d.salePrice || '');
+    const safeStock = showEscHtml(d.stock || 0);
     html += `<tr>
-      <td><strong>${s}</strong><input type="hidden" name="colors[${idx}][sizes][]" value="${s}"></td>
-      <td><input type="number" name="colors[${idx}][price_map][${s}]"
-                 value="${d.price||''}" step="0.01" min="0" placeholder="0.00"
-                 data-role="regular" data-size="${s}"
-                 oninput="recalcEffectiveShow(${idx},'${s.replace(/'/g,"\\'")}')"
+      <td><strong>${safeSize}</strong><input type="hidden" name="colors[${idx}][sizes][]" value="${safeSize}"></td>
+      <td><input type="number" name="colors[${idx}][price_map][${safeSize}]"
+                 value="${safePrice}" step="0.01" min="0" placeholder="0.00"
+                 data-role="regular" data-size="${safeSize}"
                  class="price-table" style="width:95px"></td>
-      <td><input type="number" name="colors[${idx}][sale_price_map][${s}]"
-                 value="${d.salePrice||''}" step="0.01" min="0" placeholder="leave blank"
-                 data-role="sale" data-size="${s}"
-                 oninput="recalcEffectiveShow(${idx},'${s.replace(/'/g,"\\'")}')"
+      <td><input type="number" name="colors[${idx}][sale_price_map][${safeSize}]"
+                 value="${safeSalePrice}" step="0.01" min="0" placeholder="leave blank"
+                 data-role="sale" data-size="${safeSize}"
                  class="price-table" style="width:95px"></td>
-      <td><input type="number" name="colors[${idx}][stock][${s}]"
-                 value="${d.stock||0}" min="0" placeholder="0"
+      <td><input type="number" name="colors[${idx}][stock][${safeSize}]"
+                 value="${safeStock}" min="0" placeholder="0"
                  class="price-table" style="width:75px"></td>
       <td>
-        <select name="colors[${idx}][stock_status_map][${s}]" class="price-table" style="font-size:12px">
+        <select name="colors[${idx}][stock_status_map][${safeSize}]" class="price-table" style="font-size:12px">
           <option value="instock"     ${ss==='instock'     ? 'selected' : ''}>In Stock</option>
           <option value="outofstock"  ${ss==='outofstock'  ? 'selected' : ''}>Out of Stock</option>
           <option value="onbackorder" ${ss==='onbackorder' ? 'selected' : ''}>On Backorder</option>
         </select>
       </td>
       <td>
-        <select name="colors[${idx}][status_map][${s}]" class="price-table" style="font-size:12px">
+        <select name="colors[${idx}][status_map][${safeSize}]" class="price-table" style="font-size:12px">
           <option value="publish" ${st==='publish' ? 'selected' : ''}>Active</option>
           <option value="draft"   ${st==='draft'   ? 'selected' : ''}>Disabled</option>
         </select>
       </td>
-      <td class="eff-price-cell" data-size-key="${s}" style="font-weight:600;font-size:13px">—</td>
+      <td class="eff-price-cell" data-size-key="${safeSize}" style="font-weight:600;font-size:13px">—</td>
     </tr>`;
   });
   html += '</tbody></table>';
   container.innerHTML = html;
+  container.querySelectorAll('input[data-role="regular"], input[data-role="sale"]').forEach(input => {
+    input.addEventListener('input', () => recalcEffectiveShow(idx, input.dataset.size));
+  });
   // Compute initial effective prices after rendering
   tags.forEach(tag => recalcEffectiveShow(idx, tag.dataset.size));
 }
