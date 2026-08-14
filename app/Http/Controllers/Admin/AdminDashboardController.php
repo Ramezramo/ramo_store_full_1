@@ -214,12 +214,13 @@ class AdminDashboardController extends Controller
         $order = DB::table('orders')->where('id', $id)->first(['id', 'timeline']);
         abort_if(!$order, 404);
 
+        $reason = $this->sanitizeProductText($data['reason'] ?? '');
         $now = now();
         $timeline = json_decode($order->timeline ?? '[]', true) ?: [];
         $timeline[] = [
             'status' => $data['status'],
             'note' => 'General order status force-overridden to '.$data['status']
-                .(!empty($data['reason']) ? ': '.$data['reason'] : '.'),
+                .($reason !== '' ? ': '.$reason : '.'),
             'by' => 'admin:'.(auth()->id() ?? 'unknown'),
             'at' => $now->toDateTimeString(),
             'type' => 'general_status_override',
@@ -227,7 +228,7 @@ class AdminDashboardController extends Controller
 
         DB::table('orders')->where('id', $id)->update([
             'general_order_status_override' => $data['status'],
-            'general_order_status_override_reason' => $data['reason'],
+            'general_order_status_override_reason' => $reason,
             'general_order_status_override_by' => auth()->id(),
             'general_order_status_override_at' => $now,
             'status' => $data['status'],

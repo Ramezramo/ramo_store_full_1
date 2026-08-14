@@ -77,6 +77,72 @@ class XssProtectionTest extends TestCase
         }
     }
 
+    public function test_review_api_and_web_submission_strip_markup_before_storage(): void
+    {
+        $user = new User;
+        $user->forceFill([
+            'name' => 'XSS Review Tester',
+            'email' => 'xss-review-' . uniqid() . '@ramostore.local',
+            'password' => 'temporary-test-password',
+            'role' => 'normal_user',
+        ]);
+        $user->save();
+
+        $productIds = [];
+        try {
+            $apiProductId = $this->createReviewProduct();
+            $productIds[] = $apiProductId;
+            $apiResponse = $this->actingAs($user, 'sanctum')->postJson('/api/reviews', [
+                'product_id' => $apiProductId,
+                'rating' => 5,
+                'title' => '<script>alert(1)</script>API title',
+                'body' => 'API <b>review</b> <img src=x onerror=alert(2)> body',
+            ]);
+
+            $apiResponse->assertCreated()->assertJsonPath('success', true);
+            $apiReview = DB::table('product_reviews')->where('user_id', $user->id)->where('product_id', $apiProductId)->first();
+            $this->assertSame('alert(1)API title', $apiReview->title);
+            $this->assertSame('API review  body', $apiReview->body);
+            $this->assertStringNotContainsString('<', $apiReview->title . $apiReview->body);
+
+            $webProductId = $this->createReviewProduct();
+            $productIds[] = $webProductId;
+            $csrfToken = 'xss-review-web-csrf';
+            $webResponse = $this->withSession(['_token' => $csrfToken])
+                ->actingAs($user)
+                ->post(route('review.store'), [
+                    '_token' => $csrfToken,
+                    'product_id' => $webProductId,
+                    'rating' => 4,
+                    'title' => 'Web <i>title</i>',
+                    'body' => 'Web <script>alert(3)</script> body',
+                ]);
+
+            $webResponse->assertRedirect(route('product', $webProductId));
+            $webReview = DB::table('product_reviews')->where('user_id', $user->id)->where('product_id', $webProductId)->first();
+            $this->assertSame('Web title', $webReview->title);
+            $this->assertSame('Web alert(3) body', $webReview->body);
+            $this->assertStringNotContainsString('<', $webReview->title . $webReview->body);
+        } finally {
+            DB::table('product_reviews')->where('user_id', $user->id)->delete();
+            foreach ($productIds as $productId) {
+                DB::table('products_data')->where('id', $productId)->delete();
+            }
+            $user->delete();
+        }
+    }
+
+    public function test_admin_free_text_paths_normalize_markup_before_persistence(): void
+    {
+        $categoryBrand = file_get_contents(app_path('Http/Controllers/Admin/AdminCategoryBrandController.php'));
+        $dashboard = file_get_contents(app_path('Http/Controllers/Admin/AdminDashboardController.php'));
+
+        $this->assertStringContainsString('$this->sanitizeAdminText($request->input(\'admin_note\', \'\'))', $categoryBrand);
+        $this->assertStringContainsString("'admin_note' => \$this->sanitizeAdminText(\$request->input('admin_note', ''))", $categoryBrand);
+        $this->assertStringContainsString("\$reason = \$this->sanitizeProductText(\$data['reason'] ?? '')", $dashboard);
+        $this->assertStringContainsString("'general_order_status_override_reason' => \$reason", $dashboard);
+    }
+
     public function test_admin_product_editor_hex_encodes_legacy_color_data_and_escapes_dynamic_input(): void
     {
         $admin = new User([
@@ -256,6 +322,23 @@ class XssProtectionTest extends TestCase
         $this->assertStringContainsString('value="${escAttr(item.label||\'\')}"', $timeline);
         $this->assertStringContainsString('${escHtml(c.name)}</option>', $livePreview);
         $this->assertStringContainsString('${escHtml(c.name)}</option>', $timeline);
+    }
+
+    private function createReviewProduct(): int
+    {
+        $now = now();
+
+        return (int) DB::table('products_data')->insertGetId([
+            'name' => 'Review XSS fixture',
+            'slug' => 'review-xss-fixture-' . uniqid(),
+            'search_text' => 'review xss fixture',
+            'sku' => 'REVIEW-XSS-' . uniqid(),
+            'images' => '{}',
+            'status' => 'publish',
+            'acceptance_status' => 'approved',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
     }
 
     private function createVendor(): VendorUser

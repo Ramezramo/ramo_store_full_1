@@ -52,6 +52,11 @@ class AdminCategoryBrandController extends Controller
         ));
     }
 
+    private function sanitizeAdminText(mixed $value): string
+    {
+        return trim(strip_tags((string) $value));
+    }
+
     // ── Vendor request: Approve ───────────────────────────────
     public function approve(Request $request, int $id)
     {
@@ -59,7 +64,7 @@ class AdminCategoryBrandController extends Controller
         if (!$req) return back()->with('error', 'Request not found.');
         if ($req->status !== 'pending') return back()->with('error', 'Already processed.');
 
-        $note     = $request->input('admin_note', '');
+        $note     = $this->sanitizeAdminText($request->input('admin_note', ''));
         $parentId = $request->input('parent_category_id') ?: ($req->parent_category_id ?: null);
 
         if ($req->type === 'category') {
@@ -104,7 +109,7 @@ class AdminCategoryBrandController extends Controller
 
         DB::table('category_brand_requests')->where('id', $id)->update([
             'status'     => 'rejected',
-            'admin_note' => $request->input('admin_note', ''),
+            'admin_note' => $this->sanitizeAdminText($request->input('admin_note', '')),
             'updated_at' => now(),
         ]);
 

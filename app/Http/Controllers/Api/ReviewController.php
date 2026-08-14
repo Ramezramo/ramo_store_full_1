@@ -9,6 +9,11 @@ use Illuminate\Support\Facades\DB;
 
 class ReviewController extends Controller
 {
+    private function sanitizeReviewText(mixed $value): string
+    {
+        return trim(strip_tags((string) $value));
+    }
+
     private function localized(string $english, string $arabic): string
     {
         return session('locale', 'en') === 'ar' ? $arabic : $english;
@@ -69,12 +74,15 @@ class ReviewController extends Controller
             ->whereIn('general_order_status', ['completed'])
             ->exists();
 
+        $title = $this->sanitizeReviewText($r->input('title', ''));
+        $body  = $this->sanitizeReviewText($r->input('body'));
+
         $id = DB::table('product_reviews')->insertGetId([
             'product_id'           => $r->product_id,
             'user_id'              => Auth::id(),
             'rating'               => $r->rating,
-            'title'                => $r->title,
-            'body'                 => $r->body,
+            'title'                => $title,
+            'body'                 => $body,
             'approved'             => true,
             'is_verified_purchase' => $verified,
             'helpful_count'        => 0,
@@ -109,12 +117,15 @@ class ReviewController extends Controller
             ->whereIn('general_order_status', ['completed'])
             ->exists();
 
+        $title = $this->sanitizeReviewText($r->input('title', ''));
+        $body  = $this->sanitizeReviewText($r->input('body'));
+
         DB::table('product_reviews')->insert([
             'product_id'           => $r->product_id,
             'user_id'              => Auth::id(),
             'rating'               => $r->rating,
-            'title'                => $r->title,
-            'body'                 => $r->body,
+            'title'                => $title,
+            'body'                 => $body,
             'approved'             => true,
             'is_verified_purchase' => $verified,
             'helpful_count'        => 0,
