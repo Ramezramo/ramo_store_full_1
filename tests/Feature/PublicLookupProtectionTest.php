@@ -85,6 +85,35 @@ class PublicLookupProtectionTest extends TestCase
         }
     }
 
+    public function test_successful_tracking_lookup_keeps_the_submitted_phone_visible(): void
+    {
+        $orderId = null;
+
+        try {
+            $orderId = DB::table('orders')->insertGetId([
+                'status' => 'pending',
+                'billing' => json_encode(['phone' => '01000000003']),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $csrfToken = 'tracking-success-csrf';
+            $response = $this->withSession(['_token' => $csrfToken])->post(route('order.track.submit'), [
+                '_token' => $csrfToken,
+                'order_id' => $orderId,
+                'phone' => '01000000003',
+            ]);
+
+            $response->assertOk()
+                ->assertSee('Order #' . $orderId)
+                ->assertSee('value="01000000003"', false);
+        } finally {
+            if ($orderId) {
+                DB::table('orders')->where('id', $orderId)->delete();
+            }
+        }
+    }
+
     public function test_public_route_limiters_have_bounded_thresholds(): void
     {
         $request = Request::create('/search', 'GET', server: ['REMOTE_ADDR' => '198.51.100.42']);

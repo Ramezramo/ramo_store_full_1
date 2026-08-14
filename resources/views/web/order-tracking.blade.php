@@ -36,7 +36,7 @@
           <div class="track-field">
             <label>{{ $isAr ? 'رقم الموبايل' : 'Phone Number' }}</label>
             <input type="tel" name="phone" placeholder="{{ $isAr ? 'مثال: 01012345678' : 'e.g. 01012345678' }}"
-                   value="{{ old('phone') }}" required>
+                   value="{{ old('phone', request('phone')) }}" required>
             @error('phone')<span class="field-err">{{ $message }}</span>@enderror
           </div>
         </div>
