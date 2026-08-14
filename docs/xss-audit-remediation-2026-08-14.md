@@ -42,7 +42,7 @@ Focused validation completed successfully on 14 August 2026:
 ```text
 php artisan test --filter=XssProtectionTest
 PASS  Tests\Feature\XssProtectionTest
-Tests: 5 passed (33 assertions)
+Tests: 6 passed (37 assertions)
 ```
 
 Full validation completed successfully on 14 August 2026:
@@ -57,11 +57,11 @@ Raw-SQL interpolation check passed.
 
 ## Residual review items
 
-The follow-up audit’s product-card finding is now remediated: the raw-HTML `cardNameHtml` contract was eliminated, search names are represented as structured segments, and the partial emits only escaped text plus a static `<mark>` element. The third audit’s vendor size-label DOM sink is also remediated: size tags are built with `textContent`/`createTextNode()` and event listeners rather than raw `innerHTML` and inline handlers; generated pricing-table size values and keys are escaped, and event handlers are attached programmatically. The administrator editor’s parallel size-row path received the same hardening. The policy page now uses escaped Blade interpolation with `white-space: pre-line`, eliminating its raw `{!! !!}` output entirely. No application feature currently permits vendor or administrator-authored rich HTML; if that changes, the field must use `Purifier::clean()` before storage and display.
+The follow-up audit’s product-card finding is now remediated: the raw-HTML `cardNameHtml` contract was eliminated, search names are represented as structured segments, and the partial emits only escaped text plus a static `<mark>` element. The third audit’s vendor size-label DOM sink is also remediated: size tags are built with `textContent`/`createTextNode()` and event listeners rather than raw `innerHTML` and inline handlers; generated pricing-table size values and keys are escaped, and event handlers are attached programmatically. The administrator editor’s parallel size-row path received the same hardening. The vendor related-product chip now builds its label and removal control with DOM APIs and `textContent`, eliminating the high-risk stored-XSS path from related-product names. The policy page now uses escaped Blade interpolation with `white-space: pre-line`, eliminating its raw `{!! !!}` output entirely. No application feature currently permits vendor or administrator-authored rich HTML; if that changes, the field must use `Purifier::clean()` before storage and display.
 
 ## Source
 
-The source audits were provided by the user in `/home/ubuntu/upload/pasted_content.txt`, `/home/ubuntu/upload/pasted_content_2.txt`, and `/home/ubuntu/upload/pasted_content_3.txt`.
+The source audits were provided by the user in `/home/ubuntu/upload/pasted_content.txt`, `/home/ubuntu/upload/pasted_content_2.txt`, `/home/ubuntu/upload/pasted_content_3.txt`, and `/home/ubuntu/upload/pasted_content_4.txt`.
 
 ## Final status
 

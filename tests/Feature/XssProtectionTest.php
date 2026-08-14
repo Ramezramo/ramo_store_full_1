@@ -189,6 +189,16 @@ class XssProtectionTest extends TestCase
         }
     }
 
+    public function test_related_product_chip_uses_text_content_and_event_listener(): void
+    {
+        $vendorCreate = file_get_contents(resource_path('views/web/vendor/products/create.blade.php'));
+
+        $this->assertStringContainsString('label.textContent = displayName;', $vendorCreate);
+        $this->assertStringContainsString('removeButton.addEventListener(\'click\', () => removeRelated(id));', $vendorCreate);
+        $this->assertStringNotContainsString('tag.innerHTML = `${name.length > 35', $vendorCreate);
+        $this->assertStringNotContainsString('onclick="removeRelated(${id})"', $vendorCreate);
+    }
+
     public function test_authenticated_size_editors_do_not_build_tags_from_raw_inner_html(): void
     {
         $vendorShow = file_get_contents(resource_path('views/web/vendor/products/show.blade.php'));

@@ -781,6 +781,7 @@ textarea.vs-input{resize:vertical;min-height:100px}
   $editColorRows = array_values($editColorRows);
 @endphp
 
+{{-- Safe JSON transport: JSON_HEX_* prevents script-tag breakouts; the payload is read via textContent + JSON.parse below. --}}
 <script type="application/json" id="vendor-edit-product-data">{!! json_encode(['colors' => $editColorRows, 'translations' => $translations], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
 <script>
 const EDIT_HAS_VARIATIONS = {{ $hasVariations ? 'true' : 'false' }};
@@ -1288,10 +1289,24 @@ function addRelated(id, name) {
   if (selectedIds.includes(id)) return;
   selectedIds.push(id);
   rpInput.value = selectedIds.join(',');
+
+  const displayName = String(name ?? '').length > 35
+    ? String(name ?? '').substring(0, 35) + '…'
+    : String(name ?? '');
   const tag = document.createElement('span');
   tag.className = 'rp-tag';
-  tag.setAttribute('data-id', id);
-  tag.innerHTML = `${name.length > 35 ? name.substring(0,35)+'…' : name}<button type="button" onclick="removeRelated(${id})">×</button>`;
+  tag.setAttribute('data-id', String(id));
+
+  const label = document.createElement('span');
+  label.textContent = displayName;
+  tag.appendChild(label);
+
+  const removeButton = document.createElement('button');
+  removeButton.type = 'button';
+  removeButton.textContent = '×';
+  removeButton.addEventListener('click', () => removeRelated(id));
+  tag.appendChild(removeButton);
+
   rpTags.appendChild(tag);
   rpSearch.value = '';
   rpDropdown.classList.remove('open');
