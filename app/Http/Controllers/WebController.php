@@ -187,7 +187,7 @@ class WebController extends Controller
                     default => '24 hours',
                 };
                 $sectionActivity[$i] = DB::table('orders')
-                    ->whereRaw("date_created > NOW() - INTERVAL '$interval'")
+                    ->whereRaw('date_created > NOW() - (?::interval)', [$interval])
                     ->count();
             }
 
