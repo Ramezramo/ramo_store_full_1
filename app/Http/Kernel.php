@@ -16,6 +16,7 @@ class Kernel extends HttpKernel
     protected $routeMiddleware = [
     'vendor.auth' => \App\Http\Middleware\VendorAuth::class,
     'admin.auth'  => \App\Http\Middleware\AdminAuth::class,
+    'admin.auth.api' => \App\Http\Middleware\AdminAuthApi::class,
 ];
     protected $middleware = [
         // \App\Http\Middleware\TrustHosts::class,
@@ -66,6 +67,7 @@ class Kernel extends HttpKernel
      */
     protected $middlewareAliases = [
         'admin.auth'    => \App\Http\Middleware\AdminAuth::class,
+        'admin.auth.api' => \App\Http\Middleware\AdminAuthApi::class,
         'vendor.web.auth' => \App\Http\Middleware\VendorWebAuth::class,
         'auth' => \App\Http\Middleware\Authenticate::class,
         'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,

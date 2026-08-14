@@ -196,7 +196,7 @@ code{background:var(--s3);padding:1px 5px;border-radius:3px;font-family:monospac
   <a class="nav-item" href="#la-phone"><span class="m-badge m-POST">POST</span>Register by Phone</a>
   <a class="nav-item" href="#la-forgot"><span class="m-badge m-POST">POST</span>Forgot Password</a>
   <a class="nav-item" href="#la-me"><span class="m-badge m-GET">GET</span>Me</a>
-  <a class="nav-item" href="#la-logout"><span class="m-badge m-GET">GET</span>Logout</a>
+  <a class="nav-item" href="#la-logout"><span class="m-badge m-POST">POST</span>Logout</a>
   <a class="nav-item" href="#la-delete"><span class="m-badge m-DELETE">DEL</span>Delete Account</a>
 
   <div class="nav-section">Laravel — Orders</div>
@@ -926,7 +926,7 @@ GET /ntv-php/ntv-app-time-line-config.php?lang_code=ar</pre></div>
 
   <div class="ep" id="la-logout">
     <div class="ep-head" onclick="toggle(this)">
-      <span class="method GET">GET</span>
+      <span class="method POST">POST</span>
       <span class="ep-path">/api/user/logout</span>
       <span class="ep-desc">Invalidate current token</span>
       <span class="badge-auth">🔐 Sanctum Token</span>
@@ -1906,7 +1906,7 @@ Body: { "email":"john@example.com" }
 [GET] /api/user/me — PROTECTED
 Header: Authorization: Bearer <sanctum_token>
 
-[GET] /api/user/logout — PROTECTED
+[POST] /api/user/logout — PROTECTED
 
 [DELETE] /api/user/delete-account — PROTECTED (irreversible)
 
@@ -2129,7 +2129,7 @@ function downloadPostman() {
           { name:'Register with Phone', request: mkReq('POST','/api/user/register-with-phone',{ phone:'+201001234567',otp:'482910',name:'John Doe' }) },
           { name:'Forgot Password', request: mkReq('POST','/api/user/forgot-password',{ email:'john@example.com' }) },
           { name:'Me (profile)', request: { method:'GET', header:[{key:'Authorization',value:'Bearer {{token}}',type:'text'}], url:{ raw:BASE+'/api/user/me', host:[BASE], path:['api','user','me'] } } },
-          { name:'Logout', request: { method:'GET', header:[{key:'Authorization',value:'Bearer {{token}}',type:'text'}], url:{ raw:BASE+'/api/user/logout', host:[BASE], path:['api','user','logout'] } } },
+          { name:'Logout', request: { method:'POST', header:[{key:'Authorization',value:'Bearer {{token}}',type:'text'}], url:{ raw:BASE+'/api/user/logout', host:[BASE], path:['api','user','logout'] } } },
           { name:'Delete Account', request: { method:'DELETE', header:[{key:'Authorization',value:'Bearer {{token}}',type:'text'}], url:{ raw:BASE+'/api/user/delete-account', host:[BASE], path:['api','user','delete-account'] } } },
         ]
       },

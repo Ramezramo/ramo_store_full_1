@@ -13,8 +13,9 @@ The development environment continues to show the OTP when `SMS_GATEWAY=log` and
 | Area | Verified remediation status | Launch status |
 |---|---|---|
 | Framework and dependency security | Laravel is 12.66.0 and `composer audit` reported no security advisories. | **Resolved in code.** |
-| Automated regression suite | `php artisan test` passed **96 tests and 466 assertions** after the sixth XSS-audit remediation on 14 August 2026. | **Passed for covered behavior.** |
+| Automated regression suite | `php artisan test` passed **103 tests and 474 assertions** after the CSRF/API-auth remediation on 14 August 2026. | **Passed for covered behavior.** |
 | Product-text and review XSS controls | Vendor and administrator product write boundaries strip markup from plain-text fields. Customer review titles and bodies are now normalized before API and web persistence, and optional admin notes/order-override reasons are normalized as well. Search cards no longer accept raw HTML; editor payloads use inert JSON with Laravel `@json()` and explicit parsing; cart, recently-viewed, preview-label, analytics-legend, category-option, flash-search, size-tag, and related-product renderers avoid raw user-controlled HTML; generated size-table values are escaped; and policy copy uses escaped Blade output with CSS line breaks. | **Resolved in code and regression-tested.** |
+| CSRF and API authorization | Login CSRF exclusions were removed; `POST /api/ramo/config-storing` now requires route-level `admin.auth.api` in addition to the controller check; and API logout is now `POST /api/user/logout`. | **Resolved in code and regression-tested.** |
 | Transport and browser security | The application permanently redirects HTTP to HTTPS when enabled, emits HSTS on HTTPS, Secure cookies, report-only CSP, and baseline frame protection. The public temporary proxy currently strips `X-Frame-Options`. | **Code-ready; edge preservation is required.** |
 | Locale and RTL | Egypt and Arab League first visits resolve to Arabic; other countries resolve to English; a manual choice prevails. Customer HTML has an RTL direction in Arabic. | **Code-ready**, subject to trusted edge country headers. |
 | Public policy, errors, and SEO | Six policy routes, footer and checkout links, branded 404/500 pages, sitemap, robots policy, canonical/no-index metadata, and HTML direction checks are covered. | **Code-ready; policy text needs owner approval.** |
@@ -61,7 +62,7 @@ The public temporary proxy still fails to preserve `X-Frame-Options`, although t
 
 | Check | Result as of 14 August 2026 |
 |---|---|
-| Full Laravel suite | **96 passed, 466 assertions** after the sixth XSS-audit remediation. |
+| Full Laravel suite | **103 passed, 474 assertions** after the CSRF/API-auth remediation. |
 | XSS regression suite | **10 passed, 66 assertions** across vendor submission, review API/web persistence, admin free-text paths, storefront rendering, search-card rendering, JSON breakout protection, administrator editor payloads, dynamic-HTML sink checks, size-row DOM sinks, policy rendering, and related-product chip rendering. |
 | Raw-SQL guardrail | `composer run-script check-sql`: **passed**. |
 | Dependency advisory check | `composer audit`: **no security vulnerability advisories found**. |

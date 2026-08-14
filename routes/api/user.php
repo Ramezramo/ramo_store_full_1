@@ -10,7 +10,7 @@ Route::middleware('auth:sanctum')->prefix('user')->group(function () {
 
     // Auth & Profile
     Route::get('me', [AuthController::class, 'me']);// ✅️
-    Route::get('logout', [AuthController::class, 'logout']);// ✅️
+    Route::post('logout', [AuthController::class, 'logout']);// ✅️
     Route::get('refresh', [AuthController::class, 'refresh']);// ✅️
     Route::delete('delete-account', [AuthController::class, 'deleteAccount'])->middleware('throttle:3,1');// ✅️
 
