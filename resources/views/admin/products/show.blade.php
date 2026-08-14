@@ -1118,11 +1118,20 @@ function adminSiPreviewMulti(input, labelId, prevId) {
 
 {{-- JS DATA + LOGIC --}}
 <script>
-const ADMIN_EDIT_COLOR_ROWS = {!! json_encode($adminEditColorRows) !!};
+const ADMIN_EDIT_COLOR_ROWS = {!! json_encode($adminEditColorRows, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!};
 let adminColorIdx = 0;
 let adminAttrIdx  = {{ count($attributes) }};
 let adminTrIdx    = {{ count($translations) }};
 const adminFlags  = {ar:'🇦🇪',fr:'🇫🇷',de:'🇩🇪',es:'🇪🇸',it:'🇮🇹'};
+
+function adminEscHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
 function openSection(name) {
   document.getElementById('view-' + name).style.display = 'none';
@@ -1169,7 +1178,7 @@ function adminAddColorRow(colorData) {
       <span class="color-row-badge">${isFirst ? '★ Main Color' : 'Color #'+(document.getElementById('admin-color-rows').children.length+1)}</span>
       <div style="display:flex;gap:8px;align-items:center">
         <input type="text" name="colors[${idx}][name]" class="if-input" placeholder="Color name"
-               value="${colorName}" style="width:200px" onblur="adminRefreshPriceTable(${idx})">
+               value="${adminEscHtml(colorName)}" style="width:200px" onblur="adminRefreshPriceTable(${idx})">
         ${isFirst ? '' : `<button type="button" class="color-row-remove" onclick="document.getElementById('acsrow-${idx}').remove()">× Remove</button>`}
       </div>
     </div>

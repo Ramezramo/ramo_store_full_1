@@ -783,9 +783,9 @@ textarea.vs-input{resize:vertical;min-height:100px}
 
 <script>
 const EDIT_HAS_VARIATIONS = {{ $hasVariations ? 'true' : 'false' }};
-const EDIT_COLOR_ROWS     = {!! json_encode($editColorRows) !!};
+const EDIT_COLOR_ROWS     = {!! json_encode($editColorRows, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!};
 const EDIT_PRODUCT_ID     = {{ $editProductId }};
-const EXISTING_TRANSLATIONS = {!! json_encode($translations) !!};
+const EXISTING_TRANSLATIONS = {!! json_encode($translations, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!};
 
 // ─── Discount hint + live effective price recalc ──────────────────
 function updateDiscountHint(val) {

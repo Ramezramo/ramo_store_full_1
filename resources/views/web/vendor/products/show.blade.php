@@ -1256,8 +1256,17 @@ function siPreviewMulti(input, labelId, previewId) {
 
 {{-- ─── DATA FOR JS ─── --}}
 <script>
-const SHOW_EDIT_COLOR_ROWS = {!! json_encode($editColorRows4) !!};
+const SHOW_EDIT_COLOR_ROWS = {!! json_encode($editColorRows4, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!};
 let showColorIdx = 0;
+
+function showEscHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
 // ─── Section open/close ─────────────────────────────────────────
 function openSection(name) {
@@ -1391,7 +1400,7 @@ function addColorRowShow(colorData) {
       <span class="color-row-badge">${isFirst ? '★ Main Color' : 'Color #'+(document.getElementById('color-rows-show').children.length+1)}</span>
       <div style="display:flex;gap:8px;align-items:center">
         <input type="text" name="colors[${idx}][name]" class="if-input" placeholder="Color name"
-               value="${colorName}" style="width:200px" onblur="refreshPriceTableShow(${idx})">
+               value="${showEscHtml(colorName)}" style="width:200px" onblur="refreshPriceTableShow(${idx})">
         ${isFirst ? '' : `<button type="button" class="color-row-remove" onclick="document.getElementById('csrow-${idx}').remove()">× Remove</button>`}
       </div>
     </div>

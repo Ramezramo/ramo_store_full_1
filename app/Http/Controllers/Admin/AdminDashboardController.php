@@ -631,16 +631,16 @@ class AdminDashboardController extends Controller
                 $unitType    = $request->input('unit', 'piece');
                 $unitAmount  = (float) $request->input('unit_amount', 1);
                 DB::table('products_data')->where('id', $id)->update([
-                    'name'              => $request->input('name'),
+                    'name'              => $this->sanitizeProductText($request->input('name')),
                     'status'            => $request->input('status'),
                     'acceptance_status' => $request->input('acceptance_status'),
-                    'sku'               => $request->input('sku', ''),
+                    'sku'               => $this->sanitizeProductText($request->input('sku', '')),
                     'brand_id'          => $request->input('brand_id') ?: '',
                     'product_type'      => $productType,
                     'type'              => $productType,
                     'unit'              => json_encode([$unitType => $unitAmount]),
-                    'short_description' => $request->input('short_description', ''),
-                    'description'       => $request->input('description', ''),
+                    'short_description' => $this->sanitizeProductText($request->input('short_description', '')),
+                    'description'       => $this->sanitizeProductText($request->input('description', '')),
                     'shipping_required' => $productType === 'physical',
                     'virtual'           => $productType === 'digital',
                     'updated_at'        => $now,
@@ -662,9 +662,9 @@ class AdminDashboardController extends Controller
                 $translations = [];
                 foreach ($raw as $tr) {
                     $locale = strtolower(trim($tr['locale'] ?? ''));
-                    $name   = trim($tr['name'] ?? '');
+                    $name   = $this->sanitizeProductText($tr['name'] ?? '');
                     if (!$locale || !$name) continue;
-                    $translations[] = ['locale' => $locale, 'name' => $name, 'description' => trim($tr['description'] ?? '')];
+                    $translations[] = ['locale' => $locale, 'name' => $name, 'description' => $this->sanitizeProductText($tr['description'] ?? '')];
                 }
                 $locales = array_merge(['en'], array_column($translations, 'locale'));
                 DB::table('products_data')->where('id', $id)->update([
@@ -708,9 +708,9 @@ class AdminDashboardController extends Controller
                     $rows[] = ['attributes' => '{}', 'price' => $price, 'regular_price' => $reg, 'sale_price' => $sale, 'stock_quantity' => $stock];
                 } else {
                     foreach ((array) $request->input('colors', []) as $colorData) {
-                        $colorName = ucfirst(trim($colorData['name'] ?? ''));
+                        $colorName = ucfirst($this->sanitizeProductText($colorData['name'] ?? ''));
                         if (!$colorName) continue;
-                        $sizes    = array_filter(array_map('trim', (array)($colorData['sizes'] ?? [])));
+                        $sizes    = array_filter(array_map(fn ($size) => $this->sanitizeProductText($size), (array)($colorData['sizes'] ?? [])));
                         $priceMap = (array)($colorData['price_map'] ?? []);
                         $stockMap = (array)($colorData['stock'] ?? []);
                         foreach ($sizes as $size) {
@@ -732,16 +732,16 @@ class AdminDashboardController extends Controller
             case 'attributes':
                 $attrs = [];
                 foreach ((array) $request->input('prod_attributes', []) as $attr) {
-                    $name = trim($attr['name'] ?? ''); $values = trim($attr['values'] ?? '');
+                    $name = $this->sanitizeProductText($attr['name'] ?? ''); $values = $this->sanitizeProductText($attr['values'] ?? '');
                     if (!$name || !$values) continue;
-                    $attrs[] = ['name' => $name, 'values' => array_values(array_filter(array_map('trim', explode(',', $values))))];
+                    $attrs[] = ['name' => $name, 'values' => array_values(array_filter(array_map(fn ($value) => $this->sanitizeProductText($value), explode(',', $values))))];
                 }
                 DB::table('products_data')->where('id', $id)->update(['attributes' => json_encode($attrs), 'updated_at' => $now]);
                 break;
 
             case 'tags':
-                $raw  = trim($request->input('tags_input', ''));
-                $tags = $raw ? array_values(array_filter(array_map('trim', explode(',', $raw)))) : [];
+                $raw  = $this->sanitizeProductText($request->input('tags_input', ''));
+                $tags = $raw ? array_values(array_filter(array_map(fn ($tag) => $this->sanitizeProductText($tag), explode(',', $raw)))) : [];
                 DB::table('products_data')->where('id', $id)->update(['tags' => json_encode($tags), 'updated_at' => $now]);
                 break;
 
@@ -852,7 +852,7 @@ class AdminDashboardController extends Controller
 
             case 'whatsapp':
                 $available = $request->boolean('whatsapp_available');
-                $number    = trim($request->input('whatsapp_number', ''));
+                $number    = $this->sanitizeProductText($request->input('whatsapp_number', ''));
                 DB::table('products_data')->where('id', $id)->update([
                     'whatsapp'   => json_encode(['whatsapp' => ['available' => $available, 'number' => $available ? $number : null]]),
                     'updated_at' => $now,
@@ -1164,6 +1164,15 @@ class AdminDashboardController extends Controller
     {
         DB::table('device_access_tokens')->where('id', $id)->delete();
         return back()->with('success', 'Device token deleted.');
+    }
+
+    /**
+     * Product form fields are plain text. Remove markup before persistence so stored values are
+     * safe for current and future Blade/JavaScript consumers.
+     */
+    private function sanitizeProductText(mixed $value): string
+    {
+        return trim(strip_tags((string) $value));
     }
 
     public function blockDeviceByDeviceId(Request $request)

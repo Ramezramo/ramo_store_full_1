@@ -217,7 +217,7 @@ class VendorProductController extends Controller
 
         $request->validate($this->validationRules($hasVariations));
 
-        $slug        = $this->uniqueSlug(Str::slug($request->input('name')));
+        $slug        = $this->uniqueSlug(Str::slug($this->sanitizeProductText($request->input('name'))));
         $imagesJson  = $this->buildImagesJson($request);
         $relatedJson = $this->buildRelatedJson($request);
 
@@ -244,13 +244,13 @@ class VendorProductController extends Controller
         $productType = $request->input('product_type', 'physical');
 
         $productId = DB::table('products_data')->insertGetId([
-            'name'                 => $request->input('name'),
+            'name'                 => $this->sanitizeProductText($request->input('name')),
             'slug'                 => $slug,
             'permalink'            => $slug,
             'status'               => $request->input('status'),
-            'short_description'    => $request->input('short_description', ''),
-            'description'          => $request->input('description', ''),
-            'sku'                  => $request->input('sku', ''),
+            'short_description'    => $this->sanitizeProductText($request->input('short_description', '')),
+            'description'          => $this->sanitizeProductText($request->input('description', '')),
+            'sku'                  => $this->sanitizeProductText($request->input('sku', '')),
             'unit'                 => $unitJson,
             'brand_id'             => $request->input('brand_id') ?: '',
             'vendor_id'            => $vendor->id,
@@ -403,15 +403,15 @@ class VendorProductController extends Controller
                 $unitAmount = (float) $request->input('unit_amount', 1);
                 $productType = $request->input('product_type', 'physical');
                 DB::table('products_data')->where('id', $id)->update([
-                    'name'              => $request->input('name'),
+                    'name'              => $this->sanitizeProductText($request->input('name')),
                     'status'            => $request->input('status'),
-                    'sku'               => $request->input('sku', ''),
+                    'sku'               => $this->sanitizeProductText($request->input('sku', '')),
                     'brand_id'          => $request->input('brand_id') ?: '',
                     'product_type'      => $productType,
                     'type'              => $productType,
                     'unit'              => json_encode([$unitType => $unitAmount]),
-                    'short_description' => $request->input('short_description', ''),
-                    'description'       => $request->input('description', ''),
+                    'short_description' => $this->sanitizeProductText($request->input('short_description', '')),
+                    'description'       => $this->sanitizeProductText($request->input('description', '')),
                     'shipping_required' => $productType === 'physical',
                     'virtual'           => $productType === 'digital',
                     'updated_at'        => $now,
@@ -708,10 +708,10 @@ class VendorProductController extends Controller
         $productType = $request->input('product_type', 'physical');
 
         DB::table('products_data')->where('id', $id)->update([
-            'name'                 => $request->input('name'),
-            'short_description'    => $request->input('short_description', ''),
-            'description'          => $request->input('description', ''),
-            'sku'                  => $request->input('sku', ''),
+            'name'                 => $this->sanitizeProductText($request->input('name')),
+            'short_description'    => $this->sanitizeProductText($request->input('short_description', '')),
+            'description'          => $this->sanitizeProductText($request->input('description', '')),
+            'sku'                  => $this->sanitizeProductText($request->input('sku', '')),
             'unit'                 => $unitJson,
             'brand_id'             => $request->input('brand_id') ?: '',
             'status'               => $request->input('status'),
@@ -917,14 +917,16 @@ class VendorProductController extends Controller
         $discountPct = (float) $request->input('discount_percentage', 0);
 
         foreach ($colorsInput as $colorData) {
-            $colorName = ucfirst(trim($colorData['name'] ?? ''));
+            $colorName = ucfirst($this->sanitizeProductText($colorData['name'] ?? ''));
             if (! $colorName) continue;
 
             $priceMap          = (array) ($colorData['price_map'] ?? []);
             $salePriceMapInput = (array) ($colorData['sale_price_map'] ?? []);
-            $sizesRaw          = array_filter(array_map('trim', (array) ($colorData['sizes'] ?? [])));
-            // Fall back to price_map keys if no sizes were submitted
-            $sizes             = count($sizesRaw) > 0 ? array_values($sizesRaw) : array_values(array_filter(array_keys($priceMap)));
+            $sizesRaw          = array_filter(array_map(fn ($size) => $this->sanitizeProductText($size), (array) ($colorData['sizes'] ?? [])));
+            // Fall back to price_map keys if no sizes were submitted.
+            $sizes             = count($sizesRaw) > 0
+                ? array_values($sizesRaw)
+                : array_values(array_filter(array_map(fn ($size) => $this->sanitizeProductText($size), array_keys($priceMap))));
             $stockMap          = (array) ($colorData['stock'] ?? []);
             $fallbackRegular   = (float) ($colorData['regular_price'] ?? 0);
             $colorSaleOverride = isset($colorData['sale_price']) && $colorData['sale_price'] !== '' && (float)$colorData['sale_price'] > 0
@@ -982,12 +984,12 @@ class VendorProductController extends Controller
         $result = [];
         foreach ($raw as $tr) {
             $locale = strtolower(trim($tr['locale'] ?? ''));
-            $name   = trim($tr['name'] ?? '');
+            $name   = $this->sanitizeProductText($tr['name'] ?? '');
             if (! $locale || ! $name) continue;
             $result[] = [
                 'locale'      => $locale,
                 'name'        => $name,
-                'description' => trim($tr['description'] ?? ''),
+                'description' => $this->sanitizeProductText($tr['description'] ?? ''),
             ];
         }
         return $result;
@@ -1007,9 +1009,9 @@ class VendorProductController extends Controller
 
     private function buildTags(Request $request): array
     {
-        $raw = trim($request->input('tags_input', ''));
+        $raw = $this->sanitizeProductText($request->input('tags_input', ''));
         if (! $raw) return [];
-        return array_values(array_filter(array_map('trim', explode(',', $raw))));
+        return array_values(array_filter(array_map(fn ($tag) => $this->sanitizeProductText($tag), explode(',', $raw))));
     }
 
     private function buildAttributes(Request $request): array
@@ -1017,12 +1019,12 @@ class VendorProductController extends Controller
         $raw = (array) $request->input('prod_attributes', []);
         $result = [];
         foreach ($raw as $attr) {
-            $name   = trim($attr['name'] ?? '');
-            $values = trim($attr['values'] ?? '');
+            $name   = $this->sanitizeProductText($attr['name'] ?? '');
+            $values = $this->sanitizeProductText($attr['values'] ?? '');
             if (! $name || ! $values) continue;
             $result[] = [
                 'name'   => $name,
-                'values' => array_values(array_filter(array_map('trim', explode(',', $values)))),
+                'values' => array_values(array_filter(array_map(fn ($value) => $this->sanitizeProductText($value), explode(',', $values)))),
             ];
         }
         return $result;
@@ -1031,7 +1033,7 @@ class VendorProductController extends Controller
     private function buildWhatsapp(Request $request): array
     {
         $available = $request->boolean('whatsapp_available');
-        $number    = trim($request->input('whatsapp_number', ''));
+        $number    = $this->sanitizeProductText($request->input('whatsapp_number', ''));
         return [
             'whatsapp' => [
                 'available' => $available,
@@ -1043,9 +1045,9 @@ class VendorProductController extends Controller
     private function buildSearchText(Request $request, array $translations, array $attributes, array $tags): string
     {
         $parts = [];
-        $parts[] = $request->input('name', '');
-        $parts[] = $request->input('description', '');
-        $parts[] = $request->input('short_description', '');
+        $parts[] = $this->sanitizeProductText($request->input('name', ''));
+        $parts[] = $this->sanitizeProductText($request->input('description', ''));
+        $parts[] = $this->sanitizeProductText($request->input('short_description', ''));
         $parts[] = implode(' ', $tags);
 
         foreach ($translations as $tr) {
@@ -1062,15 +1064,24 @@ class VendorProductController extends Controller
 
         // Add color/size from variations
         foreach ((array) $request->input('colors', []) as $color) {
-            $parts[] = strtolower(trim($color['name'] ?? ''));
+            $parts[] = strtolower($this->sanitizeProductText($color['name'] ?? ''));
             foreach ((array) ($color['sizes'] ?? []) as $size) {
-                $parts[] = strtolower(trim($size));
+                $parts[] = strtolower($this->sanitizeProductText($size));
             }
         }
 
         $text = implode(' ', array_filter($parts));
         $text = preg_replace('/\s+/', ' ', $text);
         return strtolower(trim($text));
+    }
+
+    /**
+     * Product fields are plain text in the current product forms. Removing markup at the
+     * persistence boundary prevents stored markup from reaching future views or JS consumers.
+     */
+    private function sanitizeProductText(mixed $value): string
+    {
+        return trim(strip_tags((string) $value));
     }
 
     private function buildRelatedJson(Request $request): string
@@ -1107,7 +1118,7 @@ class VendorProductController extends Controller
         // Build index → color name lookup from the submitted colors array
         $colorsByIndex = [];
         foreach ((array) $request->input('colors', []) as $idx => $colorData) {
-            $name = ucfirst(trim($colorData['name'] ?? ''));
+            $name = ucfirst($this->sanitizeProductText($colorData['name'] ?? ''));
             if ($name) $colorsByIndex[(string) $idx] = $name;
         }
 

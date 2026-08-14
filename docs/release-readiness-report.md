@@ -1,6 +1,6 @@
 # Ramo Store Release-Readiness Report
 
-**Updated:** 13 August 2026
+**Updated:** 14 August 2026
 **Application:** Ramo Store storefront, Laravel 12.66.0, PHP 8.3, PostgreSQL
 **Scope:** Customer storefront only. Seller and administration pages were not translated or redesigned.
 
@@ -13,7 +13,8 @@ The development environment continues to show the OTP when `SMS_GATEWAY=log` and
 | Area | Verified remediation status | Launch status |
 |---|---|---|
 | Framework and dependency security | Laravel is 12.66.0 and `composer audit` reported no security advisories. | **Resolved in code.** |
-| Automated regression suite | `php artisan test` passed **61 tests and 246 assertions** after the final favicon/head update on 13 August 2026. | **Passed for covered behavior.** |
+| Automated regression suite | `php artisan test` passed **88 tests and 419 assertions** after XSS remediation on 14 August 2026. | **Passed for covered behavior.** |
+| Product-text XSS controls | Vendor and administrator product write boundaries strip markup from plain-text fields. Editor JSON payloads are script-safe and dynamic color inputs are HTML-escaped. | **Resolved in code and regression-tested.** |
 | Transport and browser security | The application permanently redirects HTTP to HTTPS when enabled, emits HSTS on HTTPS, Secure cookies, report-only CSP, and baseline frame protection. The public temporary proxy currently strips `X-Frame-Options`. | **Code-ready; edge preservation is required.** |
 | Locale and RTL | Egypt and Arab League first visits resolve to Arabic; other countries resolve to English; a manual choice prevails. Customer HTML has an RTL direction in Arabic. | **Code-ready**, subject to trusted edge country headers. |
 | Public policy, errors, and SEO | Six policy routes, footer and checkout links, branded 404/500 pages, sitemap, robots policy, canonical/no-index metadata, and HTML direction checks are covered. | **Code-ready; policy text needs owner approval.** |
@@ -58,9 +59,11 @@ The public temporary proxy still fails to preserve `X-Frame-Options`, although t
 
 ## Verification record
 
-| Check | Result on 13 August 2026 |
+| Check | Result as of 14 August 2026 |
 |---|---|
-| Full Laravel suite | **61 passed, 246 assertions** after favicon/head remediation. |
+| Full Laravel suite | **88 passed, 419 assertions** after XSS remediation. |
+| XSS regression suite | **2 passed, 19 assertions** across real vendor submission, storefront rendering, and administrator editor payloads. |
+| Raw-SQL guardrail | `composer run-script check-sql`: **passed**. |
 | Dependency advisory check | `composer audit`: **no security vulnerability advisories found**. |
 | Index migration ledger | `2026_08_13_173000_add_production_lookup_indexes`: **Ran**, batch 8 in staging. |
 | Production index audit | All eleven targeted indexes present after owner-applied DDL. |
