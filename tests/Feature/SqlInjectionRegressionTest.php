@@ -65,9 +65,14 @@ class SqlInjectionRegressionTest extends TestCase
         $source = file_get_contents(base_path('scripts/check_raw_sql_interpolation.php'));
 
         $this->assertIsString($source);
+        $this->assertStringContainsString("\$root . '/public'", $source);
         $this->assertStringContainsString("\$root . '/routes'", $source);
         $this->assertStringContainsString('(?:query|exec)', $source);
         $this->assertStringContainsString('pg_query|mysqli_query', $source);
+
+        $composer = file_get_contents(base_path('composer.json'));
+        $this->assertIsString($composer);
+        $this->assertStringContainsString('"check-sql": "php scripts/check_raw_sql_interpolation.php"', $composer);
     }
 
     private function assertResponseDoesNotExposeDatabaseError(string $content): void

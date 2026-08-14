@@ -68,3 +68,28 @@ During the payload exercise, the search page exposed a separate robustness issue
 | Complete Laravel test suite | Passed: **72 tests, 329 assertions**. |
 
 The follow-up audit does not change the overall release decision. It confirms the SQL-injection review is complete, while the separate production-readiness gates in `release-readiness-report.md` continue to govern whether the storefront can accept real orders.
+
+## Validation of additional audit report
+
+A subsequent user-supplied `SQL_INJECTION_AUDIT_REPORT.md` was tested against the current main branch without deploying the application. The report again found **no exploitable SQL injection**. Its requested preventive-control work was reconciled as follows.
+
+| Audit request | Status | Evidence |
+|---|---|---|
+| Execute the raw-SQL guard for real | **Passed** | `composer run-script check-sql` runs `php scripts/check_raw_sql_interpolation.php` and returned `Raw-SQL interpolation check passed.` |
+| Ensure the guard runs in CI | **Already implemented** | `.github/workflows/raw-sql-safety.yml` runs the same guard on pull requests and pushes to `main`. |
+| Scan public native-PHP mirror files | **Implemented** | The scanner now covers `app/`, `public/`, `routes/`, and `scripts/`. No PHP files currently exist under `lib/`, so no additional PHP scan root was required. |
+| Provide a stable developer command | **Implemented** | `composer.json` now exposes `composer run-script check-sql`. |
+| Preserve safe dynamic-sort construction | **Already documented** | `docs/security-code-review-checklist.md` requires fixed allowlists or mappings for dynamic identifiers. |
+
+The audit’s LIKE-wildcard observation remains a **low-priority search-semantics hardening opportunity**, not an SQL-injection vulnerability. It was intentionally not changed during this test-only request. The audit’s database-export observation is out of SQL-injection scope and should be handled as a separate data-hygiene review without inspecting or exposing any possible customer data.
+
+### Additional validation
+
+| Check | Result |
+|---|---|
+| `composer validate --no-check-publish` | Passed. |
+| `composer run-script check-sql` | Passed. |
+| SQL-injection regression feature tests | Passed: **4 tests, 50 assertions**. |
+| Complete Laravel test suite | Passed: **72 tests, 332 assertions**. |
+
+No permanent deployment, production publication, or real-order activation was performed.

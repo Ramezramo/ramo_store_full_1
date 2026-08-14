@@ -38,6 +38,7 @@
         }
     },
     "scripts": {
+        "check-sql": "php scripts/check_raw_sql_interpolation.php",
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"

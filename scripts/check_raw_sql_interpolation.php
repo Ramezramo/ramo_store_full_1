@@ -13,7 +13,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$scanRoots = [$root . '/app', $root . '/routes', $root . '/scripts'];
+$scanRoots = [$root . '/app', $root . '/public', $root . '/routes', $root . '/scripts'];
 $methodPattern = '(?:whereRaw|orWhereRaw|havingRaw|selectRaw|orderByRaw|groupByRaw|raw|statement|select|unprepared)';
 $variablePattern = '\\$[A-Za-z_][A-Za-z0-9_]*';
 
