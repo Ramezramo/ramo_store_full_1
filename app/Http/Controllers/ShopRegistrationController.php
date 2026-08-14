@@ -138,7 +138,7 @@ class ShopRegistrationController extends Controller
             // ==============================================================
             // 6. CREATE VENDOR USER
             // ==============================================================
-            $user = VendorUser::create([
+            $user = new VendorUser([
                 'first_name' => $sanitized['first_name'],
                 'last_name' => $sanitized['last_name'],
                 'phone' => $sanitized['phone'],
@@ -146,28 +146,31 @@ class ShopRegistrationController extends Controller
                 'password' => Hash::make($request->password),
                 'shop_name' => $sanitized['shop_name'],
                 'shop_address' => $sanitized['shop_address'],
-                'status' => 'pending',
                 'profile_image' => $sanitized['profile_image'] ?? null,
                 'shop_logo' => $sanitized['shop_logo'] ?? null,
                 'shop_banner' => $sanitized['shop_banner'] ?? null,
                 'secondary_banner' => $sanitized['secondary_banner'] ?? null,
                 'bottom_banner' => $sanitized['bottom_banner'] ?? null,
-                'product_count' => 0,
-                'orders_count' => 0,
-                'wallet' => json_encode([]),
                 'minimum_order_amount' => 0,
                 'free_delivery_over_amount' => 0,
                 'free_delivery_status' => 0,
-                'sales_commission_percentage' => 0,
-                'auth_token' => 0,
-                'holder_name' => 0,
-                'account_no' => 0,
-                'bank_name' => 'not set',
                 'branch' => 'not set',
                 'free_delivery_features_status' => '1',
                 'free_delivery_responsibility' => '1',
                 'minimum_order_amount_by_seller' => '0',
             ]);
+
+            // These values are platform-controlled defaults, never seller input.
+            $user->status = 'pending';
+            $user->product_count = 0;
+            $user->orders_count = 0;
+            $user->wallet = json_encode([]);
+            $user->sales_commission_percentage = 0;
+            $user->auth_token = 0;
+            $user->holder_name = 0;
+            $user->account_no = 0;
+            $user->bank_name = 'not set';
+            $user->save();
 
             // ==============================================================
             // 7. CONVERT IMAGE PATHS → FULL URLs

@@ -63,24 +63,26 @@ class AuthWebController extends Controller
             'password'   => 'required|string|min:6|confirmed',
         ]);
 
-        $user = User::create([
+        $user = new User([
             'name'                => $r->first_name . ' ' . $r->last_name,
             'first_name'          => $r->first_name,
             'last_name'           => $r->last_name,
             'email'               => $r->email,
             'phone'               => $r->phone,
             'password'            => Hash::make($r->password),
-            'role'                => 'normal_user',
             'nicename'            => strtolower(str_replace(' ', '-', $r->first_name . ' ' . $r->last_name)),
             'firstname'           => $r->first_name,
             'lastname'            => $r->last_name,
             'registered'          => now()->toDateTimeString(),
             'description'         => '',
-            'capabilities'        => json_encode(['customer' => true]),
             'shipping'            => json_encode([]),
             'registration_method' => 'email_password',
             'email_verified_at'   => now(),
         ]);
+        // Customer privileges are assigned by trusted server code, never mass assigned.
+        $user->role = 'normal_user';
+        $user->capabilities = json_encode(['customer' => true]);
+        $user->save();
 
         Auth::login($user);
         $r->session()->regenerate();

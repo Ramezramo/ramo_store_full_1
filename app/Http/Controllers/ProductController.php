@@ -320,13 +320,10 @@ class ProductController extends Controller
                 'tags' => $tagsSanitaized,
                 'slug' => $this->generateUniqueSlug($cleanName),
                 'permalink' => url('/products/'.$this->generateUniqueSlug($cleanName)),
-                'vendor_id' => $request->user()->id,
                 'date_created' => now(),
                 'date_modified' => now(),
-                'status' => 'publish',
                 'featured' => false,
                 'catalog_visibility' => 'visible',
-                'acceptance_status' => 'pending',
                 'sku' => $this->generateUniqueSku(),
                 'on_sale' => $discount > 0,
                 'purchasable' => true,
@@ -391,7 +388,12 @@ class ProductController extends Controller
             ];
 
             // ── Save main product ──
-            $product = Product::create($goodmap);
+            $product = new Product($goodmap);
+            // Ownership and moderation state are trusted server decisions.
+            $product->vendor_id = $request->user()->id;
+            $product->status = 'publish';
+            $product->acceptance_status = 'pending';
+            $product->save();
             $product->categories()->sync($validated['categories']);
             // ── Save variations ──
             if (! empty($validated['variations'])) {

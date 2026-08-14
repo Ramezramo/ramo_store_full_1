@@ -17,12 +17,13 @@ class ImageGalleryUploadTest extends TestCase
         $adminId = null;
 
         try {
-            $admin = User::create([
+            $admin = new User([
                 'name' => 'Gallery Upload Test Admin',
                 'email' => 'gallery-upload-test-' . uniqid() . '@ramostore.local',
                 'password' => 'temporary-test-password',
-                'role' => json_encode(['admin']),
             ]);
+            $admin->role = json_encode(['admin']);
+            $admin->save();
             $adminId = $admin->id;
 
             $upload = UploadedFile::fake()->createWithContent(
@@ -65,12 +66,13 @@ class ImageGalleryUploadTest extends TestCase
 
     public function test_gallery_upload_validation_names_the_file_that_cannot_be_uploaded(): void
     {
-        $admin = User::create([
+        $admin = new User([
             'name' => 'Gallery Validation Test Admin',
             'email' => 'gallery-validation-test-' . uniqid() . '@ramostore.local',
             'password' => 'temporary-test-password',
-            'role' => json_encode(['admin']),
         ]);
+        $admin->role = json_encode(['admin']);
+        $admin->save();
 
         try {
             $csrfToken = 'gallery-validation-test-csrf';

@@ -266,7 +266,7 @@ class OtpAuthController extends Controller
 
         $unusablePassword = \Illuminate\Support\Facades\Hash::make(Str::random(32));
 
-        return User::create([
+        $user = new User([
             'name'                => $name,
             'first_name'          => $firstName,
             'last_name'           => $lastName,
@@ -277,14 +277,18 @@ class OtpAuthController extends Controller
             'email'               => $email ?: null,
             'password'            => $unusablePassword,
             'phone'               => $phone,
-            'role'                => json_encode(['customer']),
             'nicename'            => Str::slug($name . '-' . substr($phone, -4)),
             'registered'          => now()->toDateTimeString(),
             'description'         => '',
-            'capabilities'        => json_encode(['customer' => true]),
             'shipping'            => json_encode([]),
             'registration_method' => 'phone_otp',
             'is_phone_verified'   => true,
         ]);
+        // Customer privileges are assigned by trusted server code, never mass assigned.
+        $user->role = json_encode(['customer']);
+        $user->capabilities = json_encode(['customer' => true]);
+        $user->save();
+
+        return $user;
     }
 }

@@ -31,8 +31,6 @@ class Product extends Model
      *  -------------------------------------------------------------- */
     // protected $hidden = ['search_text'];
     protected $fillable = [
-        'acceptance_status',
-        'vendor_id',
         'digital_file_ready',
         'total_wheigh',
         'lang',
@@ -54,7 +52,6 @@ class Product extends Model
         'date_created',
         'date_modified',
         'type',
-        'status',
         'featured',
         'catalog_visibility',
         'description',

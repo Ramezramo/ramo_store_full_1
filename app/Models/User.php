@@ -27,13 +27,11 @@ class User extends Authenticatable
             //address_1: , address_2: , city: , state: , postcode: , country: , email: , 
             //phone: phoneNumber}
         'shipping',
-        'capabilities',//{customer: true}
         'description',
         'lastname',
         'firstname',
         'registered',
         'nicename',
-        'role',//[customer]
         'name',
         'email',
         'password',

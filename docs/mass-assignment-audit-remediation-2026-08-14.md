@@ -35,3 +35,29 @@ The product model no longer permits primary-key mass assignment. `ProductData` a
 ## Follow-up boundary
 
 No customer, vendor, administrator, order, payment, or product workflow was changed beyond primary-key protection. The sensitive fillable fields retained in `User`, `VendorUser`, `Order`, and `Product` should be reduced only in a dedicated refactor that converts their trusted server-side writers to explicit assignment. Doing so independently avoids silent omissions of required, server-generated fields in existing account, checkout, and seller flows.
+
+
+## Follow-up report reconciliation
+
+A follow-up review of `mass_assignment_report.md` was completed against the hardened branch. Its remaining model-level recommendations were implemented where the protected attributes are controlled by server logic.
+
+| Area | Follow-up action | Compatibility measure |
+|---|---|---|
+| `User` | Removed `role` and `capabilities` from `$fillable`. The obsolete API registration `role` validation rule was removed. | Web, Google, and OTP registration now set the fixed customer role and capabilities explicitly before save. Test-only admin setup likewise assigns its trusted role explicitly. |
+| `VendorUser` | Removed approval status, token, commission, metrics, ratings, and payout/banking fields from `$fillable`. | Seller onboarding already assigns platform-controlled values explicitly; seller-editable profile fields remain fillable. |
+| `Product` | Removed `vendor_id`, `status`, and `acceptance_status` from `$fillable` (the primary key had already been removed). | Product creation assigns vendor ownership and moderation/publication defaults explicitly before saving. |
+| `Order` | Confirmed `set_paid`, `payment_status`, and `payment_reviewed_by` are not mass assignable; customer ownership is now removed from the create map and assigned explicitly. | Checkout retains the authenticated user as `customer_id` through trusted server assignment before save. |
+
+### Follow-up validation
+
+- Focused model-policy tests: **6 tests, 28 assertions**.
+- Complete Laravel suite: **85 tests, 385 assertions**.
+- PHP syntax checks passed for all changed models and controllers.
+
+No customer, vendor, admin, payment, or production data was used in validation.
+
+**Residual design note:** ordinary seller profile and checkout fields intentionally remain assignable only through controllers that validate and construct narrow server-side payloads. Any future direct request-to-model `create`, `update`, or `fill` call must use the protected-model tests and the approved-field allowlists as a gate.
+
+---
+
+*Follow-up reconciliation completed on 2026-08-14.*

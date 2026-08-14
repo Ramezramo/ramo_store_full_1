@@ -92,7 +92,7 @@ class GoogleAuthController extends Controller
             $first = $parts[0];
             $last  = $parts[1] ?? '';
 
-            $user = User::create([
+            $user = new User([
                 'name'                => $name,
                 'first_name'          => $first,
                 'last_name'           => $last,
@@ -100,11 +100,9 @@ class GoogleAuthController extends Controller
                 'lastname'            => $last,
                 'email'               => $email,
                 'password'            => null,
-                'role'                => json_encode(['customer']),
                 'nicename'            => Str::slug($name ?: $email),
                 'registered'          => now()->toDateTimeString(),
                 'description'         => '',
-                'capabilities'        => json_encode(['customer' => true]),
                 'shipping'            => json_encode([]),
                 'registration_method' => 'google',
                 'provider'            => 'google',
@@ -112,6 +110,10 @@ class GoogleAuthController extends Controller
                 'avatar'              => $avatar,
                 'is_phone_verified'   => false,
             ]);
+            // Customer privileges are assigned by trusted server code, never mass assigned.
+            $user->role = json_encode(['customer']);
+            $user->capabilities = json_encode(['customer' => true]);
+            $user->save();
         } else {
             return redirect()->route('login')->withErrors(['email' => 'No account found with this Google email.']);
         }

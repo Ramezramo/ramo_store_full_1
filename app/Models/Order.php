@@ -10,7 +10,6 @@ class Order extends Model
     use HasFactory;
 
     protected $fillable = [
-        'set_paid',
         'parent_id',
         'status',
         'currency',
@@ -38,18 +37,15 @@ class Order extends Model
         'original_total',
         'final_total',
         'total_tax',
-        'customer_id',
         'order_key',
         'billing',
         'shipping',
         'payment_method',
         'payment_method_title',
-        'payment_status',
         'payment_receipt_path',
         'payment_receipt_name',
         'payment_receipt_uploaded_at',
         'payment_reviewed_at',
-        'payment_reviewed_by',
         'payment_rejection_reason',
         'transaction_id',
         'customer_ip_address',

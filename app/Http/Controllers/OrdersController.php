@@ -891,7 +891,6 @@ class OrdersController extends Controller
                     'cart_tax'            => '0.00',
                     'total_tax'           => '0.00',
                     'final_total'         => $finalTotalFormatted,
-                    'customer_id'         => $userId,
                     'order_key'           => 'RAMORDER'.Str::upper(Str::random(8)).now()->format('ymd'),
                     'billing'             => $validatedData['billing'],
                     'shipping'            => $validatedData['shipping'],
@@ -972,7 +971,10 @@ class OrdersController extends Controller
                 ];
 
                 // ──────── Create Order ────────
-                $order = Order::create($orderDbData);
+                $order = new Order($orderDbData);
+                // The authenticated customer owns the order; never mass assign ownership.
+                $order->customer_id = $userId;
+                $order->save();
                 $order->update(['number' => $order->id + 2000]);
 
                 // ──────── Seal the idempotency key with the new order ID ────────

@@ -174,7 +174,6 @@ class AuthController extends Controller
             'user_nicename' => 'nullable|string|max:255',
             'display_name' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
-            'role' => 'nullable|string|in:customer,admin|max:255', // Restrict roles
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'name' => 'required|string|max:255',
