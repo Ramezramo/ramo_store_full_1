@@ -74,8 +74,9 @@ class OrderSuccessAuthorizationTest extends TestCase
             $this->actingAs($owner)->get(route('account.order', $orderId))
                 ->assertOk()
                 ->assertSee('Your receipt has been uploaded and is pending review.', false)
-                ->assertSee('Upload a replacement receipt only if you need to change the current one', false)
-                ->assertSee('Upload replacement', false);
+                ->assertSee('Choose a replacement image only if you need to change the current receipt.', false)
+                ->assertSee('Upload replacement receipt', false)
+                ->assertSee('this.form.requestSubmit()', false);
         } finally {
             if ($orderId) {
                 DB::table('order_sub_orders')->where('parent_order_id', $orderId)->delete();

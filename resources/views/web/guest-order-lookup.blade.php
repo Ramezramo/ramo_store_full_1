@@ -231,13 +231,15 @@
             <form method="POST" action="{{ route('guest.order.payment-receipt', $order->id) }}" enctype="multipart/form-data">
               @csrf
               <input type="hidden" name="email" value="{{ $billing['email'] ?? '' }}">
-              <label for="guest-receipt-{{ $order->id }}" style="display:block;font-size:12px;font-weight:700;color:#6b7280;margin-bottom:7px">
-                {{ $guestHasUploadedReceipt ? ($isAr ? 'ارفع إيصال بديل لو محتاج تغيّر الحالي' : 'Upload a replacement receipt only if you need to change the current one') : ($isAr ? 'اختار صورة للإيصال' : 'Choose a receipt image') }}
-              </label>
-              <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-                <input id="guest-receipt-{{ $order->id }}" type="file" name="receipt" accept="image/jpeg,image/png,image/webp" required style="font-size:12px">
-                <button class="track-submit" style="width:auto;padding:9px 14px;font-size:12px">{{ $guestHasUploadedReceipt ? ($isAr ? 'ارفع بديل' : 'Upload replacement') : ($isAr ? 'ارفع الإيصال' : 'Upload receipt') }}</button>
+              <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:7px">
+                {{ $guestHasUploadedReceipt ? ($isAr ? 'لو عايز تغيّر الإيصال الحالي، اختار صورة بديلة.' : 'Choose a replacement image only if you need to change the current receipt.') : ($isAr ? 'اختار صورة الإيصال وسيتم رفعها تلقائياً.' : 'Choose the receipt image and it will upload automatically.') }}
               </div>
+              <input id="guest-receipt-{{ $order->id }}" type="file" name="receipt" accept="image/jpeg,image/png,image/webp" required style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0" onchange="if(this.files.length){document.getElementById('guest-receipt-status-{{ $order->id }}').textContent='{{ $isAr ? 'جارٍ رفع الإيصال…' : 'Uploading receipt…' }}';this.form.requestSubmit();}">
+              <label for="guest-receipt-{{ $order->id }}" class="track-submit" style="display:inline-flex;width:auto;padding:9px 14px;font-size:12px;cursor:pointer;align-items:center;justify-content:center">
+                {{ $guestHasUploadedReceipt ? ($isAr ? 'ارفع إيصال بديل' : 'Upload replacement receipt') : ($isAr ? 'ارفع الإيصال' : 'Upload receipt') }}
+              </label>
+              <div id="guest-receipt-status-{{ $order->id }}" aria-live="polite" style="display:inline-block;margin-inline-start:8px;font-size:12px;color:#6b7280"></div>
+              <noscript><button class="track-submit" style="width:auto;padding:9px 14px;font-size:12px;margin-top:8px">{{ $isAr ? 'ابعت الإيصال' : 'Submit receipt' }}</button></noscript>
             </form>
           </div>
           @endif

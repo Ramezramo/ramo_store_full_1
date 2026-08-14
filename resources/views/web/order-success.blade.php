@@ -87,13 +87,15 @@
         @guest
           <input type="hidden" name="email" value="{{ $successBilling['email'] ?? '' }}">
         @endguest
-      <label for="success-receipt-{{ $order->id }}" style="display:block;font-size:12px;font-weight:700;color:#6b7280;margin-bottom:7px">
-        {{ $order->payment_receipt_path ? ($isAr ? 'ارفع إيصال بديل لو محتاج تغيّر الحالي' : 'Upload a replacement receipt only if you need to change the current one') : ($isAr ? 'اختار صورة للإيصال' : 'Choose a receipt image') }}
+      <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:7px">
+        {{ $order->payment_receipt_path ? ($isAr ? 'لو عايز تغيّر الإيصال الحالي، اختار صورة بديلة.' : 'Choose a replacement image only if you need to change the current receipt.') : ($isAr ? 'اختار صورة الإيصال وسيتم رفعها تلقائياً.' : 'Choose the receipt image and it will upload automatically.') }}
+      </div>
+      <input id="success-receipt-{{ $order->id }}" type="file" name="receipt" accept="image/jpeg,image/png,image/webp" required style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0" onchange="if(this.files.length){document.getElementById('success-receipt-status-{{ $order->id }}').textContent='{{ $isAr ? 'جارٍ رفع الإيصال…' : 'Uploading receipt…' }}';this.form.requestSubmit();}">
+      <label for="success-receipt-{{ $order->id }}" class="btn btn-dark" style="display:inline-flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer">
+        {{ $order->payment_receipt_path ? ($isAr ? 'ارفع إيصال بديل' : 'Upload replacement receipt') : ($isAr ? 'ارفع الإيصال' : 'Upload receipt') }}
       </label>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <input id="success-receipt-{{ $order->id }}" type="file" name="receipt" accept="image/jpeg,image/png,image/webp" required style="font-size:12px">
-        <button class="btn btn-dark" style="font-size:12px">{{ $order->payment_receipt_path ? ($isAr ? 'ارفع بديل' : 'Upload replacement') : ($isAr ? 'ارفع الإيصال' : 'Upload receipt') }}</button>
-        </div>
+      <div id="success-receipt-status-{{ $order->id }}" aria-live="polite" style="display:inline-block;margin-inline-start:8px;font-size:12px;color:#6b7280"></div>
+      <noscript><button class="btn btn-dark" style="font-size:12px;margin-top:8px">{{ $isAr ? 'ابعت الإيصال' : 'Submit receipt' }}</button></noscript>
       </form>
     </div>
     @endif

@@ -98,13 +98,15 @@
     @endif
     <form method="POST" action="{{ route('account.order.payment-receipt', $order->id) }}" enctype="multipart/form-data" style="margin-top:16px">
       @csrf
-      <label for="account-receipt-{{ $order->id }}" style="display:block;font-size:12px;font-weight:700;color:#6b7280;margin-bottom:7px">
-        {{ $accountHasUploadedReceipt ? ($isAr ? 'ارفع إيصال بديل لو محتاج تغيّر الحالي (JPG أو PNG أو WEBP، لحد 10 ميجابايت)' : 'Upload a replacement receipt only if you need to change the current one (JPG, PNG or WEBP, up to 10MB)') : ($isAr ? 'ارفع إيصال الدفع (JPG أو PNG أو WEBP، لحد 10 ميجابايت)' : 'Upload payment receipt (JPG, PNG or WEBP, up to 10MB)') }}
-      </label>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-        <input id="account-receipt-{{ $order->id }}" type="file" name="receipt" accept="image/jpeg,image/png,image/webp" required style="font-size:12px">
-        <button class="btn btn-dark" style="font-size:12px">{{ $accountHasUploadedReceipt ? ($isAr ? 'ارفع بديل' : 'Upload replacement') : ($isAr ? 'ابعت الإيصال' : 'Submit receipt') }}</button>
+      <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:7px">
+        {{ $accountHasUploadedReceipt ? ($isAr ? 'لو عايز تغيّر الإيصال الحالي، اختار صورة بديلة.' : 'Choose a replacement image only if you need to change the current receipt.') : ($isAr ? 'اختار صورة الإيصال وسيتم رفعها تلقائياً.' : 'Choose the receipt image and it will upload automatically.') }}
       </div>
+      <input id="account-receipt-{{ $order->id }}" type="file" name="receipt" accept="image/jpeg,image/png,image/webp" required style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0" onchange="if(this.files.length){document.getElementById('account-receipt-status-{{ $order->id }}').textContent='{{ $isAr ? 'جارٍ رفع الإيصال…' : 'Uploading receipt…' }}';this.form.requestSubmit();}">
+      <label for="account-receipt-{{ $order->id }}" class="btn btn-dark" style="display:inline-flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer">
+        {{ $accountHasUploadedReceipt ? ($isAr ? 'ارفع إيصال بديل' : 'Upload replacement receipt') : ($isAr ? 'ارفع الإيصال' : 'Upload receipt') }}
+      </label>
+      <div id="account-receipt-status-{{ $order->id }}" aria-live="polite" style="display:inline-block;margin-inline-start:8px;font-size:12px;color:#6b7280"></div>
+      <noscript><button class="btn btn-dark" style="font-size:12px;margin-top:8px">{{ $isAr ? 'ابعت الإيصال' : 'Submit receipt' }}</button></noscript>
       @error('receipt')<div class="err" style="margin-top:6px">{{ $message }}</div>@enderror
     </form>
   @endif
