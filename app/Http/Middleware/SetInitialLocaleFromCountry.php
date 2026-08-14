@@ -13,7 +13,7 @@ class SetInitialLocaleFromCountry
      *
      * @var array<int, string>
      */
-    private const ARAB_COUNTRIES = [
+    public const ARAB_COUNTRIES = [
         'AE', 'BH', 'DJ', 'DZ', 'EG', 'IQ', 'JO', 'KM', 'KW', 'LB', 'LY',
         'MA', 'MR', 'OM', 'PS', 'QA', 'SA', 'SD', 'SO', 'SY', 'TN', 'YE',
     ];
@@ -26,13 +26,22 @@ class SetInitialLocaleFromCountry
     public function handle(Request $request, Closure $next): Response
     {
         if (! $request->session()->has('locale')) {
-            $request->session()->put(
-                'locale',
-                in_array($this->countryCode($request), self::ARAB_COUNTRIES, true) ? 'ar' : 'en'
-            );
+            $country = $this->countryCode($request);
+            $request->session()->put('locale', self::localeForCountry($country));
+            $request->session()->put('locale_source', $country === null ? 'fallback_pending' : 'trusted_edge');
+        } elseif (! $request->session()->has('locale_source')) {
+            // Sessions created before locale sources were tracked may have received
+            // the English fallback only because the preview edge omitted country headers.
+            // Permit one client-side country check; future manual choices are explicit.
+            $request->session()->put('locale_source', 'fallback_pending');
         }
 
         return $next($request);
+    }
+
+    public static function localeForCountry(?string $country): string
+    {
+        return in_array(strtoupper((string) $country), self::ARAB_COUNTRIES, true) ? 'ar' : 'en';
     }
 
     private function countryCode(Request $request): ?string

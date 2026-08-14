@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Constants\AppConstants;
+use App\Http\Middleware\SetInitialLocaleFromCountry;
 use App\Services\FlashSaleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,6 +21,7 @@ class WebController extends Controller
 
         abort_unless($isAvailable, 404);
         $request->session()->put('locale', $lang);
+        $request->session()->put('locale_source', 'manual');
 
         $redirect = (string) $request->input('redirect', '');
         $baseUrl = rtrim(url('/'), '/');
@@ -28,6 +30,31 @@ class WebController extends Controller
         }
 
         return redirect()->to($redirect);
+    }
+
+    /**
+     * Store a country-derived locale only while the initial request was unable
+     * to receive a trusted country header from the hosting edge. The browser
+     * sends only a two-letter country code; its IP address never reaches the
+     * application through this endpoint.
+     */
+    public function setLocaleFromClientCountry(Request $request)
+    {
+        $validated = $request->validate([
+            'country' => ['required', 'string', 'regex:/^[A-Za-z]{2}$/'],
+        ]);
+
+        if ($request->session()->get('locale_source') !== 'fallback_pending') {
+            return response()->json(['updated' => false]);
+        }
+
+        $locale = SetInitialLocaleFromCountry::localeForCountry($validated['country']);
+        $updated = $request->session()->get('locale') !== $locale;
+
+        $request->session()->put('locale', $locale);
+        $request->session()->put('locale_source', 'client_ip');
+
+        return response()->json(['updated' => $updated]);
     }
 
     public function home()

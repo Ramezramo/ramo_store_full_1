@@ -1712,6 +1712,50 @@ refreshWishlistState();
   window.addEventListener('resize', check);
   setTimeout(check, 800);
 })();
+
+// Some preview hosts do not forward a trusted country header to Laravel. In
+// that case only, look up the visitor country in the browser and return just
+// the ISO country code to this same-origin endpoint. A manual locale selection
+// never enters this flow and is never overwritten.
+(function resolveFirstVisitLocale() {
+  if (@json(session('locale_source')) !== 'fallback_pending') return;
+
+  const attemptKey = 'ramo_locale_country_lookup_attempted';
+  try {
+    if (window.sessionStorage.getItem(attemptKey)) return;
+    window.sessionStorage.setItem(attemptKey, '1');
+  } catch (error) {
+    // Storage can be unavailable in private browsing; continue safely once.
+  }
+
+  fetch('https://api.country.is/', {
+    headers: {'Accept': 'application/json'},
+    cache: 'no-store'
+  })
+    .then((response) => response.ok ? response.json() : null)
+    .then((payload) => {
+      const country = typeof payload?.country === 'string'
+        ? payload.country.trim().toUpperCase()
+        : '';
+      if (!/^[A-Z]{2}$/.test(country)) return null;
+
+      return fetch(@json(route('language.auto-country')), {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': CSRF_TOKEN
+        },
+        body: JSON.stringify({country})
+      });
+    })
+    .then((response) => response && response.ok ? response.json() : null)
+    .then((result) => {
+      if (result?.updated === true) window.location.replace(window.location.href);
+    })
+    .catch(() => {});
+})();
 </script>
 @stack('scripts')
 <script>
