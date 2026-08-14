@@ -2,26 +2,45 @@
 
 ## Scope and source
 
-This record reconciles the user-supplied `SQL_INJECTION_AUDIT.md` against the current Laravel application. The audit examined raw SQL helper calls under `app/` and `scripts/`.
+This record reconciles the revised, user-supplied `SQL_INJECTION_AUDIT.md` against the Laravel application at the time of remediation. The revised review identified **no exploitable SQL-injection vulnerability**. It reported four defense-in-depth and code-hygiene actions affecting raw-SQL scanning, a legacy native-PHP endpoint, duplicated native API code, and continuous integration.
 
-## Result
+The assessment and remediation cover Laravel code in `app/`, project scripts in `scripts/`, and native-PHP compatibility code in `routes/ramo-native-php/`. No customer data, credentials, session material, or one-time passcodes are included in this record.
 
-| Audit item | Current status | Evidence |
+## Reconciliation and completed actions
+
+| Revised audit item | Status | Completed remediation and evidence |
 |---|---|---|
-| Finding 1: interpolated PostgreSQL interval in storefront timeline activity | **Remediated** | `WebController` now uses `whereRaw('date_created > NOW() - (?::interval)', [$interval])`. The existing three-value allowlist remains in place. |
-| Finding 2: review product identifier validation must precede query construction | **Verified and regression-tested** | `ReviewProductIdValidationTest` submits a malformed non-integer identifier to both the authenticated web and API review endpoints. Both requests fail validation and create no review. |
-| Finding 3: prevent unsafe raw-SQL interpolation from returning | **Implemented** | `scripts/check_raw_sql_interpolation.php` scans raw-SQL helper calls for PHP-variable interpolation. `.github/workflows/raw-sql-safety.yml` executes it for pull requests and pushes to `main`. |
+| Extend the raw-SQL guardrail to route code and native database sinks | **Implemented** | `scripts/check_raw_sql_interpolation.php` now scans `app/`, `routes/`, and `scripts/`. It detects PHP-variable interpolation passed directly to Laravel raw-SQL helpers, PDO `query`/`exec`, `pg_query`, and `mysqli_query`. |
+| Confirm the guardrail runs in continuous integration | **Verified** | `.github/workflows/raw-sql-safety.yml` already runs the scanner on pushes and pull requests targeting `main`. No workflow change was required for this revised audit item. |
+| Remove `routes/ramo-native-php/products/exec.php` | **Removed** | The endpoint was dead code: it assigned an empty SQL string and exposed an unauthenticated `$con->query($sql)` execution path. It has been deleted rather than retained behind a route gate. |
+| Consolidate duplicated native API implementations | **Implemented** | The 13 byte-identical legacy files below are now small backward-compatible wrappers that require their canonical counterpart in `routes/ramo-native-php/v1/`. This preserves the legacy URLs while ensuring that future security updates have one implementation to maintain. |
+
+The consolidated legacy paths are `brands.php`, `categories.php`, `constants/product_arrays.php`, `countries.php`, `currency-rates.php`, `new-api-rules.php`, `prodduct-current-price.php`, `products-get.php`, `serveraouth/server-confirmation.php`, `serveraouth/token-operations.php`, `serveraouth/token-validation.php`, `serveraouth/update-usage-times.php`, and `tags.php` under `routes/ramo-native-php/products/get-products/v4/products/`.
+
+## Earlier audit findings retained as remediated
+
+| Earlier audit item | Status | Evidence |
+|---|---|---|
+| Interpolated PostgreSQL interval in storefront timeline activity | **Remediated** | `WebController` uses `whereRaw('date_created > NOW() - (?::interval)', [$interval])`; the three-value interval allowlist remains in place. |
+| Review product identifier validation must occur before query construction | **Verified and regression-tested** | `ReviewProductIdValidationTest` submits malformed non-integer identifiers to authenticated web and API review endpoints. Both fail validation and create no review. |
+| Prevent unsafe raw-SQL interpolation from returning | **Implemented and expanded** | The scanner is now broader than the original control and is executed by the GitHub Actions workflow described above. |
 
 ## Verification performed
 
-The repository guardrail passed locally. The audit's specified raw-SQL grep sweep was also rerun after the change and found no direct PHP-variable interpolation in the reviewed raw-SQL helper calls. The complete Laravel suite passed with **68 tests and 282 assertions**.
+| Check | Result |
+|---|---|
+| PHP syntax check of the expanded scanner | Passed. |
+| Controlled scanner regression exercise | Passed. A temporary, uncommitted route fixture with direct interpolation in Laravel, PDO `query`, PDO `exec`, `pg_query`, and `mysqli_query` calls was rejected at all five expected source lines. The fixture was removed before the clean scan. |
+| Clean repository raw-SQL scan | Passed with no direct PHP-variable interpolation found in the scanned code. |
+| Syntax check of all legacy wrapper files | Passed. |
+| Laravel automated test suite | Passed: **68 tests, 282 assertions**. |
 
-## Residual risk
+## Residual risk and operating guidance
 
-The original interval source was not request-controlled: it is derived from the timeline section's fixed `24h`, `7d`, and `month` mapping. Binding is nevertheless now mandatory behavior, so a future extension of that value cannot silently become an injection risk.
+The scanner is a preventive static control, not a complete substitute for security review. It rejects direct PHP-variable interpolation where a SQL literal is passed to supported raw-query sinks. Developers must use prepared statements and bound parameters for values. Security review is still required when code composes SQL identifiers, table names, sort columns, or other query structure that database drivers cannot parameterize.
 
-The repository scanner is intentionally conservative. It rejects direct variable interpolation inside a SQL-string argument; developers must use placeholders and binding arrays for query values. Security review remains required for identifier construction, dynamic schema names, and new raw SQL patterns that cannot be parameterized.
+The native-PHP layer consistently uses PDO prepared statements with emulated prepares disabled in the reviewed routes. Consolidating the duplicate files reduces configuration drift and lowers the chance that a future security change is applied to only one copy.
 
 ## Release impact
 
-This remediation closes the audit's one confirmed code-hardening finding and adds durable coverage. It does not alter the existing external production launch gates documented in `release-readiness-report.md`.
+This revised audit does **not** identify an exploitable SQL-injection issue and its hardening actions are complete. The SQL-injection audit is therefore no longer a blocker. The overall launch decision remains **NO-GO** until the separate production-readiness gates documented in `release-readiness-report.md` are completed; this change does not publish the application or accept real orders.
