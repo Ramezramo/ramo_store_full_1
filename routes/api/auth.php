@@ -15,7 +15,6 @@ Route::prefix('user')->group(function () {
     Route::get('reset-password-page', [AuthController::class, 'showResetPasswordFormHTML'])
         ->name('password.reset.form');// ✅️
     Route::post('reset-password', [AuthController::class, 'recievingNewPassMod'])->middleware('throttle:3,1')->name('password.reset.getter');// ✅️
-    Route::post('generateTokenTesting', [AuthController::class, 'generateTokenTesting'])->middleware('throttle:3,1');// ✅️
 });
 
 // Vendor (Shop) Registration & Login

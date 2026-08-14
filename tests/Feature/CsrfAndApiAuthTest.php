@@ -80,6 +80,18 @@ class CsrfAndApiAuthTest extends TestCase
         }
     }
 
+    public function test_password_reset_token_testing_endpoint_is_removed(): void
+    {
+        $this->postJson('/api/user/generateTokenTesting', [
+            'email' => 'customer@example.com',
+        ])->assertNotFound();
+    }
+
+    public function test_dead_api_v2_route_registration_is_removed(): void
+    {
+        $this->assertFalse(file_exists(base_path('routes/api2.php')));
+    }
+
     /** @param array<int, string> $roles */
     private function createUser(array $roles): User
     {
