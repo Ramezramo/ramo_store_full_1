@@ -83,7 +83,9 @@ Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']
 use App\Http\Controllers\Web\GuestOrderController;
 Route::get('/my-order', [GuestOrderController::class, 'index'])->name('guest.order');
 Route::post('/my-order', [GuestOrderController::class, 'lookup'])->middleware('throttle:order-lookup')->name('guest.order.lookup');
-Route::post('/my-order/{id}/payment-receipt', [PaymentReceiptController::class, 'uploadForGuest'])->name('guest.order.payment-receipt');
+Route::post('/my-order/{id}/payment-receipt', [PaymentReceiptController::class, 'uploadForGuest'])
+    ->middleware('throttle:order-lookup')
+    ->name('guest.order.payment-receipt');
 
 use App\Http\Controllers\Web\EmailVerificationController;
 Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->name('email.verify.notice');

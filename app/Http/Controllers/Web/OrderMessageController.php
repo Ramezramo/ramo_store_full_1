@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -26,12 +27,10 @@ class OrderMessageController extends Controller
             'sub_order_id' => 'nullable|integer',
         ]);
 
-        $order = DB::table('orders')
-            ->where('id', $orderId)
-            ->where('customer_id', Auth::id())
-            ->first();
-
-        if (! $order) abort(404);
+        $order = Order::find($orderId);
+        abort_unless($order, 404);
+        $this->authorize('view', $order);
+        $orderId = (int) $order->id;
 
         $subOrderId = $request->input('sub_order_id');
         $vendorId   = null;

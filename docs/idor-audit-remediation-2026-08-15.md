@@ -12,6 +12,8 @@ Customer note retrieval now filters to `customer_note = true`, preventing intern
 
 The cart update endpoint already performed an ownership check when loading the item. The final mutation now repeats `where('user_id', $userId)` as defense in depth, matching the ownership pattern used by cart removal and preventing future refactors from widening the update scope.
 
+The guest payment-receipt upload route now uses the existing `order-lookup` named limiter, matching the guest order lookup flow and limiting repeated order-ID/email attempts before the upload controller is reached. Customer order detail and order-message writes now use the registered `OrderPolicy` for the same ownership decision instead of duplicating the ownership predicate in each controller.
+
 ## Code changes
 
 | Area | Remediation |
@@ -20,11 +22,13 @@ The cart update endpoint already performed an ownership check when loading the i
 | `app/Providers/AuthServiceProvider.php` | Registered the `Order` to `OrderPolicy` mapping. |
 | `UserNoteController` | Authorizes the order before creating or reading notes; customer reads return customer-visible notes only. |
 | `CartApiController` | Repeated the authenticated `user_id` predicate on the final `UPDATE`. |
-| `IdorAuthorizationTest` | Added cross-customer note read/write and cart ownership regressions. |
+| `PaymentReceiptController` route | Added `throttle:order-lookup` to the guest receipt upload route. |
+| `AccountController` and `OrderMessageController` | Reused `OrderPolicy::view()` for customer order detail and message ownership. |
+| `IdorAuthorizationTest` | Added cross-customer note read/write, cart ownership, and guest receipt-rate-limit regressions. |
 
 ## Verification
 
-The focused IDOR and API authorization tests passed: **12 tests and 20 assertions**. The full application suite and raw-SQL safety guardrail were run before publication; no secrets or customer data were included in the changes or evidence.
+The focused IDOR tests passed: **4 tests and 12 assertions** after the follow-up hardening. During full validation, the customer order-detail path also required compatibility with Eloquent-cast arrays as well as JSON strings; `AccountController` now handles both representations without changing the response contract. The full application suite passed **109 tests and 488 assertions**, and the raw-SQL safety guardrail passed. No secrets or customer data are included in the changes or evidence.
 
 The public order tracking flows remain intentionally separate: they use an order identifier plus a matching phone or billing email as the guest ownership proof and are rate-limited by their existing route middleware.
 

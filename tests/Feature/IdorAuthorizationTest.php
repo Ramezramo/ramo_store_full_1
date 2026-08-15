@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class IdorAuthorizationTest extends TestCase
@@ -72,6 +73,14 @@ class IdorAuthorizationTest extends TestCase
             $otherCustomer->delete();
             $owner->delete();
         }
+    }
+
+    public function test_guest_payment_receipt_upload_uses_the_order_lookup_rate_limiter(): void
+    {
+        $route = Route::getRoutes()->getByName('guest.order.payment-receipt');
+
+        $this->assertNotNull($route);
+        $this->assertContains('throttle:order-lookup', $route->middleware());
     }
 
     public function test_cart_update_keeps_the_owner_filter_on_the_mutating_query(): void

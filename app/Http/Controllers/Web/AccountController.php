@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -116,16 +117,18 @@ class AccountController extends Controller
 
     public function orderDetail($id)
     {
-        $order = DB::table('orders')
-            ->where('id', $id)
-            ->where('customer_id', Auth::id())
-            ->first();
-
-        if (! $order) abort(404);
+        $order = Order::find($id);
+        abort_unless($order, 404);
+        $this->authorize('view', $order);
+        $id = (int) $order->id;
 
         $locale    = session('locale', 'en');
-        $lineItems = json_decode($order->line_items ?? '[]', true);
-        $billing   = json_decode($order->billing   ?? '{}', true);
+        $lineItems = is_string($order->line_items)
+            ? (json_decode($order->line_items, true) ?: [])
+            : ((array) ($order->line_items ?? []));
+        $billing = is_string($order->billing)
+            ? (json_decode($order->billing, true) ?: [])
+            : ((array) ($order->billing ?? []));
 
         // Load sub-orders with vendor info
         $subOrders = DB::table('order_sub_orders as s')
