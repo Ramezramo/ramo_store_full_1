@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\RefundRequest;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -114,7 +115,13 @@ class RefundRequestController extends Controller
     public function show(int $id)
     {
         $refund = RefundRequest::findOrFail($id);
-        $this->authorize('view', $refund);
+
+        try {
+            $this->authorize('view', $refund);
+        } catch (AuthorizationException) {
+            // Do not disclose whether a refund ID belongs to another customer.
+            abort(404);
+        }
 
         // Load presentation-only order fields only after ownership is authorized.
         $details = DB::table('refund_requests as r')

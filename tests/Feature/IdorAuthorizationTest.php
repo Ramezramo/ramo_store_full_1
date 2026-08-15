@@ -103,7 +103,7 @@ class IdorAuthorizationTest extends TestCase
         try {
             $this->actingAs($otherCustomer)
                 ->get('/account/refunds/' . $refundId)
-                ->assertForbidden();
+                ->assertNotFound();
 
             $this->actingAs($owner)
                 ->get('/account/refunds/' . $refundId)
