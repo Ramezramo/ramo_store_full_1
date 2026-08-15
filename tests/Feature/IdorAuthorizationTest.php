@@ -138,7 +138,7 @@ class IdorAuthorizationTest extends TestCase
 
             $this->actingAs($otherCustomer)
                 ->patch('/account/refunds/' . $refundId . '/cancel')
-                ->assertForbidden();
+                ->assertNotFound();
 
             $this->assertDatabaseHas('refund_requests', [
                 'id' => $refundId,

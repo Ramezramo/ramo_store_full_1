@@ -137,7 +137,13 @@ class RefundRequestController extends Controller
     public function cancel(int $id)
     {
         $refund = RefundRequest::findOrFail($id);
-        $this->authorize('view', $refund);
+
+        try {
+            $this->authorize('view', $refund);
+        } catch (AuthorizationException) {
+            // Do not disclose whether a refund ID belongs to another customer.
+            abort(404);
+        }
 
         // Preserve the existing user-facing response for non-pending requests.
         if ($refund->status !== 'pending') {
