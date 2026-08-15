@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Helpers\PaymentConfig;
+use App\Models\SubOrder;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use App\Services\OrderStatusService;
 
 class PaymentReviewController extends Controller
@@ -21,10 +24,16 @@ class PaymentReviewController extends Controller
     public function reviewAsVendor(Request $request, int $id)
     {
         $vendor = auth('vendor_web')->user();
-        $subOrder = DB::table('order_sub_orders')
-            ->where('id', $id)
-            ->where('vendor_id', $vendor->id)
-            ->first();
+        $subOrderResource = SubOrder::find($id);
+        abort_if(!$subOrderResource, 404);
+
+        try {
+            Gate::forUser($vendor)->authorize('reviewPayment', $subOrderResource);
+        } catch (AuthorizationException) {
+            abort(404);
+        }
+
+        $subOrder = DB::table('order_sub_orders')->where('id', $id)->first();
         abort_if(!$subOrder, 404);
 
         $order = DB::table('orders')->where('id', $subOrder->parent_order_id)->first();

@@ -7,11 +7,15 @@ use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvid
 use App\Models\CartItem;
 use App\Models\Coupon;
 use App\Models\Order;
+use App\Models\ProductReview;
 use App\Models\RefundRequest;
+use App\Models\SubOrder;
 use App\Policies\CartItemPolicy;
 use App\Policies\CouponPolicy;
 use App\Policies\OrderPolicy;
+use App\Policies\ProductReviewPolicy;
 use App\Policies\RefundRequestPolicy;
+use App\Policies\SubOrderPolicy;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -24,7 +28,9 @@ class AuthServiceProvider extends ServiceProvider
         CartItem::class => CartItemPolicy::class,
         Coupon::class => CouponPolicy::class,
         Order::class => OrderPolicy::class,
+        ProductReview::class => ProductReviewPolicy::class,
         RefundRequest::class => RefundRequestPolicy::class,
+        SubOrder::class => SubOrderPolicy::class,
     ];
 
     /**

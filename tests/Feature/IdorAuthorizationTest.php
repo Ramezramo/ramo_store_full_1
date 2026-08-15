@@ -2,8 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\ProductReview;
+use App\Models\RefundRequest;
+use App\Models\SubOrder;
 use App\Models\User;
 use App\Models\VendorUser;
+use App\Policies\ProductReviewPolicy;
+use App\Policies\RefundRequestPolicy;
+use App\Policies\SubOrderPolicy;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
@@ -348,6 +354,107 @@ class IdorAuthorizationTest extends TestCase
             ]);
         } finally {
             DB::table('cart_items')->where('id', $cartItemId)->delete();
+            $otherCustomer->delete();
+            $owner->delete();
+        }
+    }
+
+    public function test_suborder_policy_is_scoped_to_the_authenticated_vendor(): void
+    {
+        $owner = $this->createVendor('policy-suborder-owner');
+        $otherVendor = $this->createVendor('policy-suborder-other');
+        $customer = $this->createCustomer('policy-suborder-customer');
+        $orderId = $this->createOrder($customer->id);
+        $subOrderId = DB::table('order_sub_orders')->insertGetId([
+            'parent_order_id' => $orderId,
+            'vendor_id' => $owner->id,
+            'customer_id' => $customer->id,
+            'status' => 'pending',
+            'line_items' => json_encode([]),
+            'subtotal' => 0,
+            'discount_total' => 0,
+            'total' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        try {
+            $subOrder = SubOrder::findOrFail($subOrderId);
+            $policy = app(SubOrderPolicy::class);
+
+            $this->assertTrue($policy->view($owner, $subOrder));
+            $this->assertTrue($policy->update($owner, $subOrder));
+            $this->assertTrue($policy->reviewPayment($owner, $subOrder));
+            $this->assertFalse($policy->view($otherVendor, $subOrder));
+            $this->assertFalse($policy->update($otherVendor, $subOrder));
+            $this->assertFalse($policy->reviewPayment($otherVendor, $subOrder));
+        } finally {
+            DB::table('order_sub_orders')->where('id', $subOrderId)->delete();
+            DB::table('orders')->where('id', $orderId)->delete();
+            $customer->delete();
+            $otherVendor->delete();
+            $owner->delete();
+        }
+    }
+
+    public function test_vendor_refund_policy_is_scoped_to_the_assigned_vendor(): void
+    {
+        $owner = $this->createVendor('policy-refund-owner');
+        $otherVendor = $this->createVendor('policy-refund-other');
+        $customer = $this->createCustomer('policy-refund-customer');
+        $orderId = $this->createOrder($customer->id);
+        $refundId = DB::table('refund_requests')->insertGetId([
+            'order_id' => $orderId,
+            'customer_id' => $customer->id,
+            'vendor_id' => $owner->id,
+            'type' => 'refund',
+            'reason' => 'damaged',
+            'description' => 'Policy fixture',
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        try {
+            $refund = RefundRequest::findOrFail($refundId);
+            $policy = app(RefundRequestPolicy::class);
+
+            $this->assertTrue($policy->manageAsVendor($owner, $refund));
+            $this->assertFalse($policy->manageAsVendor($otherVendor, $refund));
+        } finally {
+            DB::table('refund_requests')->where('id', $refundId)->delete();
+            DB::table('orders')->where('id', $orderId)->delete();
+            $customer->delete();
+            $otherVendor->delete();
+            $owner->delete();
+        }
+    }
+
+    public function test_product_review_policy_is_scoped_to_the_reviewer_or_admin(): void
+    {
+        $owner = $this->createCustomer('policy-review-owner');
+        $otherCustomer = $this->createCustomer('policy-review-other');
+        $reviewId = DB::table('product_reviews')->insertGetId([
+            'product_id' => 999999,
+            'user_id' => $owner->id,
+            'rating' => 5,
+            'title' => 'Policy fixture',
+            'body' => 'Review policy fixture body',
+            'approved' => true,
+            'is_verified_purchase' => false,
+            'helpful_count' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        try {
+            $review = ProductReview::findOrFail($reviewId);
+            $policy = app(ProductReviewPolicy::class);
+
+            $this->assertTrue($policy->delete($owner, $review));
+            $this->assertFalse($policy->delete($otherCustomer, $review));
+        } finally {
+            DB::table('product_reviews')->where('id', $reviewId)->delete();
             $otherCustomer->delete();
             $owner->delete();
         }

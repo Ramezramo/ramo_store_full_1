@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\RefundRequest;
 use App\Models\User;
+use App\Models\VendorUser;
 
 class RefundRequestPolicy
 {
@@ -21,5 +22,14 @@ class RefundRequestPolicy
     public function cancel(User $user, RefundRequest $refund): bool
     {
         return $this->view($user, $refund) && $refund->status === 'pending';
+    }
+
+    /**
+     * Allow a vendor to view or manage only refunds assigned to that vendor.
+     */
+    public function manageAsVendor(VendorUser $vendor, RefundRequest $refund): bool
+    {
+        return $refund->vendor_id !== null
+            && (int) $refund->vendor_id === (int) $vendor->getKey();
     }
 }

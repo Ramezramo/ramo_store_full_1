@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ProductReview;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 class ReviewController extends Controller
 {
@@ -138,20 +141,16 @@ class ReviewController extends Controller
 
     public function destroy(Request $r, $id)
     {
-        $review = DB::table('product_reviews')->where('id', $id)->first();
+        $review = ProductReview::find($id);
         if (!$review) return response()->json(['success' => false, 'message' => $this->localized('Not found.', 'مش لاقيين التقييم ده.')], 404);
 
-        // Must be the reviewer or admin
-        $user    = Auth::user();
-        $roles   = $user ? (is_array($user->role) ? $user->role : json_decode($user->role, true) ?? []) : [];
-        $isAdmin = in_array('admin', $roles);
-        $isOwner = Auth::check() && Auth::id() === (int)$review->user_id;
-
-        if (!$isOwner && !$isAdmin) {
+        try {
+            Gate::forUser(Auth::user())->authorize('delete', $review);
+        } catch (AuthorizationException) {
             return response()->json(['success' => false, 'message' => $this->localized('Unauthorized.', 'مش مسموحلك تعمل الإجراء ده.')], 403);
         }
 
-        DB::table('product_reviews')->where('id', $id)->delete();
+        $review->delete();
         return response()->json(['success' => true, 'message' => $this->localized('Review deleted.', 'التقييم اتمسح.')]);
     }
 

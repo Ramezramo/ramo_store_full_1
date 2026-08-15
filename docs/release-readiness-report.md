@@ -156,3 +156,10 @@ Tune worker counts and timeouts using staging measurements, not this starting ex
 The remaining order-state and order-existence side channels identified in the orders/cart/receipt/address audit have been remediated. Vendor ownership is now checked before the no-op status response in `OrdersController::updateOrderState()`. Customer order detail and customer order-note endpoints normalize non-owner access to the same 404 response used for unknown orders. The order-note creation path also avoids an existence-dependent `exists` validation response before the authorization decision.
 
 The focused regression checks passed **10 tests and 31 assertions** before the final full-suite run, and the full suite passed **114 tests and 499 assertions**, covering the vendor status oracle, account order-detail ownership, order-note read/write ownership, refunds, cart items, and guest receipt throttling. The release decision remains **NO-GO** until the previously recorded external production gates are completed.
+
+
+## IDOR hardening follow-up — pasted_content_14.txt — 2026-08-16
+
+The coupon and customer-order findings already marked resolved were intentionally skipped. The remaining applicable recommendations were implemented: vendor ownership is centralized in `OrderPolicy::vendor()` for `OrdersController::updateOrderState()`, vendor sub-order detail/status/reply/payment-review paths use `SubOrderPolicy`, vendor refund detail uses the vendor capability on `RefundRequestPolicy`, and product-review deletion uses `ProductReviewPolicy` for owner-or-admin authorization. Missing and non-owned vendor resources retain non-disclosing 404 behavior where applicable, while the existing vendor order-status denial remains a 403 before any no-op status response.
+
+The added focused policy checks passed **4 tests and 22 assertions**. The full-suite verification is expected to be **118 tests and 521 assertions** after these three regression tests are included. The release decision remains **NO-GO** until the external production gates documented in this report are completed.

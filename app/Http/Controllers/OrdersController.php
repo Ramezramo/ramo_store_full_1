@@ -11,6 +11,7 @@ use App\Models\UserNote;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -393,21 +394,8 @@ class OrdersController extends Controller
             // === Secure Vendor Authorization ===
             // This must run before any state-dependent branch so a vendor cannot
             // probe the current status of an order they do not own.
-            $vendorIds = [];
-            $parentVendorsIds = $order->parent_vendors_ids;
-
-            if (is_string($parentVendorsIds)) {
-                $decoded = json_decode($parentVendorsIds, true);
-                $vendorIds = is_array($decoded) ? array_map('intval', $decoded) : [];
-            } elseif (is_array($parentVendorsIds)) {
-                $vendorIds = array_map('intval', $parentVendorsIds);
-            }
-
-            if (! in_array((int) $user->id, $vendorIds, true)) {
-                // Uncomment next line if want admins to bypass vendor check
-                // if (!in_array($user->role, ['admin', 'shop_manager'])) {
+            if (! Gate::forUser($user)->check('vendor', $order)) {
                 return $this->failureResponse('Forbidden: You cannot update this order', 403);
-                // }
             }
 
             $newStatus = $validated['status'];

@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\SubOrder;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use App\Services\OrderStatusService;
 
 class VendorOrderController extends Controller
@@ -74,9 +77,17 @@ class VendorOrderController extends Controller
     {
         $vendor = $this->vendor();
 
+        $subOrderResource = SubOrder::find($id);
+        if (! $subOrderResource) abort(404);
+
+        try {
+            Gate::forUser($vendor)->authorize('view', $subOrderResource);
+        } catch (AuthorizationException) {
+            abort(404);
+        }
+
         $subOrder = DB::table('order_sub_orders as s')
             ->where('s.id', $id)
-            ->where('s.vendor_id', $vendor->id)
             ->join('orders as o', 'o.id', '=', 's.parent_order_id')
             ->select([
                 's.*',
@@ -161,11 +172,16 @@ class VendorOrderController extends Controller
     {
         $vendor = $this->vendor();
 
-        $subOrder = DB::table('order_sub_orders')
-            ->where('id', $id)
-            ->where('vendor_id', $vendor->id)
-            ->first();
+        $subOrderResource = SubOrder::find($id);
+        if (! $subOrderResource) abort(404);
 
+        try {
+            Gate::forUser($vendor)->authorize('update', $subOrderResource);
+        } catch (AuthorizationException) {
+            abort(404);
+        }
+
+        $subOrder = DB::table('order_sub_orders')->where('id', $id)->first();
         if (! $subOrder) abort(404);
 
         // Keep seller shipment states aligned with the admin order controls.
@@ -215,11 +231,16 @@ class VendorOrderController extends Controller
         $vendor = $this->vendor();
         $request->validate(['message' => 'required|string|max:2000']);
 
-        $subOrder = DB::table('order_sub_orders')
-            ->where('id', $id)
-            ->where('vendor_id', $vendor->id)
-            ->first();
+        $subOrderResource = SubOrder::find($id);
+        if (! $subOrderResource) abort(404);
 
+        try {
+            Gate::forUser($vendor)->authorize('update', $subOrderResource);
+        } catch (AuthorizationException) {
+            abort(404);
+        }
+
+        $subOrder = DB::table('order_sub_orders')->where('id', $id)->first();
         if (! $subOrder) abort(404);
 
         $parentOrder = DB::table('orders')->where('id', $subOrder->parent_order_id)->first();

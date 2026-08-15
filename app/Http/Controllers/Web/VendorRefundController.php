@@ -3,8 +3,11 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\RefundRequest;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 class VendorRefundController extends Controller
 {
@@ -39,9 +42,18 @@ class VendorRefundController extends Controller
 
     public function show(int $id)
     {
+        $vendor = auth('vendor_web')->user();
+        $refundResource = RefundRequest::find($id);
+        if (! $refundResource) abort(404);
+
+        try {
+            Gate::forUser($vendor)->authorize('manageAsVendor', $refundResource);
+        } catch (AuthorizationException) {
+            abort(404);
+        }
+
         $refund = DB::table('refund_requests as r')
             ->where('r.id', $id)
-            ->where('r.vendor_id', $this->vendorId())
             ->leftJoin('orders as o', 'o.id', '=', 'r.order_id')
             ->leftJoin('users as u', 'u.id', '=', 'r.customer_id')
             ->first([

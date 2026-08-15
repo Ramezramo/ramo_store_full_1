@@ -84,3 +84,15 @@ The coupon audit identified a confirmed vendor IDOR in the vendor CRUD API. Befo
 The focused coupon regression passed **1 test and 12 assertions**. The full application suite passed **115 tests and 511 assertions**, and the raw-SQL guardrail passed. No secrets, tokens, OTP values, or customer data are included.
 
 This closes the confirmed coupon IDOR in code. The broader production decision remains **NO-GO** until the previously documented infrastructure, trusted-edge, managed-media, real SMS/payment, merchant-content, and load-testing gates are completed.
+
+
+## Unfixed recommendations applied — pasted_content_14.txt — 2026-08-16
+
+Previously remediated findings were intentionally skipped. The remaining applicable hardening recommendations were implemented:
+
+- Added `OrderPolicy::vendor()` and routed `OrdersController::updateOrderState()` through the policy before the no-op status branch, preserving the existing 403 response for a vendor that does not own the order.
+- Added `SubOrder` and `SubOrderPolicy`, then applied policy authorization before vendor sub-order detail, status update, reply, and payment-review operations. Non-owned or missing sub-orders continue to return the same 404 response.
+- Extended `RefundRequestPolicy` with vendor ownership and applied it to the vendor refund detail endpoint without changing the existing non-disclosing 404 behavior.
+- Added `ProductReview` and `ProductReviewPolicy`; review deletion is now limited to the review owner or admin while preserving the existing JSON response contract.
+
+The focused policy and vendor-isolation checks passed **4 tests and 22 assertions** after the final OrderPolicy integration. The full suite remains the required final gate before commit. No already-fixed coupon, customer-order, cart, receipt, or note findings were reworked.
