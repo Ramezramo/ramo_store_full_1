@@ -152,7 +152,10 @@ class CartApiController extends Controller
             return response()->json(['success' => false, 'message' => $msg], 422);
         }
 
-        DB::table('cart_items')->where('id', $id)->update(['qty' => $r->qty, 'updated_at' => now()]);
+        DB::table('cart_items')
+            ->where('id', $id)
+            ->where('user_id', $userId)
+            ->update(['qty' => $r->qty, 'updated_at' => now()]);
         return response()->json(['success' => true, 'message' => 'Cart updated']);
     }
 

@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\ResponseHandlerRam;
+use App\Models\Order;
 use App\Models\UserNote;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\QueryException;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Log;
 
 class UserNoteController extends Controller
@@ -54,6 +56,9 @@ class UserNoteController extends Controller
                 'customer_note'  => 'sometimes|boolean',
             ]);
 
+            $order = Order::findOrFail($validated['order_id']);
+            $this->authorize('view', $order);
+
             // FORCE PLAIN TEXT: Strip ALL HTML tags to prevent XSS
             $cleanNote = strip_tags($validated['note']);
 
@@ -62,9 +67,10 @@ class UserNoteController extends Controller
 
             $note = UserNote::create([
                 'user_id'       => $userId,
-                'order_id'      => $validated['order_id'],
+                'order_id'      => $order->id,
                 'note'          => $cleanNote,
-                'customer_note' => $validated['customer_note'] ?? false,
+                // Notes submitted through this customer endpoint are customer-visible.
+                'customer_note' => true,
             ]);
 
             // Return the safely cleaned note
@@ -72,6 +78,8 @@ class UserNoteController extends Controller
 
             return $this->successResponse($note, 'Note created successfully', 201);
 
+        } catch (AuthorizationException $e) {
+            return $this->failureResponse('You are not authorized to access this order.', 403);
         } catch (ValidationException $e) {
             return $this->failureResponse($e->errors(), 422, true);
         } catch (QueryException $e) {
@@ -105,7 +113,11 @@ class UserNoteController extends Controller
                 return $this->failureResponse('Unauthorized', 401);
             }
 
-            $notes = UserNote::where('order_id', $orderId)
+            $order = Order::findOrFail((int) $orderId);
+            $this->authorize('view', $order);
+
+            $notes = UserNote::where('order_id', $order->id)
+                ->where('customer_note', true)
                 ->orderBy('id', 'desc')
                 ->get();
 
@@ -119,6 +131,8 @@ class UserNoteController extends Controller
 
             return $this->successResponse($notes, 'Notes retrieved successfully');
 
+        } catch (AuthorizationException $e) {
+            return $this->failureResponse('You are not authorized to access this order.', 403);
         } catch (QueryException $e) {
             Log::error('Failed to retrieve notes: ' . $e->getMessage(), [
                 'order_id' => $orderId ?? null
