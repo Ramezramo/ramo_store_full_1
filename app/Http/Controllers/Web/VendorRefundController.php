@@ -10,7 +10,7 @@ class VendorRefundController extends Controller
 {
     private function vendorId(): int
     {
-        return (int) session('vendor_web_id');
+        return (int) auth('vendor_web')->id();
     }
 
     public function index(Request $request)

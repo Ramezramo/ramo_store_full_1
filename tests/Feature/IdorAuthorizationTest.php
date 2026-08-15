@@ -83,6 +83,136 @@ class IdorAuthorizationTest extends TestCase
         $this->assertContains('throttle:order-lookup', $route->middleware());
     }
 
+    public function test_customer_cannot_read_another_customers_refund_request(): void
+    {
+        $owner = $this->createCustomer('idor-refund-owner');
+        $otherCustomer = $this->createCustomer('idor-refund-other');
+        $orderId = $this->createOrder($owner->id);
+        $refundId = DB::table('refund_requests')->insertGetId([
+            'order_id' => $orderId,
+            'customer_id' => $owner->id,
+            'vendor_id' => null,
+            'type' => 'refund',
+            'reason' => 'damaged',
+            'description' => 'Test refund request',
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        try {
+            $this->actingAs($otherCustomer)
+                ->get('/account/refunds/' . $refundId)
+                ->assertForbidden();
+
+            $this->actingAs($owner)
+                ->get('/account/refunds/' . $refundId)
+                ->assertOk();
+        } finally {
+            DB::table('refund_requests')->where('id', $refundId)->delete();
+            DB::table('orders')->where('id', $orderId)->delete();
+            $otherCustomer->delete();
+            $owner->delete();
+        }
+    }
+
+    public function test_customer_cannot_cancel_another_customers_refund_request(): void
+    {
+        $owner = $this->createCustomer('idor-cancel-owner');
+        $otherCustomer = $this->createCustomer('idor-cancel-other');
+        $orderId = $this->createOrder($owner->id);
+        $refundId = DB::table('refund_requests')->insertGetId([
+            'order_id' => $orderId,
+            'customer_id' => $owner->id,
+            'vendor_id' => null,
+            'type' => 'refund',
+            'reason' => 'changed_mind',
+            'description' => null,
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        try {
+            $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
+
+            $this->actingAs($otherCustomer)
+                ->patch('/account/refunds/' . $refundId . '/cancel')
+                ->assertForbidden();
+
+            $this->assertDatabaseHas('refund_requests', [
+                'id' => $refundId,
+                'customer_id' => $owner->id,
+                'status' => 'pending',
+            ]);
+        } finally {
+            DB::table('refund_requests')->where('id', $refundId)->delete();
+            DB::table('orders')->where('id', $orderId)->delete();
+            $otherCustomer->delete();
+            $owner->delete();
+        }
+    }
+
+    public function test_customer_cannot_update_another_customers_cart_item(): void
+    {
+        $owner = $this->createCustomer('idor-cart-update-owner');
+        $otherCustomer = $this->createCustomer('idor-cart-update-other');
+        $cartItemId = DB::table('cart_items')->insertGetId([
+            'user_id' => $owner->id,
+            'product_id' => 999999,
+            'variation_id' => null,
+            'qty' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        try {
+            $this->actingAs($otherCustomer, 'sanctum')
+                ->putJson('/api/cart/' . $cartItemId, ['qty' => 3])
+                ->assertNotFound();
+
+            $this->assertDatabaseHas('cart_items', [
+                'id' => $cartItemId,
+                'user_id' => $owner->id,
+                'qty' => 1,
+            ]);
+        } finally {
+            DB::table('cart_items')->where('id', $cartItemId)->delete();
+            $otherCustomer->delete();
+            $owner->delete();
+        }
+    }
+
+    public function test_customer_cannot_remove_another_customers_cart_item(): void
+    {
+        $owner = $this->createCustomer('idor-cart-remove-owner');
+        $otherCustomer = $this->createCustomer('idor-cart-remove-other');
+        $cartItemId = DB::table('cart_items')->insertGetId([
+            'user_id' => $owner->id,
+            'product_id' => 999999,
+            'variation_id' => null,
+            'qty' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        try {
+            $this->actingAs($otherCustomer, 'sanctum')
+                ->deleteJson('/api/cart/' . $cartItemId)
+                ->assertNotFound();
+
+            $this->assertDatabaseHas('cart_items', [
+                'id' => $cartItemId,
+                'user_id' => $owner->id,
+                'qty' => 1,
+            ]);
+        } finally {
+            DB::table('cart_items')->where('id', $cartItemId)->delete();
+            $otherCustomer->delete();
+            $owner->delete();
+        }
+    }
+
     public function test_cart_update_keeps_the_owner_filter_on_the_mutating_query(): void
     {
         $owner = $this->createCustomer('idor-cart-owner');

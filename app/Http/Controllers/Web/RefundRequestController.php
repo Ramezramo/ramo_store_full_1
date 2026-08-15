@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\RefundRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -112,33 +113,39 @@ class RefundRequestController extends Controller
 
     public function show(int $id)
     {
-        $refund = DB::table('refund_requests as r')
-            ->where('r.id', $id)
-            ->where('r.customer_id', Auth::id())
+        $refund = RefundRequest::findOrFail($id);
+        $this->authorize('view', $refund);
+
+        // Load presentation-only order fields only after ownership is authorized.
+        $details = DB::table('refund_requests as r')
+            ->where('r.id', $refund->id)
             ->leftJoin('orders as o', 'o.id', '=', 'r.order_id')
             ->first(['r.*', 'o.final_total as order_total', 'o.status as order_status', 'o.date_created as order_date']);
 
-        if (! $refund) abort(404);
+        $refund = $details ?: $refund;
 
         return view('web.account.refund-show', compact('refund'));
     }
 
     public function cancel(int $id)
     {
-        $refund = DB::table('refund_requests')
-            ->where('id', $id)
-            ->where('customer_id', Auth::id())
-            ->where('status', 'pending')
-            ->first();
+        $refund = RefundRequest::findOrFail($id);
+        $this->authorize('view', $refund);
 
-        if (! $refund) {
+        // Preserve the existing user-facing response for non-pending requests.
+        if ($refund->status !== 'pending') {
             return back()->with('error', $this->localized('Request cannot be cancelled.', 'مش ممكن تلغي الطلب ده دلوقتي.'));
         }
 
-        DB::table('refund_requests')->where('id', $id)->update([
-            'status'     => 'cancelled',
-            'updated_at' => now(),
-        ]);
+        $this->authorize('cancel', $refund);
+
+        DB::table('refund_requests')
+            ->where('id', $refund->id)
+            ->where('customer_id', Auth::id())
+            ->update([
+                'status'     => 'cancelled',
+                'updated_at' => now(),
+            ]);
 
         return redirect()->route('account.refunds')->with('success', $this->localized('Request cancelled.', 'طلب الاسترجاع اتلغى.'));
     }

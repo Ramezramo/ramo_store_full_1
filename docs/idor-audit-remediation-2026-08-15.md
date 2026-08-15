@@ -35,3 +35,24 @@ The public order tracking flows remain intentionally separate: they use an order
 ## Remaining readiness status
 
 These IDOR findings are closed in code. The broader production decision remains dependent on the previously documented infrastructure, trusted-edge, managed-media, real SMS/payment, merchant-content, and load-testing gates.
+
+## Follow-up remediation — 2026-08-16
+
+The remaining resource-authorization recommendations are now applied without changing endpoint behavior. `RefundRequest` and `CartItem` are explicit Eloquent models over the existing tables, with integer casts for ownership and identifier fields. `RefundRequestPolicy` centralizes customer read and pending-cancellation ownership decisions, while `CartItemPolicy` centralizes cart-item management ownership.
+
+`RefundRequestController::show()` and `cancel()` now load the Eloquent resource before authorization. The show action authorizes before loading presentation-only order details. The cancel action authorizes ownership first, preserves the existing localized message for non-pending requests, and then applies the policy cancellation ability before mutation. `CartApiController::update()` and `remove()` now load the item, authorize it through `CartItemPolicy`, and translate both missing and non-owned items into the existing JSON 404 response so the API does not disclose ownership.
+
+`VendorRefundController::vendorId()` now reads the authenticated `vendor_web` guard ID. This matches `VendorWebController`, which logs vendors into that guard; no application path sets `session('vendor_web_id')`, so the previous session-key lookup was stale and could not reliably scope vendor refunds.
+
+| Area | Follow-up remediation |
+|---|---|
+| `app/Models/RefundRequest.php` | Added an explicit Eloquent model for `refund_requests` with safe fillable fields and identifier casts. |
+| `app/Models/CartItem.php` | Added an explicit Eloquent model for `cart_items` with ownership and quantity casts. |
+| `app/Policies/RefundRequestPolicy.php` | Added `view()` and pending-only `cancel()` ownership rules. |
+| `app/Policies/CartItemPolicy.php` | Added the `manage()` owner rule. |
+| `AuthServiceProvider` | Registered both new policy mappings. |
+| Refund and cart controllers | Replaced inline resource ownership decisions with model-load-then-authorize flows while preserving 404/API and non-pending response contracts. |
+| `VendorRefundController` | Switched vendor scoping to `auth('vendor_web')->id()`. |
+| `IdorAuthorizationTest` | Added cross-customer refund read/cancel denial and cross-customer cart update/remove denial regressions. |
+
+The focused IDOR coverage is now **8 tests and 20 assertions** when combined with the prior checks. The full suite baseline before this follow-up was **109 tests and 488 assertions**; the final post-change run passed **113 tests and 496 assertions**. No secrets, tokens, OTP values, or customer data are included.

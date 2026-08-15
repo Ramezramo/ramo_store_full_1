@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\CartItem;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -116,8 +118,15 @@ class CartApiController extends Controller
         $r->validate(['qty' => 'required|integer|min:1|max:999']);
 
         $userId = Auth::id();
-        $item   = DB::table('cart_items')->where('id', $id)->where('user_id', $userId)->first();
+        $item   = CartItem::find($id);
         if (! $item) return response()->json(['success' => false, 'message' => 'Item not found'], 404);
+
+        try {
+            $this->authorize('manage', $item);
+        } catch (AuthorizationException) {
+            // Keep the existing response contract and do not reveal ownership.
+            return response()->json(['success' => false, 'message' => 'Item not found'], 404);
+        }
 
         // Sum qty of every OTHER row for this product (the current row is being replaced, not added to)
         $otherQty = DB::table('cart_items')
@@ -161,7 +170,20 @@ class CartApiController extends Controller
 
     public function remove($id)
     {
-        $deleted = DB::table('cart_items')->where('id', $id)->where('user_id', Auth::id())->delete();
+        $item = CartItem::find($id);
+        if (! $item) return response()->json(['success' => false, 'message' => 'Item not found'], 404);
+
+        try {
+            $this->authorize('manage', $item);
+        } catch (AuthorizationException) {
+            // Keep the existing response contract and do not reveal ownership.
+            return response()->json(['success' => false, 'message' => 'Item not found'], 404);
+        }
+
+        $deleted = DB::table('cart_items')
+            ->where('id', $item->id)
+            ->where('user_id', Auth::id())
+            ->delete();
         if (! $deleted) return response()->json(['success' => false, 'message' => 'Item not found'], 404);
         return response()->json(['success' => true, 'message' => 'Item removed']);
     }

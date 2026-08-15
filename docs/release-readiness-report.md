@@ -13,11 +13,11 @@ The development environment continues to show the OTP when `SMS_GATEWAY=log` and
 | Area | Verified remediation status | Launch status |
 |---|---|---|
 | Framework and dependency security | Laravel is 12.66.0 and `composer audit` reported no security advisories. | **Resolved in code.** |
-| Automated regression suite | `php artisan test` passed **109 tests and 488 assertions** after the IDOR and receipt-rate-limit remediation on 15 August 2026. The customer order-detail path was also hardened to accept both Eloquent-cast arrays and JSON-string representations without changing its response contract. | **Passed for covered behavior.** |
+| Automated regression suite | `php artisan test` passed **113 tests and 496 assertions** after the 16 August 2026 IDOR follow-up. The customer order-detail path was also hardened to accept both Eloquent-cast arrays and JSON-string representations without changing its response contract. | **Passed for covered behavior.** |
 | Product-text and review XSS controls | Vendor and administrator product write boundaries strip markup from plain-text fields. Customer review titles and bodies are now normalized before API and web persistence, and optional admin notes/order-override reasons are normalized as well. Search cards no longer accept raw HTML; editor payloads use inert JSON with Laravel `@json()` and explicit parsing; cart, recently-viewed, preview-label, analytics-legend, category-option, flash-search, size-tag, and related-product renderers avoid raw user-controlled HTML; generated size-table values are escaped; and policy copy uses escaped Blade output with CSS line breaks. | **Resolved in code and regression-tested.** |
 | CSRF and API authorization | Login CSRF exclusions were removed; `POST /api/ramo/config-storing` now requires route-level `admin.auth.api` in addition to the controller check; and API logout is now `POST /api/user/logout`. | **Resolved in code and regression-tested.** |
 | Password-reset token exposure | The unauthenticated `generateTokenTesting` endpoint that returned plaintext reset tokens was removed, its controller method was deleted, and the inactive `/api/v2` route registration and dead route file were removed. | **Resolved in code and regression-tested.** |
-| Order and cart IDOR controls | Customer order-note reads and writes now require ownership authorization through `OrderPolicy`; customer order detail and order-message writes reuse the same policy; customer reads expose customer-visible notes only; cart item updates retain an authenticated `user_id` predicate on the final mutation; guest receipt upload now uses the existing `order-lookup` rate limiter. | **Resolved in code and regression-tested.** |
+| Order and cart IDOR controls | Customer order-note reads and writes now require ownership authorization through `OrderPolicy`; customer order detail and order-message writes reuse the same policy; customer reads expose customer-visible notes only; refund reads and pending cancellations use `RefundRequestPolicy`; cart updates and removals use `CartItemPolicy` while preserving the API 404 contract; vendor refund scoping uses the authenticated `vendor_web` guard; guest receipt upload uses the existing `order-lookup` rate limiter. | **Resolved in code and regression-tested.** |
 | Transport and browser security | The application permanently redirects HTTP to HTTPS when enabled, emits HSTS on HTTPS, Secure cookies, report-only CSP, and baseline frame protection. The public temporary proxy currently strips `X-Frame-Options`. | **Code-ready; edge preservation is required.** |
 | Locale and RTL | Egypt and Arab League first visits resolve to Arabic; other countries resolve to English; a manual choice prevails. Customer HTML has an RTL direction in Arabic. | **Code-ready**, subject to trusted edge country headers. |
 | Public policy, errors, and SEO | Six policy routes, footer and checkout links, branded 404/500 pages, sitemap, robots policy, canonical/no-index metadata, and HTML direction checks are covered. | **Code-ready; policy text needs owner approval.** |
@@ -62,9 +62,9 @@ The public temporary proxy still fails to preserve `X-Frame-Options`, although t
 
 ## Verification record
 
-| Check | Result as of 15 August 2026 |
+| Check | Result as of 16 August 2026 |
 |---|---|
-| Full Laravel suite | **109 passed, 488 assertions** after the IDOR and receipt-rate-limit remediation; follow-up route/policy hardening focused tests also passed. |
+| Full Laravel suite | **113 passed, 496 assertions** after the IDOR policy follow-up; refund and cart cross-customer denial tests passed. |
 | XSS regression suite | **10 passed, 66 assertions** across vendor submission, review API/web persistence, admin free-text paths, storefront rendering, search-card rendering, JSON breakout protection, administrator editor payloads, dynamic-HTML sink checks, size-row DOM sinks, policy rendering, and related-product chip rendering. |
 | Raw-SQL guardrail | `composer run-script check-sql`: **passed**. |
 | Dependency advisory check | `composer audit`: **no security vulnerability advisories found**. |
@@ -75,7 +75,7 @@ The public temporary proxy still fails to preserve `X-Frame-Options`, although t
 | Cache policy tests | Passed: public guest cache, personalized no-store, debug no-cache. |
 | Media URL tests | Passed: local fallback, configured CDN URL, native object-storage URL, and missing media handling. |
 | Health and request-ID tests | Passed: safe status responses and request-ID generation/validation. |
-| IDOR ownership tests | Passed: cross-customer order-note read/write denial, customer-visible note filtering, cart item owner scoping, and guest receipt upload rate-limit middleware. |
+| IDOR ownership tests | Passed: cross-customer order-note read/write denial, customer-visible note filtering, refund read/cancel denial, cart item update/remove owner scoping, and guest receipt upload rate-limit middleware. |
 | Final public response reconciliation | HTTP → HTTPS returned `308`; HTTPS returned HSTS, CSP report-only, Secure cookies, short public cache on catalog, no-store/private on checkout, 0 HTTP sitemap locations, 0 stale gallery filenames, and 0 active Debugbar assets. |
 | Favicon integrity | Valid 17 KB multi-image `favicon.ico` plus PNG and Apple touch-icon assets; linked in shared customer head. |
 | Product 22 media restoration | **Passed:** controlled 960×1200 JPEG is served as `image/jpeg` at 101,234 bytes; product thumbnail and gallery resolve it through the standard managed-media pipeline. |
