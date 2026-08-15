@@ -43,6 +43,72 @@ class IdorAuthorizationTest extends TestCase
         }
     }
 
+    public function test_vendor_coupon_crud_is_scoped_to_the_authenticated_vendor(): void
+    {
+        $this->withoutMiddleware(\Illuminate\Routing\Middleware\ThrottleRequests::class);
+
+        $owner = $this->createVendor('idor-coupon-owner');
+        $otherVendor = $this->createVendor('idor-coupon-other');
+        $foreignCouponId = $this->createCoupon($owner->id, 'idor-foreign-coupon');
+        $globalCouponId = $this->createCoupon(null, 'idor-global-coupon');
+        $createdCouponCode = 'idor-created-coupon-'.uniqid();
+
+        try {
+            $this->actingAs($otherVendor, 'sanctum')
+                ->getJson('/api/ramo/coupons/get/'.$foreignCouponId)
+                ->assertNotFound();
+
+            $this->actingAs($otherVendor, 'sanctum')
+                ->putJson('/api/ramo/coupons/update/'.$foreignCouponId, ['amount' => 25])
+                ->assertNotFound();
+
+            $this->actingAs($otherVendor, 'sanctum')
+                ->deleteJson('/api/ramo/coupons/remove/'.$foreignCouponId)
+                ->assertNotFound();
+
+            $this->actingAs($otherVendor, 'sanctum')
+                ->getJson('/api/ramo/coupons/get/'.$globalCouponId)
+                ->assertNotFound();
+
+            $this->actingAs($otherVendor, 'sanctum')
+                ->putJson('/api/ramo/coupons/update/'.$globalCouponId, ['amount' => 25])
+                ->assertNotFound();
+
+            $this->actingAs($otherVendor, 'sanctum')
+                ->deleteJson('/api/ramo/coupons/remove/'.$globalCouponId)
+                ->assertNotFound();
+
+            $this->actingAs($otherVendor, 'sanctum')
+                ->getJson('/api/ramo/coupons/show')
+                ->assertOk()
+                ->assertJsonMissing(['vendor_id' => $owner->id])
+                ->assertJsonMissing(['vendor_id' => null]);
+
+            $this->actingAs($owner, 'sanctum')
+                ->getJson('/api/ramo/coupons/get/'.$foreignCouponId)
+                ->assertOk();
+
+            $this->actingAs($owner, 'sanctum')
+                ->postJson('/api/ramo/coupons/store', [
+                    'code' => $createdCouponCode,
+                    'amount' => 10,
+                    'status' => 'draft',
+                    'discount_type' => 'percent',
+                ])
+                ->assertCreated();
+
+            $this->assertDatabaseHas('coupons', [
+                'code' => $createdCouponCode,
+                'vendor_id' => $owner->id,
+            ]);
+        } finally {
+            DB::table('coupons')->whereIn('id', [$foreignCouponId, $globalCouponId])->delete();
+            DB::table('coupons')->where('code', $createdCouponCode)->delete();
+            $otherVendor->delete();
+            $owner->delete();
+        }
+    }
+
     public function test_customer_cannot_attach_a_note_to_another_customers_order(): void
     {
         $owner = $this->createCustomer('idor-note-owner');
@@ -285,6 +351,18 @@ class IdorAuthorizationTest extends TestCase
             $otherCustomer->delete();
             $owner->delete();
         }
+    }
+
+    private function createCoupon(?int $vendorId, string $codePrefix): int
+    {
+        return DB::table('coupons')->insertGetId([
+            'code' => $codePrefix.'-'.uniqid(),
+            'vendor_id' => $vendorId,
+            'amount' => 10,
+            'status' => 'draft',
+            'discount_type' => 'percent',
+            'usage_count' => 0,
+        ]);
     }
 
     private function createVendor(string $prefix): VendorUser

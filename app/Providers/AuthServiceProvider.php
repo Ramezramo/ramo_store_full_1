@@ -5,9 +5,11 @@ namespace App\Providers;
 // use Illuminate\Support\Facades\Gate;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use App\Models\CartItem;
+use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\RefundRequest;
 use App\Policies\CartItemPolicy;
+use App\Policies\CouponPolicy;
 use App\Policies\OrderPolicy;
 use App\Policies\RefundRequestPolicy;
 
@@ -20,6 +22,7 @@ class AuthServiceProvider extends ServiceProvider
      */
     protected $policies = [
         CartItem::class => CartItemPolicy::class,
+        Coupon::class => CouponPolicy::class,
         Order::class => OrderPolicy::class,
         RefundRequest::class => RefundRequestPolicy::class,
     ];

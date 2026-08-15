@@ -66,3 +66,21 @@ The orders/cart/invoices/addresses authorization audit identified three remainin
 Regression coverage now includes the vendor status-oracle test, cross-customer account order-detail access, and 404 responses for both customer order-note endpoints. The focused IDOR/order authorization checks passed **10 tests and 31 assertions** before the final full-suite run; the final full suite passed **114 tests and 499 assertions**. No admin-only endpoints, dedicated address resources, or invoice resources were changed because the audit confirmed none exist in this codebase and admin access is intentionally platform-wide.
 
 No secrets, tokens, OTP values, or customer data are included.
+
+## Follow-up remediation — CouponController IDOR — 2026-08-16
+
+The coupon audit identified a confirmed vendor IDOR in the vendor CRUD API. Before this remediation, `show()`, `update()`, and `destroy()` loaded coupons by primary key without checking `vendor_id`, allowing an authenticated vendor to read, modify, or delete another vendor's coupon or a global coupon. The vendor `store()` path also omitted `vendor_id`, causing vendor-created coupons to be stored as global coupons.
+
+`CouponPolicy` now permits `view`, `update`, and `delete` only when the authenticated `VendorUser` owns the coupon. Vendor CRUD listing is scoped to the authenticated vendor and excludes global coupons. Non-owned and global coupon IDs return the same 404 status as an unknown ID, preventing an ownership/existence oracle. Coupon creation now sets `vendor_id` from the authenticated vendor server-side, and `Coupon` explicitly allows and casts that field.
+
+| Area | Remediation |
+|---|---|
+| `app/Policies/CouponPolicy.php` | Added owner-only `view`, `update`, and `delete` abilities for `VendorUser`. |
+| `CouponController` | Added policy enforcement to show/update/delete, vendor scoping to index, and server-side `vendor_id` assignment during store. |
+| `Coupon` model | Added `vendor_id` to fillable fields with an integer cast. |
+| `AuthServiceProvider` | Registered the `Coupon` to `CouponPolicy` mapping. |
+| `IdorAuthorizationTest` | Added coverage for foreign/global coupon read, update, delete, vendor-list isolation, owner access, and server-side ownership on creation. |
+
+The focused coupon regression passed **1 test and 12 assertions**. The full application suite passed **115 tests and 511 assertions**, and the raw-SQL guardrail passed. No secrets, tokens, OTP values, or customer data are included.
+
+This closes the confirmed coupon IDOR in code. The broader production decision remains **NO-GO** until the previously documented infrastructure, trusted-edge, managed-media, real SMS/payment, merchant-content, and load-testing gates are completed.

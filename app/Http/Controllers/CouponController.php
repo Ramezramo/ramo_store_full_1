@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helpers\ResponseHandlerRam;
 use App\Models\Coupon;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -76,6 +77,7 @@ class CouponController extends Controller
             ]);
 
             $coupon = Coupon::create(array_merge($validatedData, [
+                'vendor_id' => $request->user()->id,
                 'date_created' => now(),
                 'date_created_gmt' => now('UTC'),
                 'date_modified' => now(),
@@ -111,6 +113,7 @@ class CouponController extends Controller
     public function show(string $id): JsonResponse
     {
         $coupon = Coupon::findOrFail($id);
+        $this->authorizeOwnedCoupon('view', $coupon);
 
         return $this->successResponse(
             data: $coupon,
@@ -138,7 +141,8 @@ class CouponController extends Controller
             $sortBy = $validated['sort_by'] ?? 'id';
             $sortDir = $validated['sort_dir'] ?? 'desc';
 
-            $query = Coupon::query();
+            // Vendor CRUD must never expose global or another vendor's coupons.
+            $query = Coupon::query()->where('vendor_id', $request->user()->id);
 
             if ($status) {
                 $query->where('status', $status);
@@ -204,6 +208,8 @@ class CouponController extends Controller
                     code: 404
                 );
             }
+
+            $this->authorizeOwnedCoupon('update', $coupon);
 
             // 3. VALIDATE REQUEST DATA
             try {
@@ -296,6 +302,9 @@ class CouponController extends Controller
                 );
             }
 
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            // Preserve deliberate 404 responses used for non-owned coupons.
+            throw $e;
         } catch (\Exception $e) {
             // 7. CATCH ALL UNEXPECTED ERRORS
             // \Log::error('Unexpected error in coupon update', [
@@ -314,12 +323,23 @@ class CouponController extends Controller
     public function destroy(string $id): JsonResponse
     {
         $coupon = Coupon::findOrFail($id);
+        $this->authorizeOwnedCoupon('delete', $coupon);
         $coupon->delete();
 
         return $this->successResponse(
             data: null,
             message: 'Coupon deleted successfully'
         );
+    }
+
+    private function authorizeOwnedCoupon(string $ability, Coupon $coupon): void
+    {
+        try {
+            $this->authorize($ability, $coupon);
+        } catch (AuthorizationException) {
+            // Do not disclose whether an ID belongs to another vendor or is global.
+            abort(404);
+        }
     }
 
     /**

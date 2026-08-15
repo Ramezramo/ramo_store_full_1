@@ -21,6 +21,7 @@ class Coupon extends Model
     // Fillable fields
     protected $fillable = [
         'code',
+        'vendor_id',
         'amount',
         'status',
         'discount_type',
@@ -51,6 +52,7 @@ class Coupon extends Model
 
     // Casts for proper data types
     protected $casts = [
+        'vendor_id' => 'integer',
         'amount' => 'decimal:2',
         'minimum_amount' => 'decimal:2',
         'maximum_amount' => 'decimal:2',
