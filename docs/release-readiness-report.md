@@ -64,7 +64,7 @@ The public temporary proxy still fails to preserve `X-Frame-Options`, although t
 
 | Check | Result as of 16 August 2026 |
 |---|---|
-| Full Laravel suite | **115 passed, 511 assertions** after the coupon ownership follow-up; refund, cart, vendor status-oracle, order-detail, order-note, and coupon cross-vendor denial tests passed. |
+| Full Laravel suite | **121 passed, 526 assertions** after the additional IDOR coverage follow-up; refund, cart, vendor status-oracle, order-detail, order-note, receipt-upload, messaging, query-parameter, and coupon cross-vendor denial tests passed. |
 | XSS regression suite | **10 passed, 66 assertions** across vendor submission, review API/web persistence, admin free-text paths, storefront rendering, search-card rendering, JSON breakout protection, administrator editor payloads, dynamic-HTML sink checks, size-row DOM sinks, policy rendering, and related-product chip rendering. |
 | Raw-SQL guardrail | `composer run-script check-sql`: **passed**. |
 | Dependency advisory check | `composer audit`: **no security vulnerability advisories found**. |
@@ -162,4 +162,4 @@ The focused regression checks passed **10 tests and 31 assertions** before the f
 
 The coupon and customer-order findings already marked resolved were intentionally skipped. The remaining applicable recommendations were implemented: vendor ownership is centralized in `OrderPolicy::vendor()` for `OrdersController::updateOrderState()`, vendor sub-order detail/status/reply/payment-review paths use `SubOrderPolicy`, vendor refund detail uses the vendor capability on `RefundRequestPolicy`, and product-review deletion uses `ProductReviewPolicy` for owner-or-admin authorization. Missing and non-owned vendor resources retain non-disclosing 404 behavior where applicable, while the existing vendor order-status denial remains a 403 before any no-op status response.
 
-The added focused policy checks passed **4 tests and 22 assertions**. The full-suite verification is expected to be **118 tests and 521 assertions** after these three regression tests are included. The release decision remains **NO-GO** until the external production gates documented in this report are completed.
+The added focused policy checks passed **4 tests and 22 assertions**. The full-suite verification after the additional coverage checks passed **121 tests and 526 assertions**. The release decision remains **NO-GO** until the external production gates documented in this report are completed.

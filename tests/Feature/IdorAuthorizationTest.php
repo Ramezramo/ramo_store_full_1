@@ -189,6 +189,75 @@ class IdorAuthorizationTest extends TestCase
         $this->assertContains('throttle:order-lookup', $route->middleware());
     }
 
+    public function test_customer_cannot_fetch_another_customers_order_via_query_param(): void
+    {
+        $owner = $this->createCustomer('idor-api-order-owner');
+        $otherCustomer = $this->createCustomer('idor-api-order-other');
+        $orderId = $this->createOrder($owner->id);
+
+        try {
+            $this->actingAs($otherCustomer, 'sanctum')
+                ->getJson('/api/user/get-all-user-orders?order_id='.$orderId)
+                ->assertNotFound();
+        } finally {
+            DB::table('orders')->where('id', $orderId)->delete();
+            $otherCustomer->delete();
+            $owner->delete();
+        }
+    }
+
+    public function test_customer_cannot_message_another_customers_order(): void
+    {
+        $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
+
+        $owner = $this->createCustomer('idor-msg-owner');
+        $otherCustomer = $this->createCustomer('idor-msg-other');
+        $orderId = $this->createOrder($owner->id);
+
+        try {
+            $this->actingAs($otherCustomer)
+                ->post('/account/orders/'.$orderId.'/messages', ['message' => 'hi'])
+                ->assertForbidden();
+
+            $this->assertDatabaseMissing('order_messages', [
+                'order_id' => $orderId,
+                'customer_id' => $otherCustomer->id,
+            ]);
+        } finally {
+            DB::table('order_messages')->where('order_id', $orderId)->delete();
+            DB::table('orders')->where('id', $orderId)->delete();
+            $otherCustomer->delete();
+            $owner->delete();
+        }
+    }
+
+    public function test_customer_cannot_upload_a_receipt_to_another_customers_order(): void
+    {
+        $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
+
+        $owner = $this->createCustomer('idor-receipt-owner');
+        $otherCustomer = $this->createCustomer('idor-receipt-other');
+        $orderId = $this->createOrder($owner->id);
+        DB::table('orders')->where('id', $orderId)->update(['payment_method' => 'vodafone_cash']);
+
+        try {
+            $this->actingAs($otherCustomer)
+                ->post('/account/orders/'.$orderId.'/payment-receipt', [
+                    'receipt' => \Illuminate\Http\UploadedFile::fake()->create('r.jpg', 10, 'image/jpeg'),
+                ])
+                ->assertNotFound();
+
+            $this->assertDatabaseMissing('payment_receipts', [
+                'order_id' => $orderId,
+            ]);
+        } finally {
+            DB::table('payment_receipts')->where('order_id', $orderId)->delete();
+            DB::table('orders')->where('id', $orderId)->delete();
+            $otherCustomer->delete();
+            $owner->delete();
+        }
+    }
+
     public function test_customer_cannot_read_another_customers_refund_request(): void
     {
         $owner = $this->createCustomer('idor-refund-owner');

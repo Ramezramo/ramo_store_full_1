@@ -96,3 +96,10 @@ Previously remediated findings were intentionally skipped. The remaining applica
 - Added `ProductReview` and `ProductReviewPolicy`; review deletion is now limited to the review owner or admin while preserving the existing JSON response contract.
 
 The focused policy and vendor-isolation checks passed **4 tests and 22 assertions** after the final OrderPolicy integration. The full suite remains the required final gate before commit. No already-fixed coupon, customer-order, cart, receipt, or note findings were reworked.
+
+
+## Coverage follow-up — pasted_content_15.txt — 2026-08-16
+
+The report’s already-remediated IDOR findings were intentionally skipped. The remaining coverage gaps were addressed without changing the established authorization contracts: a direct customer query-parameter access regression now confirms a cross-customer order returns 404; cross-customer order messaging remains policy-protected with 403 and no message write; and cross-customer receipt upload returns the existing non-disclosing 404 without creating a receipt. The receipt-upload test uses a generic fake upload so it does not depend on the local GD extension.
+
+The unreferenced `OrdersController::getAllVendorOrders()` method was removed after route and source-usage verification; the live vendor order-state path remains intact. The focused coverage checks passed **4 tests and 7 assertions**, and the full suite passed **121 tests and 526 assertions**. No already-fixed coupon, customer-order, cart, refund, vendor sub-order, or review-policy remediation was reworked. The release decision remains **NO-GO** until the external production gates are completed.
