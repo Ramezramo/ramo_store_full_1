@@ -70,6 +70,7 @@ class OrderSuccessAuthorizationTest extends TestCase
 
             $this->get(route('order.success', $orderId))->assertNotFound();
             $this->actingAs($otherCustomer)->get(route('order.success', $orderId))->assertNotFound();
+            $this->actingAs($otherCustomer)->get(route('account.order', $orderId))->assertNotFound();
             $this->actingAs($owner)->get(route('order.success', $orderId))->assertOk();
             $this->actingAs($owner)->get(route('account.order', $orderId))
                 ->assertOk()

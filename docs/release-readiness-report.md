@@ -13,7 +13,7 @@ The development environment continues to show the OTP when `SMS_GATEWAY=log` and
 | Area | Verified remediation status | Launch status |
 |---|---|---|
 | Framework and dependency security | Laravel is 12.66.0 and `composer audit` reported no security advisories. | **Resolved in code.** |
-| Automated regression suite | `php artisan test` passed **113 tests and 496 assertions** after the 16 August 2026 IDOR follow-up. The customer order-detail path was also hardened to accept both Eloquent-cast arrays and JSON-string representations without changing its response contract. | **Passed for covered behavior.** |
+| Automated regression suite | `php artisan test` passed **114 tests and 499 assertions** after the 16 August 2026 IDOR follow-up. The customer order-detail path was also hardened to accept both Eloquent-cast arrays and JSON-string representations without changing its response contract. | **Passed for covered behavior.** |
 | Product-text and review XSS controls | Vendor and administrator product write boundaries strip markup from plain-text fields. Customer review titles and bodies are now normalized before API and web persistence, and optional admin notes/order-override reasons are normalized as well. Search cards no longer accept raw HTML; editor payloads use inert JSON with Laravel `@json()` and explicit parsing; cart, recently-viewed, preview-label, analytics-legend, category-option, flash-search, size-tag, and related-product renderers avoid raw user-controlled HTML; generated size-table values are escaped; and policy copy uses escaped Blade output with CSS line breaks. | **Resolved in code and regression-tested.** |
 | CSRF and API authorization | Login CSRF exclusions were removed; `POST /api/ramo/config-storing` now requires route-level `admin.auth.api` in addition to the controller check; and API logout is now `POST /api/user/logout`. | **Resolved in code and regression-tested.** |
 | Password-reset token exposure | The unauthenticated `generateTokenTesting` endpoint that returned plaintext reset tokens was removed, its controller method was deleted, and the inactive `/api/v2` route registration and dead route file were removed. | **Resolved in code and regression-tested.** |
@@ -64,7 +64,7 @@ The public temporary proxy still fails to preserve `X-Frame-Options`, although t
 
 | Check | Result as of 16 August 2026 |
 |---|---|
-| Full Laravel suite | **113 passed, 496 assertions** after the IDOR policy follow-up; refund and cart cross-customer denial tests passed. |
+| Full Laravel suite | **114 passed, 499 assertions** after the IDOR policy follow-up; refund, cart, vendor status-oracle, order-detail, and order-note cross-customer denial tests passed. |
 | XSS regression suite | **10 passed, 66 assertions** across vendor submission, review API/web persistence, admin free-text paths, storefront rendering, search-card rendering, JSON breakout protection, administrator editor payloads, dynamic-HTML sink checks, size-row DOM sinks, policy rendering, and related-product chip rendering. |
 | Raw-SQL guardrail | `composer run-script check-sql`: **passed**. |
 | Dependency advisory check | `composer audit`: **no security vulnerability advisories found**. |
@@ -150,3 +150,9 @@ Tune worker counts and timeouts using staging measurements, not this starting ex
 [2]: https://laravel.com/docs/12.x/queues "Laravel 12 — Queues"
 [3]: https://developers.cloudflare.com/network/ip-geolocation/ "Cloudflare — IP geolocation"
 [4]: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/adding-cloudfront-headers.html "AWS — Add CloudFront request headers"
+
+## IDOR audit follow-up — pasted_content_12.txt — 2026-08-16
+
+The remaining order-state and order-existence side channels identified in the orders/cart/receipt/address audit have been remediated. Vendor ownership is now checked before the no-op status response in `OrdersController::updateOrderState()`. Customer order detail and customer order-note endpoints normalize non-owner access to the same 404 response used for unknown orders. The order-note creation path also avoids an existence-dependent `exists` validation response before the authorization decision.
+
+The focused regression checks passed **10 tests and 31 assertions** before the final full-suite run, and the full suite passed **114 tests and 499 assertions**, covering the vendor status oracle, account order-detail ownership, order-note read/write ownership, refunds, cart items, and guest receipt throttling. The release decision remains **NO-GO** until the previously recorded external production gates are completed.

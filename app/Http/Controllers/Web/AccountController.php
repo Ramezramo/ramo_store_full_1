@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -119,7 +120,14 @@ class AccountController extends Controller
     {
         $order = Order::find($id);
         abort_unless($order, 404);
-        $this->authorize('view', $order);
+
+        try {
+            $this->authorize('view', $order);
+        } catch (AuthorizationException) {
+            // Do not disclose whether the order ID belongs to another customer.
+            abort(404);
+        }
+
         $id = (int) $order->id;
 
         $locale    = session('locale', 'en');

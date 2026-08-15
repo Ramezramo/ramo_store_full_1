@@ -8,8 +8,9 @@ use App\Models\UserNote;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Database\QueryException;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Log;
 
 class UserNoteController extends Controller
@@ -51,7 +52,7 @@ class UserNoteController extends Controller
             }
 
             $validated = $request->validate([
-                'order_id'       => 'required|integer|exists:orders,id',
+                'order_id'       => 'required|integer',
                 'note'           => 'required|string|max:1000',
                 'customer_note'  => 'sometimes|boolean',
             ]);
@@ -78,8 +79,8 @@ class UserNoteController extends Controller
 
             return $this->successResponse($note, 'Note created successfully', 201);
 
-        } catch (AuthorizationException $e) {
-            return $this->failureResponse('You are not authorized to access this order.', 403);
+        } catch (AuthorizationException|ModelNotFoundException) {
+            return $this->failureResponse('Order not found', 404);
         } catch (ValidationException $e) {
             return $this->failureResponse($e->errors(), 422, true);
         } catch (QueryException $e) {
@@ -131,8 +132,8 @@ class UserNoteController extends Controller
 
             return $this->successResponse($notes, 'Notes retrieved successfully');
 
-        } catch (AuthorizationException $e) {
-            return $this->failureResponse('You are not authorized to access this order.', 403);
+        } catch (AuthorizationException|ModelNotFoundException) {
+            return $this->failureResponse('Order not found', 404);
         } catch (QueryException $e) {
             Log::error('Failed to retrieve notes: ' . $e->getMessage(), [
                 'order_id' => $orderId ?? null

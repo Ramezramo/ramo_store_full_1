@@ -3,12 +3,46 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Models\VendorUser;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class IdorAuthorizationTest extends TestCase
 {
+    public function test_vendor_cannot_probe_foreign_order_status_through_noop_response(): void
+    {
+        $owner = $this->createVendor('idor-vendor-owner');
+        $otherVendor = $this->createVendor('idor-vendor-other');
+        $customer = $this->createCustomer('idor-vendor-customer');
+        $orderId = $this->createOrder($customer->id);
+        DB::table('orders')->where('id', $orderId)->update([
+            'status' => 'pending',
+            'parent_vendors_ids' => json_encode([$owner->id]),
+        ]);
+
+        try {
+            $this->actingAs($otherVendor, 'sanctum')
+                ->postJson('/api/vendor/update-order-state', [
+                    'order_id' => $orderId,
+                    'status' => 'pending',
+                ])
+                ->assertForbidden();
+
+            $this->actingAs($owner, 'sanctum')
+                ->postJson('/api/vendor/update-order-state', [
+                    'order_id' => $orderId,
+                    'status' => 'pending',
+                ])
+                ->assertStatus(400);
+        } finally {
+            DB::table('orders')->where('id', $orderId)->delete();
+            $customer->delete();
+            $otherVendor->delete();
+            $owner->delete();
+        }
+    }
+
     public function test_customer_cannot_attach_a_note_to_another_customers_order(): void
     {
         $owner = $this->createCustomer('idor-note-owner');
@@ -21,7 +55,7 @@ class IdorAuthorizationTest extends TestCase
                     'order_id' => $orderId,
                     'note' => 'Unauthorized note',
                 ])
-                ->assertForbidden();
+                ->assertNotFound();
 
             $this->assertDatabaseMissing('user_notes', [
                 'order_id' => $orderId,
@@ -59,7 +93,7 @@ class IdorAuthorizationTest extends TestCase
 
             $this->actingAs($otherCustomer, 'sanctum')
                 ->getJson('/api/user/get-order-notes?order_id=' . $orderId)
-                ->assertForbidden();
+                ->assertNotFound();
 
             $response = $this->actingAs($owner, 'sanctum')
                 ->getJson('/api/user/get-order-notes?order_id=' . $orderId)
@@ -251,6 +285,28 @@ class IdorAuthorizationTest extends TestCase
             $otherCustomer->delete();
             $owner->delete();
         }
+    }
+
+    private function createVendor(string $prefix): VendorUser
+    {
+        $vendor = new VendorUser;
+        $vendor->forceFill([
+            'first_name' => 'IDOR',
+            'last_name' => 'Vendor',
+            'phone' => sprintf('01%09d', abs(crc32($prefix)) % 1000000000),
+            'email' => $prefix . '-' . uniqid() . '@ramostore.local',
+            'password' => 'temporary-test-password',
+            'shop_name' => 'IDOR Test Shop ' . $prefix,
+            'shop_address' => 'Test address',
+            'status' => 'approved',
+            'auth_token' => 'idor-test-token-' . uniqid(),
+            'holder_name' => 'Test Holder',
+            'bank_name' => 'Test Bank',
+            'branch' => 'Test Branch',
+        ]);
+        $vendor->save();
+
+        return $vendor;
     }
 
     private function createCustomer(string $prefix): User

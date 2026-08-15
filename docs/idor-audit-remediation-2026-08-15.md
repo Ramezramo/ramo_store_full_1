@@ -28,7 +28,7 @@ The guest payment-receipt upload route now uses the existing `order-lookup` name
 
 ## Verification
 
-The focused IDOR tests passed: **4 tests and 12 assertions** after the follow-up hardening. During full validation, the customer order-detail path also required compatibility with Eloquent-cast arrays as well as JSON strings; `AccountController` now handles both representations without changing the response contract. The full application suite passed **109 tests and 488 assertions**, and the raw-SQL safety guardrail passed. No secrets or customer data are included in the changes or evidence.
+The focused IDOR tests passed: **4 tests and 12 assertions** after the follow-up hardening. During full validation, the customer order-detail path also required compatibility with Eloquent-cast arrays as well as JSON strings; `AccountController` now handles both representations without changing the response contract. The full application suite passed **114 tests and 499 assertions**, and the raw-SQL safety guardrail passed. No secrets or customer data are included in the changes or evidence.
 
 The public order tracking flows remain intentionally separate: they use an order identifier plus a matching phone or billing email as the guest ownership proof and are rate-limited by their existing route middleware.
 
@@ -55,4 +55,14 @@ The remaining resource-authorization recommendations are now applied without cha
 | `VendorRefundController` | Switched vendor scoping to `auth('vendor_web')->id()`. |
 | `IdorAuthorizationTest` | Added cross-customer refund read/cancel denial and cross-customer cart update/remove denial regressions. |
 
-The focused IDOR coverage remains **8 tests and 20 assertions** when combined with the prior checks, now including non-disclosing 404 regressions for both refund detail and cancellation. The full suite baseline before this follow-up was **109 tests and 488 assertions**; the final post-change run passed 113 tests and 496 assertions after this follow-up. No secrets, tokens, OTP values, or customer data are included.
+The focused IDOR coverage remains **8 tests and 20 assertions** when combined with the prior checks, now including non-disclosing 404 regressions for both refund detail and cancellation. The full suite baseline before this follow-up was **109 tests and 488 assertions**; the final post-change run passed 114 tests and 499 assertions after this follow-up. No secrets, tokens, OTP values, or customer data are included.
+
+## Follow-up remediation — pasted_content_12.txt — 2026-08-16
+
+The orders/cart/invoices/addresses authorization audit identified three remaining information-disclosure issues, all now addressed. In `OrdersController::updateOrderState()`, vendor ownership is evaluated immediately after loading the order and before the status no-op branch, so a vendor who does not own an order receives `403` without being able to probe its current status. The existing vendor ownership mechanism and allowed-status validation are otherwise unchanged.
+
+`AccountController::orderDetail()` now catches an `OrderPolicy` denial and returns the same `404` used for an unknown order ID. `UserNoteController::store()` and `getAll()` now return the same `Order not found` JSON response with status `404` for both missing and non-owned orders; the create-note validation no longer pre-emits a distinct existence-dependent validation response.
+
+Regression coverage now includes the vendor status-oracle test, cross-customer account order-detail access, and 404 responses for both customer order-note endpoints. The focused IDOR/order authorization checks passed **10 tests and 31 assertions** before the final full-suite run; the final full suite passed **114 tests and 499 assertions**. No admin-only endpoints, dedicated address resources, or invoice resources were changed because the audit confirmed none exist in this codebase and admin access is intentionally platform-wide.
+
+No secrets, tokens, OTP values, or customer data are included.

@@ -390,15 +390,9 @@ class OrdersController extends Controller
 
             $order = Order::findOrFail($validated['order_id']);
 
-            $newStatus = $validated['status'];
-            $oldStatus = $order->status;
-
-            // Prevent no-op
-            if ($oldStatus === $newStatus) {
-                return $this->failureResponse("Order is already {$this->getStatusLabel($newStatus)}", 400);
-            }
-
             // === Secure Vendor Authorization ===
+            // This must run before any state-dependent branch so a vendor cannot
+            // probe the current status of an order they do not own.
             $vendorIds = [];
             $parentVendorsIds = $order->parent_vendors_ids;
 
@@ -414,6 +408,14 @@ class OrdersController extends Controller
                 // if (!in_array($user->role, ['admin', 'shop_manager'])) {
                 return $this->failureResponse('Forbidden: You cannot update this order', 403);
                 // }
+            }
+
+            $newStatus = $validated['status'];
+            $oldStatus = $order->status;
+
+            // Prevent no-op only after vendor ownership has been confirmed.
+            if ($oldStatus === $newStatus) {
+                return $this->failureResponse("Order is already {$this->getStatusLabel($newStatus)}", 400);
             }
 
             // === Prepare Timeline Entry ===
