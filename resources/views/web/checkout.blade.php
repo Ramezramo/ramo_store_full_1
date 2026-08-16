@@ -462,69 +462,69 @@ document.addEventListener('DOMContentLoaded', () => {
     const revealMap = () => {
       locationPrompt?.setAttribute('hidden', '');
       locationMapPanel?.removeAttribute('hidden');
-      window.requestAnimationFrame(loadMap);
     };
-    chooseLocationBtn?.addEventListener('click', revealMap);
     if (hasInitialLocation) loadMap();
-    if (useLocationBtn && navigator.geolocation) {
-      const mapOverlay = document.getElementById('map-locating-overlay');
-      function showMapLoading() { if (mapOverlay) mapOverlay.style.display = 'flex'; }
-      function hideMapLoading() { if (mapOverlay) mapOverlay.style.display = 'none'; }
 
-      function fetchLocation() {
-        setStatus(checkoutText.locating);
-        showMapLoading();
-        navigator.geolocation.getCurrentPosition(async (pos) => {
-          const { latitude, longitude, accuracy } = pos.coords;
-          setCoords(latitude, longitude);
-          updateFields(latitude, longitude);
-          try {
-            await ensureMap(latitude, longitude);
-            setStatus(accuracy
-              ? (checkoutText.isAr ? `${checkoutText.detected} (دقة ${Math.round(accuracy)} متر). ${checkoutText.dragPin}` : `Location detected (${Math.round(accuracy)}m accuracy). You can drag the pin to adjust it.`)
-              : `${checkoutText.detected}. ${checkoutText.dragPin}`);
-          } catch (_) {
-            setStatus(`${checkoutText.detected}. ${checkoutText.manualAddress}`);
-          } finally {
-            hideMapLoading();
-          }
-        }, () => {
-          hideMapLoading();
-          setStatus(checkoutText.detectFailed);
-        }, { enableHighAccuracy: true, timeout: 60000, maximumAge: 0 });
+    const mapOverlay = document.getElementById('map-locating-overlay');
+    const showMapLoading = () => { if (mapOverlay) mapOverlay.style.display = 'flex'; };
+    const hideMapLoading = () => { if (mapOverlay) mapOverlay.style.display = 'none'; };
+    const fetchLocation = () => {
+      if (!navigator.geolocation) {
+        setStatus(checkoutText.detectFailed);
+        return;
       }
-
-      useLocationBtn.addEventListener('click', () => {
-        // If Permissions API is available, watch for the grant so the user
-        // doesn't have to click the button a second time after allowing.
-        if (navigator.permissions) {
-          navigator.permissions.query({ name: 'geolocation' }).then((result) => {
-            if (result.state === 'granted') {
-              // Already granted — fetch immediately.
-              fetchLocation();
-            } else if (result.state === 'prompt') {
-              // Permission dialog is about to appear; start a high-timeout
-              // request so it survives the dialog, then watch for the grant.
-              fetchLocation();
-              result.onchange = () => {
-                if (result.state === 'granted') {
-                  result.onchange = null;
-                  fetchLocation();
-                } else if (result.state === 'denied') {
-                  result.onchange = null;
-                  setStatus(checkoutText.accessDenied);
-                }
-              };
-            } else {
-              setStatus(checkoutText.accessBlocked);
-            }
-          });
-        } else {
-          // Fallback for browsers without Permissions API.
-          fetchLocation();
+      setStatus(checkoutText.locating);
+      showMapLoading();
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        const { latitude, longitude, accuracy } = pos.coords;
+        setCoords(latitude, longitude);
+        updateFields(latitude, longitude);
+        try {
+          await ensureMap(latitude, longitude);
+          setStatus(accuracy
+            ? (checkoutText.isAr ? `${checkoutText.detected} (دقة ${Math.round(accuracy)} متر). ${checkoutText.dragPin}` : `Location detected (${Math.round(accuracy)}m accuracy). You can drag the pin to adjust it.`)
+            : `${checkoutText.detected}. ${checkoutText.dragPin}`);
+        } catch (_) {
+          setStatus(`${checkoutText.detected}. ${checkoutText.manualAddress}`);
+        } finally {
+          hideMapLoading();
         }
-      });
-    }
+      }, () => {
+        hideMapLoading();
+        setStatus(checkoutText.detectFailed);
+      }, { enableHighAccuracy: true, timeout: 60000, maximumAge: 0 });
+    };
+    const requestCurrentLocation = () => {
+      // Request the browser permission and immediately continue when granted.
+      if (navigator.permissions) {
+        navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+          if (result.state === 'granted') {
+            fetchLocation();
+          } else if (result.state === 'prompt') {
+            fetchLocation();
+            result.onchange = () => {
+              if (result.state === 'granted') {
+                result.onchange = null;
+                fetchLocation();
+              } else if (result.state === 'denied') {
+                result.onchange = null;
+                setStatus(checkoutText.accessDenied);
+              }
+            };
+          } else {
+            setStatus(checkoutText.accessBlocked);
+          }
+        }).catch(() => fetchLocation());
+      } else {
+        fetchLocation();
+      }
+    };
+
+    chooseLocationBtn?.addEventListener('click', () => {
+      revealMap();
+      requestCurrentLocation();
+    });
+    useLocationBtn?.addEventListener('click', requestCurrentLocation);
   }
 });
 </script>
