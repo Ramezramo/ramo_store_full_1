@@ -40,6 +40,10 @@
     'accessDenied' => $isAr ? 'الوصول لمكانك اترفض. فعّله من إعدادات المتصفح وجرّب تاني.' : 'Location access was denied. Please enable it in your browser settings and try again.',
     'accessBlocked' => $isAr ? 'الوصول لمكانك متوقف. فعّله من إعدادات المتصفح وجرّب تاني.' : 'Location access is blocked. Please enable it in your browser settings and try again.',
     'detectFailed' => $isAr ? 'ماقدرناش نحدد مكانك. اسمح بالوصول للموقع وجرّب تاني.' : 'Could not detect your location. Please allow location access and try again.',
+    'locationFallback' => $isAr ? 'تقدر تختار مكانك يدويًا على الخريطة، أو تحاول تحديد موقعك تاني.' : 'You can choose your location manually on the map or try detecting it again.',
+    'manualLocation' => $isAr ? 'اختار يدويًا على الخريطة' : 'Choose manually on map',
+    'retryLocation' => $isAr ? 'حاول تحديد موقعي تاني' : 'Try my location again',
+    'manualReady' => $isAr ? 'اختار مكان التوصيل بالضغط على الخريطة أو اسحب العلامة.' : 'Choose your delivery location by tapping the map or dragging the pin.',
   ];
 @endphp
 @section('title', $isAr ? 'إتمام الطلب — Ramo Store' : 'Checkout — Ramo Store')
@@ -51,9 +55,9 @@
   .ck-auth-title{margin:0;color:#181818;font-size:15px;font-weight:800}.ck-auth-desc{margin:4px 0 0;color:#686868;font-size:12px;line-height:1.45}
   .ck-auth-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}.ck-auth-action{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:0 12px;border:1px solid #1b1b1b;border-radius:9px;background:#1b1b1b;color:#fff;font-size:12px;font-weight:750;line-height:1;text-decoration:none;white-space:nowrap;transition:.15s}.ck-auth-action:hover{background:#343434;border-color:#343434;color:#fff}.ck-auth-action-light{border-color:#d5d5d5;background:#fff;color:#272727}.ck-auth-action-light:hover{border-color:#aaa;background:#f6f6f6;color:#111}
   .ck-save-address{display:flex;align-items:center;gap:13px;min-height:64px;margin-top:4px;padding:12px 15px;border:1px solid #e4e4e4;border-radius:12px;background:#fcfcfc;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s}.ck-save-address:hover{border-color:#cfcfcf;background:#fff}.ck-save-address:has(input:focus-visible){border-color:#e85d26;box-shadow:0 0 0 3px rgba(232,93,38,.14)}.ck-save-address input[type="checkbox"]{width:20px!important;height:20px!important;min-width:20px;margin:0!important;flex:0 0 20px;accent-color:#e85d26;cursor:pointer}.ck-save-address-copy{display:flex;flex-direction:column;gap:3px;min-width:0}.ck-save-address-title{color:#202020;font-size:13px;font-weight:800;line-height:1.25}.ck-save-address-desc{color:#777;font-size:12px;line-height:1.35}
-  .ck-location-empty{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:12px;padding:18px;border:1px dashed #e8c4b3;border-radius:14px;background:linear-gradient(145deg,#fffaf7,#fff);}.ck-location-empty[hidden],.ck-location-map-panel[hidden]{display:none}.ck-location-empty-copy{display:flex;flex-direction:column;gap:5px;min-width:0}.ck-location-empty-title{color:#222;font-size:14px;font-weight:800}.ck-location-empty-copy span{color:#777;font-size:12px;line-height:1.45}.ck-location-choose-btn{min-height:42px;padding:0 15px;border:1px solid #e85d26;border-radius:9px;background:#e85d26;color:#fff;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}.ck-location-choose-btn:hover{background:#c94717;border-color:#c94717}.ck-location-choose-btn:focus-visible{outline:3px solid rgba(232,93,38,.24);outline-offset:2px}.ck-map-shell{position:relative;width:100%;height:280px;margin-bottom:12px;border:1px solid rgba(0,0,0,.08);border-radius:14px;overflow:hidden;background:#f8f8f8}.ck-map-canvas{width:100%;height:100%}.ck-map-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(145deg,#fffdfb,#f7f7f6);z-index:2;text-align:center}.ck-map-placeholder[hidden]{display:none}.ck-map-placeholder-inner{display:flex;max-width:240px;align-items:center;flex-direction:column;gap:8px}.ck-map-placeholder-icon{display:flex;width:40px;height:40px;align-items:center;justify-content:center;border-radius:50%;background:#fff1e9;color:#e85d26;font-size:21px}.ck-map-placeholder-title{color:#222;font-size:14px;font-weight:800}.ck-map-placeholder-copy{color:#757575;font-size:12px;line-height:1.4}.ck-map-load-btn{min-height:38px;margin-top:2px;padding:0 13px;border:1px solid #e85d26;border-radius:9px;background:#fff;color:#c94717;font-size:12px;font-weight:800;cursor:pointer}.ck-map-load-btn:hover{background:#fff4ef}.ck-map-load-btn:focus-visible{outline:3px solid rgba(232,93,38,.24);outline-offset:2px}
+  .ck-location-empty{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:12px;padding:18px;border:1px dashed #e8c4b3;border-radius:14px;background:linear-gradient(145deg,#fffaf7,#fff);}.ck-location-empty[hidden],.ck-location-map-panel[hidden]{display:none}.ck-location-empty-copy{display:flex;flex-direction:column;gap:5px;min-width:0}.ck-location-empty-title{color:#222;font-size:14px;font-weight:800}.ck-location-empty-copy span{color:#777;font-size:12px;line-height:1.45}.ck-location-choose-btn{min-height:42px;padding:0 15px;border:1px solid #e85d26;border-radius:9px;background:#e85d26;color:#fff;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}.ck-location-choose-btn:hover{background:#c94717;border-color:#c94717}.ck-location-choose-btn:focus-visible{outline:3px solid rgba(232,93,38,.24);outline-offset:2px}.ck-location-fallback{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;padding:12px;border:1px solid #f0d6ca;border-radius:12px;background:#fff9f6}.ck-location-fallback[hidden]{display:none}.ck-location-fallback-copy{color:#8a4c38;font-size:12px;line-height:1.45}.ck-location-fallback-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px}.ck-location-fallback-btn{min-height:36px;padding:0 11px;border:1px solid #e85d26;border-radius:8px;background:#fff;color:#c94717;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap}.ck-location-fallback-btn-primary{background:#e85d26;color:#fff}.ck-location-fallback-btn:hover{background:#fff1e9}.ck-location-fallback-btn-primary:hover{background:#c94717;color:#fff}.ck-location-fallback-btn:focus-visible{outline:3px solid rgba(232,93,38,.24);outline-offset:2px}.ck-map-shell{position:relative;width:100%;height:280px;margin-bottom:12px;border:1px solid rgba(0,0,0,.08);border-radius:14px;overflow:hidden;background:#f8f8f8}.ck-map-canvas{width:100%;height:100%}.ck-map-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(145deg,#fffdfb,#f7f7f6);z-index:2;text-align:center}.ck-map-placeholder[hidden]{display:none}.ck-map-placeholder-inner{display:flex;max-width:240px;align-items:center;flex-direction:column;gap:8px}.ck-map-placeholder-icon{display:flex;width:40px;height:40px;align-items:center;justify-content:center;border-radius:50%;background:#fff1e9;color:#e85d26;font-size:21px}.ck-map-placeholder-title{color:#222;font-size:14px;font-weight:800}.ck-map-placeholder-copy{color:#757575;font-size:12px;line-height:1.4}.ck-map-load-btn{min-height:38px;margin-top:2px;padding:0 13px;border:1px solid #e85d26;border-radius:9px;background:#fff;color:#c94717;font-size:12px;font-weight:800;cursor:pointer}.ck-map-load-btn:hover{background:#fff4ef}.ck-map-load-btn:focus-visible{outline:3px solid rgba(232,93,38,.24);outline-offset:2px}
   .checkout-page-ar{font-family:'Cairo','Tahoma',sans-serif;text-align:right}.checkout-page-ar .ck-auth-actions{justify-content:flex-start}.checkout-page-ar .ck-save-address{direction:rtl}.checkout-page-ar .checkout-layout{direction:rtl}.checkout-page-ar .summary-row{direction:rtl}
-  @media(max-width:600px){.ck-auth-widget{align-items:flex-start;flex-direction:column;gap:13px;padding:15px}.ck-auth-actions{justify-content:flex-start;width:100%}.ck-auth-action{flex:1;padding:0 10px}.ck-save-address{min-height:58px;padding:11px 13px}}
+  @media(max-width:600px){.ck-auth-widget{align-items:flex-start;flex-direction:column;gap:13px;padding:15px}.ck-auth-actions{justify-content:flex-start;width:100%}.ck-auth-action{flex:1;padding:0 10px}.ck-save-address{min-height:58px;padding:11px 13px}.ck-location-fallback{align-items:stretch;flex-direction:column}.ck-location-fallback-actions{justify-content:stretch}.ck-location-fallback-btn{flex:1}}
 </style>
 @endpush
 
@@ -159,7 +163,14 @@
                 </div>
               </div>
               <style>@keyframes map-spin{to{transform:rotate(360deg)}}</style>
-              <div id="location-status" style="font-size:12px;color:var(--muted)"></div>
+              <div id="location-status" style="font-size:12px;color:var(--muted)" aria-live="polite"></div>
+              <div id="location-fallback" class="ck-location-fallback" hidden aria-live="polite">
+                <span id="location-fallback-copy" class="ck-location-fallback-copy"></span>
+                <div class="ck-location-fallback-actions">
+                  <button type="button" id="manual-location-btn" class="ck-location-fallback-btn ck-location-fallback-btn-primary">{{ $checkoutText['manualLocation'] }}</button>
+                  <button type="button" id="retry-location-btn" class="ck-location-fallback-btn">{{ $checkoutText['retryLocation'] }}</button>
+                </div>
+              </div>
             </div>
           </div>
           <div class="form-group">
@@ -338,6 +349,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const locationMapPanel = document.getElementById('checkout-location-map-panel');
   const hasInitialLocation = @json($hasSavedLocation);
   const locationStatus = document.getElementById('location-status');
+  const locationFallback = document.getElementById('location-fallback');
+  const locationFallbackCopy = document.getElementById('location-fallback-copy');
+  const manualLocationBtn = document.getElementById('manual-location-btn');
+  const retryLocationBtn = document.getElementById('retry-location-btn');
   const latitudeInput = document.getElementById('checkout-latitude');
   const longitudeInput = document.getElementById('checkout-longitude');
   let map = null;
@@ -346,6 +361,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const setStatus = (msg) => {
     if (locationStatus) locationStatus.textContent = msg;
+  };
+  const hideLocationFallback = () => {
+    locationFallback?.setAttribute('hidden', '');
+  };
+  const showLocationFallback = (message = checkoutText.locationFallback) => {
+    if (locationFallbackCopy) locationFallbackCopy.textContent = message;
+    locationFallback?.removeAttribute('hidden');
   };
   const setCoords = (lat, lng) => {
     if (latitudeInput) latitudeInput.value = lat ?? '';
@@ -455,13 +477,23 @@ document.addEventListener('DOMContentLoaded', () => {
       }).catch(() => {
         setStatus(checkoutText.mapUnavailable);
         loadMapBtn?.removeAttribute('hidden');
+        showLocationFallback(checkoutText.mapUnavailable);
       });
     };
 
     loadMapBtn?.addEventListener('click', loadMap);
-    const revealMap = () => {
+    const revealMap = (focusMap = false) => {
       locationPrompt?.setAttribute('hidden', '');
       locationMapPanel?.removeAttribute('hidden');
+      return new Promise((resolve) => {
+        window.requestAnimationFrame(() => {
+          const mapPromise = loadMap() || Promise.resolve();
+          mapPromise.then(() => {
+            if (focusMap) mapEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            resolve();
+          });
+        });
+      });
     };
     if (hasInitialLocation) loadMap();
 
@@ -469,8 +501,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const showMapLoading = () => { if (mapOverlay) mapOverlay.style.display = 'flex'; };
     const hideMapLoading = () => { if (mapOverlay) mapOverlay.style.display = 'none'; };
     const fetchLocation = () => {
+      hideLocationFallback();
       if (!navigator.geolocation) {
         setStatus(checkoutText.detectFailed);
+        showLocationFallback(checkoutText.locationFallback);
         return;
       }
       setStatus(checkoutText.locating);
@@ -489,9 +523,11 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally {
           hideMapLoading();
         }
-      }, () => {
+      }, (error) => {
         hideMapLoading();
-        setStatus(checkoutText.detectFailed);
+        const message = error?.code === 1 ? checkoutText.accessDenied : checkoutText.detectFailed;
+        setStatus(message);
+        showLocationFallback(checkoutText.locationFallback);
       }, { enableHighAccuracy: true, timeout: 60000, maximumAge: 0 });
     };
     const requestCurrentLocation = () => {
@@ -509,10 +545,12 @@ document.addEventListener('DOMContentLoaded', () => {
               } else if (result.state === 'denied') {
                 result.onchange = null;
                 setStatus(checkoutText.accessDenied);
+                showLocationFallback(checkoutText.locationFallback);
               }
             };
           } else {
             setStatus(checkoutText.accessBlocked);
+            showLocationFallback(checkoutText.locationFallback);
           }
         }).catch(() => fetchLocation());
       } else {
@@ -524,6 +562,11 @@ document.addEventListener('DOMContentLoaded', () => {
       revealMap();
       requestCurrentLocation();
     });
+    manualLocationBtn?.addEventListener('click', () => {
+      hideLocationFallback();
+      revealMap(true).then(() => setStatus(checkoutText.manualReady));
+    });
+    retryLocationBtn?.addEventListener('click', requestCurrentLocation);
     useLocationBtn?.addEventListener('click', requestCurrentLocation);
   }
 });
