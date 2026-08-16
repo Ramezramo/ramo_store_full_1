@@ -471,11 +471,14 @@ document.addEventListener('DOMContentLoaded', () => {
   if (mapEl) {
     const loadMap = () => {
       setStatus(checkoutText.mapLoading);
+      // The loading overlay is the single source of loading text; hide the placeholder behind it.
+      mapPlaceholder?.setAttribute('hidden', '');
       loadMapBtn?.setAttribute('hidden', '');
       return ensureMap().then(() => {
         setStatus(checkoutText.mapReady);
       }).catch(() => {
         setStatus(checkoutText.mapUnavailable);
+        mapPlaceholder?.removeAttribute('hidden');
         loadMapBtn?.removeAttribute('hidden');
         showLocationFallback(checkoutText.mapUnavailable);
       });
