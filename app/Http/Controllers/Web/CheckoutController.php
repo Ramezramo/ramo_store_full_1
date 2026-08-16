@@ -219,8 +219,11 @@ class CheckoutController extends Controller
             'longitude'  => $r->longitude,
         ];
 
+        $coupon = session('ramo_coupon');
+        $customerId = Auth::id();
+
         try {
-            $checkoutResult = DB::transaction(function () use ($cart, $r, $billing, $paymentTitle, $isManualPayment, $idempotencyKey, $idempotencyUserId) {
+            $checkoutResult = DB::transaction(function () use ($cart, $r, $billing, $paymentTitle, $isManualPayment, $idempotencyKey, $idempotencyUserId, $coupon, $customerId) {
                 // Claim the key inside the same transaction as stock changes and order creation.
                 // A double-click or retry can therefore never create a second order.
                 $claimed = DB::table('idempotency_keys')->insertOrIgnore([
@@ -330,9 +333,49 @@ class CheckoutController extends Controller
                     ];
                 }
 
-                $coupon = session('ramo_coupon');
+                $couponRecord = null;
+                $appliedCoupon = null;
+                if (is_array($coupon) && ! empty($coupon['code'])) {
+                    $couponRecord = DB::table('coupons')
+                        ->where('code', strtoupper(trim((string) $coupon['code'])))
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (! $couponRecord || ($couponRecord->status ?? 'publish') !== 'publish') {
+                        throw new \RuntimeException($this->localized('The coupon is no longer available.', 'الكوبون ده مبقاش متاح.'));
+                    }
+                    if ($couponRecord->date_expires && now()->isAfter($couponRecord->date_expires)) {
+                        throw new \RuntimeException($this->localized('This coupon has expired.', 'الكوبون ده انتهت صلاحيته.'));
+                    }
+                    if ((int) ($couponRecord->usage_limit ?? 0) > 0 && (int) ($couponRecord->usage_count ?? 0) >= (int) $couponRecord->usage_limit) {
+                        throw new \RuntimeException($this->localized('This coupon has reached its usage limit.', 'الكوبون ده وصل للحد الأقصى للاستخدام.'));
+                    }
+                    if ($customerId && (int) ($couponRecord->usage_limit_per_user ?? 0) > 0) {
+                        $userUses = (int) (DB::table('coupon_user_limits')
+                            ->where('coupon_id', $couponRecord->id)
+                            ->where('user_id', $customerId)
+                            ->lockForUpdate()
+                            ->value('use_count') ?? 0);
+                        if ($userUses >= (int) $couponRecord->usage_limit_per_user) {
+                            throw new \RuntimeException($this->localized('You have reached this coupon\'s usage limit.', 'إنت وصلت لحد استخدام الكوبون ده.'));
+                        }
+                    }
+
+                    $appliedCoupon = [
+                        'code' => $couponRecord->code,
+                        'discount_type' => $couponRecord->discount_type ?? 'percent',
+                        'amount' => (float) ($couponRecord->amount ?? 0),
+                    ];
+                }
+
                 $subtotal = collect($verifiedCart)->sum(fn ($item) => $item['price'] * $item['qty']);
-                $discount = $this->calcDiscount($subtotal, $coupon);
+                if ($couponRecord && (float) ($couponRecord->minimum_amount ?? 0) > 0 && $subtotal < (float) $couponRecord->minimum_amount) {
+                    throw new \RuntimeException($this->localized('This coupon requires a higher order subtotal.', 'الكوبون ده محتاج قيمة طلب أعلى.'));
+                }
+                if ($couponRecord && (float) ($couponRecord->maximum_amount ?? 0) > 0 && $subtotal > (float) $couponRecord->maximum_amount) {
+                    throw new \RuntimeException($this->localized('This coupon is not available for this order subtotal.', 'الكوبون ده مش متاح لقيمة الطلب دي.'));
+                }
+                $discount = $this->calcDiscount($subtotal, $appliedCoupon);
                 $afterDiscount = max(0, $subtotal - $discount);
                 $shippingFee = ShippingConfig::feeForSubtotal($afterDiscount);
                 $cartTax = TaxConfig::cartTax($afterDiscount);
@@ -374,8 +417,8 @@ class CheckoutController extends Controller
                     'original_total'       => (int) round($subtotal),
                     'final_total'          => $total,
                     'discount_total'       => $discount,
-                    'coupon_code'          => $coupon['code'] ?? null,
-                    'coupon_applied'       => $coupon ? 1 : 0,
+                    'coupon_code'          => $appliedCoupon['code'] ?? null,
+                    'coupon_applied'       => $appliedCoupon ? 1 : 0,
                     'customer_note'        => $r->notes ?? '',
                     'order_key'            => 'wc_' . Str::random(20),
                     'date_created'         => $now,
@@ -403,6 +446,10 @@ class CheckoutController extends Controller
                     'cart_tax'             => $cartTax,
                     'total_tax'            => $totalTax,
                 ]);
+
+                if ($couponRecord) {
+                    $this->recordCouponUsage($couponRecord, $customerId);
+                }
 
                 DB::table('orders')->where('id', $orderId)->update(['number' => $orderId]);
 
@@ -569,6 +616,40 @@ class CheckoutController extends Controller
         $paymentReceiptCount = DB::table('payment_receipts')->where('order_id', $order->id)->count();
 
         return view('web.order-success', compact('order', 'lineItems', 'subOrders', 'manualPaymentMethods', 'paymentReceiptCount'));
+    }
+
+    private function recordCouponUsage(object $coupon, ?int $userId): void
+    {
+        DB::table('coupons')
+            ->where('id', $coupon->id)
+            ->increment('usage_count', 1, ['date_modified' => now()]);
+
+        if (! $userId || (int) ($coupon->usage_limit_per_user ?? 0) <= 0) {
+            return;
+        }
+
+        $usageRow = DB::table('coupon_user_limits')
+            ->where('coupon_id', $coupon->id)
+            ->where('user_id', $userId)
+            ->lockForUpdate()
+            ->first();
+
+        if ($usageRow) {
+            DB::table('coupon_user_limits')
+                ->where('id', $usageRow->id)
+                ->update([
+                    'use_count' => ((int) $usageRow->use_count) + 1,
+                    'updated_at' => now(),
+                ]);
+        } else {
+            DB::table('coupon_user_limits')->insert([
+                'coupon_id' => $coupon->id,
+                'user_id' => $userId,
+                'use_count' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
     }
 
     private function calcDiscount(float $subtotal, ?array $coupon): float
