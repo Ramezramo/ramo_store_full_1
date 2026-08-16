@@ -21,6 +21,9 @@
     'fawry' => ['title' => 'فوري', 'description' => 'ادفع من أي منفذ فوري', 'data_label' => 'التفاصيل'],
     'credit_card' => ['title' => 'كارت بنكي', 'description' => 'فيزا أو ماستركارد', 'data_label' => 'التفاصيل'],
   ];
+  $initialLatitude = old('latitude', $savedAddress['latitude'] ?? ($user->latitude ?? null));
+  $initialLongitude = old('longitude', $savedAddress['longitude'] ?? ($user->longitude ?? null));
+  $hasSavedLocation = is_numeric($initialLatitude) && is_numeric($initialLongitude);
   $checkoutText = [
     'isAr' => $isAr,
     'selected' => $isAr ? 'تم اختيار:' : 'Selected:',
@@ -48,7 +51,7 @@
   .ck-auth-title{margin:0;color:#181818;font-size:15px;font-weight:800}.ck-auth-desc{margin:4px 0 0;color:#686868;font-size:12px;line-height:1.45}
   .ck-auth-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}.ck-auth-action{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:0 12px;border:1px solid #1b1b1b;border-radius:9px;background:#1b1b1b;color:#fff;font-size:12px;font-weight:750;line-height:1;text-decoration:none;white-space:nowrap;transition:.15s}.ck-auth-action:hover{background:#343434;border-color:#343434;color:#fff}.ck-auth-action-light{border-color:#d5d5d5;background:#fff;color:#272727}.ck-auth-action-light:hover{border-color:#aaa;background:#f6f6f6;color:#111}
   .ck-save-address{display:flex;align-items:center;gap:13px;min-height:64px;margin-top:4px;padding:12px 15px;border:1px solid #e4e4e4;border-radius:12px;background:#fcfcfc;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s}.ck-save-address:hover{border-color:#cfcfcf;background:#fff}.ck-save-address:has(input:focus-visible){border-color:#e85d26;box-shadow:0 0 0 3px rgba(232,93,38,.14)}.ck-save-address input[type="checkbox"]{width:20px!important;height:20px!important;min-width:20px;margin:0!important;flex:0 0 20px;accent-color:#e85d26;cursor:pointer}.ck-save-address-copy{display:flex;flex-direction:column;gap:3px;min-width:0}.ck-save-address-title{color:#202020;font-size:13px;font-weight:800;line-height:1.25}.ck-save-address-desc{color:#777;font-size:12px;line-height:1.35}
-  .ck-map-shell{position:relative;width:100%;height:280px;margin-bottom:12px;border:1px solid rgba(0,0,0,.08);border-radius:14px;overflow:hidden;background:#f8f8f8}.ck-map-canvas{width:100%;height:100%}.ck-map-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(145deg,#fffdfb,#f7f7f6);z-index:2;text-align:center}.ck-map-placeholder[hidden]{display:none}.ck-map-placeholder-inner{display:flex;max-width:240px;align-items:center;flex-direction:column;gap:8px}.ck-map-placeholder-icon{display:flex;width:40px;height:40px;align-items:center;justify-content:center;border-radius:50%;background:#fff1e9;color:#e85d26;font-size:21px}.ck-map-placeholder-title{color:#222;font-size:14px;font-weight:800}.ck-map-placeholder-copy{color:#757575;font-size:12px;line-height:1.4}.ck-map-load-btn{min-height:38px;margin-top:2px;padding:0 13px;border:1px solid #e85d26;border-radius:9px;background:#fff;color:#c94717;font-size:12px;font-weight:800;cursor:pointer}.ck-map-load-btn:hover{background:#fff4ef}.ck-map-load-btn:focus-visible{outline:3px solid rgba(232,93,38,.24);outline-offset:2px}
+  .ck-location-empty{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:12px;padding:18px;border:1px dashed #e8c4b3;border-radius:14px;background:linear-gradient(145deg,#fffaf7,#fff);}.ck-location-empty[hidden],.ck-location-map-panel[hidden]{display:none}.ck-location-empty-copy{display:flex;flex-direction:column;gap:5px;min-width:0}.ck-location-empty-title{color:#222;font-size:14px;font-weight:800}.ck-location-empty-copy span{color:#777;font-size:12px;line-height:1.45}.ck-location-choose-btn{min-height:42px;padding:0 15px;border:1px solid #e85d26;border-radius:9px;background:#e85d26;color:#fff;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}.ck-location-choose-btn:hover{background:#c94717;border-color:#c94717}.ck-location-choose-btn:focus-visible{outline:3px solid rgba(232,93,38,.24);outline-offset:2px}.ck-map-shell{position:relative;width:100%;height:280px;margin-bottom:12px;border:1px solid rgba(0,0,0,.08);border-radius:14px;overflow:hidden;background:#f8f8f8}.ck-map-canvas{width:100%;height:100%}.ck-map-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(145deg,#fffdfb,#f7f7f6);z-index:2;text-align:center}.ck-map-placeholder[hidden]{display:none}.ck-map-placeholder-inner{display:flex;max-width:240px;align-items:center;flex-direction:column;gap:8px}.ck-map-placeholder-icon{display:flex;width:40px;height:40px;align-items:center;justify-content:center;border-radius:50%;background:#fff1e9;color:#e85d26;font-size:21px}.ck-map-placeholder-title{color:#222;font-size:14px;font-weight:800}.ck-map-placeholder-copy{color:#757575;font-size:12px;line-height:1.4}.ck-map-load-btn{min-height:38px;margin-top:2px;padding:0 13px;border:1px solid #e85d26;border-radius:9px;background:#fff;color:#c94717;font-size:12px;font-weight:800;cursor:pointer}.ck-map-load-btn:hover{background:#fff4ef}.ck-map-load-btn:focus-visible{outline:3px solid rgba(232,93,38,.24);outline-offset:2px}
   .checkout-page-ar{font-family:'Cairo','Tahoma',sans-serif;text-align:right}.checkout-page-ar .ck-auth-actions{justify-content:flex-start}.checkout-page-ar .ck-save-address{direction:rtl}.checkout-page-ar .checkout-layout{direction:rtl}.checkout-page-ar .summary-row{direction:rtl}
   @media(max-width:600px){.ck-auth-widget{align-items:flex-start;flex-direction:column;gap:13px;padding:15px}.ck-auth-actions{justify-content:flex-start;width:100%}.ck-auth-action{flex:1;padding:0 10px}.ck-save-address{min-height:58px;padding:11px 13px}}
 </style>
@@ -130,25 +133,34 @@
         <div class="ck-section">
           <h3 class="ck-title">{{ $isAr ? 'عنوان الشحن' : 'Shipping Address' }}</h3>
           <div class="form-group">
-            <label>{{ $isAr ? 'حدّد مكانك على الخريطة' : 'Pin Your Location on Map' }}</label>
-            <button type="button" class="btn btn-outline" id="use-current-location-btn" style="margin-bottom:12px">📍 {{ $isAr ? 'استخدم موقعي الحالي' : 'Use My Current Location' }}</button>
-            <div class="ck-map-shell">
-              <div id="checkout-map" class="ck-map-canvas" aria-label="{{ $isAr ? 'خريطة مكان التوصيل التفاعلية' : 'Interactive delivery location map' }}"></div>
-              <div id="checkout-map-placeholder" class="ck-map-placeholder">
-                <div class="ck-map-placeholder-inner">
-                  <span class="ck-map-placeholder-icon" aria-hidden="true">⌖</span>
-                  <span class="ck-map-placeholder-title">{{ $isAr ? 'اختار مكان التوصيل' : 'Choose a delivery pin' }}</span>
-                  <span class="ck-map-placeholder-copy">{{ $isAr ? 'بنحمّل الخريطة تلقائيًا. تقدر تختار أو تعدّل مكان التوصيل أول ما تفتح.' : 'The interactive map loads automatically. You can choose or adjust your delivery location as soon as it opens.' }}</span>
-                  <button type="button" id="load-checkout-map-btn" class="ck-map-load-btn" aria-controls="checkout-map" hidden>{{ $checkoutText['mapRetry'] }}</button>
+            <label>{{ $isAr ? 'حدّد مكان التوصيل' : 'Choose your delivery location' }}</label>
+            <div id="checkout-location-empty" class="ck-location-empty" @if($hasSavedLocation) hidden @endif>
+              <div class="ck-location-empty-copy">
+                <strong class="ck-location-empty-title">{{ $isAr ? 'اختار مكان التوصيل الأول' : 'Choose your delivery location first' }}</strong>
+                <span>{{ $isAr ? 'اختار مكانك على الخريطة عشان نعرف نوصل طلبك بسهولة.' : 'Pick your location on the map so we can deliver your order easily.' }}</span>
+              </div>
+              <button type="button" id="choose-location-btn" class="ck-location-choose-btn">{{ $isAr ? 'اختار المكان' : 'Choose location' }}</button>
+            </div>
+            <div id="checkout-location-map-panel" class="ck-location-map-panel" @unless($hasSavedLocation) hidden @endunless>
+              <button type="button" class="btn btn-outline" id="use-current-location-btn" style="margin-bottom:12px">📍 {{ $isAr ? 'استخدم موقعي الحالي' : 'Use My Current Location' }}</button>
+              <div class="ck-map-shell">
+                <div id="checkout-map" class="ck-map-canvas" aria-label="{{ $isAr ? 'خريطة مكان التوصيل التفاعلية' : 'Interactive delivery location map' }}"></div>
+                <div id="checkout-map-placeholder" class="ck-map-placeholder">
+                  <div class="ck-map-placeholder-inner">
+                    <span class="ck-map-placeholder-icon" aria-hidden="true">⌖</span>
+                    <span class="ck-map-placeholder-title">{{ $isAr ? 'اختار مكان التوصيل' : 'Choose a delivery pin' }}</span>
+                    <span class="ck-map-placeholder-copy">{{ $isAr ? 'بنحمّل الخريطة تلقائيًا. تقدر تختار أو تعدّل مكان التوصيل أول ما تفتح.' : 'The interactive map loads automatically. You can choose or adjust your delivery location as soon as it opens.' }}</span>
+                    <button type="button" id="load-checkout-map-btn" class="ck-map-load-btn" aria-controls="checkout-map" hidden>{{ $checkoutText['mapRetry'] }}</button>
+                  </div>
+                </div>
+                <div id="map-locating-overlay" style="display:none;position:absolute;inset:0;background:rgba(255,255,255,.75);border-radius:14px;z-index:999;flex-direction:column;align-items:center;justify-content:center;gap:10px">
+                  <div style="width:38px;height:38px;border:4px solid #e85d26;border-top-color:transparent;border-radius:50%;animation:map-spin .8s linear infinite"></div>
+                  <span style="font-size:13px;font-weight:600;color:#e85d26">{{ $isAr ? 'بنحدد مكانك…' : 'Getting your location…' }}</span>
                 </div>
               </div>
-              <div id="map-locating-overlay" style="display:none;position:absolute;inset:0;background:rgba(255,255,255,.75);border-radius:14px;z-index:999;flex-direction:column;align-items:center;justify-content:center;gap:10px">
-                <div style="width:38px;height:38px;border:4px solid #e85d26;border-top-color:transparent;border-radius:50%;animation:map-spin .8s linear infinite"></div>
-                <span style="font-size:13px;font-weight:600;color:#e85d26">{{ $isAr ? 'بنحدد مكانك…' : 'Getting your location…' }}</span>
-              </div>
+              <style>@keyframes map-spin{to{transform:rotate(360deg)}}</style>
+              <div id="location-status" style="font-size:12px;color:var(--muted)"></div>
             </div>
-            <style>@keyframes map-spin{to{transform:rotate(360deg)}}</style>
-            <div id="location-status" style="font-size:12px;color:var(--muted)"></div>
           </div>
           <div class="form-group">
             <label>{{ $isAr ? 'العنوان بالتفصيل' : 'Street Address' }} *</label>
@@ -321,6 +333,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const mapEl = document.getElementById('checkout-map');
   const mapPlaceholder = document.getElementById('checkout-map-placeholder');
   const loadMapBtn = document.getElementById('load-checkout-map-btn');
+  const chooseLocationBtn = document.getElementById('choose-location-btn');
+  const locationPrompt = document.getElementById('checkout-location-empty');
+  const locationMapPanel = document.getElementById('checkout-location-map-panel');
+  const hasInitialLocation = @json($hasSavedLocation);
   const locationStatus = document.getElementById('location-status');
   const latitudeInput = document.getElementById('checkout-latitude');
   const longitudeInput = document.getElementById('checkout-longitude');
@@ -443,7 +459,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     loadMapBtn?.addEventListener('click', loadMap);
-    loadMap();
+    const revealMap = () => {
+      locationPrompt?.setAttribute('hidden', '');
+      locationMapPanel?.removeAttribute('hidden');
+      window.requestAnimationFrame(loadMap);
+    };
+    chooseLocationBtn?.addEventListener('click', revealMap);
+    if (hasInitialLocation) loadMap();
     if (useLocationBtn && navigator.geolocation) {
       const mapOverlay = document.getElementById('map-locating-overlay');
       function showMapLoading() { if (mapOverlay) mapOverlay.style.display = 'flex'; }
