@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helpers\ResponseHandlerRam;
 use App\Models\Coupon;
+use App\Services\PricingService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -343,7 +344,52 @@ class CouponController extends Controller
     }
 
     /**
-     * Validate coupon and return validation result
+     * Calculate an authenticated customer's cart subtotal from current catalog rows.
+     * Request-provided totals are intentionally ignored for coupon decisions.
+     */
+    private function calculateAuthenticatedCartTotal(int $userId): float
+    {
+        $cartItems = DB::table('cart_items')->where('user_id', $userId)->get();
+        if ($cartItems->isEmpty()) {
+            throw new \InvalidArgumentException('Your cart is empty.', 422);
+        }
+
+        $productIds = $cartItems->pluck('product_id')->unique()->values()->all();
+        $products = DB::table('products_data')
+            ->whereIn('id', $productIds)
+            ->get(['id', 'discount_percentage'])
+            ->keyBy('id');
+        $variations = DB::table('product_variations')
+            ->whereIn('product_id', $productIds)
+            ->get(['id', 'product_id', 'main_variation', 'price', 'regular_price', 'status', 'stock_status'])
+            ->keyBy('id');
+
+        $subtotal = 0.0;
+        foreach ($cartItems as $item) {
+            $product = $products->get($item->product_id);
+            $variation = $item->variation_id
+                ? $variations->get($item->variation_id)
+                : $variations->first(fn ($row) => (int) $row->product_id === (int) $item->product_id && (bool) $row->main_variation);
+            $quantity = (int) $item->qty;
+
+            if (! $product || ! $variation || (int) $variation->product_id !== (int) $item->product_id) {
+                throw new \InvalidArgumentException('Your cart contains an unavailable product variation.', 422);
+            }
+            if ($quantity < 1) {
+                throw new \InvalidArgumentException('Your cart contains an invalid quantity.', 422);
+            }
+            if (($variation->status ?? 'publish') !== 'publish' || ($variation->stock_status ?? 'instock') !== 'instock') {
+                throw new \InvalidArgumentException('Your cart contains an unavailable product variation.', 422);
+            }
+
+            $subtotal += PricingService::effectiveVariationPrice($variation, $product) * $quantity;
+        }
+
+        return round($subtotal, 2);
+    }
+
+    /**
+     * Validate coupon and return validation result.
      */
     public function validateCouponRules(
         string $code,
@@ -382,18 +428,35 @@ class CouponController extends Controller
             ];
         }
 
-        // ✅ CHECK USER USAGE LIMIT
-        if ($user_id && ! $coupon->canBeUsedByUser($user_id)) {
+        // Check the global usage cap before showing the coupon as usable.
+        if ((int) ($coupon->usage_limit ?? 0) > 0 && (int) ($coupon->usage_count ?? 0) >= (int) $coupon->usage_limit) {
             return [
                 'valid' => false,
-                'message' => 'Coupon usage limit reached for this user',
+                'message' => 'Coupon usage limit reached',
                 'code' => 422,
                 'data' => null,
             ];
         }
 
-        // ✅ VALID - Return success with discount calculation
-        $discount = $coupon->getDiscountAmount($cart_total);
+        // The live checkout source of truth is coupon_user_limits, regardless of
+        // the legacy individual_use/used_by fields on the coupon model.
+        if ($user_id && (int) ($coupon->usage_limit_per_user ?? 0) > 0) {
+            $userUses = (int) (DB::table('coupon_user_limits')
+                ->where('coupon_id', $coupon->id)
+                ->where('user_id', $user_id)
+                ->value('use_count') ?? 0);
+            if ($userUses >= (int) $coupon->usage_limit_per_user) {
+                return [
+                    'valid' => false,
+                    'message' => 'Coupon usage limit reached for this user',
+                    'code' => 422,
+                    'data' => null,
+                ];
+            }
+        }
+
+        // ✅ VALID - Return the same rounded discount used by order creation.
+        $discount = $this->getCouponDiscountAmount($coupon, $cart_total);
 
         return [
             'valid' => true,
@@ -403,7 +466,7 @@ class CouponController extends Controller
                 'coupon' => $coupon,
                 'discount_amount' => $discount,
                 'discount_type' => $coupon->discount_type,
-                'new_total' => $cart_total - $discount,
+                'new_total' => max(0, $cart_total - $discount),
             ],
         ];
     }
@@ -413,12 +476,12 @@ class CouponController extends Controller
         try {
             $request->validate([
                 'code' => 'required|string|max:50',
-                'cart_total' => 'required|numeric|min:0',
             ]);
 
+            $cartTotal = $this->calculateAuthenticatedCartTotal((int) $request->user()->id);
             $validation = $this->validateCouponRules(
                 $request->code,
-                $request->cart_total,
+                $cartTotal,
                 $request->user()->id
             );
 
@@ -447,7 +510,7 @@ class CouponController extends Controller
         }
     }
 
-    public function applyCouponLocally(string $code, float $cartTotal, ?int $userId = null): array
+    public function applyCouponLocally(string $code, float $cartTotal, ?int $userId = null, bool $consumeUsage = false): array
     {
         // 1. Basic input validation
         $code = trim($code);
@@ -469,22 +532,23 @@ class CouponController extends Controller
         /** @var \App\Models\Coupon $coupon */
         $coupon = $validation['data']['coupon'];
 
-        // 3. Increment usage (atomic, with rollback on failure)
-        if (! $this->incrementCouponUsage($coupon, $userId)) {
+        // Usage is consumed only by the successful order-creation transaction.
+        if ($consumeUsage && ! $this->incrementCouponUsage($coupon, $userId)) {
             return $this->failureResponselocal('Could not apply coupon – usage limit reached or DB error', 400);
         }
 
-        // 4. Calculate discount with fresh data
+        // Calculate the preview or order discount from the server-computed subtotal.
         $discount = $this->getCouponDiscountAmount($coupon, $cartTotal);
 
-        // Optional: refresh the model to return latest usage counts etc.
-        $coupon = $coupon->refresh();
+        if ($consumeUsage) {
+            $coupon = $coupon->refresh();
+        }
 
         return $this->successResponselocal([
             'coupon' => $this->couponToArray($coupon),
             'discount_amount' => $discount,
             'discount_type' => $coupon->discount_type ?? 'fixed',
-            'new_total' => $cartTotal - $discount,
+            'new_total' => max(0, $cartTotal - $discount),
         ], 'Coupon applied successfully');
     }
 
@@ -597,14 +661,16 @@ class CouponController extends Controller
             // 1. Laravel validation; the acting user is derived from the authenticated principal.
             $request->validate([
                 'code' => 'required|string|max:50',
-                'cart_total' => 'required|numeric|min:0',
             ]);
 
-            // 2. Delegate everything to the local method with the authenticated user ID.
+            // Compute the subtotal from the authenticated user's DB-backed cart;
+            // any client-supplied cart_total is ignored.
+            $cartTotal = $this->calculateAuthenticatedCartTotal((int) $request->user()->id);
             $result = $this->applyCouponLocally(
                 code: $request->code,
-                cartTotal: (float) $request->cart_total,
-                userId: $request->user()->id
+                cartTotal: $cartTotal,
+                userId: $request->user()->id,
+                consumeUsage: false
             );
 
             // 3. Convert the array response to JsonResponse with proper HTTP code

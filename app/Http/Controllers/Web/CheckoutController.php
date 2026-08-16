@@ -9,6 +9,7 @@ use App\Helpers\TaxConfig;
 use App\Http\Controllers\Controller;
 use App\Http\Traits\CartTrait;
 use App\Models\User;
+use App\Services\PricingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -311,12 +312,7 @@ class CheckoutController extends Controller
                         throw new \RuntimeException($this->localized("You can only order up to {$maximumQuantity} unit(s) of \"{$product->name}\" per order.", "تقدر تطلب لحد {$maximumQuantity} قطعة من \"{$this->localizedProductName($product)}\" في الطلب الواحد."));
                     }
 
-                    $regularPrice = (float) ($variation->regular_price ?? 0);
-                    $livePrice = (float) ($variation->price ?? $regularPrice);
-                    $discountPercentage = (float) ($product->discount_percentage ?? 0);
-                    if ($discountPercentage > 0 && $regularPrice > 0 && $livePrice >= $regularPrice) {
-                        $livePrice = round($regularPrice * (1 - $discountPercentage / 100), 2);
-                    }
+                    $livePrice = PricingService::effectiveVariationPrice($variation, $product);
 
                     $variationAttributes = json_decode($variation->attributes ?? '[]', true)
                         ?? json_decode(stripslashes($variation->attributes ?? '[]'), true)

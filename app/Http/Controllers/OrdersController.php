@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Constants\AppConstants;
 use App\Helpers\ResponseHandlerRam;
+use App\Helpers\ShippingConfig;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariation;
 use App\Models\UserNote;
+use App\Services\PricingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -595,7 +597,8 @@ class OrdersController extends Controller
 
             // ──────── STEP 2: Load Products ────────
             $products = Product::whereIn('id', $productIds)
-                ->select('id', 'name', 'vendor_id', 'sku', 'minimum_order_qty', 'max_orders_per_person', 'sold_individually')
+                ->select('id', 'name', 'vendor_id', 'sku', 'minimum_order_qty', 'max_orders_per_person', 'sold_individually', 'discount_percentage', 'manage_stock'
+)
                 ->get()
                 ->keyBy('id');
 
@@ -604,7 +607,8 @@ class OrdersController extends Controller
                 ->when(! empty($explicitVariationIds), function ($query) use ($explicitVariationIds) {
                     return $query->orWhereIn('id', $explicitVariationIds); // Plus any specific ones sent
                 })
-                ->select('id', 'product_id', 'main_variation', 'price', 'regular_price', 'sale_price', 'stock_quantity', 'attributes', 'images')
+                ->select('id', 'product_id', 'main_variation', 'price', 'regular_price', 'sale_price', 'stock_quantity', 'stock_status', 'status', 'attributes', 'images'
+)
                 ->get()
                 ->keyBy('id'); // Critical: fast lookup by ID
 
@@ -653,9 +657,8 @@ class OrdersController extends Controller
                     }
 
                     $variation = null;
-                    $price     = 0.0;
 
-                    // CASE 1: User wants the MAIN variation
+                    // Resolve the requested variation from the server-side cart data.
                     if (! empty($item['main_variation_order'])) {
                         $variation = $variations
                             ->where('product_id', $productId)
@@ -665,36 +668,31 @@ class OrdersController extends Controller
                         if (! $variation) {
                             throw new \InvalidArgumentException("This product (ID: {$productId}) has no main variation defined.", 422);
                         }
-                    }
-                    // CASE 2: Specific variation selected
-                    elseif (! empty($item['variation_id']) && $item['variation_id'] != 0) {
+                    } elseif (! empty($item['variation_id']) && $item['variation_id'] != 0) {
                         $variation = $variations->get($item['variation_id']);
 
-                        if (! $variation || $variation->product_id != $productId) {
+                        if (! $variation || (int) $variation->product_id !== (int) $productId) {
                             throw new \InvalidArgumentException("Invalid variation ID {$item['variation_id']} for product {$productId}.", 422);
                         }
-
-                        if (isset($variation->stock_status) && $variation->stock_status === 'outofstock') {
-                            throw new \InvalidArgumentException("The selected variation of {$product->name} is currently out of stock.", 422);
-                        }
-
-                        if (isset($variation->status) && $variation->status !== 'publish') {
-                            throw new \InvalidArgumentException("The selected variation of {$product->name} is not available.", 422);
-                        }
-                    }
-                    // CASE 3: Missing variation info
-                    else {
+                    } else {
                         throw new \InvalidArgumentException("You must provide either 'main_variation_order' or a valid 'variation_id' for product: {$product->name}", 422);
                     }
 
-                    // Determine price: sale → regular → fallback
-                    if ($variation->sale_price && $variation->sale_price > 0) {
-                        $price = floatval($variation->sale_price);
-                    } elseif ($variation->regular_price && $variation->regular_price > 0) {
-                        $price = floatval($variation->regular_price);
-                    } else {
-                        $price = floatval($variation->price);
+                    // Re-read the authoritative row under lock so price, status, and stock
+                    // cannot become stale between cart loading and order creation.
+                    $variation = ProductVariation::where('id', $variation->id)->lockForUpdate()->first();
+                    if (! $variation || (int) $variation->product_id !== (int) $productId) {
+                        throw new \InvalidArgumentException("The selected variation for {$product->name} is no longer available.", 422);
                     }
+                    if (($variation->stock_status ?? 'instock') === 'outofstock') {
+                        throw new \InvalidArgumentException("The selected variation of {$product->name} is currently out of stock.", 422);
+                    }
+                    if (($variation->status ?? 'publish') !== 'publish') {
+                        throw new \InvalidArgumentException("The selected variation of {$product->name} is not available.", 422);
+                    }
+
+                    $variations->put($variation->id, $variation);
+                    $price = PricingService::effectiveVariationPrice($variation, $product);
 
                     // ── Vendor per-order quantity limits ──
                     if ($product->sold_individually && $quantity > 1) {
@@ -709,7 +707,7 @@ class OrdersController extends Controller
 
                     // Acquire a row-level lock, re-read stock from DB, then decrement atomically.
                     // This prevents overselling when two requests race on the same variation.
-                    if ($variation->manage_stock == 1) {
+                    if ((bool) ($product->manage_stock ?? false)) {
                         $lockedVariation = ProductVariation::where('id', $variation->id)->lockForUpdate()->first();
                         if ($lockedVariation->stock_quantity < $quantity) {
                             throw new \InvalidArgumentException("Insufficient stock for {$product->name}. Only {$lockedVariation->stock_quantity} left.", 422);
@@ -730,13 +728,10 @@ class OrdersController extends Controller
                     ];
                 }
 
-                $originalTotalFormatted = number_format($calculatedTotal, 2, '.', '');
-
                 // ──────── Coupon Logic ────────
                 $couponController = app(CouponController::class);
                 $discountTotal        = '0.00';
                 $finalTotal           = $calculatedTotal;
-                $finalTotalFormatted  = number_format($finalTotal, 2, '.', '');
                 $couponLines          = [];
                 $couponData           = null;
                 $appliedCoupon        = null;
@@ -747,7 +742,8 @@ class OrdersController extends Controller
                     $couponResult = $couponController->applyCouponLocally(
                         code: $couponCode,
                         cartTotal: $calculatedTotal,
-                        userId: $userId
+                        userId: $userId,
+                        consumeUsage: true
                     );
 
                     if (! $couponResult['success']) {
@@ -761,7 +757,6 @@ class OrdersController extends Controller
 
                     $discountTotal       = number_format($discountAmount, 2, '.', '');
                     $finalTotal          = $newTotal;
-                    $finalTotalFormatted = number_format($finalTotal, 2, '.', '');
 
                     $couponLines = [[
                         'code'                      => $couponCode,
@@ -773,7 +768,15 @@ class OrdersController extends Controller
                     $couponData           = $appliedCoupon;
                     $couponData['amount'] = (string) ($couponData['amount'] ?? 0);
                 }
-                $finalTotalFormatted = number_format($finalTotal, 2, '.', '');
+                $afterDiscount = max(0, $calculatedTotal - (float) $discountTotal);
+                $shippingFee = ShippingConfig::feeForSubtotal($afterDiscount);
+                $finalTotal = round($afterDiscount + $shippingFee, 2);
+                $shippingMethodId = preg_replace('/[^a-zA-Z0-9:_-]/', '', (string) ($validatedData['shipping_lines'][0]['method_id'] ?? 'standard_shipping')) ?: 'standard_shipping';
+                $shippingLines = [[
+                    'method_id' => $shippingMethodId,
+                    'method_title' => $shippingFee > 0 ? 'Standard shipping' : 'Free shipping',
+                    'total' => number_format($shippingFee, 2, '.', ''),
+                ]];
                 $timeLine = [['event' => 'order_placed',
                     'timestamp' => now(),
                     'status'    => 'Order Placed']];
@@ -789,14 +792,14 @@ class OrdersController extends Controller
                     // Platform-calculated or lifecycle-controlled values: never mass assign.
                     'set_paid'       => false,
                     'status'         => 'order_placed',
-                    'original_total' => $originalTotalFormatted,
-                    'discount_total' => $discountTotal,
+                    'original_total' => (int) round($calculatedTotal),
+                    'discount_total' => round((float) $discountTotal, 2),
                     'discount_tax'   => '0.00',
-                    'shipping_total' => '0.00',
+                    'shipping_total' => round($shippingFee, 2),
                     'shipping_tax'   => '0.00',
                     'cart_tax'       => '0.00',
                     'total_tax'      => '0.00',
-                    'final_total'    => $finalTotalFormatted,
+                    'final_total'    => round($finalTotal, 2),
                 ];
 
                 $orderDbData = [
@@ -857,7 +860,7 @@ class OrdersController extends Controller
                         ];
                     })->values()->all(),
                     'tax_lines'          => [],
-                    'shipping_lines'     => $validatedData['shipping_lines'],
+                    'shipping_lines'     => $shippingLines,
                     'fee_lines'          => [],
                     'coupon_lines'       => $couponLines,
                     'refunds'            => [],

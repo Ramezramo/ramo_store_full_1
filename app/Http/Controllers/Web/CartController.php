@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Helpers\ShippingConfig;
+use App\Http\Controllers\CouponController;
 use App\Http\Traits\CartTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -401,20 +402,33 @@ class CartController extends Controller
     public function applyCoupon(Request $r)
     {
         $r->validate(['code' => 'required|string|max:50']);
-        $code   = strtoupper(trim($r->code));
+        $code = strtoupper(trim($r->code));
+        $cart = $this->getCart();
+        $subtotal = round(collect($cart)->sum(fn ($item) => (float) ($item['price'] ?? 0) * (int) ($item['qty'] ?? 0)), 2);
+
+        if ($subtotal <= 0) {
+            return response()->json(['success' => false, 'message' => $this->localized('Your cart is empty.', 'السلة فاضية.')], 422);
+        }
+
+        $validation = app(CouponController::class)->validateCouponRules(
+            $code,
+            $subtotal,
+            Auth::id()
+        );
+
+        if (! $validation['valid']) {
+            return response()->json([
+                'success' => false,
+                'message' => $this->localized($validation['message'], 'الكوبون ده مش متاح للسلة دي.'),
+            ], $validation['code'] ?: 422);
+        }
+
         $coupon = DB::table('coupons')->where('code', $code)->first();
-
-        if (!$coupon) {
-            return response()->json(['success' => false, 'message' => $this->localized('Invalid coupon code.', 'كود الخصم مش صحيح.')]);
-        }
-
-        $now = now();
-        if ($coupon->date_expires && $now->isAfter($coupon->date_expires)) {
-            return response()->json(['success' => false, 'message' => $this->localized('This coupon has expired.', 'كود الخصم انتهت صلاحيته.')]);
-        }
-
-        if (!empty($coupon->vendor_id)) {
-            return response()->json(['success' => false, 'message' => $this->localized('This is a vendor-specific promo code.', 'كود الخصم ده خاص بمتجر معين.')]);
+        if (! $coupon || ! empty($coupon->vendor_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => $this->localized('This is a vendor-specific promo code.', 'كود الخصم ده خاص بمتجر معين.'),
+            ], 422);
         }
 
         session(['ramo_coupon' => [

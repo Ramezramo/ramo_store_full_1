@@ -121,6 +121,8 @@ class IdorAuthorizationTest extends TestCase
         $customer = $this->createCustomer('coupon-authenticated-user');
         $spoofedUser = $this->createCustomer('coupon-spoofed-user');
         $couponCode = 'idor-validate-'.uniqid();
+        $productId = null;
+        $variationId = null;
         $couponId = DB::table('coupons')->insertGetId([
             'code' => $couponCode,
             'vendor_id' => null,
@@ -132,6 +134,38 @@ class IdorAuthorizationTest extends TestCase
             'usage_limit_per_user' => 1,
             'individual_use' => true,
             'used_by' => json_encode([$spoofedUser->id]),
+        ]);
+        $now = now();
+        $productId = DB::table('products_data')->insertGetId([
+            'name' => 'IDOR coupon validate product',
+            'slug' => 'idor-coupon-validate-'.uniqid(),
+            'search_text' => 'IDOR coupon validate product',
+            'status' => 'publish',
+            'acceptance_status' => 'approved',
+            'minimum_order_qty' => 1,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $variationId = DB::table('product_variations')->insertGetId([
+            'product_id' => $productId,
+            'main_variation' => true,
+            'status' => 'publish',
+            'stock_status' => 'instock',
+            'attributes' => '{}',
+            'price' => 100,
+            'regular_price' => 100,
+            'sale_price' => 100,
+            'stock_quantity' => 3,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        DB::table('cart_items')->insert([
+            'user_id' => $customer->id,
+            'product_id' => $productId,
+            'variation_id' => $variationId,
+            'qty' => 1,
+            'created_at' => $now,
+            'updated_at' => $now,
         ]);
 
         try {
@@ -145,6 +179,13 @@ class IdorAuthorizationTest extends TestCase
                 ->assertJsonPath('success', true);
         } finally {
             DB::table('coupons')->where('id', $couponId)->delete();
+            DB::table('cart_items')->where('user_id', $customer->id)->delete();
+            if ($variationId) {
+                DB::table('product_variations')->where('id', $variationId)->delete();
+            }
+            if ($productId) {
+                DB::table('products_data')->where('id', $productId)->delete();
+            }
             $spoofedUser->delete();
             $customer->delete();
         }
@@ -155,6 +196,8 @@ class IdorAuthorizationTest extends TestCase
         $customer = $this->createCustomer('coupon-apply-authenticated');
         $spoofedUser = $this->createCustomer('coupon-apply-spoofed');
         $couponCode = 'idor-apply-'.uniqid();
+        $productId = null;
+        $variationId = null;
         $couponId = DB::table('coupons')->insertGetId([
             'code' => $couponCode,
             'vendor_id' => null,
@@ -167,12 +210,37 @@ class IdorAuthorizationTest extends TestCase
             'individual_use' => true,
             'used_by' => json_encode([$spoofedUser->id]),
         ]);
-        DB::table('coupon_user_limits')->insert([
-            'coupon_id' => $couponId,
-            'user_id' => $spoofedUser->id,
-            'use_count' => 1,
-            'created_at' => now(),
-            'updated_at' => now(),
+        $now = now();
+        $productId = DB::table('products_data')->insertGetId([
+            'name' => 'IDOR coupon apply product',
+            'slug' => 'idor-coupon-apply-'.uniqid(),
+            'search_text' => 'IDOR coupon apply product',
+            'status' => 'publish',
+            'acceptance_status' => 'approved',
+            'minimum_order_qty' => 1,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        $variationId = DB::table('product_variations')->insertGetId([
+            'product_id' => $productId,
+            'main_variation' => true,
+            'status' => 'publish',
+            'stock_status' => 'instock',
+            'attributes' => '{}',
+            'price' => 100,
+            'regular_price' => 100,
+            'sale_price' => 100,
+            'stock_quantity' => 3,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+        DB::table('cart_items')->insert([
+            'user_id' => $customer->id,
+            'product_id' => $productId,
+            'variation_id' => $variationId,
+            'qty' => 1,
+            'created_at' => $now,
+            'updated_at' => $now,
         ]);
 
         try {
@@ -185,19 +253,26 @@ class IdorAuthorizationTest extends TestCase
                 ->assertOk()
                 ->assertJsonPath('success', true);
 
-            $this->assertDatabaseHas('coupon_user_limits', [
+            $this->assertDatabaseMissing('coupon_user_limits', [
                 'coupon_id' => $couponId,
                 'user_id' => $customer->id,
-                'use_count' => 1,
             ]);
-            $this->assertDatabaseHas('coupon_user_limits', [
+            $this->assertDatabaseMissing('coupon_user_limits', [
                 'coupon_id' => $couponId,
                 'user_id' => $spoofedUser->id,
-                'use_count' => 1,
             ]);
         } finally {
             DB::table('coupon_user_limits')->where('coupon_id', $couponId)->delete();
             DB::table('coupons')->where('id', $couponId)->delete();
+            if ($customer) {
+                DB::table('cart_items')->where('user_id', $customer->id)->delete();
+            }
+            if ($variationId) {
+                DB::table('product_variations')->where('id', $variationId)->delete();
+            }
+            if ($productId) {
+                DB::table('products_data')->where('id', $productId)->delete();
+            }
             $spoofedUser->delete();
             $customer->delete();
         }
