@@ -396,6 +396,77 @@
       </div>
     </div>
 
+    {{-- Applied coupon details --}}
+    @if(!empty($order->coupon_code) || (float) $order->discount_total > 0)
+    <div class="card">
+      <div class="card-title">Applied Coupon</div>
+      <div class="detail-row">
+        <div class="detail-label">Coupon Code</div>
+        <div class="detail-value" style="font-family:monospace;color:var(--accent);font-weight:700">
+          {{ $order->coupon_code ?: '—' }}
+        </div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-label">Applied Discount</div>
+        <div class="detail-value" style="color:#22c55e;font-weight:700">
+          {{ $order->currency_symbol }}{{ number_format((float) $order->discount_total, 2) }}
+        </div>
+      </div>
+      @if($appliedCoupon)
+        <div class="detail-row">
+          <div class="detail-label">Discount Type</div>
+          <div class="detail-value">
+            {{ $appliedCoupon->discount_type === 'percent' ? 'Percentage' : ($appliedCoupon->discount_type === 'fixed_product' ? 'Fixed product' : 'Fixed cart') }}
+          </div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Configured Value</div>
+          <div class="detail-value">
+            @if($appliedCoupon->discount_type === 'percent')
+              {{ number_format((float) $appliedCoupon->amount, 2) }}%
+            @else
+              {{ $order->currency_symbol }}{{ number_format((float) $appliedCoupon->amount, 2) }}
+            @endif
+          </div>
+        </div>
+        @if(!empty($appliedCoupon->description))
+          <div style="font-size:12px;color:var(--muted);line-height:1.6;margin:12px 0">
+            {{ $appliedCoupon->description }}
+          </div>
+        @endif
+        @if($appliedCoupon->minimum_amount !== null || $appliedCoupon->maximum_amount !== null)
+          <div class="detail-row">
+            <div class="detail-label">Order Limits</div>
+            <div class="detail-value" style="font-size:12px">
+              @if($appliedCoupon->minimum_amount !== null)
+                Min {{ $order->currency_symbol }}{{ number_format((float) $appliedCoupon->minimum_amount, 2) }}
+              @endif
+              @if($appliedCoupon->maximum_amount !== null)
+                @if($appliedCoupon->minimum_amount !== null) · @endif
+                Max {{ $order->currency_symbol }}{{ number_format((float) $appliedCoupon->maximum_amount, 2) }}
+              @endif
+            </div>
+          </div>
+        @endif
+        @if($appliedCoupon->date_expires)
+          <div class="detail-row">
+            <div class="detail-label">Expires</div>
+            <div class="detail-value">{{ \Carbon\Carbon::parse($appliedCoupon->date_expires)->format('d M Y, H:i') }}</div>
+          </div>
+        @endif
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px">
+          @if($appliedCoupon->free_shipping)<span class="badge badge-green">Free shipping</span>@endif
+          @if($appliedCoupon->individual_use)<span class="badge badge-blue">Individual use</span>@endif
+          @if($appliedCoupon->exclude_sale_items)<span class="badge badge-orange">Excludes sale items</span>@endif
+        </div>
+      @else
+        <p style="font-size:12px;color:var(--muted);line-height:1.6;margin:12px 0 0">
+          The coupon record is no longer available, but this code and discount amount were saved with the order at checkout.
+        </p>
+      @endif
+    </div>
+    @endif
+
     {{-- Customer --}}
     <div class="card">
       <div class="card-title">Customer</div>

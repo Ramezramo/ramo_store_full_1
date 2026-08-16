@@ -122,6 +122,19 @@ class AdminDashboardController extends Controller
         $order = DB::table('orders')->where('id', $id)->first();
         if (!$order) abort(404);
 
+        $appliedCoupon = null;
+        $couponCode = trim((string) ($order->coupon_code ?? ''));
+        if ($couponCode !== '') {
+            $appliedCoupon = DB::table('coupons')
+                ->whereRaw('LOWER(code) = ?', [strtolower($couponCode)])
+                ->first([
+                    'id', 'code', 'description', 'discount_type', 'amount', 'status',
+                    'date_expires', 'minimum_amount', 'maximum_amount',
+                    'usage_limit', 'usage_limit_per_user', 'free_shipping',
+                    'exclude_sale_items', 'individual_use',
+                ]);
+        }
+
         $customer = $order->customer_id ? DB::table('users')->where('id', $order->customer_id)->first(['id', 'name', 'email', 'phone']) : null;
 
         $billing   = $order->billing    ? json_decode($order->billing,    true) : [];
@@ -195,7 +208,7 @@ class AdminDashboardController extends Controller
             'order', 'customer', 'billing', 'shipping', 'lineItems',
             'productDetails', 'variationDetails', 'timeline', 'subOrders',
             'paymentReceipts', 'computedStatus', 'vendorStatusCounts',
-            'statusService'
+            'statusService', 'appliedCoupon'
         ));
     }
 
