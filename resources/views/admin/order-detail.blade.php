@@ -123,7 +123,14 @@
               $receiptStatusClass = match($receipt->status) {
                 'confirmed' => 'badge-green',
                 'rejected' => 'badge-red',
+                'superseded' => 'badge-blue',
                 default => 'badge-yellow',
+              };
+              $receiptStatusLabel = match($receipt->status) {
+                'confirmed' => 'Confirmed',
+                'rejected' => 'Rejected',
+                'superseded' => 'Replaced',
+                default => 'Pending review',
               };
               $receiptMethod = match($receipt->payment_method) {
                 'manual_wallet' => 'Pay by Wallet',
@@ -142,7 +149,7 @@
                     · {{ $receiptMethod }}
                   </div>
                 </div>
-                <span class="badge {{ $receiptStatusClass }}">{{ ucfirst($receipt->status) }}</span>
+                <span class="badge {{ $receiptStatusClass }}">{{ $receiptStatusLabel }}</span>
               </div>
               <div style="display:flex;flex-wrap:wrap;gap:12px;color:var(--muted);margin-top:7px">
                 <span>

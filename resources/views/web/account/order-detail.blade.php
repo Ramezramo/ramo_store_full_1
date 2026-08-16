@@ -125,10 +125,23 @@
   @if(isset($paymentReceipts) && $paymentReceipts->count())
     <div style="margin-top:18px;padding-top:14px;border-top:1px solid #fed7aa">
       <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:#92400e;margin-bottom:8px">{{ $isAr ? 'سجل الإيصالات' : 'Receipt history' }}</div>
+      @if($order->payment_status === 'confirmed' && $paymentReceipts->contains(fn ($receipt) => $receipt->status === 'superseded'))
+        <div style="margin-bottom:8px;padding:9px 11px;border-radius:8px;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-size:12px;line-height:1.6">
+          {{ $isAr ? 'تم تأكيد الدفع. الإيصالات القديمة اتعلّمت كإيصالات مستبدلة ومش محتاجة مراجعة.' : 'Payment is confirmed. Older uploads were marked as replaced and no longer need review.' }}
+        </div>
+      @endif
       @foreach($paymentReceipts as $receipt)
-        <div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:7px 0;border-bottom:1px solid #ffedd5">
+        @php
+          $receiptStatus = match ($receipt->status) {
+            'confirmed' => [$isAr ? 'تم التأكيد' : 'Confirmed', '#15803d'],
+            'rejected' => [$isAr ? 'مرفوض' : 'Rejected', '#b91c1c'],
+            'superseded' => [$isAr ? 'مستبدل' : 'Replaced', '#6b7280'],
+            default => [$isAr ? 'قيد المراجعة' : 'Pending review', '#92400e'],
+          };
+        @endphp
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;padding:7px 0;border-bottom:1px solid #ffedd5">
           <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($receipt->file_path) }}" target="_blank" rel="noopener">{{ $receipt->original_name ?: ($isAr ? 'إيصال رقم '.$receipt->id : 'Receipt #'.$receipt->id) }}</a>
-          <span style="color:#6b7280">{{ ucfirst($receipt->status) }}</span>
+          <span style="color:{{ $receiptStatus[1] }};font-weight:700;white-space:nowrap">{{ $receiptStatus[0] }}</span>
         </div>
       @endforeach
     </div>

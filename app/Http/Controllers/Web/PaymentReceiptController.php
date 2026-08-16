@@ -120,7 +120,7 @@ class PaymentReceiptController extends Controller
 
     public static function history(int $orderId)
     {
-        return DB::table('payment_receipts as receipts')
+        $receipts = DB::table('payment_receipts as receipts')
             ->leftJoin('users as uploaders', 'uploaders.id', '=', 'receipts.uploaded_by')
             ->leftJoin('users as reviewers', 'reviewers.id', '=', 'receipts.reviewed_by')
             ->where('receipts.order_id', $orderId)
@@ -133,5 +133,18 @@ class PaymentReceiptController extends Controller
             ])
             ->orderByDesc('receipts.id')
             ->get();
+
+        // Older versions could leave previous uploads as pending after one
+        // receipt confirmed the order. They are no longer awaiting review,
+        // so normalize their display state without mutating historical data.
+        if (DB::table('orders')->where('id', $orderId)->value('payment_status') === 'confirmed') {
+            $receipts->each(function (object $receipt): void {
+                if ($receipt->status === 'pending') {
+                    $receipt->status = 'superseded';
+                }
+            });
+        }
+
+        return $receipts;
     }
 }

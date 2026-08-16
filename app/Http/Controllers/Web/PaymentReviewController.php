@@ -80,6 +80,19 @@ class PaymentReviewController extends Controller
         ];
 
         DB::transaction(function () use ($receipt, $order, $reviewerId, $data, $now, $confirmed, $newPaymentStatus, $timeline) {
+            // Only the receipt selected for review receives the final decision.
+            // Older pending uploads are no longer awaiting review after this
+            // order-level decision, so mark them as superseded instead of
+            // leaving a misleading Pending status in the customer's history.
+            DB::table('payment_receipts')
+                ->where('order_id', $order->id)
+                ->where('status', 'pending')
+                ->where('id', '<>', $receipt->id)
+                ->update([
+                    'status' => 'superseded',
+                    'updated_at' => $now,
+                ]);
+
             DB::table('payment_receipts')->where('id', $receipt->id)->update([
                 'status' => $newPaymentStatus,
                 'rejection_reason' => $confirmed ? null : trim($data['rejection_reason']),
