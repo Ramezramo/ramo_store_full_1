@@ -84,6 +84,11 @@
     <div style="margin-top:12px;padding:10px 12px;border-radius:8px;background:#fef2f2;color:#991b1b;font-size:13px">
       {{ $isAr ? 'الإيصال اترفض' : 'Receipt rejected' }}{{ $order->payment_rejection_reason ? ': '.$order->payment_rejection_reason : '.' }} {{ $isAr ? 'ارفع إيصال جديد أوضح تحت.' : 'Upload a clearer new receipt below.' }}
     </div>
+  @elseif($order->payment_status === 'confirmed')
+    <div style="margin-top:12px;padding:12px 14px;border-radius:9px;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;font-size:13px;line-height:1.6">
+      <strong>✓ {{ $isAr ? 'تم تأكيد الدفع بنجاح.' : 'Your payment has been confirmed.' }}</strong>
+      <div style="margin-top:3px">{{ $isAr ? 'الإيصال اتراجع واتقبل، ومش محتاج ترفع حاجة تاني.' : 'Your receipt was reviewed and approved. You do not need to upload anything else.' }}</div>
+    </div>
   @elseif($accountHasUploadedReceipt)
     <div style="margin-top:12px;padding:12px 14px;border-radius:9px;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;font-size:13px;line-height:1.6">
       <strong>✓ {{ $isAr ? 'تم رفع الإيصال وهو تحت المراجعة.' : 'Your receipt has been uploaded and is pending review.' }}</strong>
