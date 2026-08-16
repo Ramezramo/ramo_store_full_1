@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\CartItem;
 use App\Models\ProductReview;
 use App\Models\RefundRequest;
 use App\Models\SubOrder;
@@ -113,6 +114,115 @@ class IdorAuthorizationTest extends TestCase
             $otherVendor->delete();
             $owner->delete();
         }
+    }
+
+    public function test_coupon_validate_uses_authenticated_user_id_not_payload(): void
+    {
+        $customer = $this->createCustomer('coupon-authenticated-user');
+        $spoofedUser = $this->createCustomer('coupon-spoofed-user');
+        $couponCode = 'idor-validate-'.uniqid();
+        $couponId = DB::table('coupons')->insertGetId([
+            'code' => $couponCode,
+            'vendor_id' => null,
+            'amount' => 10,
+            'status' => 'publish',
+            'discount_type' => 'percent',
+            'usage_count' => 0,
+            'usage_limit' => 0,
+            'usage_limit_per_user' => 1,
+            'individual_use' => true,
+            'used_by' => json_encode([$spoofedUser->id]),
+        ]);
+
+        try {
+            $this->actingAs($customer, 'sanctum')
+                ->postJson('/api/ramo/coupons/validate', [
+                    'code' => $couponCode,
+                    'cart_total' => 100,
+                    'user_id' => $spoofedUser->id,
+                ])
+                ->assertOk()
+                ->assertJsonPath('success', true);
+        } finally {
+            DB::table('coupons')->where('id', $couponId)->delete();
+            $spoofedUser->delete();
+            $customer->delete();
+        }
+    }
+
+    public function test_coupon_apply_uses_authenticated_user_id_not_payload(): void
+    {
+        $customer = $this->createCustomer('coupon-apply-authenticated');
+        $spoofedUser = $this->createCustomer('coupon-apply-spoofed');
+        $couponCode = 'idor-apply-'.uniqid();
+        $couponId = DB::table('coupons')->insertGetId([
+            'code' => $couponCode,
+            'vendor_id' => null,
+            'amount' => 10,
+            'status' => 'publish',
+            'discount_type' => 'percent',
+            'usage_count' => 0,
+            'usage_limit' => 0,
+            'usage_limit_per_user' => 1,
+            'individual_use' => true,
+            'used_by' => json_encode([$spoofedUser->id]),
+        ]);
+        DB::table('coupon_user_limits')->insert([
+            'coupon_id' => $couponId,
+            'user_id' => $spoofedUser->id,
+            'use_count' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        try {
+            $this->actingAs($customer, 'sanctum')
+                ->postJson('/api/ramo/coupons/apply', [
+                    'code' => $couponCode,
+                    'cart_total' => 100,
+                    'user_id' => $spoofedUser->id,
+                ])
+                ->assertOk()
+                ->assertJsonPath('success', true);
+
+            $this->assertDatabaseHas('coupon_user_limits', [
+                'coupon_id' => $couponId,
+                'user_id' => $customer->id,
+                'use_count' => 1,
+            ]);
+            $this->assertDatabaseHas('coupon_user_limits', [
+                'coupon_id' => $couponId,
+                'user_id' => $spoofedUser->id,
+                'use_count' => 1,
+            ]);
+        } finally {
+            DB::table('coupon_user_limits')->where('coupon_id', $couponId)->delete();
+            DB::table('coupons')->where('id', $couponId)->delete();
+            $spoofedUser->delete();
+            $customer->delete();
+        }
+    }
+
+    public function test_owner_ids_are_not_mass_assignable_on_cart_and_refund_models(): void
+    {
+        $cartItem = new CartItem([
+            'user_id' => 12345,
+            'product_id' => 1,
+            'qty' => 1,
+        ]);
+        $refund = new RefundRequest([
+            'order_id' => 1,
+            'customer_id' => 12345,
+            'vendor_id' => 54321,
+            'reason' => 'Test reason',
+        ]);
+
+        $this->assertNull($cartItem->user_id);
+        $this->assertNull($refund->customer_id);
+        $this->assertSame(54321, $refund->vendor_id);
+        $this->assertSame(1, $cartItem->product_id);
+        $this->assertSame(1, $cartItem->qty);
+        $this->assertSame(1, $refund->order_id);
     }
 
     public function test_customer_cannot_attach_a_note_to_another_customers_order(): void

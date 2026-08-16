@@ -103,3 +103,12 @@ The focused policy and vendor-isolation checks passed **4 tests and 22 assertion
 The report’s already-remediated IDOR findings were intentionally skipped. The remaining coverage gaps were addressed without changing the established authorization contracts: a direct customer query-parameter access regression now confirms a cross-customer order returns 404; cross-customer order messaging remains policy-protected with 403 and no message write; and cross-customer receipt upload returns the existing non-disclosing 404 without creating a receipt. The receipt-upload test uses a generic fake upload so it does not depend on the local GD extension.
 
 The unreferenced `OrdersController::getAllVendorOrders()` method was removed after route and source-usage verification; the live vendor order-state path remains intact. The focused coverage checks passed **4 tests and 7 assertions**, and the full suite passed **121 tests and 526 assertions**. No already-fixed coupon, customer-order, cart, refund, vendor sub-order, or review-policy remediation was reworked. The release decision remains **NO-GO** until the external production gates are completed.
+
+
+## Identity and mass-assignment hardening — pasted_content_16.txt — 2026-08-16
+
+The coupon `validate` and `apply` API paths now derive user identity exclusively from the authenticated principal and ignore client-supplied `user_id` values. `CartItem.user_id` and `RefundRequest.customer_id` are no longer mass-assignable; trusted server-side assignment remains available through explicit property assignment, while `RefundRequest.vendor_id` remains assignable for the authenticated vendor refund flow.
+
+Regression coverage verifies authenticated-user coupon identity, owner-ID mass-assignment boundaries, and the vendor refund server-side ownership path. During verification, the apply test exposed a PostgreSQL incompatibility in the existing `coupon_user_limits` `updateOrInsert` expression. The usage increment was corrected to lock and update an existing row or insert a new row explicitly, preserving transaction and coupon-row locking semantics without raw `COALESCE` assignment in an INSERT statement.
+
+The focused checks passed **4 tests and 24 assertions**. The full application suite and final release checks are recorded with the follow-up verification. No secrets, tokens, OTP values, or customer data are included. The release decision remains **NO-GO** until the external production gates documented in the release-readiness report are completed.

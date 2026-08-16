@@ -414,13 +414,12 @@ class CouponController extends Controller
             $request->validate([
                 'code' => 'required|string|max:50',
                 'cart_total' => 'required|numeric|min:0',
-                'user_id' => 'nullable|integer|exists:users,id',
             ]);
 
             $validation = $this->validateCouponRules(
                 $request->code,
                 $request->cart_total,
-                $request->user_id
+                $request->user()->id
             );
 
             if (! $validation['valid']) {
@@ -540,10 +539,28 @@ class CouponController extends Controller
                     return false;
                 }
 
-                DB::table('coupon_user_limits')->updateOrInsert(
-                    ['coupon_id' => $freshCoupon->id, 'user_id' => $userId],
-                    ['use_count' => DB::raw('COALESCE(use_count, 0) + 1'), 'updated_at' => now()]
-                );
+                $usageRow = DB::table('coupon_user_limits')
+                    ->where('coupon_id', $freshCoupon->id)
+                    ->where('user_id', $userId)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($usageRow) {
+                    DB::table('coupon_user_limits')
+                        ->where('id', $usageRow->id)
+                        ->update([
+                            'use_count' => ((int) $usageRow->use_count) + 1,
+                            'updated_at' => now(),
+                        ]);
+                } else {
+                    DB::table('coupon_user_limits')->insert([
+                        'coupon_id' => $freshCoupon->id,
+                        'user_id' => $userId,
+                        'use_count' => 1,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
             }
 
             $freshCoupon->increment('usage_count');
@@ -577,18 +594,17 @@ class CouponController extends Controller
     public function applyCoupon(Request $request): JsonResponse
     {
         try {
-            // 1. Laravel validation (keeps the same rules you already had)
+            // 1. Laravel validation; the acting user is derived from the authenticated principal.
             $request->validate([
                 'code' => 'required|string|max:50',
                 'cart_total' => 'required|numeric|min:0',
-                'user_id' => 'nullable|integer|exists:users,id',
             ]);
 
-            // 2. Delegate everything to the local method
+            // 2. Delegate everything to the local method with the authenticated user ID.
             $result = $this->applyCouponLocally(
                 code: $request->code,
                 cartTotal: (float) $request->cart_total,
-                userId: $request->user_id ? (int) $request->user_id : null
+                userId: $request->user()->id
             );
 
             // 3. Convert the array response to JsonResponse with proper HTTP code

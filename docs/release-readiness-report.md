@@ -13,7 +13,7 @@ The development environment continues to show the OTP when `SMS_GATEWAY=log` and
 | Area | Verified remediation status | Launch status |
 |---|---|---|
 | Framework and dependency security | Laravel is 12.66.0 and `composer audit` reported no security advisories. | **Resolved in code.** |
-| Automated regression suite | `php artisan test` passed **115 tests and 511 assertions** after the 16 August 2026 IDOR and coupon-ownership follow-ups. The customer order-detail path was also hardened to accept both Eloquent-cast arrays and JSON-string representations without changing its response contract. | **Passed for covered behavior.** |
+| Automated regression suite | `php artisan test` passed **124 tests and 538 assertions** after the 16 August 2026 IDOR, coupon-ownership, coupon-identity, PostgreSQL usage-tracking, and owner-ID mass-assignment follow-ups. The customer order-detail path was also hardened to accept both Eloquent-cast arrays and JSON-string representations without changing its response contract. | **Passed for covered behavior.** |
 | Product-text and review XSS controls | Vendor and administrator product write boundaries strip markup from plain-text fields. Customer review titles and bodies are now normalized before API and web persistence, and optional admin notes/order-override reasons are normalized as well. Search cards no longer accept raw HTML; editor payloads use inert JSON with Laravel `@json()` and explicit parsing; cart, recently-viewed, preview-label, analytics-legend, category-option, flash-search, size-tag, and related-product renderers avoid raw user-controlled HTML; generated size-table values are escaped; and policy copy uses escaped Blade output with CSS line breaks. | **Resolved in code and regression-tested.** |
 | CSRF and API authorization | Login CSRF exclusions were removed; `POST /api/ramo/config-storing` now requires route-level `admin.auth.api` in addition to the controller check; and API logout is now `POST /api/user/logout`. | **Resolved in code and regression-tested.** |
 | Password-reset token exposure | The unauthenticated `generateTokenTesting` endpoint that returned plaintext reset tokens was removed, its controller method was deleted, and the inactive `/api/v2` route registration and dead route file were removed. | **Resolved in code and regression-tested.** |
@@ -64,7 +64,7 @@ The public temporary proxy still fails to preserve `X-Frame-Options`, although t
 
 | Check | Result as of 16 August 2026 |
 |---|---|
-| Full Laravel suite | **121 passed, 526 assertions** after the additional IDOR coverage follow-up; refund, cart, vendor status-oracle, order-detail, order-note, receipt-upload, messaging, query-parameter, and coupon cross-vendor denial tests passed. |
+| Full Laravel suite | **124 passed, 538 assertions** after the pasted_content_16 coupon-identity, PostgreSQL usage-tracking, and owner-ID mass-assignment follow-up; refund, cart, vendor status-oracle, order-detail, order-note, receipt-upload, messaging, query-parameter, coupon cross-vendor denial, authenticated-user identity, and mass-assignment boundary tests passed. |
 | XSS regression suite | **10 passed, 66 assertions** across vendor submission, review API/web persistence, admin free-text paths, storefront rendering, search-card rendering, JSON breakout protection, administrator editor payloads, dynamic-HTML sink checks, size-row DOM sinks, policy rendering, and related-product chip rendering. |
 | Raw-SQL guardrail | `composer run-script check-sql`: **passed**. |
 | Dependency advisory check | `composer audit`: **no security vulnerability advisories found**. |
@@ -143,6 +143,14 @@ php artisan queue:work redis --queue=otp,default --tries=2 --timeout=15
 ```
 
 Tune worker counts and timeouts using staging measurements, not this starting example alone. [2]
+
+## Follow-up remediation — pasted_content_16.txt — 2026-08-16
+
+The coupon `validate` and `apply` paths now use `auth()->id()` as the only user identity source; a client-provided `user_id` is ignored. `CartItem.user_id` and `RefundRequest.customer_id` were removed from their Eloquent `$fillable` arrays so ownership cannot be assigned through mass assignment. The authenticated vendor refund path continues to set its trusted ownership fields explicitly.
+
+The coupon usage increment was also corrected for PostgreSQL: the operation now locks the coupon and the per-user usage row, then explicitly updates an existing counter or inserts a new row. This removes the incompatible raw expression previously used inside the insert/update helper while preserving the transaction and concurrency controls.
+
+Four regression tests were added, covering authenticated coupon identity and owner-ID mass-assignment boundaries. The focused checks passed **4 tests and 24 assertions**. The complete suite passed **124 tests and 538 assertions**; the raw-SQL guardrail, PHP syntax checks, and `git diff --check` also passed. The production decision remains **NO-GO** pending the external infrastructure, trusted-edge, managed-media, SMS/payment, merchant-content, and measured-load gates described above.
 
 ## References
 
