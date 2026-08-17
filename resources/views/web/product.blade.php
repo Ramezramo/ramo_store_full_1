@@ -929,29 +929,40 @@ function updateAvailability() {
   updateColorSteppers();
 }
 
-// Auto-select default (main) variation on load
+// Auto-select the main variation only when it can actually be ordered.
+// If it is unavailable, prefer the first orderable variation instead.
 (function () {
-  const main = VAR_DATA.find(v => v.main) || VAR_DATA[0] || null;
+  const isOrderable = (variation) => variation
+    && Number(variation.stock) > 0
+    && maximumOrderQuantity(variation.stock) >= MIN_ORDER_QTY;
+  const preferred = VAR_DATA.find(v => v.main && isOrderable(v))
+    || VAR_DATA.find(v => isOrderable(v));
+  const main = preferred || VAR_DATA.find(v => v.main) || VAR_DATA[0] || null;
+
   if (main) {
     // Seed non-color attributes first so initial color quantities are keyed to
-    // the complete main variation (for example, Size + Color).
-    Object.entries(main.attrs).forEach(([k, val]) => {
-      if (k.toLowerCase() === 'color') return;
-      const btn = document.querySelector(`[data-attr-key="${k}"][data-attr-val="${val}"]`);
-      if (!btn) return;
-      selectedAttrs[k] = val;
-      btn.classList.add('selected');
-    });
-    Object.entries(main.attrs).forEach(([k, val]) => {
-      if (k.toLowerCase() !== 'color') return;
-      const btn = document.querySelector(`[data-attr-key="${k}"][data-attr-val="${val}"]`);
-      if (!btn) return;
-      selectedColorValues.add(val);
-      const quantityKey = colorQuantityKey(val);
-      if (!(quantityKey in colorQuantities)) colorQuantities[quantityKey] = MIN_ORDER_QTY;
-      btn.classList.add('selected');
-    });
-    // Lock the main variation's image on load
+    // the complete selected variation (for example, Size + Color).
+    if (preferred) {
+      Object.entries(main.attrs).forEach(([k, val]) => {
+        if (k.toLowerCase() === 'color') return;
+        const btn = document.querySelector(`[data-attr-key="${k}"][data-attr-val="${val}"]`);
+        if (!btn) return;
+        selectedAttrs[k] = val;
+        btn.classList.add('selected');
+      });
+      Object.entries(main.attrs).forEach(([k, val]) => {
+        if (k.toLowerCase() !== 'color') return;
+        const btn = document.querySelector(`[data-attr-key="${k}"][data-attr-val="${val}"]`);
+        if (!btn) return;
+        selectedColorValues.add(val);
+        const quantityKey = colorQuantityKey(val);
+        if (!(quantityKey in colorQuantities)) colorQuantities[quantityKey] = MIN_ORDER_QTY;
+        btn.classList.add('selected');
+      });
+    }
+
+    // Keep the preferred/main variation image on load without selecting an
+    // unavailable variation.
     if (main.images && main.images.length > 0) {
       _lockedImgUrl = main.images[0];
       const img = document.getElementById('main-img');
@@ -960,8 +971,8 @@ function updateAvailability() {
       const colorKey = Object.keys(main.attrs).find(k => k.toLowerCase() === 'color');
       if (colorKey) updateVariationThumbs(colorKey, main.attrs[colorKey]);
     }
-    currentVariation = main;
-    renderPriceStock(main);
+    currentVariation = preferred ? main : null;
+    renderPriceStock(preferred ? main : null);
     updateSelectedLabels();
   }
   updateAvailability();
