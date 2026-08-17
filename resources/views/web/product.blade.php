@@ -302,7 +302,7 @@
 
   @if(config('app.debug') && $variations->count())
     @php
-      $debugVariationRows = $variations->map(function ($variation) use ($discPct, $isAr) {
+      $debugVariationRows = $variations->map(function ($variation) use ($discPct, $isAr, $minimumOrderQty, $configuredMaximumOrderQty, $product) {
         $attrs = is_array($variation->attributes) ? $variation->attributes : [];
         $color = null;
         $size = null;
@@ -328,6 +328,14 @@
           ? round(($discountAmount / $originalPrice) * 100)
           : 0;
 
+        $stock = max(0, (int) ($variation->stock_quantity ?? 0));
+        $maximumOrderQty = $configuredMaximumOrderQty > 0
+          ? min($stock, $configuredMaximumOrderQty)
+          : $stock;
+        if ($product->sold_individually ?? false) {
+          $maximumOrderQty = min($maximumOrderQty, 1);
+        }
+
         return [
           'id' => $variation->id,
           'color' => $color !== null ? \App\Support\StorefrontLabels::color($color, $isAr) : '—',
@@ -336,7 +344,9 @@
           'original_price' => $originalPrice,
           'current_price' => $currentPrice,
           'discount_percent' => $discountPercent,
-          'stock' => max(0, (int) ($variation->stock_quantity ?? 0)),
+          'stock' => $stock,
+          'minimum_order_qty' => $minimumOrderQty,
+          'maximum_order_qty' => max(0, $maximumOrderQty),
         ];
       });
     @endphp
@@ -358,6 +368,8 @@
               <th>{{ $isAr ? 'السعر الأصلي' : 'Original price' }}</th>
               <th>{{ $isAr ? 'السعر الحالي' : 'Current price' }}</th>
               <th>{{ $isAr ? 'الخصم' : 'Discount' }}</th>
+              <th>{{ $isAr ? 'الحد الأدنى' : 'Min / order' }}</th>
+              <th>{{ $isAr ? 'الحد الأقصى' : 'Max / order' }}</th>
               <th>{{ $isAr ? 'المتاح' : 'Available' }}</th>
               <th>ID</th>
             </tr>
@@ -377,6 +389,8 @@
                     —
                   @endif
                 </td>
+                <td>{{ number_format($row['minimum_order_qty']) }}</td>
+                <td>{{ number_format($row['maximum_order_qty']) }}</td>
                 <td>{{ number_format($row['stock']) }}</td>
                 <td><code>{{ $row['id'] }}</code></td>
               </tr>
@@ -392,7 +406,7 @@
       .debug-variation-kicker{color:#c2410c;font-size:10px;font-weight:850;letter-spacing:.12em;}
       .debug-variation-count{padding:6px 10px;border-radius:999px;background:#ffedd5;color:#9a3412;font-size:12px;font-weight:800;white-space:nowrap;}
       .debug-variation-scroll{overflow-x:auto;border:1px solid #fed7aa;border-radius:11px;background:#fff;}
-      .debug-variation-table{width:100%;min-width:850px;border-collapse:collapse;font-size:12px;color:#431407;}
+      .debug-variation-table{width:100%;min-width:980px;border-collapse:collapse;font-size:12px;color:#431407;}
       .debug-variation-table th,.debug-variation-table td{padding:10px 11px;border-bottom:1px solid #ffedd5;text-align:start;vertical-align:middle;white-space:nowrap;}
       .debug-variation-table th{background:#ffedd5;color:#7c2d12;font-size:11px;font-weight:850;}
       .debug-variation-table tbody tr:last-child td{border-bottom:0;}
@@ -400,11 +414,11 @@
       .debug-current-price{font-weight:850;color:#166534;}
       .debug-discount-badge{display:inline-flex;padding:3px 6px;border-radius:6px;background:#dcfce7;color:#166534;font-weight:850;}
       .debug-variation-table code{font-size:11px;color:#7c2d12;}
-      @media (max-width:700px){.debug-variation-widget{margin-top:20px;padding:12px;border-radius:12px}.debug-variation-header h2{font-size:15px}.debug-variation-table{min-width:790px;font-size:11px}.debug-variation-table th,.debug-variation-table td{padding:8px 9px}}
+      @media (max-width:700px){.debug-variation-widget{margin-top:20px;padding:12px;border-radius:12px}.debug-variation-header h2{font-size:15px}.debug-variation-table{min-width:920px;font-size:11px}.debug-variation-table th,.debug-variation-table td{padding:8px 9px}}
     </style>
   @endif
 
-  {{-- ═══ REVIEWS SECTION --}}═══ --}}
+  {{-- ═══ REVIEWS SECTION --}}
   @php
     $totalReviews = $reviews->count();
     $avgRating    = $totalReviews ? round($reviews->avg('rating'), 1) : 0;
