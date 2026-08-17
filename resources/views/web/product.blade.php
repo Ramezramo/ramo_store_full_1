@@ -204,6 +204,7 @@
                             aria-label="{{ $isAr ? 'اللون: ' : 'Color: ' }}{{ \App\Support\StorefrontLabels::color($val, $isAr) }}"
                             style="background-color: var(--swatch-{{ Str::slug($val) }}, #999)">
                     </button>
+                    <span class="var-color-name">{{ \App\Support\StorefrontLabels::color($val, $isAr) }}</span>
                     <div class="color-qty-stepper" id="color-qty-{{ Str::slug($attrKey) }}-{{ Str::slug($val) }}" hidden></div>
                   </div>
                 @else
@@ -659,15 +660,46 @@
   width: 100%; height: 100%; opacity: .4;
 }
 
-.var-options { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-start; }
-.var-color-option { display:flex; flex-direction:column; align-items:center; gap:5px; min-width:48px; }
+.var-options { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-start; }
+.var-color-option {
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+  flex:0 0 112px; min-width:112px; padding:10px 8px 9px;
+  border:1px solid #ebe7e2; border-radius:14px; background:#fff;
+  box-shadow:0 2px 8px rgba(28,25,23,.04);
+  transition:border-color .18s, box-shadow .18s, transform .18s;
+}
+.var-color-option:has(.var-swatch.selected) {
+  border-color:var(--c-orange, #e85d26);
+  box-shadow:0 4px 14px rgba(232,93,38,.15);
+  transform:translateY(-1px);
+}
+.var-swatch {
+  width:46px; height:46px; border:3px solid #fff; border-radius:50%;
+  outline:1px solid #d8d4cf; cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,.12);
+  transition:transform .18s, outline-color .18s, box-shadow .18s;
+}
+.var-swatch:hover { transform:scale(1.06); }
+.var-swatch.selected { outline:3px solid #171717; outline-offset:2px; box-shadow:0 3px 8px rgba(0,0,0,.2); }
 .var-swatch[disabled] { cursor:not-allowed; opacity:.35; filter:grayscale(1); }
 .var-swatch.out-of-stock { opacity:.35; filter:grayscale(1); }
-.color-qty-stepper { display:flex; align-items:center; gap:3px; min-height:30px; }
-.color-qty-stepper button { width:28px; height:28px; border:1px solid #ddd; border-radius:7px; background:#fff; color:#333; cursor:pointer; font-weight:700; line-height:1; }
+.color-qty-stepper { display:grid; grid-template-columns:28px 1fr 28px; align-items:center; gap:4px; width:100%; min-height:32px; }
+.color-qty-stepper button {
+  width:28px; height:30px; border:1px solid #dedad5; border-radius:8px;
+  background:#faf9f7; color:#252525; cursor:pointer; font-size:16px; font-weight:700; line-height:1;
+}
+.color-qty-stepper button:hover:not(:disabled) { border-color:var(--c-orange, #e85d26); color:var(--c-orange, #e85d26); }
 .color-qty-stepper button:disabled { opacity:.4; cursor:not-allowed; }
-.color-qty-stepper input { width:34px; height:28px; border:1px solid #ddd; border-radius:7px; text-align:center; font-size:12px; padding:0; }
-.color-qty-hint { font-size:10px; color:var(--c-mid); white-space:nowrap; }
+.color-qty-stepper input {
+  width:100%; height:30px; border:1px solid #dedad5; border-radius:8px;
+  text-align:center; font-size:13px; font-weight:700; padding:0; color:#252525; background:#fff;
+}
+.color-qty-hint { display:none; }
+.var-hint { min-height:18px; margin-top:8px; font-size:12px; color:var(--c-mid, #78716c); }
+@media (max-width:680px) {
+  .var-options { gap:9px; }
+  .var-color-option { flex-basis:100px; min-width:100px; padding:8px 6px; }
+  .var-swatch { width:42px; height:42px; }
+}
 
 /* Color swatch CSS variables */
 :root {
@@ -1022,7 +1054,7 @@ function updateColorSteppers() {
     const quantity = Math.max(MIN_ORDER_QTY, Math.min(maximum, Number(colorQuantities[value] || MIN_ORDER_QTY)));
     colorQuantities[value] = quantity;
     stepper.hidden = false;
-    stepper.innerHTML = `<button type="button" onclick="changeColorQty('${String(COLOR_ATTR_KEY).replace(/'/g, "\'")}','${String(value).replace(/'/g, "\'")}',-1,event)" aria-label="Decrease">−</button><input type="number" min="${MIN_ORDER_QTY}" max="${Math.max(1, maximum)}" value="${quantity}" aria-label="${PRODUCT_TEXT.quantity || 'Quantity'}"><button type="button" onclick="changeColorQty('${String(COLOR_ATTR_KEY).replace(/'/g, "\'")}','${String(value).replace(/'/g, "\'")}',1,event)" aria-label="Increase">+</button><div class="color-qty-hint">${PRODUCT_TEXT.maximum} ${maximum}</div>`;
+    stepper.innerHTML = `<button type="button" onclick="changeColorQty('${String(COLOR_ATTR_KEY).replace(/'/g, "\'")}','${String(value).replace(/'/g, "\'")}',-1,event)" aria-label="Decrease">−</button><input type="number" min="${MIN_ORDER_QTY}" max="${Math.max(1, maximum)}" value="${quantity}" aria-label="${PRODUCT_TEXT.quantity || 'Quantity'}"><button type="button" onclick="changeColorQty('${String(COLOR_ATTR_KEY).replace(/'/g, "\'")}','${String(value).replace(/'/g, "\'")}',1,event)" aria-label="Increase">+</button>`;
     const input = stepper.querySelector('input');
     input.addEventListener('change', () => setColorQty(COLOR_ATTR_KEY, value, input.value));
   });
@@ -1447,8 +1479,13 @@ function applyProductCoupon() {
 }
 
 /* Variations wrapper */
-.pi-variations-wrap { margin-bottom: 16px; }
-.pi-var-group { margin-bottom: 10px; }
+.pi-variations-wrap { margin:20px 0 18px; display:grid; gap:14px; }
+.pi-var-group { margin:0; padding:0 0 14px; border-bottom:1px solid #eeeae5; }
+.pi-var-group:last-child { border-bottom:0; padding-bottom:0; }
+.pi-var-group .var-label { display:flex; align-items:center; gap:6px; margin-bottom:10px; font-size:13px; font-weight:800; color:#292524; }
+.pi-var-group .var-selected-label { color:var(--c-orange, #e85d26); font-weight:700; }
+.var-color-name { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; font-weight:700; color:#57534e; }
+.pi-var-group .var-btn { min-width:46px; height:38px; padding:0 14px; border-radius:10px; }
 
 /* Cart row */
 .pi-cart-row {
