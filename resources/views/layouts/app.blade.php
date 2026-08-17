@@ -1432,6 +1432,25 @@ async function addToCart(productId, name, price, image, variationId = null, qty 
   }
 }
 
+function showBulkAddFailures(data) {
+  const failures = Array.isArray(data.failed_items) ? data.failed_items : [];
+  if (!failures.length) {
+    showToast(data.message || STOREFRONT_COPY.addError, 'err');
+    return;
+  }
+
+  const messages = failures.map((failed) => {
+    const attrs = failed.attributes && typeof failed.attributes === 'object'
+      ? Object.entries(failed.attributes).map(([k, v]) => `${k}: ${v}`).join(', ')
+      : '';
+    return attrs ? `${attrs}: ${failed.message || STOREFRONT_COPY.addError}` : (failed.message || STOREFRONT_COPY.addError);
+  });
+
+  // The backend message contains the actual reason for every rejected variation
+  // (stock, minimum, or per-order limit), including when none could be added.
+  showToast(messages.join(' • '), 'err');
+}
+
 // Add multiple variations to cart in one request.
 async function addMultipleToCart(productId, items) {
   try {
@@ -1444,14 +1463,9 @@ async function addMultipleToCart(productId, items) {
     if (data.success) {
       updateCartBadge(data.count);
       openAtcDrawer({ items: data.items, count: data.count, cartTotal: data.cart_total, rowIds: data.row_ids || [] });
-      (data.failed_items || []).forEach((failed) => {
-        const attrs = failed.attributes && typeof failed.attributes === 'object'
-          ? Object.entries(failed.attributes).map(([k, v]) => `${k}: ${v}`).join(', ')
-          : '';
-        showToast(attrs ? `${attrs}: ${failed.message}` : failed.message, 'err');
-      });
+      if (data.failed_items && data.failed_items.length) showBulkAddFailures(data);
     } else {
-      showToast(data.message || STOREFRONT_COPY.addError, 'err');
+      showBulkAddFailures(data);
     }
   } catch (e) {
     showToast(STOREFRONT_COPY.networkError, 'err');

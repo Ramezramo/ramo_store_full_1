@@ -78,6 +78,71 @@ class CartMultipleVariationsTest extends TestCase
         }
     }
 
+    public function test_bulk_add_returns_specific_reasons_when_all_variations_fail(): void
+    {
+        $productId = null;
+        $variationIds = [];
+        $suffix = uniqid('cart-multiple-reasons-', true);
+
+        try {
+            $now = now();
+            $productId = DB::table('products_data')->insertGetId([
+                'name' => 'Bulk failure reasons product ' . $suffix,
+                'slug' => 'bulk-failure-reasons-' . str_replace('.', '-', $suffix),
+                'search_text' => 'Bulk failure reasons product ' . $suffix,
+                'sku' => 'FAIL-' . substr(sha1($suffix), 0, 10),
+                'images' => '[]',
+                'status' => 'publish',
+                'acceptance_status' => 'approved',
+                'minimum_order_qty' => 1,
+                'max_orders_per_person' => 2,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            foreach (['Red', 'Blue'] as $index => $color) {
+                $variationIds[] = DB::table('product_variations')->insertGetId([
+                    'product_id' => $productId,
+                    'main_variation' => $index === 0,
+                    'status' => 'publish',
+                    'stock_status' => 'instock',
+                    'attributes' => json_encode(['Color' => $color]),
+                    'price' => 100,
+                    'regular_price' => 100,
+                    'sale_price' => 100,
+                    'stock_quantity' => 8,
+                    'images' => '[]',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+
+            $csrfToken = 'cart-multiple-reasons-csrf-' . $suffix;
+            $response = $this->withSession(['locale' => 'en', '_token' => $csrfToken])->postJson(route('cart.add-multiple'), [
+                '_token' => $csrfToken,
+                'product_id' => $productId,
+                'items' => [
+                    ['variation_id' => $variationIds[0], 'qty' => 3],
+                    ['variation_id' => $variationIds[1], 'qty' => 4],
+                ],
+            ]);
+
+            $response->assertStatus(422)->assertJsonPath('success', false);
+            $this->assertCount(2, $response->json('failed_items'));
+            $this->assertStringContainsString('up to 2 unit', $response->json('failed_items.0.message'));
+            $this->assertStringContainsString('up to 2 unit', $response->json('failed_items.1.message'));
+            $this->assertSame([], $response->json('items'));
+        } finally {
+            $this->app['session']->forget('ramo_cart');
+            if ($variationIds) {
+                DB::table('product_variations')->whereIn('id', $variationIds)->delete();
+            }
+            if ($productId) {
+                DB::table('products_data')->where('id', $productId)->delete();
+            }
+        }
+    }
+
     public function test_bulk_add_rejects_variations_belonging_to_another_product(): void
     {
         $productIds = [];
