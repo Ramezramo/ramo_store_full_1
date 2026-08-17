@@ -898,6 +898,17 @@ function variationForColor(colorValue) {
   }) || null;
 }
 
+// A color remains selectable when it has at least one orderable variation,
+// even if the currently selected non-color attribute (for example, Size=XL)
+// is not available for that color. The selection handler can then clear or
+// update the incompatible attribute after the color is chosen.
+function orderableVariationForColor(colorValue) {
+  return VAR_DATA.find(v => {
+    if (COLOR_ATTR_KEY && v.attrs[COLOR_ATTR_KEY] !== colorValue) return false;
+    return Number(v.stock) > 0 && maximumOrderQuantity(v.stock) >= MIN_ORDER_QTY;
+  }) || null;
+}
+
 function selectedColorVariations() {
   return [...selectedColorValues].map(value => ({ value, variation: variationForColor(value) }));
 }
@@ -909,8 +920,8 @@ function updateAvailability() {
       const isValid = valid.has(btn.dataset.attrVal);
       btn.style.display = isValid ? '' : 'none';
       if (key.toLowerCase() === 'color') {
-        const variation = variationForColor(btn.dataset.attrVal);
-        const outOfStock = !variation || variation.stock <= 0 || maximumOrderQuantity(variation.stock) < MIN_ORDER_QTY;
+        const variation = orderableVariationForColor(btn.dataset.attrVal);
+        const outOfStock = !variation;
         btn.disabled = !isValid || outOfStock;
         btn.classList.toggle('out-of-stock', outOfStock);
       }
@@ -986,8 +997,8 @@ function selectAttr(key, value, btn) {
       delete colorQuantities[colorQuantityKey(value)];
       btn.classList.remove('selected');
     } else {
-      const variation = variationForColor(value);
-      if (!variation || variation.stock <= 0 || maximumOrderQuantity(variation.stock) < MIN_ORDER_QTY) {
+      const variation = orderableVariationForColor(value);
+      if (!variation) {
         showQuantityError(PRODUCT_TEXT.outOfStock);
         return;
       }
