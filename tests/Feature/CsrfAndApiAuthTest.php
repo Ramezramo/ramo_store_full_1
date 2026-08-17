@@ -15,6 +15,12 @@ class CsrfAndApiAuthTest extends TestCase
         ])->assertStatus(419);
     }
 
+    public function test_vendor_login_route_names_do_not_collide(): void
+    {
+        $this->assertStringEndsWith('/vendor-login', route('vendor.login'));
+        $this->assertStringEndsWith('/api/vendor/login', route('vendor.api.login'));
+    }
+
     public function test_vendor_login_requires_csrf_token(): void
     {
         $this->post(route('vendor.login.submit'), [

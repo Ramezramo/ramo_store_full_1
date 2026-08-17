@@ -20,5 +20,5 @@ Route::prefix('user')->group(function () {
 // Vendor (Shop) Registration & Login
 Route::prefix('vendor')->group(function () {
     Route::post('register', [ShopRegistrationController::class, 'registerShopAndVendor'])->middleware('throttle:6,10');// ✅️
-    Route::post('login', [ShopRegistrationController::class, 'login'])->middleware('throttle:10,10')->name('vendor.login');// ✅️
+    Route::post('login', [ShopRegistrationController::class, 'login'])->middleware('throttle:10,10')->name('vendor.api.login');// ✅️
 });
