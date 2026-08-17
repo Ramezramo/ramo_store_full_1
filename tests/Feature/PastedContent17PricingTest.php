@@ -71,7 +71,6 @@ class PastedContent17PricingTest extends TestCase
                 'date_created_gmt' => $now,
                 'date_modified' => $now,
                 'date_modified_gmt' => $now,
-                'used_by' => '[]',
                 'meta_data' => '[]',
             ]);
             $code = (string) DB::table('coupons')->where('id', $couponId)->value('code');
@@ -174,7 +173,6 @@ class PastedContent17PricingTest extends TestCase
                 'date_created_gmt' => $now,
                 'date_modified' => $now,
                 'date_modified_gmt' => $now,
-                'used_by' => '[]',
                 'meta_data' => '[]',
             ]);
             $code = (string) DB::table('coupons')->where('id', $couponId)->value('code');

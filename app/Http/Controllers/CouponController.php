@@ -84,7 +84,6 @@ class CouponController extends Controller
                 'date_modified' => now(),
                 'date_modified_gmt' => now('UTC'),
                 'usage_count' => 0,
-                'used_by' => [],
             ]));
 
             return $this->successResponse(
@@ -438,8 +437,7 @@ class CouponController extends Controller
             ];
         }
 
-        // The live checkout source of truth is coupon_user_limits, regardless of
-        // the legacy individual_use/used_by fields on the coupon model.
+        // The live checkout source of truth is coupon_user_limits.
         if ($user_id && (int) ($coupon->usage_limit_per_user ?? 0) > 0) {
             $userUses = (int) (DB::table('coupon_user_limits')
                 ->where('coupon_id', $coupon->id)

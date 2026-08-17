@@ -1011,7 +1011,6 @@ class AdminDashboardController extends Controller
             'product_categories'          => '[]',
             'excluded_product_categories' => '[]',
             'email_restrictions'          => '[]',
-            'used_by'                     => '[]',
             'meta_data'                   => '[]',
         ]);
 

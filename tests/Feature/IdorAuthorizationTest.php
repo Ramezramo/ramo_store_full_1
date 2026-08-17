@@ -133,7 +133,6 @@ class IdorAuthorizationTest extends TestCase
             'usage_limit' => 0,
             'usage_limit_per_user' => 1,
             'individual_use' => true,
-            'used_by' => json_encode([$spoofedUser->id]),
         ]);
         $now = now();
         $productId = DB::table('products_data')->insertGetId([
@@ -208,7 +207,6 @@ class IdorAuthorizationTest extends TestCase
             'usage_limit' => 0,
             'usage_limit_per_user' => 1,
             'individual_use' => true,
-            'used_by' => json_encode([$spoofedUser->id]),
         ]);
         $now = now();
         $productId = DB::table('products_data')->insertGetId([

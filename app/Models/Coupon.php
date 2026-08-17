@@ -45,7 +45,6 @@ class Coupon extends Model
         'minimum_amount',
         'maximum_amount',
         'email_restrictions',
-        'used_by',
         'description',
         'meta_data',
     ];
@@ -74,7 +73,6 @@ class Coupon extends Model
         'product_categories' => 'array',
         'excluded_product_categories' => 'array',
         'email_restrictions' => 'array',
-        'used_by' => 'array',
         'meta_data' => 'array',
     ];
 
@@ -116,44 +114,6 @@ class Coupon extends Model
         return $this->status === 'publish' &&
                (!$this->date_expires || $this->date_expires->isFuture()) &&
                $this->usage_count < ($this->usage_limit ?? PHP_INT_MAX);
-    }
-
-    // Check if coupon can be used by specific user
-    public function canBeUsedByUser($userId): bool
-    {
-        if (!$this->individual_use) {
-            return true;
-        }
-
-        $userUsage = collect($this->used_by)->filter(fn($id) => $id == $userId)->count();
-        $limit = $this->usage_limit_per_user ?? PHP_INT_MAX;
-
-        return $userUsage < $limit;
-    }
-
-    // Increment usage count
-    public function incrementUsage($userId = null): bool
-    {
-        if (!$this->isValid()) {
-            return false;
-        }
-
-        if ($userId && !$this->canBeUsedByUser($userId)) {
-            return false;
-        }
-
-        $this->increment('usage_count');
-
-        // Add user to used_by if individual use
-        if ($userId && $this->individual_use) {
-            $usedBy = collect($this->used_by);
-            if (!$usedBy->contains($userId)) {
-                $usedBy->push($userId);
-                $this->used_by = $usedBy->toArray();
-            }
-        }
-
-        return $this->save();
     }
 
     // Get discount amount for cart

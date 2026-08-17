@@ -79,7 +79,6 @@ class CouponOrderUsageTest extends TestCase
                 'date_created_gmt' => $now,
                 'date_modified' => $now,
                 'date_modified_gmt' => $now,
-                'used_by' => '[]',
                 'meta_data' => '[]',
             ]);
             $couponCode = (string) DB::table('coupons')->where('id', $couponId)->value('code');
@@ -155,5 +154,59 @@ class CouponOrderUsageTest extends TestCase
             }
         }
     }
-}
 
+    public function test_per_user_limit_uses_canonical_table_when_individual_use_is_disabled(): void
+    {
+        $user = null;
+        $couponId = null;
+        $suffix = uniqid('coupon-per-user-limit-', true);
+
+        try {
+            $user = User::create([
+                'name' => 'Coupon Per User Limit Test',
+                'email' => 'coupon-per-user-limit-' . $suffix . '@ramostore.local',
+                'password' => 'temporary-test-password',
+                'role' => json_encode(['customer']),
+            ]);
+
+            $now = now();
+            $couponId = DB::table('coupons')->insertGetId([
+                'code' => 'LIMIT' . strtoupper(substr(sha1($suffix), 0, 8)),
+                'amount' => 10,
+                'status' => 'publish',
+                'discount_type' => 'percent',
+                'usage_count' => 0,
+                'usage_limit_per_user' => 1,
+                'individual_use' => false,
+                'minimum_amount' => 0,
+                'maximum_amount' => 0,
+                'date_created' => $now,
+                'date_created_gmt' => $now,
+                'date_modified' => $now,
+                'date_modified_gmt' => $now,
+                'meta_data' => '[]',
+            ]);
+
+            $coupon = \App\Models\Coupon::findOrFail($couponId);
+            $controller = app(\App\Http\Controllers\CouponController::class);
+            $increment = new \ReflectionMethod($controller, 'incrementCouponUsage');
+            $increment->setAccessible(true);
+
+            $this->assertTrue($increment->invoke($controller, $coupon, $user->id));
+            $this->assertFalse($increment->invoke($controller, $coupon, $user->id));
+            $this->assertSame(1, (int) DB::table('coupons')->where('id', $couponId)->value('usage_count'));
+            $this->assertDatabaseHas('coupon_user_limits', [
+                'coupon_id' => $couponId,
+                'user_id' => $user->id,
+                'use_count' => 1,
+            ]);
+            $this->assertSame('[]', (string) DB::table('coupons')->where('id', $couponId)->value('used_by'));
+        } finally {
+            if ($couponId) {
+                DB::table('coupon_user_limits')->where('coupon_id', $couponId)->delete();
+                DB::table('coupons')->where('id', $couponId)->delete();
+            }
+            $user?->delete();
+        }
+    }
+}
