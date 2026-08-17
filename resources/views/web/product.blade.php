@@ -300,7 +300,7 @@
 
   </div>
 
-  @if(config('app.debug') && $variations->count())
+  @if($variations->count())
     @php
       $debugVariationRows = $variations->map(function ($variation) use ($discPct, $isAr, $minimumOrderQty, $configuredMaximumOrderQty, $product) {
         $attrs = is_array($variation->attributes) ? $variation->attributes : [];
@@ -350,11 +350,11 @@
         ];
       });
     @endphp
-    <section class="debug-variation-widget" aria-label="{{ $isAr ? 'جدول تشخيص المتغيرات' : 'Debug variation inventory' }}">
+    <section class="debug-variation-widget" aria-label="{{ $isAr ? 'تفاصيل المتغيرات' : 'Variation details' }}">
       <div class="debug-variation-header">
         <div>
-          <div class="debug-variation-kicker">{{ $isAr ? 'وضع التصحيح فقط' : 'DEBUG ONLY' }}</div>
-          <h2>{{ $isAr ? 'بيانات كل المتغيرات' : 'All variation data' }}</h2>
+          <div class="debug-variation-kicker">{{ $isAr ? 'تفاصيل المنتج' : 'VARIATION DETAILS' }}</div>
+          <h2>{{ $isAr ? 'كل الاختيارات المتاحة' : 'Available variations' }}</h2>
         </div>
         <span class="debug-variation-count">{{ $debugVariationRows->count() }} {{ $isAr ? 'متغير' : 'variations' }}</span>
       </div>
