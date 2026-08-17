@@ -748,6 +748,11 @@ let currentVariation = null;
 let _lockedImgUrl = null;
 const COLOR_ATTR_KEY = ATTR_KEYS.find(k => k.toLowerCase() === 'color') || null;
 
+function colorQuantityKey(value) {
+  const selected = Object.keys(selectedAttrs).sort().map(key => [key, selectedAttrs[key]]);
+  return JSON.stringify([selected, [COLOR_ATTR_KEY || 'color', value]]);
+}
+
 // Returns valid values for `key` considering only selections from keys that come
 // before `key` in ATTR_KEYS order. This ensures e.g. Color is never hidden by a
 // selected Size, but Size IS filtered by the selected Color.
@@ -810,15 +815,22 @@ function updateAvailability() {
 (function () {
   const main = VAR_DATA.find(v => v.main) || VAR_DATA[0] || null;
   if (main) {
+    // Seed non-color attributes first so initial color quantities are keyed to
+    // the complete main variation (for example, Size + Color).
     Object.entries(main.attrs).forEach(([k, val]) => {
+      if (k.toLowerCase() === 'color') return;
       const btn = document.querySelector(`[data-attr-key="${k}"][data-attr-val="${val}"]`);
       if (!btn) return;
-      if (k.toLowerCase() === 'color') {
-        selectedColorValues.add(val);
-        colorQuantities[val] = MIN_ORDER_QTY;
-      } else {
-        selectedAttrs[k] = val;
-      }
+      selectedAttrs[k] = val;
+      btn.classList.add('selected');
+    });
+    Object.entries(main.attrs).forEach(([k, val]) => {
+      if (k.toLowerCase() !== 'color') return;
+      const btn = document.querySelector(`[data-attr-key="${k}"][data-attr-val="${val}"]`);
+      if (!btn) return;
+      selectedColorValues.add(val);
+      const quantityKey = colorQuantityKey(val);
+      if (!(quantityKey in colorQuantities)) colorQuantities[quantityKey] = MIN_ORDER_QTY;
       btn.classList.add('selected');
     });
     // Lock the main variation's image on load
@@ -842,7 +854,7 @@ function selectAttr(key, value, btn) {
   if (key.toLowerCase() === 'color') {
     if (selectedColorValues.has(value)) {
       selectedColorValues.delete(value);
-      delete colorQuantities[value];
+      delete colorQuantities[colorQuantityKey(value)];
       btn.classList.remove('selected');
     } else {
       const variation = variationForColor(value);
@@ -851,7 +863,8 @@ function selectAttr(key, value, btn) {
         return;
       }
       selectedColorValues.add(value);
-      colorQuantities[value] = MIN_ORDER_QTY;
+      const quantityKey = colorQuantityKey(value);
+      if (!(quantityKey in colorQuantities)) colorQuantities[quantityKey] = MIN_ORDER_QTY;
       btn.classList.add('selected');
       const colorImg = getColorImage(key, value);
       if (colorImg) {
@@ -1051,8 +1064,9 @@ function updateColorSteppers() {
     const stepper = document.getElementById(`color-qty-${slugify(COLOR_ATTR_KEY)}-${slugify(value)}`);
     if (!stepper || !variation) return;
     const maximum = maximumOrderQuantity(variation.stock);
-    const quantity = Math.max(MIN_ORDER_QTY, Math.min(maximum, Number(colorQuantities[value] || MIN_ORDER_QTY)));
-    colorQuantities[value] = quantity;
+    const quantityKey = colorQuantityKey(value);
+    const quantity = Math.max(MIN_ORDER_QTY, Math.min(maximum, Number(colorQuantities[quantityKey] || MIN_ORDER_QTY)));
+    colorQuantities[quantityKey] = quantity;
     stepper.hidden = false;
     stepper.innerHTML = `<button type="button" onclick="changeColorQty('${String(COLOR_ATTR_KEY).replace(/'/g, "\'")}','${String(value).replace(/'/g, "\'")}',-1,event)" aria-label="Decrease">−</button><input type="number" min="${MIN_ORDER_QTY}" max="${Math.max(1, maximum)}" value="${quantity}" aria-label="${PRODUCT_TEXT.quantity || 'Quantity'}"><button type="button" onclick="changeColorQty('${String(COLOR_ATTR_KEY).replace(/'/g, "\'")}','${String(value).replace(/'/g, "\'")}',1,event)" aria-label="Increase">+</button>`;
     const input = stepper.querySelector('input');
@@ -1065,14 +1079,14 @@ function setColorQty(key, value, rawQty) {
   if (!variation) return;
   const maximum = maximumOrderQuantity(variation.stock);
   const next = Math.max(MIN_ORDER_QTY, Math.min(maximum, Number.parseInt(rawQty, 10) || MIN_ORDER_QTY));
-  colorQuantities[value] = next;
+  colorQuantities[colorQuantityKey(value)] = next;
   updateColorSteppers();
   updateAddButtonState();
 }
 
 function changeColorQty(key, value, delta, event) {
   event?.preventDefault();
-  setColorQty(key, value, (colorQuantities[value] || MIN_ORDER_QTY) + delta);
+  setColorQty(key, value, (colorQuantities[colorQuantityKey(value)] || MIN_ORDER_QTY) + delta);
 }
 
 function updateAddButtonState() {
@@ -1084,7 +1098,7 @@ function updateAddButtonState() {
     selectedColorVariations().forEach(({ value, variation }) => {
       if (!variation) return;
       const max = maximumOrderQuantity(variation.stock);
-      const qty = Number(colorQuantities[value] || MIN_ORDER_QTY);
+      const qty = Number(colorQuantities[colorQuantityKey(value)] || MIN_ORDER_QTY);
       if (qty >= MIN_ORDER_QTY && qty <= max && max >= MIN_ORDER_QTY) { validCount++; totalQty += qty; }
     });
     const label = totalQty > 0 ? `${PRODUCT_TEXT.addToCart} (${totalQty})` : PRODUCT_TEXT.addToCart;
@@ -1105,7 +1119,7 @@ function handleAddToCart(id, name, basePrice, image) {
   if (COLOR_ATTR_KEY) {
     const items = selectedColorVariations().map(({ value, variation }) => {
       const maximum = variation ? maximumOrderQuantity(variation.stock) : 0;
-      const qty = Number(colorQuantities[value] || MIN_ORDER_QTY);
+      const qty = Number(colorQuantities[colorQuantityKey(value)] || MIN_ORDER_QTY);
       return { variation_id: variation?.id, qty, value, maximum };
     }).filter(item => item.variation_id && item.qty >= MIN_ORDER_QTY && item.qty <= item.maximum && item.maximum >= MIN_ORDER_QTY);
     if (!items.length) {
