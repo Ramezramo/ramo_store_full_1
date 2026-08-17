@@ -1238,6 +1238,7 @@ const STOREFRONT_COPY = STOREFRONT_IS_AR ? {
   color: 'اللون',
   size: 'المقاس',
   add: 'ضيف للسلة',
+  addedPartial: 'في اختيارات ما اتضافتش.',
   unavailable: 'مش متاح',
   saved: 'اتحفظ في المفضلة',
   removed: 'اتشال من المفضلة',
@@ -1252,6 +1253,7 @@ const STOREFRONT_COPY = STOREFRONT_IS_AR ? {
   color: 'Color',
   size: 'Size',
   add: 'Add to Cart',
+  addedPartial: 'Some selected variations could not be added.',
   unavailable: 'Out of Stock',
   saved: 'Saved to Wishlist',
   removed: 'Removed from Wishlist',
@@ -1430,13 +1432,39 @@ async function addToCart(productId, name, price, image, variationId = null, qty 
   }
 }
 
+// Add multiple variations to cart in one request.
+async function addMultipleToCart(productId, items) {
+  try {
+    const res = await fetch('/cart/add-multiple', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-CSRF-TOKEN': CSRF_TOKEN},
+      body: JSON.stringify({ product_id: productId, items })
+    });
+    const data = await res.json();
+    if (data.success) {
+      updateCartBadge(data.count);
+      openAtcDrawer({ items: data.items, count: data.count, cartTotal: data.cart_total, rowIds: data.row_ids || [] });
+      (data.failed_items || []).forEach((failed) => {
+        const attrs = failed.attributes && typeof failed.attributes === 'object'
+          ? Object.entries(failed.attributes).map(([k, v]) => `${k}: ${v}`).join(', ')
+          : '';
+        showToast(attrs ? `${attrs}: ${failed.message}` : failed.message, 'err');
+      });
+    } else {
+      showToast(data.message || STOREFRONT_COPY.addError, 'err');
+    }
+  } catch (e) {
+    showToast(STOREFRONT_COPY.networkError, 'err');
+  }
+}
+
 // ── Added-to-cart drawer ─────────────────────────────────────────────
-function openAtcDrawer({ image, oldPrice, varLabel, items, count, cartTotal, rowId }) {
+function openAtcDrawer({ image, oldPrice, varLabel, items, count, cartTotal, rowId, rowIds = [] }) {
   const list = document.getElementById('atc-items-list');
   list.innerHTML = '';
 
   (items || []).slice().reverse().forEach(item => {
-    const isNew = rowId && item.rowId === rowId;
+    const isNew = (rowId && item.rowId === rowId) || rowIds.includes(item.rowId);
     const attrs = item.attrs && typeof item.attrs === 'object' ? Object.entries(item.attrs).map(([k,v]) => `${k}: ${v}`).join(', ') : (varLabel && isNew ? varLabel : '');
     const metaParts = [];
     if (item.sku) metaParts.push(STOREFRONT_COPY.sku + ': ' + item.sku);

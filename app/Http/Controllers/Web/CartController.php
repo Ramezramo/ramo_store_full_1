@@ -196,94 +196,178 @@ class CartController extends Controller
         return $cart;
     }
 
+    private function findVariation(int $productId, ?int $variationId): ?object
+    {
+        $query = DB::table('product_variations')->where('product_id', $productId);
+        if ($variationId !== null) {
+            $query->where('id', $variationId);
+        } else {
+            $query->where('main_variation', true);
+        }
+
+        return $query->first([
+            'id', 'attributes', 'regular_price', 'sale_price', 'price',
+            'stock_quantity', 'stock_status', 'status',
+        ]);
+    }
+
+    /**
+     * Add one variation to an in-memory cart and return a structured result.
+     * The caller decides whether and when to persist the cart.
+     */
+    private function addVariationToCart(array &$cart, object $product, object $variation, int $qty): array
+    {
+        if (($variation->status ?? 'publish') !== 'publish' || ($variation->stock_status ?? 'instock') !== 'instock') {
+            return ['success' => false, 'message' => $this->localized('The selected product variation is unavailable.', 'الاختيار اللي اخترته مش متاح.')];
+        }
+
+        $stock = (int) ($variation->stock_quantity ?? 0);
+        if ($stock < 1) {
+            return ['success' => false, 'message' => $this->localized('The selected product variation is out of stock.', 'الاختيار اللي اخترته خلص من المخزون.')];
+        }
+
+        $regularPrice = (float) ($variation->regular_price ?? 0);
+        $price = (float) ($variation->price ?? $regularPrice);
+        $discPct = (float) ($product->discount_percentage ?? 0);
+        if ($discPct > 0 && $regularPrice > 0 && $price >= $regularPrice) {
+            $price = round($regularPrice * (1 - $discPct / 100), 2);
+        }
+
+        $resolvedVariationId = (int) $variation->id;
+        $rowId = md5($product->id . '_' . $resolvedVariationId);
+        $newQuantity = (int) ($cart[$rowId]['qty'] ?? 0) + $qty;
+        [$minimumQuantity, $maximumQuantity] = $this->quantityBounds($product, $stock);
+
+        if ($error = $this->quantityError((string) $product->name, $newQuantity, $minimumQuantity, $maximumQuantity)) {
+            return ['success' => false, 'message' => $error, 'row_id' => $rowId];
+        }
+
+        $attrs = json_decode($variation->attributes ?? '[]', true)
+            ?? json_decode(stripslashes($variation->attributes ?? '[]'), true)
+            ?? [];
+        $imageUrl = \App\Constants\AppConstants::productThumbnailUrl($product->images);
+
+        if (isset($cart[$rowId])) {
+            $cart[$rowId]['qty'] = $newQuantity;
+            $cart[$rowId]['price'] = $price;
+            $cart[$rowId]['regular_price'] = $regularPrice > $price ? $regularPrice : null;
+            $cart[$rowId]['stock'] = $stock;
+        } else {
+            $cart[$rowId] = [
+                'rowId' => $rowId,
+                'product_id' => (int) $product->id,
+                'variation_id' => $resolvedVariationId,
+                'name' => $this->localizedCartProductName($product),
+                'sku' => $product->sku ?? null,
+                'price' => $price,
+                'regular_price' => $regularPrice > $price ? $regularPrice : null,
+                'qty' => $newQuantity,
+                'image' => $imageUrl,
+                'stock' => $stock,
+                'attrs' => is_array($attrs) ? $attrs : [],
+            ];
+        }
+
+        return ['success' => true, 'row_id' => $rowId, 'item' => $cart[$rowId]];
+    }
+
+    private function cartAddResponse(array $cart, array $extra = []): array
+    {
+        return array_merge([
+            'success' => true,
+            'message' => $this->localized('Added to cart!', 'اتضاف للسلة!'),
+            'count' => count($cart),
+            'cart_total' => collect($cart)->sum(fn($i) => $i['price'] * $i['qty']),
+            'items' => array_values($cart),
+        ], $extra);
+    }
+
     public function add(Request $r)
     {
         $r->validate([
-            'product_id'   => 'required|integer|exists:products_data,id',
+            'product_id' => 'required|integer|exists:products_data,id',
             'variation_id' => 'nullable|integer|exists:product_variations,id',
-            'qty'          => 'nullable|integer|min:1|max:999',
+            'qty' => 'nullable|integer|min:1|max:999',
         ]);
 
-        $productId   = $r->product_id;
-        $variationId = $r->variation_id;
-        $qty         = max(1, (int) $r->input('qty', 1));
-
+        $productId = (int) $r->input('product_id');
         $product = DB::table('products_data')->where('id', $productId)->first();
         if (!$product) {
             return response()->json(['success' => false, 'message' => $this->localized('Product not found', 'مش لاقيين المنتج ده.')], 404);
         }
 
-        $variation = $variationId
-            ? DB::table('product_variations')
-                ->where('id', $variationId)
-                ->where('product_id', $productId)
-                ->first(['id', 'attributes', 'regular_price', 'sale_price', 'price', 'stock_quantity', 'stock_status', 'status'])
-            : DB::table('product_variations')
-                ->where('product_id', $productId)
-                ->where('main_variation', true)
-                ->first(['id', 'attributes', 'regular_price', 'sale_price', 'price', 'stock_quantity', 'stock_status', 'status']);
-
-        if (! $variation || (($variation->status ?? 'publish') !== 'publish') || (($variation->stock_status ?? 'instock') !== 'instock')) {
+        $variation = $this->findVariation($productId, $r->filled('variation_id') ? (int) $r->input('variation_id') : null);
+        if (!$variation) {
             return response()->json(['success' => false, 'message' => $this->localized('The selected product variation is unavailable.', 'الاختيار اللي اخترته مش متاح.')], 422);
         }
 
-        $stock = (int) ($variation->stock_quantity ?? 0);
-        if ($stock < 1) {
-            return response()->json(['success' => false, 'message' => $this->localized('The selected product variation is out of stock.', 'الاختيار اللي اخترته خلص من المخزون.')], 422);
-        }
-
-        $regularPrice = (float) ($variation->regular_price ?? 0);
-        $price        = (float) ($variation->price ?? $regularPrice);
-        $discPct      = (float) ($product->discount_percentage ?? 0);
-        if ($discPct > 0 && $regularPrice > 0 && $price >= $regularPrice) {
-            $price = round($regularPrice * (1 - $discPct / 100), 2);
-        }
-
-        $imageUrl = \App\Constants\AppConstants::productThumbnailUrl($product->images);
-        $attrs = json_decode($variation->attributes ?? '[]', true)
-            ?? json_decode(stripslashes($variation->attributes ?? '[]'), true)
-            ?? [];
-
-        $resolvedVariationId = (int) $variation->id;
-        $rowId = md5($productId . '_' . $resolvedVariationId);
-        $cart  = $this->getCart();
-        $newQuantity = (int) ($cart[$rowId]['qty'] ?? 0) + $qty;
-        [$minimumQuantity, $maximumQuantity] = $this->quantityBounds($product, $stock);
-
-        if ($error = $this->quantityError($product->name, $newQuantity, $minimumQuantity, $maximumQuantity)) {
-            return response()->json(['success' => false, 'message' => $error], 422);
-        }
-
-        if (isset($cart[$rowId])) {
-            $cart[$rowId]['qty'] = $newQuantity;
-            $cart[$rowId]['regular_price'] = $regularPrice > $price ? $regularPrice : null;
-            $cart[$rowId]['stock'] = $stock;
-        } else {
-            $cart[$rowId] = [
-                'rowId'         => $rowId,
-                'product_id'    => (int) $productId,
-                'variation_id'  => $resolvedVariationId,
-                'name'          => $this->localizedCartProductName($product),
-                'sku'           => $product->sku ?? null,
-                'price'         => $price,
-                'regular_price' => $regularPrice > $price ? $regularPrice : null,
-                'qty'           => $newQuantity,
-                'image'         => $imageUrl,
-                'stock'         => $stock,
-                'attrs'         => is_array($attrs) ? $attrs : [],
-            ];
+        $cart = $this->getCart();
+        $result = $this->addVariationToCart($cart, $product, $variation, max(1, (int) $r->input('qty', 1)));
+        if (!$result['success']) {
+            return response()->json(['success' => false, 'message' => $result['message']], 422);
         }
 
         $this->saveCart($cart);
+        return response()->json($this->cartAddResponse($cart, ['row_id' => $result['row_id']]));
+    }
 
-        return response()->json([
-            'success'    => true,
-            'message'    => $this->localized('Added to cart!', 'اتضاف للسلة!'),
-            'count'      => count($cart),
-            'cart_total' => collect($cart)->sum(fn($i) => $i['price'] * $i['qty']),
-            'items'      => array_values($cart),
-            'row_id'     => $rowId,
+    public function addMultiple(Request $r)
+    {
+        $r->validate([
+            'product_id' => 'required|integer|exists:products_data,id',
+            'items' => 'required|array|min:1|max:20',
+            'items.*.variation_id' => 'required|integer|exists:product_variations,id',
+            'items.*.qty' => 'required|integer|min:1|max:999',
         ]);
+
+        $productId = (int) $r->input('product_id');
+        $product = DB::table('products_data')->where('id', $productId)->first();
+        if (!$product) {
+            return response()->json(['success' => false, 'message' => $this->localized('Product not found', 'مش لاقيين المنتج ده.')], 404);
+        }
+
+        $cart = $this->getCart();
+        $failed = [];
+        $addedRowIds = [];
+
+        foreach ($r->input('items', []) as $item) {
+            $variationId = (int) $item['variation_id'];
+            $variation = $this->findVariation($productId, $variationId);
+            $result = $variation
+                ? $this->addVariationToCart($cart, $product, $variation, (int) $item['qty'])
+                : ['success' => false, 'message' => $this->localized('The selected product variation is unavailable.', 'الاختيار اللي اخترته مش متاح.')];
+
+            if ($result['success']) {
+                $addedRowIds[] = $result['row_id'];
+            } else {
+                $failed[] = [
+                    'variation_id' => $variationId,
+                    'qty' => (int) $item['qty'],
+                    'attributes' => $variation ? (json_decode($variation->attributes ?? '[]', true) ?: []) : [],
+                    'message' => $result['message'],
+                ];
+            }
+        }
+
+        if ($addedRowIds) {
+            $this->saveCart($cart);
+        }
+
+        $response = $this->cartAddResponse($cart, [
+            'failed_items' => $failed,
+            'row_ids' => $addedRowIds,
+        ]);
+        if (!$addedRowIds) {
+            $response['success'] = false;
+            $response['message'] = $this->localized('No selected variations could be added.', 'مقدرناش نضيف أي اختيار من اللي حددتهم.');
+            return response()->json($response, 422);
+        }
+
+        if ($failed) {
+            $response['message'] = $this->localized('Some selected variations could not be added.', 'في اختيارات من اللي حددتهم ما اتضافتش.');
+        }
+
+        return response()->json($response);
     }
 
     private function calcTotals(float $subtotal): array

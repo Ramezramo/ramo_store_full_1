@@ -192,17 +192,20 @@
             <div class="var-options" id="opts-{{ Str::slug($attrKey) }}">
               @foreach($attrValues as $val)
                 @if($isColor)
-                  <button class="var-swatch"
-                          data-attr-key="{{ $attrKey }}"
-                          data-attr-val="{{ $val }}"
-                          data-attr-display="{{ \App\Support\StorefrontLabels::color($val, $isAr) }}"
-                          onclick="selectAttr('{{ $attrKey }}','{{ $val }}',this)"
-                          onmouseenter="previewColorImage('{{ $attrKey }}','{{ $val }}')"
-                          onmouseleave="restoreImage()"
-                          title="{{ \App\Support\StorefrontLabels::color($val, $isAr) }}"
-                          aria-label="{{ $isAr ? 'اللون: ' : 'Color: ' }}{{ \App\Support\StorefrontLabels::color($val, $isAr) }}"
-                          style="background-color: var(--swatch-{{ Str::slug($val) }}, #999)">
-                  </button>
+                  <div class="var-color-option">
+                    <button class="var-swatch"
+                            data-attr-key="{{ $attrKey }}"
+                            data-attr-val="{{ $val }}"
+                            data-attr-display="{{ \App\Support\StorefrontLabels::color($val, $isAr) }}"
+                            onclick="selectAttr('{{ $attrKey }}','{{ $val }}',this)"
+                            onmouseenter="previewColorImage('{{ $attrKey }}','{{ $val }}')"
+                            onmouseleave="restoreImage()"
+                            title="{{ \App\Support\StorefrontLabels::color($val, $isAr) }}"
+                            aria-label="{{ $isAr ? 'اللون: ' : 'Color: ' }}{{ \App\Support\StorefrontLabels::color($val, $isAr) }}"
+                            style="background-color: var(--swatch-{{ Str::slug($val) }}, #999)">
+                    </button>
+                    <div class="color-qty-stepper" id="color-qty-{{ Str::slug($attrKey) }}-{{ Str::slug($val) }}" hidden></div>
+                  </div>
                 @else
                   <button class="var-btn"
                           data-attr-key="{{ $attrKey }}"
@@ -229,7 +232,7 @@
         $quantityIsOrderable = $maximumOrderQty >= $minimumOrderQty;
       @endphp
       <div class="pi-cart-row">
-        <div>
+        <div id="single-qty-controls">
           <div class="qty-input">
             <button type="button" onclick="changeQty(-1)">−</button>
             <input type="number" id="qty" value="{{ $quantityIsOrderable ? $minimumOrderQty : 1 }}"
@@ -656,6 +659,16 @@
   width: 100%; height: 100%; opacity: .4;
 }
 
+.var-options { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-start; }
+.var-color-option { display:flex; flex-direction:column; align-items:center; gap:5px; min-width:48px; }
+.var-swatch[disabled] { cursor:not-allowed; opacity:.35; filter:grayscale(1); }
+.var-swatch.out-of-stock { opacity:.35; filter:grayscale(1); }
+.color-qty-stepper { display:flex; align-items:center; gap:3px; min-height:30px; }
+.color-qty-stepper button { width:28px; height:28px; border:1px solid #ddd; border-radius:7px; background:#fff; color:#333; cursor:pointer; font-weight:700; line-height:1; }
+.color-qty-stepper button:disabled { opacity:.4; cursor:not-allowed; }
+.color-qty-stepper input { width:34px; height:28px; border:1px solid #ddd; border-radius:7px; text-align:center; font-size:12px; padding:0; }
+.color-qty-hint { font-size:10px; color:var(--c-mid); white-space:nowrap; }
+
 /* Color swatch CSS variables */
 :root {
   --swatch-white:#f5f5f5; --swatch-black:#1a1a1a; --swatch-green:#22a35c;
@@ -697,8 +710,11 @@ const PRODUCT_STOCK_QTY = {{ $initialStockQty }};
 const PRODUCT_TEXT = @json($productText);
 const ATTR_KEYS = [...new Set(VAR_DATA.flatMap(v => Object.keys(v.attrs)))];
 let selectedAttrs = {};
+let selectedColorValues = new Set();
+let colorQuantities = {};
 let currentVariation = null;
 let _lockedImgUrl = null;
+const COLOR_ATTR_KEY = ATTR_KEYS.find(k => k.toLowerCase() === 'color') || null;
 
 // Returns valid values for `key` considering only selections from keys that come
 // before `key` in ATTR_KEYS order. This ensures e.g. Color is never hidden by a
@@ -711,21 +727,42 @@ function validValuesFor(key) {
   return new Set(
     VAR_DATA
       .filter(v => Object.entries(precedingSelected).every(([k, sv]) => v.attrs[k] === sv))
+      .filter(v => {
+        if (!COLOR_ATTR_KEY || key.toLowerCase() === 'color' || selectedColorValues.size === 0) return true;
+        return selectedColorValues.has(v.attrs[COLOR_ATTR_KEY]);
+      })
       .map(v => v.attrs[key])
       .filter(v => v !== undefined)
   );
 }
 
-// Show/hide buttons based on what's valid; auto-select sole remaining option
+function variationForColor(colorValue) {
+  return VAR_DATA.find(v => {
+    if (COLOR_ATTR_KEY && v.attrs[COLOR_ATTR_KEY] !== colorValue) return false;
+    return Object.entries(selectedAttrs).every(([k, value]) => v.attrs[k] === value);
+  }) || null;
+}
+
+function selectedColorVariations() {
+  return [...selectedColorValues].map(value => ({ value, variation: variationForColor(value) }));
+}
+
 function updateAvailability() {
   ATTR_KEYS.forEach(key => {
     const valid = validValuesFor(key);
     document.querySelectorAll(`[data-attr-key="${key}"]`).forEach(btn => {
-      btn.style.display = valid.has(btn.dataset.attrVal) ? '' : 'none';
+      const isValid = valid.has(btn.dataset.attrVal);
+      btn.style.display = isValid ? '' : 'none';
+      if (key.toLowerCase() === 'color') {
+        const variation = variationForColor(btn.dataset.attrVal);
+        const outOfStock = !variation || variation.stock <= 0 || maximumOrderQuantity(variation.stock) < MIN_ORDER_QTY;
+        btn.disabled = !isValid || outOfStock;
+        btn.classList.toggle('out-of-stock', outOfStock);
+      }
     });
 
-    // Auto-select if exactly one option is visible and this key has no selection yet
-    if (selectedAttrs[key] === undefined && valid.size === 1) {
+    // Keep the existing single-select convenience for non-color attributes only.
+    if (key.toLowerCase() !== 'color' && selectedAttrs[key] === undefined && valid.size === 1) {
       const onlyVal = [...valid][0];
       const onlyBtn = document.querySelector(`[data-attr-key="${key}"][data-attr-val="${onlyVal}"]`);
       if (onlyBtn) {
@@ -734,6 +771,7 @@ function updateAvailability() {
       }
     }
   });
+  updateColorSteppers();
 }
 
 // Auto-select default (main) variation on load
@@ -742,7 +780,14 @@ function updateAvailability() {
   if (main) {
     Object.entries(main.attrs).forEach(([k, val]) => {
       const btn = document.querySelector(`[data-attr-key="${k}"][data-attr-val="${val}"]`);
-      if (btn) { selectedAttrs[k] = val; btn.classList.add('selected'); }
+      if (!btn) return;
+      if (k.toLowerCase() === 'color') {
+        selectedColorValues.add(val);
+        colorQuantities[val] = MIN_ORDER_QTY;
+      } else {
+        selectedAttrs[k] = val;
+      }
+      btn.classList.add('selected');
     });
     // Lock the main variation's image on load
     if (main.images && main.images.length > 0) {
@@ -762,18 +807,20 @@ function updateAvailability() {
 })();
 
 function selectAttr(key, value, btn) {
-  if (selectedAttrs[key] === value) {
-    // Deselect this value
-    delete selectedAttrs[key];
-    btn.classList.remove('selected');
-  } else {
-    // Select new value, deselect others in same group
-    document.querySelectorAll(`[data-attr-key="${key}"]`).forEach(b => b.classList.remove('selected'));
-    selectedAttrs[key] = value;
-    btn.classList.add('selected');
-
-    // Lock the color image on click so mouseout doesn't revert it
-    if (key.toLowerCase() === 'color') {
+  if (key.toLowerCase() === 'color') {
+    if (selectedColorValues.has(value)) {
+      selectedColorValues.delete(value);
+      delete colorQuantities[value];
+      btn.classList.remove('selected');
+    } else {
+      const variation = variationForColor(value);
+      if (!variation || variation.stock <= 0 || maximumOrderQuantity(variation.stock) < MIN_ORDER_QTY) {
+        showQuantityError(PRODUCT_TEXT.outOfStock);
+        return;
+      }
+      selectedColorValues.add(value);
+      colorQuantities[value] = MIN_ORDER_QTY;
+      btn.classList.add('selected');
       const colorImg = getColorImage(key, value);
       if (colorImg) {
         _lockedImgUrl = colorImg;
@@ -784,17 +831,23 @@ function selectAttr(key, value, btn) {
       }
     }
 
-    // Clear selections in other groups that are now incompatible
-    ATTR_KEYS.forEach(otherKey => {
-      if (otherKey === key) return;
-      const cur = selectedAttrs[otherKey];
-      if (cur === undefined) return;
-      const stillValid = VAR_DATA.some(v => v.attrs[otherKey] === cur && v.attrs[key] === value);
-      if (!stillValid) {
+    // A non-color choice must remain valid for every selected color. Clear it if not.
+    ATTR_KEYS.filter(otherKey => otherKey.toLowerCase() !== 'color').forEach(otherKey => {
+      const current = selectedAttrs[otherKey];
+      if (current !== undefined && selectedColorValues.size > 0 && !selectedColorVariations().every(({ variation }) => variation && variation.attrs[otherKey] === current)) {
         delete selectedAttrs[otherKey];
         document.querySelectorAll(`[data-attr-key="${otherKey}"]`).forEach(b => b.classList.remove('selected'));
       }
     });
+  } else {
+    if (selectedAttrs[key] === value) {
+      delete selectedAttrs[key];
+      btn.classList.remove('selected');
+    } else {
+      document.querySelectorAll(`[data-attr-key="${key}"]`).forEach(b => b.classList.remove('selected'));
+      selectedAttrs[key] = value;
+      btn.classList.add('selected');
+    }
   }
 
   updateAvailability();
@@ -804,11 +857,12 @@ function selectAttr(key, value, btn) {
 }
 
 function tryFindVariation() {
-  const allSelected = ATTR_KEYS.every(k => selectedAttrs[k] !== undefined);
-  if (allSelected) {
-    currentVariation = VAR_DATA.find(v =>
-      Object.entries(selectedAttrs).every(([k, sv]) => v.attrs[k] === sv)
-    ) || null;
+  const nonColorKeys = ATTR_KEYS.filter(k => k.toLowerCase() !== 'color');
+  const nonColorComplete = nonColorKeys.every(k => selectedAttrs[k] !== undefined);
+  if (COLOR_ATTR_KEY && selectedColorValues.size === 1 && nonColorComplete) {
+    currentVariation = selectedColorVariations()[0]?.variation || null;
+  } else if (!COLOR_ATTR_KEY && ATTR_KEYS.every(k => selectedAttrs[k] !== undefined)) {
+    currentVariation = VAR_DATA.find(v => Object.entries(selectedAttrs).every(([k, sv]) => v.attrs[k] === sv)) || null;
   } else {
     currentVariation = null;
   }
@@ -854,91 +908,60 @@ function showQuantityError(message) {
 }
 
 function renderPriceStock(v) {
-  const priceEl  = document.getElementById('price-display');
-  const origEl   = document.getElementById('orig-display');
-  const badgeEl  = document.getElementById('disc-badge');
-  const stockEl  = document.getElementById('stock-display');
-  const qtyInput = document.getElementById('qty');
-  const addBtn   = document.getElementById('add-to-cart-btn');
+  const priceEl = document.getElementById('price-display');
+  const origEl = document.getElementById('orig-display');
+  const badgeEl = document.getElementById('disc-badge');
+  const stockEl = document.getElementById('stock-display');
+  const singleQty = document.getElementById('single-qty-controls');
 
-  function showDiscount(effectivePrice, originalPrice) {
+  function effectivePrice(item) {
+    const reg = item.reg > 0 ? item.reg : item.price;
+    if (DISC_PCT > 0 && reg > 0 && item.price >= reg) return Math.round(reg * (1 - DISC_PCT / 100) * 100) / 100;
+    return item.price;
+  }
+  function showDiscount(effective, original) {
     if (priceEl) {
-      priceEl.textContent = effectivePrice.toFixed(2) + ' EGP';
-      priceEl.classList.toggle('sale-price', effectivePrice < originalPrice);
+      priceEl.textContent = effective.toFixed(2) + ' EGP';
+      priceEl.classList.toggle('sale-price', effective < original);
+      priceEl.classList.toggle('on-sale', effective < original);
     }
     if (origEl) {
-      if (originalPrice > 0 && effectivePrice < originalPrice) {
-        origEl.textContent = originalPrice.toFixed(2) + ' EGP';
-        origEl.style.display = '';
-      } else {
-        origEl.style.display = 'none';
-      }
+      origEl.textContent = original > effective ? original.toFixed(2) + ' EGP' : '';
+      origEl.style.display = original > effective ? '' : 'none';
     }
     if (badgeEl) {
-      if (DISC_PCT > 0 && effectivePrice < originalPrice) {
-        badgeEl.textContent = Math.round(DISC_PCT) + '% OFF';
-        badgeEl.style.display = '';
-      } else {
-        badgeEl.style.display = 'none';
-      }
+      badgeEl.textContent = DISC_PCT > 0 && effective < original ? Math.round(DISC_PCT) + '% OFF' : '';
+      badgeEl.style.display = DISC_PCT > 0 && effective < original ? '' : 'none';
     }
   }
 
+  if (singleQty) singleQty.style.display = COLOR_ATTR_KEY ? 'none' : '';
   if (v) {
-    // Compute the true effective price — fall back to discount_percentage when
-    // the variation's price column wasn't updated (price == regular_price).
-    const reg = v.reg > 0 ? v.reg : v.price;
-    let   eff = v.price;
-    if (DISC_PCT > 0 && reg > 0 && eff >= reg) {
-      eff = Math.round(reg * (1 - DISC_PCT / 100) * 100) / 100;
-    }
-    showDiscount(eff, reg);
-    if (priceEl) priceEl.classList.toggle('on-sale', eff < reg);
-
-    if (stockEl) {
-      stockEl.innerHTML = v.stock > 0
-        ? `<span class="badge-stock-ok">✓ ${PRODUCT_TEXT.inStock} (${v.stock.toLocaleString()} ${PRODUCT_TEXT.available})</span>`
-        : `<span class="badge-stock-no">${PRODUCT_TEXT.outOfStock}</span>`;
-    }
-    const maximumQuantity = syncQuantityBounds(v.stock);
-    if (addBtn) {
-      const canOrder = v.stock > 0 && maximumQuantity >= MIN_ORDER_QTY;
-      addBtn.disabled    = !canOrder;
-      addBtn.textContent = canOrder ? PRODUCT_TEXT.addToCart : (v.stock === 0 ? PRODUCT_TEXT.outOfStock : PRODUCT_TEXT.unavailable);
-      // Update cart price to the effective price
-      const productId    = addBtn.getAttribute('data-pid') || addBtn.closest('[data-pid]')?.dataset.pid;
-      addBtn.onclick     = () => handleAddToCart({{ $product->id }}, '{{ addslashes($displayProductName) }}', eff, '{{ $product->thumbnail_url }}');
-    }
+    showDiscount(effectivePrice(v), v.reg > 0 ? v.reg : v.price);
+    if (stockEl) stockEl.innerHTML = v.stock > 0
+      ? `<span class="badge-stock-ok">✓ ${PRODUCT_TEXT.inStock} (${v.stock.toLocaleString()} ${PRODUCT_TEXT.available})</span>`
+      : `<span class="badge-stock-no">${PRODUCT_TEXT.outOfStock}</span>`;
   } else {
-    // No variation fully selected — show effective price range
-    if (priceEl && VAR_DATA.length > 0) {
-      const effPrices = VAR_DATA.map(vd => {
-        const reg = vd.reg > 0 ? vd.reg : vd.price;
-        if (DISC_PCT > 0 && reg > 0 && vd.price >= reg) {
-          return Math.round(reg * (1 - DISC_PCT / 100) * 100) / 100;
-        }
-        return vd.price;
-      });
-      const mn = Math.min(...effPrices), mx = Math.max(...effPrices);
-      priceEl.textContent = mn === mx ? `${mn.toFixed(2)} EGP` : `${mn.toFixed(2)} – ${mx.toFixed(2)} EGP`;
+    const active = COLOR_ATTR_KEY && selectedColorValues.size > 0
+      ? selectedColorVariations().map(({ variation }) => variation).filter(Boolean)
+      : VAR_DATA;
+    if (active.length && priceEl) {
+      const prices = active.map(effectivePrice);
+      const min = Math.min(...prices), max = Math.max(...prices);
+      priceEl.textContent = min === max ? `${min.toFixed(2)} EGP` : `${min.toFixed(2)} – ${max.toFixed(2)} EGP`;
       priceEl.classList.toggle('sale-price', DISC_PCT > 0);
     }
     if (origEl) origEl.style.display = 'none';
     if (badgeEl) {
-      if (DISC_PCT > 0) {
-        badgeEl.textContent = Math.round(DISC_PCT) + '% OFF';
-        badgeEl.style.display = '';
-      } else {
-        badgeEl.style.display = 'none';
-      }
+      badgeEl.textContent = DISC_PCT > 0 ? Math.round(DISC_PCT) + '% OFF' : '';
+      badgeEl.style.display = DISC_PCT > 0 ? '' : 'none';
     }
-    const maximumQuantity = syncQuantityBounds(PRODUCT_STOCK_QTY);
-    if (addBtn) {
-      const canOrder = maximumQuantity >= MIN_ORDER_QTY;
-      addBtn.disabled = !canOrder;
-      addBtn.textContent = canOrder ? PRODUCT_TEXT.addToCart : PRODUCT_TEXT.unavailable;
+    if (stockEl && COLOR_ATTR_KEY && selectedColorValues.size > 0) {
+      stockEl.innerHTML = `<span class="badge-stock-ok">✓ ${selectedColorValues.size} ${PRODUCT_TEXT.isAr ? 'ألوان مختارة' : 'colors selected'}</span>`;
     }
   }
+  if (!COLOR_ATTR_KEY) syncQuantityBounds(v ? v.stock : PRODUCT_STOCK_QTY);
+  updateAddButtonState();
 }
 
 function displayAttributeKey(key) {
@@ -954,7 +977,13 @@ function displayAttributeValue(key, value) {
 function updateSelectedSummary() {
   const el = document.getElementById('product-sel-summary');
   if (!el) return;
-  const parts = Object.entries(selectedAttrs).map(([k, v]) => `${displayAttributeKey(k)}: ${displayAttributeValue(k, v)}`);
+  const parts = [];
+  if (COLOR_ATTR_KEY && selectedColorValues.size) {
+    parts.push(`${displayAttributeKey(COLOR_ATTR_KEY)}: ${[...selectedColorValues].map(v => displayAttributeValue(COLOR_ATTR_KEY, v)).join(', ')}`);
+  }
+  Object.entries(selectedAttrs).forEach(([key, value]) => {
+    parts.push(`${displayAttributeKey(key)}: ${displayAttributeValue(key, value)}`);
+  });
   el.textContent = parts.length ? parts.join(' • ') : '';
 }
 
@@ -962,21 +991,77 @@ function updateHints() {
   ATTR_KEYS.forEach(key => {
     const el = document.getElementById('hint-' + slugify(key));
     if (!el) return;
-    const missing = ATTR_KEYS.filter(k => !selectedAttrs[k]);
-    if (missing.length === 0) { el.textContent = ''; return; }
-    if (Object.keys(selectedAttrs).length > 0 && missing.includes(key)) {
-      el.textContent = PRODUCT_TEXT.isAr ? `${PRODUCT_TEXT.select} ${displayAttributeKey(key)}` : `Please select a ${key}`;
-    } else {
-      el.textContent = '';
+    if (key.toLowerCase() === 'color') {
+      el.textContent = selectedColorValues.size ? '' : (PRODUCT_TEXT.isAr ? `${PRODUCT_TEXT.select} ${displayAttributeKey(key)}` : `Please select a ${key}`);
+      return;
     }
+    const missing = ATTR_KEYS.filter(k => k.toLowerCase() !== 'color' && selectedAttrs[k] === undefined);
+    el.textContent = missing.includes(key) && (selectedColorValues.size || Object.keys(selectedAttrs).length)
+      ? (PRODUCT_TEXT.isAr ? `${PRODUCT_TEXT.select} ${displayAttributeKey(key)}` : `Please select a ${key}`)
+      : '';
   });
 }
 
 function updateSelectedLabels() {
   ATTR_KEYS.forEach(key => {
     const el = document.getElementById('sel-' + slugify(key));
-    if (el) el.textContent = selectedAttrs[key] ? ': ' + displayAttributeValue(key, selectedAttrs[key]) : '';
+    if (!el) return;
+    const values = key.toLowerCase() === 'color' ? [...selectedColorValues] : (selectedAttrs[key] === undefined ? [] : [selectedAttrs[key]]);
+    el.textContent = values.length ? ': ' + values.map(value => displayAttributeValue(key, value)).join(', ') : '';
   });
+}
+
+function updateColorSteppers() {
+  document.querySelectorAll('.color-qty-stepper').forEach(stepper => { stepper.hidden = true; stepper.innerHTML = ''; });
+  if (!COLOR_ATTR_KEY) return;
+  selectedColorValues.forEach(value => {
+    const variation = variationForColor(value);
+    const stepper = document.getElementById(`color-qty-${slugify(COLOR_ATTR_KEY)}-${slugify(value)}`);
+    if (!stepper || !variation) return;
+    const maximum = maximumOrderQuantity(variation.stock);
+    const quantity = Math.max(MIN_ORDER_QTY, Math.min(maximum, Number(colorQuantities[value] || MIN_ORDER_QTY)));
+    colorQuantities[value] = quantity;
+    stepper.hidden = false;
+    stepper.innerHTML = `<button type="button" onclick="changeColorQty('${String(COLOR_ATTR_KEY).replace(/'/g, "\'")}','${String(value).replace(/'/g, "\'")}',-1,event)" aria-label="Decrease">−</button><input type="number" min="${MIN_ORDER_QTY}" max="${Math.max(1, maximum)}" value="${quantity}" aria-label="${PRODUCT_TEXT.quantity || 'Quantity'}"><button type="button" onclick="changeColorQty('${String(COLOR_ATTR_KEY).replace(/'/g, "\'")}','${String(value).replace(/'/g, "\'")}',1,event)" aria-label="Increase">+</button><div class="color-qty-hint">${PRODUCT_TEXT.maximum} ${maximum}</div>`;
+    const input = stepper.querySelector('input');
+    input.addEventListener('change', () => setColorQty(COLOR_ATTR_KEY, value, input.value));
+  });
+}
+
+function setColorQty(key, value, rawQty) {
+  const variation = variationForColor(value);
+  if (!variation) return;
+  const maximum = maximumOrderQuantity(variation.stock);
+  const next = Math.max(MIN_ORDER_QTY, Math.min(maximum, Number.parseInt(rawQty, 10) || MIN_ORDER_QTY));
+  colorQuantities[value] = next;
+  updateColorSteppers();
+  updateAddButtonState();
+}
+
+function changeColorQty(key, value, delta, event) {
+  event?.preventDefault();
+  setColorQty(key, value, (colorQuantities[value] || MIN_ORDER_QTY) + delta);
+}
+
+function updateAddButtonState() {
+  const addBtn = document.getElementById('add-to-cart-btn');
+  const stickyBtn = document.querySelector('.sticky-atc-btn');
+  let validCount = 0;
+  let totalQty = 0;
+  if (COLOR_ATTR_KEY) {
+    selectedColorVariations().forEach(({ value, variation }) => {
+      if (!variation) return;
+      const max = maximumOrderQuantity(variation.stock);
+      const qty = Number(colorQuantities[value] || MIN_ORDER_QTY);
+      if (qty >= MIN_ORDER_QTY && qty <= max && max >= MIN_ORDER_QTY) { validCount++; totalQty += qty; }
+    });
+    const label = totalQty > 0 ? `${PRODUCT_TEXT.addToCart} (${totalQty})` : PRODUCT_TEXT.addToCart;
+    if (addBtn) { addBtn.disabled = validCount === 0; addBtn.textContent = validCount ? label : PRODUCT_TEXT.select; }
+    if (stickyBtn) { stickyBtn.disabled = validCount === 0; stickyBtn.textContent = validCount ? label : PRODUCT_TEXT.select; }
+  } else if (addBtn) {
+    const canOrder = currentVariation ? maximumOrderQuantity(currentVariation.stock) >= MIN_ORDER_QTY : maximumOrderQuantity(PRODUCT_STOCK_QTY) >= MIN_ORDER_QTY;
+    addBtn.disabled = !canOrder;
+  }
 }
 
 function slugify(str) {
@@ -985,19 +1070,34 @@ function slugify(str) {
 
 // ── Cart integration ──────────────────────────────────────────────────
 function handleAddToCart(id, name, basePrice, image) {
-  // Validate all attributes selected
+  if (COLOR_ATTR_KEY) {
+    const items = selectedColorVariations().map(({ value, variation }) => {
+      const maximum = variation ? maximumOrderQuantity(variation.stock) : 0;
+      const qty = Number(colorQuantities[value] || MIN_ORDER_QTY);
+      return { variation_id: variation?.id, qty, value, maximum };
+    }).filter(item => item.variation_id && item.qty >= MIN_ORDER_QTY && item.qty <= item.maximum && item.maximum >= MIN_ORDER_QTY);
+    if (!items.length) {
+      showQuantityError(PRODUCT_TEXT.select + ' ' + displayAttributeKey(COLOR_ATTR_KEY));
+      return;
+    }
+    const missing = ATTR_KEYS.filter(key => key.toLowerCase() !== 'color' && selectedAttrs[key] === undefined);
+    if (missing.length) {
+      missing.forEach(key => {
+        const el = document.getElementById('hint-' + slugify(key));
+        if (el) { el.textContent = PRODUCT_TEXT.isAr ? `${PRODUCT_TEXT.select} ${displayAttributeKey(key)}` : `Please select a ${key}`; el.style.color = 'var(--c-orange)'; }
+      });
+      return;
+    }
+    addMultipleToCart(id, items.map(({ variation_id, qty }) => ({ variation_id, qty })));
+    return;
+  }
+
   if (ATTR_KEYS.length > 0 && !currentVariation) {
     const missing = ATTR_KEYS.filter(k => !selectedAttrs[k]);
     missing.forEach(k => {
       const el = document.getElementById('hint-' + slugify(k));
       if (el) { el.textContent = PRODUCT_TEXT.isAr ? `${PRODUCT_TEXT.select} ${displayAttributeKey(k)}` : `Please select a ${k}`; el.style.color = 'var(--c-orange)'; }
     });
-    // Shake the first unselected group
-    const firstGroup = document.getElementById('opts-' + slugify(missing[0]));
-    if (firstGroup) {
-      firstGroup.style.animation = 'shake .35s';
-      setTimeout(() => firstGroup.style.animation = '', 400);
-    }
     return;
   }
 
@@ -1005,35 +1105,17 @@ function handleAddToCart(id, name, basePrice, image) {
   const qty = parseInt(qtyInput?.value, 10) || MIN_ORDER_QTY;
   const maximumQuantity = maximumOrderQuantity(currentVariation ? currentVariation.stock : PRODUCT_STOCK_QTY);
   const quantityError = quantityValidationMessage(qty, maximumQuantity);
-  if (quantityError) {
-    showQuantityError(quantityError);
-    if (qtyInput && maximumQuantity >= MIN_ORDER_QTY) {
-      qtyInput.value = Math.max(MIN_ORDER_QTY, Math.min(maximumQuantity, qty));
-    }
-    return;
-  }
+  if (quantityError) { showQuantityError(quantityError); return; }
   const varId = currentVariation ? currentVariation.id : null;
-
-  // Compute the true effective price — mirror the discount fallback from renderPriceStock.
-  // currentVariation.price may equal regular_price when discount hasn't been written to DB.
-  let price;
+  let price = basePrice;
   let oldPrice = null;
   if (currentVariation) {
     const reg = currentVariation.reg > 0 ? currentVariation.reg : currentVariation.price;
     price = currentVariation.price;
-    if (DISC_PCT > 0 && reg > 0 && price >= reg) {
-      price = Math.round(reg * (1 - DISC_PCT / 100) * 100) / 100;
-    }
+    if (DISC_PCT > 0 && reg > 0 && price >= reg) price = Math.round(reg * (1 - DISC_PCT / 100) * 100) / 100;
     if (reg > price) oldPrice = reg;
-  } else {
-    price = basePrice;
   }
-
-  // Build variation label for cart display
-  const varLabel = currentVariation
-    ? Object.entries(currentVariation.attrs).map(([k,v]) => `${k}: ${v}`).join(', ')
-    : null;
-
+  const varLabel = currentVariation ? Object.entries(currentVariation.attrs).map(([k,v]) => `${k}: ${v}`).join(', ') : null;
   addToCart(id, name, price, image, varId, qty, varLabel, oldPrice);
 }
 

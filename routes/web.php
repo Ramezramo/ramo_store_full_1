@@ -46,6 +46,7 @@ Route::get('/vendor/{id}', [WebController::class, 'vendor'])->name('vendor.store
 
 Route::get('/cart', [CartController::class, 'index'])->name('cart');
 Route::post('/cart/add', [CartController::class, 'add'])->middleware('throttle:cart-mutation')->name('cart.add');
+Route::post('/cart/add-multiple', [CartController::class, 'addMultiple'])->middleware('throttle:cart-mutation')->name('cart.add-multiple');
 Route::post('/cart/update/{rowId}', [CartController::class, 'update'])->middleware('throttle:cart-mutation')->name('cart.update');
 Route::delete('/cart/remove/{rowId}', [CartController::class, 'remove'])->middleware('throttle:cart-mutation')->name('cart.remove');
 Route::delete('/cart/clear', [CartController::class, 'clear'])->middleware('throttle:cart-mutation')->name('cart.clear');
