@@ -1089,6 +1089,17 @@ function changeColorQty(key, value, delta, event) {
   setColorQty(key, value, (colorQuantities[colorQuantityKey(value)] || MIN_ORDER_QTY) + delta);
 }
 
+function selectionPrompt() {
+  const missing = ATTR_KEYS.find((key) => {
+    if (key.toLowerCase() === 'color') return COLOR_ATTR_KEY && selectedColorValues.size === 0;
+    return selectedAttrs[key] === undefined;
+  });
+  if (!missing) return PRODUCT_TEXT.isAr ? 'اختار اختيار' : 'Select an option';
+  return PRODUCT_TEXT.isAr
+    ? `${PRODUCT_TEXT.select} ${displayAttributeKey(missing)}`
+    : `Select a ${missing}`;
+}
+
 function updateAddButtonState() {
   const addBtn = document.getElementById('add-to-cart-btn');
   const stickyBtn = document.querySelector('.sticky-atc-btn');
@@ -1102,8 +1113,8 @@ function updateAddButtonState() {
       if (qty >= MIN_ORDER_QTY && qty <= max && max >= MIN_ORDER_QTY) { validCount++; totalQty += qty; }
     });
     const label = totalQty > 0 ? `${PRODUCT_TEXT.addToCart} (${totalQty})` : PRODUCT_TEXT.addToCart;
-    if (addBtn) { addBtn.disabled = validCount === 0; addBtn.textContent = validCount ? label : PRODUCT_TEXT.select; }
-    if (stickyBtn) { stickyBtn.disabled = validCount === 0; stickyBtn.textContent = validCount ? label : PRODUCT_TEXT.select; }
+    if (addBtn) { addBtn.disabled = validCount === 0; addBtn.textContent = validCount ? label : selectionPrompt(); }
+    if (stickyBtn) { stickyBtn.disabled = validCount === 0; stickyBtn.textContent = validCount ? label : selectionPrompt(); }
   } else if (addBtn) {
     const canOrder = currentVariation ? maximumOrderQuantity(currentVariation.stock) >= MIN_ORDER_QTY : maximumOrderQuantity(PRODUCT_STOCK_QTY) >= MIN_ORDER_QTY;
     addBtn.disabled = !canOrder;
