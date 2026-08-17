@@ -300,7 +300,111 @@
 
   </div>
 
-  {{-- ═══ REVIEWS SECTION ═══ --}}
+  @if(config('app.debug') && $variations->count())
+    @php
+      $debugVariationRows = $variations->map(function ($variation) use ($discPct, $isAr) {
+        $attrs = is_array($variation->attributes) ? $variation->attributes : [];
+        $color = null;
+        $size = null;
+        $otherAttributes = [];
+        foreach ($attrs as $key => $value) {
+          $normalizedKey = strtolower((string) $key);
+          if ($normalizedKey === 'color') {
+            $color = $value;
+          } elseif ($normalizedKey === 'size') {
+            $size = $value;
+          } else {
+            $otherAttributes[] = ((string) $key) . ': ' . ((string) $value);
+          }
+        }
+
+        $originalPrice = (float) ($variation->regular_price ?? 0);
+        $currentPrice = (float) ($variation->price ?? 0);
+        if ($discPct > 0 && $originalPrice > 0 && $currentPrice >= $originalPrice) {
+          $currentPrice = round($originalPrice * (1 - $discPct / 100), 2);
+        }
+        $discountAmount = max(0, $originalPrice - $currentPrice);
+        $discountPercent = $originalPrice > 0 && $discountAmount > 0
+          ? round(($discountAmount / $originalPrice) * 100)
+          : 0;
+
+        return [
+          'id' => $variation->id,
+          'color' => $color !== null ? \App\Support\StorefrontLabels::color($color, $isAr) : '—',
+          'size' => $size !== null ? (string) $size : '—',
+          'other' => $otherAttributes ? implode(' · ', $otherAttributes) : '—',
+          'original_price' => $originalPrice,
+          'current_price' => $currentPrice,
+          'discount_percent' => $discountPercent,
+          'stock' => max(0, (int) ($variation->stock_quantity ?? 0)),
+        ];
+      });
+    @endphp
+    <section class="debug-variation-widget" aria-label="{{ $isAr ? 'جدول تشخيص المتغيرات' : 'Debug variation inventory' }}">
+      <div class="debug-variation-header">
+        <div>
+          <div class="debug-variation-kicker">{{ $isAr ? 'وضع التصحيح فقط' : 'DEBUG ONLY' }}</div>
+          <h2>{{ $isAr ? 'بيانات كل المتغيرات' : 'All variation data' }}</h2>
+        </div>
+        <span class="debug-variation-count">{{ $debugVariationRows->count() }} {{ $isAr ? 'متغير' : 'variations' }}</span>
+      </div>
+      <div class="debug-variation-scroll">
+        <table class="debug-variation-table">
+          <thead>
+            <tr>
+              <th>{{ $isAr ? 'اللون' : 'Color' }}</th>
+              <th>{{ $isAr ? 'المقاس' : 'Size' }}</th>
+              <th>{{ $isAr ? 'بيانات إضافية' : 'Other attributes' }}</th>
+              <th>{{ $isAr ? 'السعر الأصلي' : 'Original price' }}</th>
+              <th>{{ $isAr ? 'السعر الحالي' : 'Current price' }}</th>
+              <th>{{ $isAr ? 'الخصم' : 'Discount' }}</th>
+              <th>{{ $isAr ? 'المتاح' : 'Available' }}</th>
+              <th>ID</th>
+            </tr>
+          </thead>
+          <tbody>
+            @foreach($debugVariationRows as $row)
+              <tr class="{{ $row['stock'] > 0 ? '' : 'is-out-of-stock' }}">
+                <td>{{ $row['color'] }}</td>
+                <td>{{ $row['size'] }}</td>
+                <td>{{ $row['other'] }}</td>
+                <td>{{ number_format($row['original_price'], 2) }} EGP</td>
+                <td class="debug-current-price">{{ number_format($row['current_price'], 2) }} EGP</td>
+                <td>
+                  @if($row['discount_percent'] > 0)
+                    <span class="debug-discount-badge">-{{ $row['discount_percent'] }}%</span>
+                  @else
+                    —
+                  @endif
+                </td>
+                <td>{{ number_format($row['stock']) }}</td>
+                <td><code>{{ $row['id'] }}</code></td>
+              </tr>
+            @endforeach
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <style>
+      .debug-variation-widget{max-width:1200px;margin:28px auto 0;padding:18px;background:#fff7ed;border:1px solid #fed7aa;border-radius:16px;box-shadow:0 5px 18px rgba(120,53,15,.06);}
+      .debug-variation-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px;}
+      .debug-variation-header h2{margin:3px 0 0;color:#7c2d12;font-size:18px;}
+      .debug-variation-kicker{color:#c2410c;font-size:10px;font-weight:850;letter-spacing:.12em;}
+      .debug-variation-count{padding:6px 10px;border-radius:999px;background:#ffedd5;color:#9a3412;font-size:12px;font-weight:800;white-space:nowrap;}
+      .debug-variation-scroll{overflow-x:auto;border:1px solid #fed7aa;border-radius:11px;background:#fff;}
+      .debug-variation-table{width:100%;min-width:850px;border-collapse:collapse;font-size:12px;color:#431407;}
+      .debug-variation-table th,.debug-variation-table td{padding:10px 11px;border-bottom:1px solid #ffedd5;text-align:start;vertical-align:middle;white-space:nowrap;}
+      .debug-variation-table th{background:#ffedd5;color:#7c2d12;font-size:11px;font-weight:850;}
+      .debug-variation-table tbody tr:last-child td{border-bottom:0;}
+      .debug-variation-table tbody tr.is-out-of-stock{background:#fff1f2;color:#9f1239;}
+      .debug-current-price{font-weight:850;color:#166534;}
+      .debug-discount-badge{display:inline-flex;padding:3px 6px;border-radius:6px;background:#dcfce7;color:#166534;font-weight:850;}
+      .debug-variation-table code{font-size:11px;color:#7c2d12;}
+      @media (max-width:700px){.debug-variation-widget{margin-top:20px;padding:12px;border-radius:12px}.debug-variation-header h2{font-size:15px}.debug-variation-table{min-width:790px;font-size:11px}.debug-variation-table th,.debug-variation-table td{padding:8px 9px}}
+    </style>
+  @endif
+
+  {{-- ═══ REVIEWS SECTION --}}═══ --}}
   @php
     $totalReviews = $reviews->count();
     $avgRating    = $totalReviews ? round($reviews->avg('rating'), 1) : 0;
