@@ -20,7 +20,7 @@
 @section('title', $displayProductName . ' — Ramo Store')
 
 @section('content')
-<div class="page {{ $isAr ? 'product-page-ar' : '' }}" dir="{{ $isAr ? 'rtl' : 'ltr' }}">
+<div class="page product-page {{ $isAr ? 'product-page-ar' : '' }}" dir="{{ $isAr ? 'rtl' : 'ltr' }}">
 
   <div class="breadcrumb">
     <a href="{{ route('home') }}">{{ $isAr ? 'الرئيسية' : 'Home' }}</a><span>/</span>
@@ -1667,6 +1667,80 @@ function applyProductCoupon() {
 .pi-atc-btn {
   flex: 1 1 160px; min-width: 0; font-size: 15px; font-weight: 700;
   padding: 14px 20px; border-radius: 12px;
+}
+
+/* Amount box: keep quantity controls compact, balanced, and easy to tap. */
+.product-page .pi-cart-row { align-items: start; }
+.product-page .pi-cart-row #single-qty-controls { flex: 0 0 auto; min-width: 0; }
+.product-page .pi-cart-row .qty-input {
+  display: grid;
+  grid-template-columns: 44px 58px 44px;
+  align-items: center;
+  width: 146px;
+  min-height: 52px;
+  border: 1px solid #dcd8d3;
+  border-radius: 14px;
+  background: #fafaf8;
+  box-shadow: 0 3px 10px rgba(24,24,24,.045);
+  overflow: hidden;
+}
+.product-page .pi-cart-row .qty-input button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 52px;
+  border: 0;
+  background: transparent;
+  color: #292524;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.product-page .pi-cart-row .qty-input button:hover,
+.product-page .pi-cart-row .qty-input button:focus-visible {
+  background: #f0ede9;
+  color: var(--c-orange, #e85d26);
+  outline: none;
+}
+.product-page .pi-cart-row .qty-input input {
+  width: 58px;
+  height: 52px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #1a1a1a;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 850;
+  outline: none;
+  -moz-appearance: textfield;
+}
+.product-page .pi-cart-row .qty-input input::-webkit-outer-spin-button,
+.product-page .pi-cart-row .qty-input input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.product-page .pi-cart-row #quantity-limit-hint {
+  max-width: 146px;
+  margin-top: 7px !important;
+  text-align: center;
+  line-height: 1.35;
+}
+.product-page .pi-cart-row .pi-atc-btn {
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+@media (max-width: 520px) {
+  .product-page .pi-cart-row { gap: 8px; }
+  .product-page .pi-cart-row .qty-input {
+    grid-template-columns: 40px 52px 40px;
+    width: 132px;
+  }
+  .product-page .pi-cart-row .qty-input button { width: 40px; }
+  .product-page .pi-cart-row .qty-input input { width: 52px; }
+  .product-page .pi-cart-row #quantity-limit-hint { max-width: 132px; font-size: 11px !important; }
 }
 
 /* Coupon block */
