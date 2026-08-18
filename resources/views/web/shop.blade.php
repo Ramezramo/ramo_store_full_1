@@ -58,7 +58,7 @@
   #infinite-product-grid.shop-mobile-layout-horizontal {
     display: flex !important;
     flex-direction: column !important;
-    gap: 0 !important;
+    gap: 5px !important;
   }
   #infinite-product-grid.shop-mobile-layout-horizontal .product-card {
     display: flex !important;
