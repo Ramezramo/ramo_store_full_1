@@ -849,7 +849,10 @@ class VendorProductController extends Controller
             $base['stock_quantity'] = 'required|integer|min:0';
         } else {
             $base['colors']                          = 'required|array|min:1';
-            $base['colors.*.name']                   = 'required|string|max:50';
+            $base['colors.*.type']                   = 'required|in:color,attribute';
+            $base['colors.*.name']                   = 'required|string|max:100';
+            $base['colors.*.color_code']             = 'required_if:colors.*.type,color|nullable|regex:/^#[0-9a-fA-F]{6}$/';
+            $base['colors.*.attribute_name']         = 'required_if:colors.*.type,attribute|nullable|string|max:50|not_in:Color,color,Size,size|regex:/^[^:_]+$/';
             $base['colors.*.main_variation']         = 'nullable|boolean';
             $base['colors.*.sizes']                  = 'nullable|array';
             $base['colors.*.sizes.*']                = 'string|max:25';
@@ -917,8 +920,21 @@ class VendorProductController extends Controller
         $discountPct = (float) $request->input('discount_percentage', 0);
 
         foreach ($colorsInput as $colorData) {
-            $colorName = ucfirst($this->sanitizeProductText($colorData['name'] ?? ''));
-            if (! $colorName) continue;
+            $variationType = ($colorData['type'] ?? 'color') === 'attribute' ? 'attribute' : 'color';
+            $optionName    = ucfirst($this->sanitizeProductText($colorData['name'] ?? ''));
+            if (! $optionName) continue;
+
+            if ($variationType === 'color') {
+                $attributeName = 'Color';
+                $colorCode = strtoupper(trim((string)($colorData['color_code'] ?? '')));
+                if (! preg_match('/^#[0-9A-F]{6}$/', $colorCode)) {
+                    $colorCode = '#999999';
+                }
+            } else {
+                $attributeName = trim($this->sanitizeProductText($colorData['attribute_name'] ?? ''));
+                if (! $attributeName || in_array(strtolower($attributeName), ['color', 'size'], true)) continue;
+                $colorCode = null;
+            }
 
             $priceMap          = (array) ($colorData['price_map'] ?? []);
             $salePriceMapInput = (array) ($colorData['sale_price_map'] ?? []);
@@ -962,9 +978,17 @@ class VendorProductController extends Controller
                 $stockStatusMap  = (array) ($colorData['stock_status_map'] ?? []);
                 $statusMap       = (array) ($colorData['status_map'] ?? []);
 
+                $attributes = [$attributeName => $optionName];
+                if ($size !== 'Default') {
+                    $attributes['Size'] = $size;
+                }
+                if ($colorCode !== null) {
+                    $attributes['_color_code'] = $colorCode;
+                }
+
                 $rows[] = [
-                    '_color'         => $colorName,
-                    'attributes'     => json_encode(['Color' => $colorName, 'Size' => $size]),
+                    '_color'         => $optionName,
+                    'attributes'     => json_encode($attributes),
                     'price'          => $price,
                     'regular_price'  => $regularPriceForSize,
                     'sale_price'     => $salePriceForSize,

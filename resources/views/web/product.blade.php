@@ -167,10 +167,16 @@
         ])->values();
 
         $attrMap = [];
+        $colorCodeMap = [];
         foreach ($varData as $v) {
-          foreach (($v['attrs'] ?? []) as $k => $val) {
+          $attrs = $v['attrs'] ?? [];
+          foreach ($attrs as $k => $val) {
+            if (str_starts_with((string)$k, '_')) continue;
             if (!isset($attrMap[$k])) $attrMap[$k] = [];
-            if (!in_array($val, $attrMap[$k])) $attrMap[$k][] = $val;
+            if (!in_array($val, $attrMap[$k], true)) $attrMap[$k][] = $val;
+          }
+          if (isset($attrs['Color'], $attrs['_color_code']) && preg_match('/^#[0-9a-fA-F]{6}$/', (string)$attrs['_color_code'])) {
+            $colorCodeMap[(string)$attrs['Color']] = strtoupper((string)$attrs['_color_code']);
           }
         }
       @endphp
@@ -202,7 +208,7 @@
                             onmouseleave="restoreImage()"
                             title="{{ \App\Support\StorefrontLabels::color($val, $isAr) }}"
                             aria-label="{{ $isAr ? 'اللون: ' : 'Color: ' }}{{ \App\Support\StorefrontLabels::color($val, $isAr) }}"
-                            style="background-color: var(--swatch-{{ Str::slug($val) }}, #999)">
+                            style="background-color: {{ $colorCodeMap[$val] ?? 'var(--swatch-' . Str::slug($val) . ', #999)' }}">
                     </button>
                     <span class="var-color-name">{{ \App\Support\StorefrontLabels::color($val, $isAr) }}</span>
                     <div class="color-qty-stepper" id="color-qty-{{ Str::slug($attrKey) }}-{{ Str::slug($val) }}" hidden></div>
@@ -313,6 +319,8 @@
             $color = $value;
           } elseif ($normalizedKey === 'size') {
             $size = $value;
+          } elseif (str_starts_with($normalizedKey, '_')) {
+            continue;
           } else {
             $otherAttributes[] = ((string) $key) . ': ' . ((string) $value);
           }
@@ -1312,7 +1320,7 @@ function handleAddToCart(id, name, basePrice, image) {
     if (DISC_PCT > 0 && reg > 0 && price >= reg) price = Math.round(reg * (1 - DISC_PCT / 100) * 100) / 100;
     if (reg > price) oldPrice = reg;
   }
-  const varLabel = currentVariation ? Object.entries(currentVariation.attrs).map(([k,v]) => `${k}: ${v}`).join(', ') : null;
+  const varLabel = currentVariation ? Object.entries(currentVariation.attrs).filter(([k]) => !String(k).startsWith('_')).map(([k,v]) => `${k}: ${v}`).join(', ') : null;
   addToCart(id, name, price, image, varId, qty, varLabel, oldPrice);
 }
 

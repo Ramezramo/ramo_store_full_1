@@ -29,7 +29,9 @@ class XssProtectionTest extends TestCase
                 'sku' => 'SKU-' . $payload,
                 'has_variations' => true,
                 'colors' => [[
+                    'type' => 'color',
                     'name' => 'Blue ' . $payload,
+                    'color_code' => '#0000FF',
                     'sizes' => ['M ' . $sizePayload],
                     'stock' => ['M ' . $sizePayload => 2],
                     'price_map' => ['M ' . $sizePayload => 100],

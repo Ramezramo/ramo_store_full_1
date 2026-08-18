@@ -58,6 +58,10 @@ textarea.vs-input{resize:vertical;min-height:100px}
 .color-row-badge{font-size:11px;font-weight:700;color:var(--orange);background:#fff0e6;border:1px solid #f5c9a8;border-radius:20px;padding:2px 10px}
 .color-row-remove{background:none;border:1px solid #fee2e2;border-radius:6px;color:#dc2626;font-size:12px;font-weight:600;padding:4px 10px;cursor:pointer;transition:.12s}
 .color-row-remove:hover{background:#fee2e2}
+.variation-type-select{min-width:150px}
+.color-code-wrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.color-code-input{width:48px;height:36px;padding:2px;border:1px solid var(--light);border-radius:7px;background:#fff;cursor:pointer}
+.color-code-hint{font-size:11px;color:var(--mid)}
 
 .size-tags-wrap{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px;background:#f3f4f6;border-radius:8px;min-height:38px}
 .size-tag{display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid var(--light);border-radius:16px;padding:3px 10px;font-size:12px;font-weight:600}
@@ -723,37 +727,51 @@ textarea.vs-input{resize:vertical;min-height:100px}
 @php
   $editProductId = isset($product) ? (int)$product->id : 0;
 
-  // Build color-row data from dbVariations (grouped by Color attribute).
-  // Handles both {"Color":"X","Size":"Y"} and legacy free-form attributes
-  // like {"Color":"X","RAM":"8GB","Storage":"256GB"} by combining non-Color
-  // keys into a composite size label ("8GB / 256GB").
+  // Build variation rows for edit mode. A row is explicitly either a real
+  // color (with a hex code) or a generic attribute value such as "6 GB RAM".
   $editColorRows = [];
   if ($hasVariations && $dbVariations->count()) {
       foreach ($dbVariations as $dv) {
-          $attrs = $dv->attributes ?? [];
+          $attrs = is_array($dv->attributes ?? null) ? $dv->attributes : [];
+          $isColor = isset($attrs['Color']) && trim((string)$attrs['Color']) !== '';
 
-          // Resolve color — fall back to "Default" so the row is always valid
-          $color = isset($attrs['Color']) && $attrs['Color'] !== ''
-              ? $attrs['Color']
-              : 'Default';
-
-          // Resolve size — use Size if present, otherwise combine remaining attrs
-          if (isset($attrs['Size']) && $attrs['Size'] !== '') {
-              $size = $attrs['Size'];
+          if ($isColor) {
+              $rowType      = 'color';
+              $attributeName = 'Color';
+              $optionName   = (string)$attrs['Color'];
+              $colorCode    = isset($attrs['_color_code']) ? (string)$attrs['_color_code'] : '';
           } else {
-              $otherAttrs = array_filter(
+              $attributePairs = array_filter(
                   $attrs,
-                  fn($k) => strtolower($k) !== 'color',
+                  fn($key) => !in_array(strtolower((string)$key), ['size', '_color_code'], true),
                   ARRAY_FILTER_USE_KEY
               );
-              $size = count($otherAttrs)
-                  ? implode(' / ', array_values($otherAttrs))
-                  : 'Default';
+              $attributeName = $attributePairs ? (string)array_key_first($attributePairs) : 'Option';
+              $optionName    = $attributePairs ? (string)reset($attributePairs) : 'Default';
+              $rowType       = 'attribute';
+              $colorCode     = '';
           }
 
-          if (! isset($editColorRows[$color])) {
-              $editColorRows[$color] = [
-                  'name'             => $color,
+          // Preserve legacy free-form attributes by displaying their remaining
+          // values as the secondary option label when no explicit Size exists.
+          if (isset($attrs['Size']) && trim((string)$attrs['Size']) !== '') {
+              $size = (string)$attrs['Size'];
+          } else {
+              $remaining = array_filter(
+                  $attrs,
+                  fn($key) => strtolower((string)$key) !== 'color' && strtolower((string)$key) !== '_color_code' && strtolower((string)$key) !== strtolower($attributeName),
+                  ARRAY_FILTER_USE_KEY
+              );
+              $size = $remaining ? implode(' / ', array_values($remaining)) : 'Default';
+          }
+
+          $rowKey = $rowType . '|' . $attributeName . '|' . $optionName;
+          if (!isset($editColorRows[$rowKey])) {
+              $editColorRows[$rowKey] = [
+                  'type'             => $rowType,
+                  'attribute_name'   => $attributeName,
+                  'name'             => $optionName,
+                  'color_code'       => $colorCode,
                   'sizes'            => [],
                   'price_map'        => [],
                   'sale_price_map'   => [],
@@ -765,16 +783,15 @@ textarea.vs-input{resize:vertical;min-height:100px}
               ];
           }
 
-          $editColorRows[$color]['sizes'][]                      = $size;
-          $editColorRows[$color]['price_map'][$size]             = $dv->regular_price ?? 0;
-          $editColorRows[$color]['stock'][$size]                 = $dv->stock_quantity ?? 0;
-          $editColorRows[$color]['stock_status_map'][$size]      = $dv->stock_status ?? 'instock';
-          $editColorRows[$color]['status_map'][$size]            = $dv->status ?? 'publish';
-          // Restore per-size sale price only when it's genuinely discounted
+          $editColorRows[$rowKey]['sizes'][]                 = $size;
+          $editColorRows[$rowKey]['price_map'][$size]        = $dv->regular_price ?? 0;
+          $editColorRows[$rowKey]['stock'][$size]             = $dv->stock_quantity ?? 0;
+          $editColorRows[$rowKey]['stock_status_map'][$size]  = $dv->stock_status ?? 'instock';
+          $editColorRows[$rowKey]['status_map'][$size]        = $dv->status ?? 'publish';
           $dvSale = (float)($dv->sale_price ?? 0);
           $dvReg  = (float)($dv->regular_price ?? 0);
           if ($dvSale > 0 && $dvReg > 0 && $dvSale < $dvReg) {
-              $editColorRows[$color]['sale_price_map'][$size] = $dvSale;
+              $editColorRows[$rowKey]['sale_price_map'][$size] = $dvSale;
           }
       }
   }
@@ -1342,7 +1359,10 @@ function addColorRow(colorData) {
   const stockMap        = colorData.stock || {};
   const stockStatusMap  = colorData.stock_status_map || {};
   const statusMap       = colorData.status_map || {};
+  const variationType   = colorData.type === 'attribute' ? 'attribute' : 'color';
+  const attributeName   = colorData.attribute_name || '';
   const colorName       = colorData.name || '';
+  const colorCode       = /^#[0-9a-f]{6}$/i.test(String(colorData.color_code || '')) ? String(colorData.color_code) : '#999999';
   const salePriceVal    = colorData.sale_price || '';
 
   const row = document.createElement('div');
@@ -1352,12 +1372,36 @@ function addColorRow(colorData) {
 
   row.innerHTML = `
     <div class="color-row-header">
-      <span class="color-row-badge">${isFirst ? '★ Main Color' : 'Color #' + (document.getElementById('color-rows').children.length + 1)}</span>
+      <span class="color-row-badge">${isFirst ? '★ Main Variation' : 'Variation #' + (document.getElementById('color-rows').children.length + 1)}</span>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <input type="text" name="colors[${idx}][name]" class="vs-input" placeholder="Color name (e.g. Red, Navy Blue)"
-               value="${escHtml(colorName)}" style="width:220px"
-               onblur="refreshSizePricingTable(${idx})">
+        <select name="colors[${idx}][type]" class="vs-input variation-type-select" onchange="toggleVariationRowType(${idx}, this.value)">
+          <option value="color" ${variationType === 'color' ? 'selected' : ''}>Color variation</option>
+          <option value="attribute" ${variationType === 'attribute' ? 'selected' : ''}>Other attribute</option>
+        </select>
         ${isFirst ? '' : `<button type="button" class="color-row-remove" onclick="removeColorRow(${idx})">× Remove</button>`}
+      </div>
+    </div>
+
+    <div class="vs-form-grid" style="margin-bottom:12px">
+      <div class="vs-form-group">
+        <label class="vs-label" id="variation-name-label-${idx}">${variationType === 'color' ? 'Color name' : 'Attribute value'} <span style="color:var(--red)">*</span></label>
+        <input type="text" name="colors[${idx}][name]" class="vs-input" placeholder="${variationType === 'color' ? 'e.g. Red, Navy Blue' : 'e.g. 6 GB RAM'}"
+               value="${escHtml(colorName)}" required
+               onblur="refreshSizePricingTable(${idx})">
+        <div class="color-code-hint" id="variation-name-hint-${idx}">${variationType === 'color' ? 'This value is shown as the color name.' : 'This is a normal attribute value, not a color.'}</div>
+      </div>
+      <div class="vs-form-group" id="color-code-group-${idx}" style="${variationType === 'color' ? '' : 'display:none'}">
+        <label class="vs-label">Color code <span style="color:var(--red)">*</span></label>
+        <div class="color-code-wrap">
+          <input type="color" name="colors[${idx}][color_code]" id="color-code-${idx}" class="color-code-input" value="${colorCode}" ${variationType === 'color' ? 'required' : 'disabled'} oninput="updateColorCodeLabel(${idx}, this.value)">
+          <span class="color-code-hint" id="color-code-value-${idx}">${colorCode.toUpperCase()} — choose the actual color</span>
+        </div>
+      </div>
+      <div class="vs-form-group" id="attribute-name-group-${idx}" style="${variationType === 'attribute' ? '' : 'display:none'}">
+        <label class="vs-label">Attribute name <span style="color:var(--red)">*</span></label>
+        <input type="text" name="colors[${idx}][attribute_name]" id="attribute-name-${idx}" class="vs-input" placeholder="e.g. RAM, Storage, Material"
+               value="${escHtml(attributeName)}" ${variationType === 'attribute' ? 'required' : 'disabled'} maxlength="50">
+        <div class="color-code-hint">Example: RAM + 6 GB. It will not be rendered as a color swatch.</div>
       </div>
     </div>
 
@@ -1404,6 +1448,38 @@ function addColorRow(colorData) {
 
   // Restore sizes from edit data (including per-size sale prices)
   sizes.forEach(s => addSize(idx, s, priceMap[s] || '', salePriceMap[s] || '', stockMap[s] || 0, stockStatusMap[s] || 'instock', statusMap[s] || 'publish'));
+}
+
+function updateColorCodeLabel(idx, value) {
+  const label = document.getElementById(`color-code-value-${idx}`);
+  if (label) label.textContent = `${String(value || '').toUpperCase()} — choose the actual color`;
+}
+
+function toggleVariationRowType(idx, type) {
+  const row = document.getElementById(`color-row-${idx}`);
+  if (!row) return;
+  const isColor = type === 'color';
+  const nameLabel = document.getElementById(`variation-name-label-${idx}`);
+  const nameInput = row.querySelector(`input[name="colors[${idx}][name]"]`);
+  const nameHint = document.getElementById(`variation-name-hint-${idx}`);
+  const colorGroup = document.getElementById(`color-code-group-${idx}`);
+  const colorInput = document.getElementById(`color-code-${idx}`);
+  const attrGroup = document.getElementById(`attribute-name-group-${idx}`);
+  const attrInput = document.getElementById(`attribute-name-${idx}`);
+
+  if (nameLabel) nameLabel.innerHTML = `${isColor ? 'Color name' : 'Attribute value'} <span style="color:var(--red)">*</span>`;
+  if (nameInput) nameInput.placeholder = isColor ? 'e.g. Red, Navy Blue' : 'e.g. 6 GB RAM';
+  if (nameHint) nameHint.textContent = isColor ? 'This value is shown as the color name.' : 'This is a normal attribute value, not a color.';
+  if (colorGroup) colorGroup.style.display = isColor ? '' : 'none';
+  if (colorInput) {
+    colorInput.disabled = !isColor;
+    colorInput.required = isColor;
+  }
+  if (attrGroup) attrGroup.style.display = isColor ? 'none' : '';
+  if (attrInput) {
+    attrInput.disabled = isColor;
+    attrInput.required = !isColor;
+  }
 }
 
 function removeColorRow(idx) {
