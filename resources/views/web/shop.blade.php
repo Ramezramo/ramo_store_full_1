@@ -219,6 +219,13 @@
   #infinite-product-grid.shop-mobile-layout-grid .pc-coupon-bar { display: none !important; }
 }
 
+/* Keep variation controls visibly separated from the product text inside each card. */
+#infinite-product-grid .product-card-body > .pc-swatches,
+#infinite-product-grid .product-card-body > .pc-sizes {
+  margin-top: 15px !important;
+  margin-bottom: 0 !important;
+}
+
 /* ══════════════════════════════════════════════
    FOLDABLE WIDGET SECTIONS
 ══════════════════════════════════════════════ */
