@@ -35,12 +35,12 @@
 #infinite-product-grid {
   display: grid !important;
   grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)) !important;
-  gap: 5px !important;
+  gap: 15px !important;
 }
 @media (max-width: 600px) {
   #infinite-product-grid {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
-    gap: 5px !important;
+    gap: 15px !important;
   }
 }
 /* ── Narrow phones: administrator-selected product layout ── */
@@ -58,7 +58,7 @@
   #infinite-product-grid.shop-mobile-layout-horizontal {
     display: flex !important;
     flex-direction: column !important;
-    gap: 5px !important;
+    gap: 15px !important;
   }
   #infinite-product-grid.shop-mobile-layout-horizontal .product-card {
     display: flex !important;
@@ -154,7 +154,7 @@
   #infinite-product-grid.shop-mobile-layout-grid {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 5px !important;
+    gap: 15px !important;
   }
   #infinite-product-grid.shop-mobile-layout-grid .product-card {
     display: flex !important;
