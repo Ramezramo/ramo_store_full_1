@@ -7,19 +7,14 @@ use Tests\TestCase;
 
 class StorefrontCacheHeadersTest extends TestCase
 {
-    public function test_anonymous_public_catalog_page_has_short_shared_cache_headers_in_production_mode(): void
+    public function test_shop_page_is_never_stored_in_production_mode(): void
     {
         Config::set('app.debug', false);
 
-        $response = $this->get(route('shop'))
+        $this->get(route('shop'))
             ->assertOk()
-            ->assertHeader('Vary', 'Cookie, Accept-Language');
-
-        $cacheControl = (string) $response->headers->get('Cache-Control');
-        $this->assertStringContainsString('public', $cacheControl);
-        $this->assertStringContainsString('max-age=60', $cacheControl);
-        $this->assertStringContainsString('s-maxage=300', $cacheControl);
-        $this->assertStringContainsString('stale-while-revalidate=60', $cacheControl);
+            ->assertHeader('Cache-Control', 'no-store, private')
+            ->assertHeader('Pragma', 'no-cache');
     }
 
     public function test_personalized_cart_page_is_never_stored_in_production_mode(): void
