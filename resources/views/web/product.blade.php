@@ -650,12 +650,12 @@
 
   {{-- RELATED --}}
   @if($related->count())
-  <div style="margin-top:64px">
-    <div class="sec-head">
+  <div class="related-products-section" style="margin-top:64px">
+    <div class="sec-head related-products-head">
       <h2 class="sec-title">{{ $isAr ? 'ممكن يعجبك كمان' : 'You may also like' }}</h2>
       <a href="{{ route('shop') }}" class="sec-link">{{ $isAr ? 'شوف أكتر ←' : 'See all →' }}</a>
     </div>
-    <div class="product-grid cols-4">
+    <div class="product-grid cols-4 related-products-grid">
       @foreach($related as $p)
         @include('web.partials.product-card', ['p' => $p, 'cardVariations' => []])
       @endforeach
@@ -946,6 +946,169 @@
     border-color:#e85d26;
     color:#fff;
   }
+}
+/* ── Suggested products mobile card polish ── */
+.related-products-section {
+  border-top:1px solid #ece9e5;
+  padding-top:24px;
+}
+.related-products-head { margin-bottom:16px !important; }
+@media (max-width:600px) {
+  .product-page .related-products-section {
+    margin-top:36px !important;
+    padding-top:18px;
+  }
+  .product-page .related-products-head {
+    align-items:center;
+    margin-bottom:12px !important;
+  }
+  .product-page .related-products-head .sec-title {
+    font-size:18px;
+    line-height:1.25;
+  }
+  .product-page .related-products-head .sec-link {
+    font-size:11px;
+    white-space:nowrap;
+  }
+  .product-page .related-products-grid {
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:10px !important;
+  }
+  .product-page .related-products-grid .product-card {
+    min-width:0;
+    min-height:0 !important;
+    overflow:hidden;
+    border:1px solid #ececec;
+    border-radius:14px;
+    background:#fff;
+    box-shadow:0 4px 16px rgba(25,25,25,.06);
+  }
+  .product-page .related-products-grid .product-card-img {
+    width:100%;
+    height:auto !important;
+    aspect-ratio:1 / 1;
+    border-radius:0;
+    background:#f7f7f7;
+  }
+  .product-page .related-products-grid .product-card-body {
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    min-width:0;
+    padding:8px 7px 9px !important;
+    text-align:center;
+  }
+  .product-page .related-products-grid .product-card-name {
+    display:-webkit-box;
+    -webkit-box-orient:vertical;
+    -webkit-line-clamp:2;
+    min-height:30px;
+    margin:0;
+    overflow:hidden;
+    color:#202020;
+    font-size:11px;
+    font-weight:700;
+    line-height:1.35;
+    text-align:center;
+  }
+  .product-page .related-products-grid .pc-swatches,
+  .product-page .related-products-grid .pc-sizes {
+    justify-content:center;
+    margin:5px 0 0;
+    gap:4px;
+  }
+  .product-page .related-products-grid .pc-swatches:empty,
+  .product-page .related-products-grid .pc-sizes:empty { display:none; }
+  .product-page .related-products-grid .pc-swatch {
+    width:15px;
+    height:15px;
+    border-width:2px;
+  }
+  .product-page .related-products-grid .pc-size {
+    min-width:21px;
+    padding:3px 5px;
+    border-radius:6px;
+    font-size:9px;
+    line-height:1;
+  }
+  .product-page .related-products-grid .pc-selected {
+    min-height:13px;
+    max-height:13px;
+    margin:3px 0 0;
+    overflow:hidden;
+    color:#8b8b8b;
+    font-size:9px;
+    line-height:1.4;
+    text-align:center;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .product-page .related-products-grid .product-card-price {
+    display:flex;
+    align-items:baseline;
+    justify-content:center;
+    min-height:21px;
+    margin:6px 0 0;
+    gap:4px;
+    line-height:1;
+  }
+  .product-page .related-products-grid .price-main {
+    font-size:13px;
+    font-weight:800;
+    white-space:nowrap;
+  }
+  .product-page .related-products-grid .price-main.sale { color:var(--c-orange); }
+  .product-page .related-products-grid .price-old {
+    color:#9a9a9a;
+    font-size:9px;
+    white-space:nowrap;
+  }
+  .product-page .related-products-grid .pc-actions {
+    display:block;
+    margin:7px 0 0;
+  }
+  .product-page .related-products-grid .card-add-btn {
+    width:100%;
+    min-height:30px;
+    margin:0;
+    padding:7px 4px;
+    border:0;
+    border-radius:8px;
+    background:var(--c-dark);
+    color:#fff;
+    font-size:10px;
+    font-weight:800;
+    line-height:1;
+    white-space:nowrap;
+  }
+  .product-page .related-products-grid .card-details-btn {
+    display:block;
+    width:100%;
+    margin:5px 0 0;
+    padding:2px 0 0;
+    border:0;
+    background:transparent;
+    color:#777;
+    font-size:9px;
+    font-weight:700;
+    line-height:1.2;
+    text-align:center;
+    text-decoration:none;
+  }
+  .product-page .related-products-grid .wish-btn {
+    top:7px;
+    right:7px;
+    width:26px;
+    height:26px;
+    border:1px solid rgba(0,0,0,.08);
+    background:rgba(255,255,255,.94);
+    font-size:14px;
+  }
+  .product-page.product-page-ar .related-products-grid .wish-btn {
+    right:7px;
+    left:auto;
+  }
+  .product-page .related-products-grid .pc-coupon-bar { display:none; }
 }
 </style>
 <script>
