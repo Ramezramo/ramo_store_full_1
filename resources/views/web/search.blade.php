@@ -226,7 +226,7 @@
 .search-hero{margin-bottom:28px}
 .search-page[dir="rtl"]{text-align:right}
 .search-page[dir="rtl"] .search-hero-bar{margin-left:0;margin-right:0}
-.search-page[dir="rtl"] .search-hero-bar input{text-align:right}
+.search-page[dir="rtl"] .search-hero-bar input{direction:rtl;unicode-bidi:plaintext;text-align:right;padding-inline-start:28px;padding-inline-end:18px;text-indent:2px;box-sizing:border-box}
 .search-page[dir="rtl"] .search-result-meta{text-align:right}
 .search-page[dir="rtl"] .search-toolbar{direction:rtl}
 .search-page[dir="rtl"] .filter-label{direction:rtl}
@@ -312,14 +312,14 @@ mark.search-hl{background:#fff3cd;color:inherit;border-radius:2px;padding:0 1px}
   .search-toolbar{gap:10px;flex-wrap:wrap;margin-bottom:14px}
   .search-toolbar>span:last-child{font-size:12px!important}
   .search-empty{padding:48px 16px}
-  .search-page[dir="rtl"] .search-hero-bar input{text-align:right}
+  .search-page[dir="rtl"] .search-hero-bar input{direction:rtl;unicode-bidi:plaintext;text-align:right;padding-inline-start:28px;padding-inline-end:18px;text-indent:2px;box-sizing:border-box}
 }
 
 /* Keep the input readable on narrow phones: the button must not squeeze it
    below its usable width, especially in RTL where the placeholder is right-aligned. */
 @media(max-width:640px){
   .search-hero-bar{border-radius:14px}
-  .search-hero-bar input{padding:12px 14px;font-size:14px;line-height:1.35}
+  .search-hero-bar input{padding:12px 18px;font-size:14px;line-height:1.35;min-width:0;box-sizing:border-box}
   .search-hero-bar button{padding:10px 16px;font-size:13px}
 }
 
