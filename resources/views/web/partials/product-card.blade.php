@@ -88,6 +88,10 @@
   if ($p->sold_individually ?? false) $quickAddMaximum = min($quickAddMaximum, 1);
   // Cards have no quantity selector, so they may quick-add only products whose seller minimum is one.
   $canQuickAdd = $quickAddMinimum === 1 && $quickAddMaximum >= 1;
+  // Do not render an Add to Cart action when the effective available stock is zero.
+  // Products with stock below their minimum order quantity keep the existing
+  // product-link prompt so the customer can review the requirement.
+  $hasAvailableStock = $quickAddMaximum > 0;
   $hasColors = count($colorMap) > 1;
   $hasSizes  = count($sizeList) > 0;
 
@@ -204,9 +208,9 @@
       @endif
     </div>
 
-    @if($coShowAddToCart || $coRemoveWishlist)
+    @if(($coShowAddToCart && $hasAvailableStock) || $coRemoveWishlist)
     <div class="pc-actions" style="{{ $coRemoveWishlist ? 'display:flex;gap:8px;margin-top:4px' : '' }}">
-      @if($coShowAddToCart)
+      @if($coShowAddToCart && $hasAvailableStock)
         @if($canQuickAdd)
         <button class="card-add-btn{{ $coRemoveWishlist ? '' : '' }}" id="pc-add-{{ $pid }}"
                 data-name="{{ addslashes($productDisplayName) }}"
