@@ -1559,6 +1559,35 @@ function _pcGetSel(pid) {
   return { color: card.dataset.selColor||'', size: card.dataset.selSize||'' };
 }
 
+function _pcVariationIsSellable(v) {
+  const stockStatus = String(v?.stockStatus || 'instock').toLowerCase();
+  const status = String(v?.status || 'publish').toLowerCase();
+  return status === 'publish'
+    && !['outofstock', 'out_of_stock', 'out of stock'].includes(stockStatus)
+    && Number(v?.stock || 0) > 0;
+}
+
+function _pcSelectInitialColor(pid) {
+  const card = _pcGetCard(pid);
+  if (!card || card.dataset.selColor) return;
+
+  const vars = _pcGetVars(pid);
+  const firstAvailable = vars.find(v => v.attrs?.['Color'] && _pcVariationIsSellable(v));
+  if (!firstAvailable) return;
+
+  const color = firstAvailable.attrs['Color'];
+  const swatch = Array.from(card.querySelectorAll('.pc-swatch'))
+    .find(btn => btn.dataset.color === color);
+  card.dataset.selColor = color;
+  card.dataset.selColorLabel = swatch?.dataset.display || color;
+  if (swatch) {
+    card.querySelectorAll('.pc-swatch').forEach(btn => btn.classList.remove('selected'));
+    swatch.classList.add('selected');
+    const imgEl = document.getElementById('pc-img-' + pid);
+    if (imgEl && swatch.dataset.img) imgEl.src = swatch.dataset.img;
+  }
+}
+
 function pcPickColor(pid, colorVal, btn) {
   const card = _pcGetCard(pid);
   if (!card) return;
@@ -1607,7 +1636,7 @@ function _pcUpdateSizes(pid) {
   // Show only sizes available for this color
   sizeEl.querySelectorAll('.pc-size').forEach(btn => {
     const size = btn.dataset.size;
-    const avail = vars.some(v => v.attrs['Color'] === color && v.attrs['Size'] === size && v.stock > 0);
+    const avail = vars.some(v => v.attrs['Color'] === color && v.attrs['Size'] === size && _pcVariationIsSellable(v));
     const exists = vars.some(v => v.attrs['Color'] === color && v.attrs['Size'] === size);
     btn.classList.toggle('unavail', !avail && exists);
     btn.style.display = !exists ? 'none' : '';
@@ -1631,13 +1660,7 @@ function _pcUpdatePrice(pid) {
   const addControl = card.querySelector('.pc-actions .card-add-btn');
   if (!priceEl || !vars.length) return;
 
-  const isSellable = (v) => {
-    const stockStatus = String(v.stockStatus || 'instock').toLowerCase();
-    const status = String(v.status || 'publish').toLowerCase();
-    return status === 'publish'
-      && !['outofstock', 'out_of_stock', 'out of stock'].includes(stockStatus)
-      && Number(v.stock || 0) > 0;
-  };
+  const isSellable = _pcVariationIsSellable;
 
   const hasColorAttrs = vars.some(v => v.attrs['Color']);
   const hasSizeAttrs  = vars.some(v => v.attrs['Size']);
@@ -1712,6 +1735,22 @@ function _pcUpdateSummary(pid) {
   if (color) parts.push(STOREFRONT_COPY.color + ': ' + colorLabel);
   if (size) parts.push(STOREFRONT_COPY.size + ': ' + size);
   el.textContent = parts.join(' • ');
+}
+
+function _pcInitializeVariations() {
+  document.querySelectorAll('.product-card[data-vars]').forEach(card => {
+    const pid = card.dataset.pid;
+    _pcSelectInitialColor(pid);
+    _pcUpdateSizes(pid);
+    _pcUpdatePrice(pid);
+    _pcUpdateSummary(pid);
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _pcInitializeVariations);
+} else {
+  _pcInitializeVariations();
 }
 
 function pcAddToCart(pid) {
