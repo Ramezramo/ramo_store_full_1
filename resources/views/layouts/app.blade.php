@@ -1648,17 +1648,22 @@ function _pcUpdatePrice(pid) {
     match = vars.find(v => v.attrs['Size'] === size) || null;
   }
 
-  // If a color or size is selected, only matching sellable variations keep
-  // the quick-add action visible. With no selection, use aggregate card stock.
-  let selectionAvailable = card.dataset.hasAvailableStock === '1';
-  if (color && !size) {
+  // A variation-bearing card starts hidden until the customer identifies a
+  // sellable choice. When both color and size exist, require the full pair;
+  // when only one dimension exists, that single selection is sufficient.
+  const hasColorAttrs = vars.some(v => v.attrs['Color']);
+  const hasSizeAttrs  = vars.some(v => v.attrs['Size']);
+  let selectionAvailable = false;
+  if (hasColorAttrs && hasSizeAttrs) {
+    selectionAvailable = !!match && isSellable(match);
+  } else if (color && !size && hasColorAttrs) {
     const colorMatches = vars.filter(v => v.attrs['Color'] === color);
-    if (colorMatches.length) selectionAvailable = colorMatches.some(isSellable);
-  } else if (size && !color) {
+    selectionAvailable = colorMatches.length > 0 && colorMatches.some(isSellable);
+  } else if (size && !color && hasSizeAttrs) {
     const sizeMatches = vars.filter(v => v.attrs['Size'] === size);
-    if (sizeMatches.length) selectionAvailable = sizeMatches.some(isSellable);
-  } else if (match) {
-    selectionAvailable = isSellable(match);
+    selectionAvailable = sizeMatches.length > 0 && sizeMatches.some(isSellable);
+  } else if (!hasColorAttrs && !hasSizeAttrs) {
+    selectionAvailable = card.dataset.hasAvailableStock === '1';
   }
 
   if (match) {

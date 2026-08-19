@@ -109,6 +109,10 @@
   $hasAvailableStock = $quickAddMaximum > 0;
   $hasColors = count($colorMap) > 1;
   $hasSizes  = count($sizeList) > 0;
+  // Variation cards require an explicit color/size choice before quick-add.
+  // Keep the action in the DOM so JavaScript can reveal it after a sellable
+  // variation is selected, but do not show it on the initial card render.
+  $requiresVariationSelection = $hasAvailableStock && ($hasColors || $hasSizes);
 
   /* ── Compact-mode style helpers ─────────────────────────── */
   $imgStyle  = $coCompact ? 'height:180px' : '';
@@ -131,6 +135,7 @@
      data-base-img="{{ $displayImg }}"
      data-base-price="{{ $basePrice }}"
      data-has-available-stock="{{ $hasAvailableStock ? '1' : '0' }}"
+     data-requires-variation-selection="{{ $requiresVariationSelection ? '1' : '0' }}"
      data-vars='@json($jsVars)'>
 
   <a href="{{ route('product', $pid) }}" class="product-card-img" @if($imgStyle) style="{{ $imgStyle }}" @endif>
@@ -224,14 +229,14 @@
       @endif
     </div>
 
-    @if(($coShowAddToCart && $hasAvailableStock) || $coRemoveWishlist)
-    <div class="pc-actions" style="{{ $coRemoveWishlist ? 'display:flex;gap:8px;margin-top:4px' : '' }}">
-      @if($coShowAddToCart && $hasAvailableStock)
+    @if(($coShowAddToCart && ($hasAvailableStock || $requiresVariationSelection)) || $coRemoveWishlist)
+    <div class="pc-actions" style="{{ $coRemoveWishlist ? 'display:flex;gap:8px;margin-top:4px' : (($requiresVariationSelection && !$coRemoveWishlist) ? 'display:none' : '') }}">
+      @if($coShowAddToCart && ($hasAvailableStock || $requiresVariationSelection))
         @if($canQuickAdd)
         <button class="card-add-btn{{ $coRemoveWishlist ? '' : '' }}" id="pc-add-{{ $pid }}"
                 data-name="{{ addslashes($productDisplayName) }}"
                 data-img="{{ $displayImg }}"
-                style="{{ $coRemoveWishlist ? 'flex:1' : '' }}"
+                style="{{ $coRemoveWishlist ? 'flex:1' : (($requiresVariationSelection && !$coRemoveWishlist) ? 'display:none' : '') }}"
                 onclick="pcAddToCart({{ $pid }})">
           {{ $cardRtl ? $cardCopy['add'] : 'Add to Cart' }}
         </button>
