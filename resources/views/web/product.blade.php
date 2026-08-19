@@ -256,15 +256,6 @@
         </button>
       </div>
 
-      {{-- COUPON --}}
-      <div class="pi-coupon-wrap">
-        <div class="pi-coupon-label">🏷️ {{ $isAr ? 'معاك كود خصم؟' : 'Have a coupon?' }}</div>
-        <div class="pi-coupon-row">
-          <input type="text" id="pi-coupon-input" class="pi-coupon-input" placeholder="{{ $isAr ? 'اكتب كود الخصم' : 'Enter promo code' }}" maxlength="50">
-          <button class="pi-coupon-btn" onclick="applyProductCoupon()">{{ $isAr ? 'استخدمه' : 'Apply' }}</button>
-        </div>
-        <div id="pi-coupon-msg" class="pi-coupon-msg"></div>
-      </div>
 
       @if($displayProductDescription || $product->unit_label)
       <div class="desc-block pi-desc">
@@ -1835,35 +1826,6 @@ function deleteReview(btn, id, productId) {
 // ── Wishlist btn initial state ────────────────────────────────────────
 // State already rendered server-side via $inWishlist — nothing to do here.
 
-// ── Product page coupon ───────────────────────────────────────────────
-function applyProductCoupon() {
-  const code = document.getElementById('pi-coupon-input')?.value?.trim();
-  const msg  = document.getElementById('pi-coupon-msg');
-  if (!code) { if (msg) { msg.textContent = PRODUCT_TEXT.isAr ? 'اكتب كود الخصم الأول.' : 'Please enter a coupon code.'; msg.className = 'pi-coupon-msg error'; } return; }
-
-  fetch('/cart/coupon', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-      'Accept': 'application/json',
-    },
-    body: 'code=' + encodeURIComponent(code),
-  })
-  .then(r => r.json())
-  .then(data => {
-    if (!msg) return;
-    if (data.success) {
-      msg.textContent = PRODUCT_TEXT.isAr ? '✓ اتطبق كود الخصم! الخصم هيبان وقت الدفع.' : '✓ Coupon applied! Discount will be reflected at checkout.';
-      msg.className = 'pi-coupon-msg success';
-      document.getElementById('pi-coupon-input').value = '';
-    } else {
-      msg.textContent = PRODUCT_TEXT.isAr ? 'كود الخصم مش صحيح أو مش متاح.' : (data.message || 'Invalid coupon code.');
-      msg.className = 'pi-coupon-msg error';
-    }
-  })
-  .catch(() => { if (msg) { msg.textContent = PRODUCT_TEXT.isAr ? 'ماعرفناش نطبق كود الخصم، جرّب تاني.' : 'Could not apply coupon. Try again.'; msg.className = 'pi-coupon-msg error'; } });
-}
 </script>
 <style>
 @keyframes shake {
@@ -2019,32 +1981,6 @@ function applyProductCoupon() {
   .product-page .pi-cart-row #quantity-limit-hint { max-width: 132px; font-size: 11px !important; }
 }
 
-/* Coupon block */
-.pi-coupon-wrap {
-  border: 1px dashed #ddd; border-radius: 12px;
-  padding: 14px 16px; margin-bottom: 16px; background: #fafaf8;
-}
-.pi-coupon-label {
-  font-size: 13px; font-weight: 700; color: #555; margin-bottom: 8px;
-}
-.pi-coupon-row { display: flex; gap: 8px; }
-.pi-coupon-input {
-  flex: 1; padding: 9px 12px; border: 1px solid #ddd; border-radius: 8px;
-  font-size: 13px; outline: none; background: #fff; text-transform: uppercase;
-  letter-spacing: .05em; transition: border-color .2s;
-}
-.pi-coupon-input:focus { border-color: #e85d26; }
-.pi-coupon-btn {
-  padding: 9px 16px; background: #1a1a1a; color: #fff; border: none;
-  border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;
-  transition: background .2s;
-}
-.pi-coupon-btn:hover { background: #e85d26; }
-.pi-coupon-msg {
-  font-size: 12px; margin-top: 6px; font-weight: 600; min-height: 16px;
-}
-.pi-coupon-msg.success { color: #22a35c; }
-.pi-coupon-msg.error   { color: #e85d26; }
 
 /* Description */
 .pi-desc { margin-top: 4px; }
