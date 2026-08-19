@@ -1547,14 +1547,18 @@ document.addEventListener('keydown', function(e) {
 });
 
 // ── Product card variation helpers ──────────────────────────────────
-function _pcGetCard(pid) { return document.getElementById('pc-'+pid); }
-function _pcGetVars(pid) {
-  const card = _pcGetCard(pid);
+function _pcGetCard(pid, source = null) {
+  const sourceCard = source?.closest?.('.product-card');
+  if (sourceCard && String(sourceCard.dataset.pid) === String(pid)) return sourceCard;
+  return document.querySelector('.product-card[data-pid="' + String(pid).replace(/"/g, '\\"') + '"]');
+}
+function _pcGetVars(pid, source = null) {
+  const card = _pcGetCard(pid, source);
   if (!card) return [];
   try { return JSON.parse(card.dataset.vars || '[]'); } catch(e){ return []; }
 }
-function _pcGetSel(pid) {
-  const card = _pcGetCard(pid);
+function _pcGetSel(pid, source = null) {
+  const card = _pcGetCard(pid, source);
   if (!card) return {};
   return { color: card.dataset.selColor||'', size: card.dataset.selSize||'' };
 }
@@ -1567,11 +1571,11 @@ function _pcVariationIsSellable(v) {
     && Number(v?.stock || 0) > 0;
 }
 
-function _pcSelectInitialVariation(pid) {
-  const card = _pcGetCard(pid);
+function _pcSelectInitialVariation(pid, source = null) {
+  const card = _pcGetCard(pid, source);
   if (!card || card.dataset.selColor || card.dataset.selSize || card.dataset.selVar) return;
 
-  const firstAvailable = _pcGetVars(pid).find(_pcVariationIsSellable);
+  const firstAvailable = _pcGetVars(pid, card).find(_pcVariationIsSellable);
   if (!firstAvailable) return;
 
   const attrs = firstAvailable.attrs || {};
@@ -1586,7 +1590,7 @@ function _pcSelectInitialVariation(pid) {
     if (swatch) {
       card.querySelectorAll('.pc-swatch').forEach(btn => btn.classList.remove('selected'));
       swatch.classList.add('selected');
-      const imgEl = document.getElementById('pc-img-' + pid);
+      const imgEl = card.querySelector('.product-card-img img, .product-card-img .placeholder');
       if (imgEl && swatch.dataset.img) imgEl.src = swatch.dataset.img;
     }
   }
@@ -1600,7 +1604,7 @@ function _pcSelectInitialVariation(pid) {
 }
 
 function pcPickColor(pid, colorVal, btn) {
-  const card = _pcGetCard(pid);
+  const card = _pcGetCard(pid, btn);
   if (!card) return;
   // Toggle off if same
   if (card.dataset.selColor === colorVal) {
@@ -1613,17 +1617,17 @@ function pcPickColor(pid, colorVal, btn) {
     card.querySelectorAll('.pc-swatch').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
     // Swap image if variation has one
-    const imgEl = document.getElementById('pc-img-'+pid);
+    const imgEl = card.querySelector('.product-card-img img, .product-card-img .placeholder');
     if (imgEl && btn.dataset.img) { imgEl.src = btn.dataset.img; }
     else if (imgEl) { imgEl.src = card.dataset.baseImg; }
   }
-  _pcUpdateSizes(pid);
-  _pcUpdatePrice(pid);
-  _pcUpdateSummary(pid);
+  _pcUpdateSizes(pid, card);
+  _pcUpdatePrice(pid, card);
+  _pcUpdateSummary(pid, card);
 }
 
 function pcPickSize(pid, sizeVal, btn) {
-  const card = _pcGetCard(pid);
+  const card = _pcGetCard(pid, btn);
   if (!card) return;
   if (card.dataset.selSize === sizeVal) {
     card.dataset.selSize = '';
@@ -1633,17 +1637,17 @@ function pcPickSize(pid, sizeVal, btn) {
     card.querySelectorAll('.pc-size').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
   }
-  _pcUpdatePrice(pid);
-  _pcUpdateSummary(pid);
+  _pcUpdatePrice(pid, card);
+  _pcUpdateSummary(pid, card);
 }
 
-function _pcUpdateSizes(pid) {
-  const card = _pcGetCard(pid);
+function _pcUpdateSizes(pid, source = null) {
+  const card = _pcGetCard(pid, source);
   if (!card) return;
-  const vars   = _pcGetVars(pid);
+  const vars   = _pcGetVars(pid, card);
   const color  = card.dataset.selColor;
   const hasColorAttrs = vars.some(v => v.attrs?.['Color']);
-  const sizeEl = document.getElementById('pc-sizes-'+pid);
+  const sizeEl = card.querySelector('.pc-sizes');
   if (!sizeEl || (hasColorAttrs && !color)) return;
   // Show only sizes that exist for the selected color, or for the product when
   // size is the only visible variation dimension.
@@ -1667,14 +1671,14 @@ function _pcUpdateSizes(pid) {
   }
 }
 
-function _pcUpdatePrice(pid) {
-  const card = _pcGetCard(pid);
+function _pcUpdatePrice(pid, source = null) {
+  const card = _pcGetCard(pid, source);
   if (!card) return;
-  const vars  = _pcGetVars(pid);
+  const vars  = _pcGetVars(pid, card);
   const color = card.dataset.selColor;
   const size  = card.dataset.selSize;
-  const priceEl = document.getElementById('pc-price-'+pid);
-  const origEl  = document.getElementById('pc-orig-'+pid);
+  const priceEl = card.querySelector('.product-card-price .price-main');
+  const origEl  = card.querySelector('.product-card-price .price-old');
   const addControl = card.querySelector('.pc-actions .card-add-btn');
   if (!priceEl || !vars.length) return;
 
@@ -1737,10 +1741,10 @@ function _pcUpdatePrice(pid) {
   }
 }
 
-function _pcUpdateSummary(pid) {
-  const card = _pcGetCard(pid);
+function _pcUpdateSummary(pid, source = null) {
+  const card = _pcGetCard(pid, source);
   if (!card) return;
-  const el = document.getElementById('pc-selected-' + pid);
+  const el = card.querySelector('.pc-selected');
   if (!el) return;
   const color = card.dataset.selColor || '';
   const colorLabel = card.dataset.selColorLabel || color;
@@ -1758,10 +1762,10 @@ function _pcUpdateSummary(pid) {
 function _pcInitializeVariations() {
   document.querySelectorAll('.product-card[data-vars]').forEach(card => {
     const pid = card.dataset.pid;
-    _pcSelectInitialVariation(pid);
-    _pcUpdateSizes(pid);
-    _pcUpdatePrice(pid);
-    _pcUpdateSummary(pid);
+    _pcSelectInitialVariation(pid, card);
+    _pcUpdateSizes(pid, card);
+    _pcUpdatePrice(pid, card);
+    _pcUpdateSummary(pid, card);
   });
 }
 
@@ -1771,12 +1775,12 @@ if (document.readyState === 'loading') {
   _pcInitializeVariations();
 }
 
-function pcAddToCart(pid) {
-  const card    = _pcGetCard(pid);
+function pcAddToCart(pid, source = null) {
+  const card    = _pcGetCard(pid, source);
   if (!card) return;
   const name    = card.querySelector('.card-add-btn')?.dataset.name  || '';
   const baseImg = card.dataset.baseImg || '';
-  const curImg  = document.getElementById('pc-img-'+pid)?.src || baseImg;
+  const curImg  = card.querySelector('.product-card-img img')?.src || baseImg;
   const varId   = card.dataset.selVar   ? parseInt(card.dataset.selVar) : null;
   const price   = card.dataset.selPrice ? parseFloat(card.dataset.selPrice) : parseFloat(card.dataset.basePrice);
   addToCart(pid, name, price, curImg, varId, 1);

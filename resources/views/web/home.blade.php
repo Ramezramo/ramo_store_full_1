@@ -534,6 +534,7 @@
           $cardStyle   = '--pc-card-height:var(--tl-card-h,'.($cardHeight > 0 ? $cardHeight.'px' : 'auto').');--pc-image-width:var(--tl-img-w,'.($imageWidth > 0 ? $imageWidth.'px' : '100%').');--pc-image-height:var(--tl-img-h,'.$imgHeight.'px);--pc-element-spacing:var(--tl-element-spacing,'.$elementSpacing.'px)';
         $secId       = 'sg-'.$si;
         $cardOptions = [
+          'idPrefix'      => 'tl-'.$si,
           'cardStyle'     => $cardStyle,
           'showBadge'     => $sec['showBadge']     ?? true,
           'showWishlist'  => $sec['showWishlist']  ?? true,
@@ -802,6 +803,7 @@
         $cardStyle  = '--pc-card-height:var(--tl-card-h,'.($cardHeight > 0 ? $cardHeight.'px' : 'auto').');--pc-image-width:var(--tl-img-w,'.($imageWidth > 0 ? $imageWidth.'px' : '100%').');--pc-image-height:var(--tl-img-h,'.$imgHeight.'px);--pc-element-spacing:var(--tl-element-spacing,'.$elementSpacing.'px)';
         $secId      = 'sg-'.$si;
         $cardOptions = [
+          'idPrefix'      => 'tl-'.$si,
           'cardStyle'     => $cardStyle,
           'showBadge'     => $sec['showBadge']     ?? true,
           'showWishlist'  => $sec['showWishlist']  ?? true,
@@ -1051,7 +1053,7 @@
           @include('web.partials.product-card', [
             'p'              => $p,
             'cardVariations' => [],
-            'cardOptions'    => ['compact' => true, 'nameLimit' => 28, 'showWishlist' => false, 'showAddToCart' => false, 'showDetails' => false, 'showCoupon' => false, 'showOldPrice' => false],
+            'cardOptions'    => ['idPrefix' => 'tl-'.$si, 'compact' => true, 'nameLimit' => 28, 'showWishlist' => false, 'showAddToCart' => false, 'showDetails' => false, 'showCoupon' => false, 'showOldPrice' => false],
           ])
         </div>
         @endforeach
@@ -1362,7 +1364,7 @@
           @include('web.partials.product-card', [
             'p'              => $p,
             'cardVariations' => [],
-            'cardOptions'    => ['compact' => true, 'nameLimit' => 28, 'showWishlist' => false, 'showAddToCart' => false, 'showDetails' => false, 'showCoupon' => false, 'showOldPrice' => false],
+            'cardOptions'    => ['idPrefix' => 'tl-'.$si, 'compact' => true, 'nameLimit' => 28, 'showWishlist' => false, 'showAddToCart' => false, 'showDetails' => false, 'showCoupon' => false, 'showOldPrice' => false],
           ])
         </div>
         @endforeach

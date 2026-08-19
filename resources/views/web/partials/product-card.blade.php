@@ -19,6 +19,8 @@
   $coNameLimit      = (int)($co['nameLimit'] ?? 0);    // 0 = no limit
   $coImgHeight      = $co['imgHeight']      ?? null;   // e.g. '180px'
   $coIdPrefix       = $co['idPrefix']       ?? 'pc';   // id prefix on outer div
+  $domPrefix        = preg_replace('/[^A-Za-z0-9_-]/', '-', (string) $coIdPrefix);
+  $cardDomId        = $domPrefix.'-'.$pid;
   $coRemoveWishlist = $co['removeWishlist'] ?? false;  // show remove-from-wishlist form
   $cardRtl = session('locale', 'en') === 'ar';
   $cardCopy = $cardRtl ? [
@@ -130,7 +132,7 @@
   $displayName = $coNameLimit > 0 ? Str::limit($productDisplayName, $coNameLimit) : $productDisplayName;
 @endphp
 
-<div class="product-card" id="{{ $coIdPrefix }}-{{ $pid }}" @if($cardStyle) style="{{ $cardStyle }}" @endif
+<div class="product-card" id="{{ $cardDomId }}" @if($cardStyle) style="{{ $cardStyle }}" @endif
      data-pid="{{ $pid }}"
      data-base-img="{{ $displayImg }}"
      data-base-price="{{ $basePrice }}"
@@ -140,11 +142,11 @@
 
   <a href="{{ route('product', $pid) }}" class="product-card-img" @if($imgStyle) style="{{ $imgStyle }}" @endif>
     @if($displayImg)
-      <img src="{{ $displayImg }}" alt="{{ $productDisplayName }}" loading="lazy" id="pc-img-{{ $pid }}"
+      <img src="{{ $displayImg }}" alt="{{ $productDisplayName }}" loading="lazy" id="{{ $domPrefix }}-img-{{ $pid }}"
            onerror="this.onerror=null;this.style.display='none';this.parentElement.querySelector('.pc-img-fallback')?.style.setProperty('display','flex')">
       <div class="pc-img-fallback" style="display:none;width:100%;height:100%;align-items:center;justify-content:center;background:#f7f7f7;color:#ccc;font-size:32px">🛍️</div>
     @else
-      <div class="placeholder" id="pc-img-{{ $pid }}">🛍️</div>
+      <div class="placeholder" id="{{ $domPrefix }}-img-{{ $pid }}">🛍️</div>
     @endif
     @if($coShowBadge && $p->on_sale)
       @if(!empty($p->flash_sale))
@@ -187,7 +189,7 @@
 
     {{-- Color swatches (only when 2+ colors exist) --}}
     @if($coShowSwatches && $hasColors)
-    <div class="pc-swatches" id="pc-swatches-{{ $pid }}">
+    <div class="pc-swatches" id="{{ $domPrefix }}-swatches-{{ $pid }}">
       @foreach($colorMap as $colorName => $cdata)
       <button class="pc-swatch"
               title="{{ $cdata['display'] ?? $colorName }}"
@@ -202,11 +204,11 @@
     </div>
     @endif
 
-    <div class="pc-selected" id="pc-selected-{{ $pid }}" aria-live="polite"></div>
+    <div class="pc-selected" id="{{ $domPrefix }}-selected-{{ $pid }}" aria-live="polite"></div>
 
     {{-- Size pills --}}
     @if($coShowSizes && $hasSizes)
-    <div class="pc-sizes" id="pc-sizes-{{ $pid }}">
+    <div class="pc-sizes" id="{{ $domPrefix }}-sizes-{{ $pid }}">
       @foreach($sizeList as $sz)
       <button class="pc-size"
               data-size="{{ $sz }}"
@@ -220,12 +222,12 @@
     {{-- Price --}}
     <div class="product-card-price">
       @if($p->on_sale)
-        <span class="price-main sale" id="pc-price-{{ $pid }}"{{ $priceStyle ? ' style="'.$priceStyle.'"' : '' }}>{{ number_format($p->sale_price, 2) }} EGP</span>
+        <span class="price-main sale" id="{{ $domPrefix }}-price-{{ $pid }}"{{ $priceStyle ? ' style="'.$priceStyle.'"' : '' }}>{{ number_format($p->sale_price, 2) }} EGP</span>
         @if($coShowOldPrice)
-        <span class="price-old" id="pc-orig-{{ $pid }}" aria-label="{{ $cardRtl ? 'السعر قبل الخصم' : 'Original price' }}">{{ number_format($p->price, 2) }} EGP</span>
+        <span class="price-old" id="{{ $domPrefix }}-orig-{{ $pid }}" aria-label="{{ $cardRtl ? 'السعر قبل الخصم' : 'Original price' }}">{{ number_format($p->price, 2) }} EGP</span>
         @endif
       @else
-        <span class="price-main" id="pc-price-{{ $pid }}"{{ $priceStyle ? ' style="'.$priceStyle.'"' : '' }}>{{ number_format($p->price, 2) }} EGP</span>
+        <span class="price-main" id="{{ $domPrefix }}-price-{{ $pid }}"{{ $priceStyle ? ' style="'.$priceStyle.'"' : '' }}>{{ number_format($p->price, 2) }} EGP</span>
       @endif
     </div>
 
@@ -233,11 +235,11 @@
     <div class="pc-actions" style="{{ $coRemoveWishlist ? 'display:flex;gap:8px;margin-top:4px' : (($requiresVariationSelection && !$coRemoveWishlist) ? 'display:none' : '') }}">
       @if($coShowAddToCart && ($hasAvailableStock || $requiresVariationSelection))
         @if($canQuickAdd)
-        <button class="card-add-btn{{ $coRemoveWishlist ? '' : '' }}" id="pc-add-{{ $pid }}"
+        <button class="card-add-btn{{ $coRemoveWishlist ? '' : '' }}" id="{{ $domPrefix }}-add-{{ $pid }}"
                 data-name="{{ addslashes($productDisplayName) }}"
                 data-img="{{ $displayImg }}"
                 style="{{ $coRemoveWishlist ? 'flex:1' : (($requiresVariationSelection && !$coRemoveWishlist) ? 'display:none' : '') }}"
-                onclick="pcAddToCart({{ $pid }})">
+                onclick="pcAddToCart({{ $pid }},this)">
           {{ $cardRtl ? $cardCopy['add'] : 'Add to Cart' }}
         </button>
         @else
