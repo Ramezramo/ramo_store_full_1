@@ -214,7 +214,28 @@
     border-radius: 6px !important;
   }
   #infinite-product-grid.shop-mobile-layout-grid .card-details-btn { margin-top: 3px !important; }
-  #infinite-product-grid.shop-mobile-layout-grid .wish-btn { width: 24px !important; height: 24px !important; top: 5px !important; right: 5px !important; }
+  /* Keep the discount badge and wishlist control in separate image corners. */
+  #infinite-product-grid.shop-mobile-layout-grid .product-card-img .badge-sale {
+    top: 6px !important;
+    left: 6px !important;
+    right: auto !important;
+    max-width: calc(100% - 44px) !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    z-index: 2 !important;
+  }
+  #infinite-product-grid.shop-mobile-layout-grid .product-card-img .wish-btn {
+    top: 6px !important;
+    right: 6px !important;
+    left: auto !important;
+    width: 26px !important;
+    height: 26px !important;
+    z-index: 3 !important;
+    background: rgba(255,255,255,.96) !important;
+    box-shadow: 0 1px 4px rgba(17,17,17,.14) !important;
+  }
   #infinite-product-grid.shop-mobile-layout-grid .badge-sale { font-size: 9px !important; padding: 2px 5px !important; }
   #infinite-product-grid.shop-mobile-layout-grid .pc-coupon-bar { display: none !important; }
 }
@@ -577,6 +598,10 @@
   .shop-page[dir="rtl"] #infinite-product-grid.shop-mobile-layout-grid .wish-btn {
     right: auto !important;
     left: 7px !important;
+  }
+  .shop-page[dir="rtl"] #infinite-product-grid.shop-mobile-layout-grid .product-card-img .badge-sale {
+    right: 7px !important;
+    left: auto !important;
   }
 }
 </style>
