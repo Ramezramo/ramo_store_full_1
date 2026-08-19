@@ -1638,30 +1638,33 @@ function _pcUpdatePrice(pid) {
       && Number(v.stock || 0) > 0;
   };
 
-  // Find the selected variation, if the current combination identifies one.
+  const hasColorAttrs = vars.some(v => v.attrs['Color']);
+  const hasSizeAttrs  = vars.some(v => v.attrs['Size']);
+  // Find exactly one variation for the current selection. If multiple rows
+  // share the same visible attributes, the choice is ambiguous and quick-add
+  // must remain unavailable instead of silently choosing the wrong row.
   let match = null;
   if (color && size) {
-    match = vars.find(v => v.attrs['Color'] === color && v.attrs['Size'] === size) || null;
-  } else if (color && !vars.some(v => v.attrs['Size'])) {
-    match = vars.find(v => v.attrs['Color'] === color) || null;
-  } else if (size && !vars.some(v => v.attrs['Color'])) {
-    match = vars.find(v => v.attrs['Size'] === size) || null;
+    const matches = vars.filter(v => v.attrs['Color'] === color && v.attrs['Size'] === size);
+    match = matches.length === 1 ? matches[0] : null;
+  } else if (color && !hasSizeAttrs) {
+    const matches = vars.filter(v => v.attrs['Color'] === color);
+    match = matches.length === 1 ? matches[0] : null;
+  } else if (size && !hasColorAttrs) {
+    const matches = vars.filter(v => v.attrs['Size'] === size);
+    match = matches.length === 1 ? matches[0] : null;
   }
 
   // A variation-bearing card starts hidden until the customer identifies a
   // sellable choice. When both color and size exist, require the full pair;
   // when only one dimension exists, that single selection is sufficient.
-  const hasColorAttrs = vars.some(v => v.attrs['Color']);
-  const hasSizeAttrs  = vars.some(v => v.attrs['Size']);
   let selectionAvailable = false;
   if (hasColorAttrs && hasSizeAttrs) {
     selectionAvailable = !!match && isSellable(match);
-  } else if (color && !size && hasColorAttrs) {
-    const colorMatches = vars.filter(v => v.attrs['Color'] === color);
-    selectionAvailable = colorMatches.length > 0 && colorMatches.some(isSellable);
-  } else if (size && !color && hasSizeAttrs) {
-    const sizeMatches = vars.filter(v => v.attrs['Size'] === size);
-    selectionAvailable = sizeMatches.length > 0 && sizeMatches.some(isSellable);
+  } else if (color && !size && hasColorAttrs && !hasSizeAttrs) {
+    selectionAvailable = !!match && isSellable(match);
+  } else if (size && !color && hasSizeAttrs && !hasColorAttrs) {
+    selectionAvailable = !!match && isSellable(match);
   } else if (!hasColorAttrs && !hasSizeAttrs) {
     selectionAvailable = card.dataset.hasAvailableStock === '1';
   }
