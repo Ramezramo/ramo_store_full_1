@@ -36,10 +36,11 @@
     'cart', 'wishlist', 'login', 'register', 'forgot-password', 'reset-password',
     'my-order', 'track', 'auth/*',
   ]);
-  // Fixed customer navigation competes with mobile keyboards on credential and
-  // OTP forms. Keep it available everywhere else, but remove it on auth flows.
+  // Keep the customer bottom navigation available on login so mobile users can
+  // move between the storefront sections. Credential-heavy registration, reset,
+  // and OTP flows still suppress it while the keyboard is open.
   $suppressMobileNav = request()->is([
-    'login', 'register', 'forgot-password', 'reset-password', 'auth/*',
+    'register', 'forgot-password', 'reset-password', 'auth/*',
   ]);
 @endphp
 <!DOCTYPE html>
@@ -685,7 +686,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 	.nav-mobile-search{display:flex;align-items:center;min-height:56px;padding:4px;background:linear-gradient(135deg,#fff 0%,#fafafa 100%);border:1.5px solid #e7e7e7;border-radius:18px;box-shadow:0 5px 14px rgba(24,24,24,.055);overflow:hidden;transition:border-color .18s,box-shadow .18s,background .18s}
 	.nav-mobile-search:focus-within{background:#fff;border-color:rgba(232,93,38,.62);box-shadow:0 0 0 4px rgba(232,93,38,.11),0 7px 18px rgba(24,24,24,.075)}
 	.nav-mobile-search>svg{width:19px;height:19px;margin-left:13px!important;color:#777!important;flex-shrink:0}
-	.nav-mobile-search input{flex:1;min-width:0;height:46px;padding:0 12px;background:none;border:none;outline:none;font-size:16px;font-weight:500;color:var(--c-dark)}
+	.nav-mobile-search input{flex:1 1 auto;min-width:0;box-sizing:border-box;height:46px;padding:0 12px;background:none;border:none;outline:none;font-size:16px;font-weight:500;color:var(--c-dark)}
 	.nav-mobile-search input::placeholder{color:#969696;opacity:1}
 	.nav-mobile-search button{display:flex!important;align-items:center;justify-content:center;width:46px!important;height:46px!important;margin:0!important;border-radius:14px!important;background:var(--c-dark)!important;border:none!important;color:#fff!important;cursor:pointer;flex-shrink:0;box-shadow:0 3px 8px rgba(24,24,24,.18);transition:transform .16s,background .16s,box-shadow .16s}
 	.nav-mobile-search button:hover,.nav-mobile-search button:focus-visible{background:var(--c-orange)!important;box-shadow:0 5px 12px rgba(232,93,38,.28);transform:translateY(-1px)}
@@ -698,7 +699,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 	.nav-mobile-signout:hover{background:#fff0f0}
 	.nav-mobile-menu--rtl .nav-mobile-panel,.nav-mobile-menu--rtl .nav-mobile-links{direction:rtl;text-align:right}
 	.nav-mobile-menu--rtl .nav-mobile-search>svg{margin-left:0!important;margin-right:13px!important}
-	.nav-mobile-menu--rtl .nav-mobile-search input{direction:rtl;text-align:right}
+	.nav-mobile-menu--rtl .nav-mobile-search input{direction:rtl;text-align:right;padding-inline-start:22px;box-sizing:border-box}
 	.nav-mobile-menu--rtl .nav-mobile-search button svg{transform:scaleX(-1)}
 	.nav-mobile-menu--rtl .nav-mobile-signout{text-align:right}
 	.nav-mobile-menu--rtl .nav-mobile-links span[style*="margin-left"]{margin-left:0!important;margin-right:4px!important}
