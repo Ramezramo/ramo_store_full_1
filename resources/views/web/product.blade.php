@@ -12,6 +12,7 @@
     'inStock' => $isAr ? 'متوفر' : 'In Stock',
     'available' => $isAr ? 'متاح' : 'available',
     'outOfStock' => $isAr ? 'مش متوفر' : 'Out of Stock',
+    'variationComingSoon' => $isAr ? 'الاختيار ده هيتوفر قريب' : 'This variation will be available soon.',
     'addToCart' => $isAr ? 'ضيف للسلة' : 'Add to Cart',
     'unavailable' => $isAr ? 'غير متاح' : 'Unavailable',
     'select' => $isAr ? 'اختار' : 'Please select a',
@@ -1197,7 +1198,10 @@ function updateAvailability() {
       if (key.toLowerCase() === 'color') {
         const variation = orderableVariationForColor(btn.dataset.attrVal);
         const outOfStock = !variation;
-        btn.disabled = !isValid || outOfStock;
+        // Keep an unavailable color tappable so the customer gets a clear
+        // availability message instead of a silent disabled control.
+        btn.disabled = !isValid;
+        btn.setAttribute('aria-disabled', outOfStock ? 'true' : 'false');
         btn.classList.toggle('out-of-stock', outOfStock);
       }
     });
@@ -1274,7 +1278,7 @@ function selectAttr(key, value, btn) {
     } else {
       const variation = orderableVariationForColor(value);
       if (!variation) {
-        showQuantityError(PRODUCT_TEXT.outOfStock);
+        showQuantityError(PRODUCT_TEXT.variationComingSoon);
         return;
       }
       selectedColorValues.add(value);
@@ -1314,6 +1318,9 @@ function selectAttr(key, value, btn) {
   tryFindVariation();
   updateSelectedLabels();
   updateSelectedSummary();
+  if (currentVariation && maximumOrderQuantity(currentVariation.stock) < MIN_ORDER_QTY) {
+    showQuantityError(PRODUCT_TEXT.variationComingSoon);
+  }
 }
 
 function tryFindVariation() {
