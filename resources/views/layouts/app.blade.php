@@ -90,8 +90,11 @@ button{cursor:pointer;font-family:inherit}
 .nav-actions{display:flex;align-items:center;gap:4px;flex-shrink:0}
 .nav-language-btn{display:inline-flex;align-items:center;justify-content:center;min-width:42px;height:34px;padding:0 9px;border:1.5px solid var(--c-light);border-radius:9px;background:#fff;color:var(--c-dark);font-size:11px;font-weight:800;letter-spacing:.55px;line-height:1;text-decoration:none;transition:background .15s,border-color .15s,color .15s;white-space:nowrap}
 .nav-language-btn:hover,.nav-language-btn:focus-visible{background:var(--c-tag);border-color:#bcbcbc;color:var(--c-orange);outline:none}
-.nav-icon-btn{position:relative;width:40px;height:40px;border-radius:10px;border:none;background:none;display:flex;align-items:center;justify-content:center;font-size:19px;color:var(--c-mid);cursor:pointer;text-decoration:none;transition:background .15s}
-.nav-icon-btn:hover{background:var(--c-tag);color:var(--c-dark)}
+.nav-icon-btn{position:relative;width:40px;height:40px;border-radius:12px;border:1px solid transparent;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--c-mid);cursor:pointer;text-decoration:none;transition:background .18s,border-color .18s,color .18s,transform .18s}
+.nav-action-icon{width:19px;height:19px;display:block}
+.nav-icon-btn:hover,.nav-icon-btn:focus-visible{background:var(--c-tag);border-color:var(--c-light);color:var(--c-dark);outline:none;transform:translateY(-1px)}
+.nav-icon-btn:focus-visible{box-shadow:0 0 0 3px rgba(232,93,38,.16)}
+.nav-wishlist-icon{stroke-width:1.7}
 .nav-badge{position:absolute;top:4px;right:4px;background:var(--c-orange);color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:50px;display:flex;align-items:center;justify-content:center;padding:0 3px;line-height:1}
 .nav-user-btn{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;font-size:13px;font-weight:600;color:var(--c-mid);background:none;border:none;white-space:nowrap;cursor:pointer;text-decoration:none;transition:all .15s}
 .nav-user-btn:hover{background:var(--c-tag);color:var(--c-dark)}
@@ -671,9 +674,10 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 .footer-note{font-size:12px}
 
 /* ── MOBILE NAV ── */
-.nav-hamburger{display:none;flex-direction:column;justify-content:center;gap:5px;width:40px;height:40px;border:none;background:none;cursor:pointer;padding:8px;border-radius:10px;transition:background .15s;flex-shrink:0;margin-left:auto}
-.nav-hamburger:hover{background:var(--c-tag)}
-.nav-hamburger span{display:block;height:2px;background:var(--c-dark);border-radius:2px;transition:all .28s}
+.nav-hamburger{display:none;flex-direction:column;align-items:center;justify-content:center;gap:5px;width:42px;height:42px;border:1px solid transparent;background:transparent;cursor:pointer;padding:9px;border-radius:12px;transition:background .18s,border-color .18s,transform .18s;flex-shrink:0;margin:0}
+.nav-hamburger:hover,.nav-hamburger:focus-visible{background:var(--c-tag);border-color:var(--c-light);outline:none;transform:translateY(-1px)}
+.nav-hamburger:focus-visible{box-shadow:0 0 0 3px rgba(232,93,38,.16)}
+.nav-hamburger span{display:block;width:22px;height:1.8px;background:var(--c-dark);border-radius:2px;transition:all .28s}
 .nav-hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
 .nav-hamburger.open span:nth-child(2){opacity:0;transform:scaleX(0)}
 .nav-hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
@@ -744,11 +748,21 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
   .cart-price{width:auto;font-size:13px}
 }
 @media(max-width:768px){
+  .nav{background:rgba(255,255,255,.97);border-bottom-color:#e8e5df;box-shadow:0 4px 18px rgba(17,17,17,.055)}
+  .nav-inner{height:68px;padding:0 14px;gap:8px}
+  .nav-logo{font-size:18px;letter-spacing:.45px;padding:7px 10px;border-radius:10px;line-height:1}
+  .nav-logo span{color:var(--c-orange)}
   .nav-links{display:none}
   .nav-search{display:none}
   .nav-hamburger{display:flex}
+  .nav-actions{gap:2px;margin-inline-start:auto}
+  .nav-actions .nav-icon-btn{width:38px;height:38px;border-radius:11px}
+  .nav-actions .nav-action-icon{width:18px;height:18px}
   .nav-language-btn{display:none}
   .nav-mobile-language-link{display:flex}
+  .nav-badge{top:2px;right:1px;min-width:15px;height:15px;font-size:8px;border-width:1.5px}
+  .nav--rtl .nav-actions{margin-inline-start:auto}
+  .nav--rtl .nav-hamburger{margin:0}
   /* 58px bottom nav + 16px breathing room = 74px so nothing scrolls behind the nav */
   .page{padding:20px 14px 74px}
 }
@@ -764,6 +778,13 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 }
 @media(max-width:600px){
   /* On phones, cart belongs in the bottom navigation; keep the wishlist heart in the header. */
+  .tl-cat-strip{gap:11px;padding:11px 5px 13px;margin:0 -2px 26px;border-top:1px solid #f0ede8;border-bottom:1px solid #f0ede8;background:linear-gradient(180deg,#fff 0%,#fcfbf9 100%)}
+  .tl-cat-item{min-width:70px;gap:6px}
+  .tl-cat-img-wrap{width:62px !important;height:62px !important;min-width:62px;min-height:62px;border:3px solid #fff;box-shadow:0 3px 12px rgba(17,17,17,.12)}
+  .tl-cat-img-wrap img{width:62px !important;height:62px !important;max-width:62px !important}
+  .tl-cat-chip{width:62px;height:62px;font-size:20px;border:3px solid #fff;box-shadow:0 3px 12px rgba(17,17,17,.12)}
+  .tl-cat-label{font-size:10.5px;font-weight:700;color:#595959;max-width:70px}
+
   .nav-top-cart{display:none !important}
   .hero{padding:32px 20px;border-radius:10px}.hero-title{font-size:24px;letter-spacing:-.4px}.hero-sub{font-size:13.5px;margin-bottom:22px}
   .btn{padding:12px 24px;font-size:12px}
@@ -956,8 +977,8 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
       >{{ $timelineSwitchLabel }}</a>
 
       {{-- Wishlist --}}
-      <a href="{{ route('wishlist') }}" class="nav-icon-btn" title="{{ $headerWishlistLabel }}">
-        ♡
+      <a href="{{ route('wishlist') }}" class="nav-icon-btn" title="{{ $headerWishlistLabel }}" aria-label="{{ $headerWishlistLabel }}">
+        <svg class="nav-action-icon nav-wishlist-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"/></svg>
         @php
           $wCount = Auth::check()
             ? \Illuminate\Support\Facades\DB::table('wishlists')->where('user_id', Auth::id())->count()
@@ -967,8 +988,8 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
       </a>
 
       {{-- Cart --}}
-      <a href="{{ route('cart') }}" class="nav-icon-btn nav-top-cart" title="{{ $headerCartLabel }}">
-        🛒
+      <a href="{{ route('cart') }}" class="nav-icon-btn nav-top-cart" title="{{ $headerCartLabel }}" aria-label="{{ $headerCartLabel }}">
+        <svg class="nav-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 8H6"/><path d="M10 8V5m0 0L8.5 6.5M10 5l1.5 1.5"/></svg>
         @php
           $cCount = Auth::check()
             ? \Illuminate\Support\Facades\DB::table('cart_items')->where('user_id', Auth::id())->count()
