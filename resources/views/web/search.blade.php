@@ -296,9 +296,10 @@ mark.search-hl{background:#fff3cd;color:inherit;border-radius:2px;padding:0 1px}
 
 @media(max-width:768px){
   .search-hero{margin-bottom:20px}
-  .search-hero-bar{width:100%;max-width:none}
-  .search-hero-bar input{min-width:0;padding:13px 16px;font-size:16px}
-  .search-hero-bar button{padding:12px 18px;flex-shrink:0}
+  .search-hero-bar{width:100%;max-width:none;box-sizing:border-box}
+  .search-hero-bar input{flex:1 1 auto;min-width:0;width:0;box-sizing:border-box;padding:13px 16px;font-size:16px}
+  .search-hero-bar button{flex:0 0 auto;padding:12px 18px;white-space:nowrap;box-sizing:border-box}
+
   .filter-chips{margin-bottom:16px}
   .search-layout{grid-template-columns:minmax(0,1fr);gap:16px}
   .mobile-filter-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:14px 16px;background:var(--c-white);border:1.5px solid var(--c-light);border-radius:14px;color:var(--c-dark);font:700 14px/1 inherit;cursor:pointer}
@@ -312,6 +313,14 @@ mark.search-hl{background:#fff3cd;color:inherit;border-radius:2px;padding:0 1px}
   .search-toolbar>span:last-child{font-size:12px!important}
   .search-empty{padding:48px 16px}
   .search-page[dir="rtl"] .search-hero-bar input{text-align:right}
+}
+
+/* Keep the input readable on narrow phones: the button must not squeeze it
+   below its usable width, especially in RTL where the placeholder is right-aligned. */
+@media(max-width:640px){
+  .search-hero-bar{border-radius:14px}
+  .search-hero-bar input{padding:12px 14px;font-size:14px;line-height:1.35}
+  .search-hero-bar button{padding:10px 16px;font-size:13px}
 }
 
 </style>
