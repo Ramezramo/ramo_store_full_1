@@ -454,6 +454,156 @@
       <style>
         #{{ $secId }} .product-card { border-radius: var(--tl-card-r,{{ $cardRadius }}px) }
         #{{ $secId }} .product-card-img { aspect-ratio: unset; height: var(--tl-img-h,{{ $imgHeight }}px) }
+        @media(max-width:480px){
+          #{{ $secId }} .tl-scroll-card { min-width:0; }
+          #{{ $secId }} .product-card {
+            min-height:0 !important;
+            border:1px solid #ececec !important;
+            border-radius:14px !important;
+            background:#fff !important;
+            box-shadow:0 4px 16px rgba(25,25,25,.06) !important;
+            overflow:hidden !important;
+          }
+          #{{ $secId }} .product-card-img {
+            width:100% !important;
+            height:auto !important;
+            aspect-ratio:1 / 1 !important;
+            border-radius:0 !important;
+            background:#f7f7f7 !important;
+          }
+          #{{ $secId }} .product-card-body {
+            display:flex !important;
+            flex-direction:column !important;
+            align-items:stretch !important;
+            min-width:0 !important;
+            padding:9px 8px 10px !important;
+            gap:0 !important;
+            text-align:center !important;
+          }
+          #{{ $secId }} .product-card-name {
+            display:-webkit-box !important;
+            -webkit-box-orient:vertical !important;
+            -webkit-line-clamp:2 !important;
+            min-height:31px !important;
+            margin:0 !important;
+            overflow:hidden !important;
+            color:#202020 !important;
+            font-size:12px !important;
+            font-weight:700 !important;
+            line-height:1.3 !important;
+            text-align:center !important;
+          }
+          #{{ $secId }} .pc-swatches,
+          #{{ $secId }} .pc-sizes {
+            justify-content:center !important;
+            min-height:19px !important;
+            margin:5px 0 0 !important;
+            gap:4px !important;
+          }
+          #{{ $secId }} .pc-swatches:empty,
+          #{{ $secId }} .pc-sizes:empty { display:none !important; }
+          #{{ $secId }} .pc-swatch {
+            width:15px !important;
+            height:15px !important;
+            border:2px solid #fff !important;
+            box-shadow:0 0 0 1px #d6d6d6 !important;
+          }
+          #{{ $secId }} .pc-swatch.selected {
+            box-shadow:0 0 0 2px var(--c-orange),0 0 0 3px #fff !important;
+          }
+          #{{ $secId }} .pc-size {
+            min-width:22px !important;
+            padding:3px 5px !important;
+            border:1px solid #e1e1e1 !important;
+            border-radius:6px !important;
+            background:#fafafa !important;
+            color:#555 !important;
+            font-size:9px !important;
+            font-weight:700 !important;
+            line-height:1 !important;
+          }
+          #{{ $secId }} .pc-size.selected {
+            border-color:var(--c-dark) !important;
+            background:var(--c-dark) !important;
+            color:#fff !important;
+          }
+          #{{ $secId }} .pc-selected {
+            min-height:13px !important;
+            max-height:13px !important;
+            margin:3px 0 0 !important;
+            overflow:hidden !important;
+            color:#8b8b8b !important;
+            font-size:9px !important;
+            line-height:1.4 !important;
+            text-align:center !important;
+            text-overflow:ellipsis !important;
+            white-space:nowrap !important;
+          }
+          #{{ $secId }} .product-card-price {
+            display:flex !important;
+            align-items:baseline !important;
+            justify-content:center !important;
+            min-height:21px !important;
+            margin:6px 0 0 !important;
+            gap:4px !important;
+            line-height:1 !important;
+          }
+          #{{ $secId }} .price-main {
+            color:#171717 !important;
+            font-size:14px !important;
+            font-weight:800 !important;
+            white-space:nowrap !important;
+          }
+          #{{ $secId }} .price-main.sale { color:var(--c-orange) !important; }
+          #{{ $secId }} .price-old {
+            color:#9a9a9a !important;
+            font-size:9px !important;
+            white-space:nowrap !important;
+          }
+          #{{ $secId }} .pc-actions {
+            display:block !important;
+            margin:7px 0 0 !important;
+          }
+          #{{ $secId }} .card-add-btn {
+            width:100% !important;
+            min-height:31px !important;
+            margin:0 !important;
+            padding:7px 4px !important;
+            border:0 !important;
+            border-radius:8px !important;
+            background:var(--c-dark) !important;
+            color:#fff !important;
+            font-size:10px !important;
+            font-weight:800 !important;
+            line-height:1 !important;
+            text-align:center !important;
+            white-space:nowrap !important;
+          }
+          #{{ $secId }} .card-details-btn {
+            display:block !important;
+            width:100% !important;
+            margin:5px 0 0 !important;
+            padding:3px 0 0 !important;
+            border:0 !important;
+            background:transparent !important;
+            color:#777 !important;
+            font-size:9px !important;
+            font-weight:700 !important;
+            line-height:1.2 !important;
+            text-align:center !important;
+            text-decoration:none !important;
+          }
+          #{{ $secId }} .wish-btn {
+            top:7px !important;
+            right:7px !important;
+            width:26px !important;
+            height:26px !important;
+            border:1px solid rgba(0,0,0,.08) !important;
+            background:rgba(255,255,255,.94) !important;
+            font-size:14px !important;
+          }
+          #{{ $secId }} .pc-coupon-bar { display:none !important; }
+        }
         @if($uniformHeight)
         #{{ $secId }} { align-items: stretch }
         #{{ $secId }} .tl-scroll-card { display: flex; flex-direction: column }
