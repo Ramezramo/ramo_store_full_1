@@ -118,6 +118,20 @@
 .cart-auth-submit{width:100%;min-height:46px;margin-top:10px;border:0;border-radius:11px;background:var(--c-dark);color:#fff;font:inherit;font-size:13px;font-weight:850;cursor:pointer;}
 .cart-auth-submit:disabled{opacity:.58;cursor:wait;}
 .cart-auth-message{min-height:18px;margin:8px 0 0!important;text-align:center;color:var(--c-mid);font-size:11px!important;}
+.cart-auth-code-boxes{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:clamp(4px,2vw,8px);width:100%;margin:18px 0 10px;direction:ltr;}
+.guest-otp-code-input{width:100%;min-width:0;height:clamp(42px,13vw,52px);box-sizing:border-box;border:2px solid var(--c-light);border-radius:10px;background:var(--c-bg);color:var(--c-dark);font:700 20px/1 inherit;text-align:center;outline:none;}
+.guest-otp-code-input:focus{border-color:var(--c-dark);background:var(--c-white);}
+.guest-otp-code-input.filled{border-color:#22c55e;}
+.cart-auth-sent-copy{text-align:center!important;margin-bottom:5px!important;}
+.cart-auth-sent-copy strong{display:block;margin-top:3px;color:var(--c-dark);direction:ltr;unicode-bidi:embed;}
+.cart-auth-error{color:#c02020!important;}
+.cart-auth-success{color:#208a4b!important;}
+.cart-auth-resend-row{display:flex;justify-content:center;align-items:center;gap:5px;min-height:24px;margin-top:8px;color:var(--c-mid);font-size:12px;}
+.cart-auth-resend-row button,.cart-auth-change-phone{border:0;background:transparent;color:var(--c-dark);font:inherit;font-size:12px;font-weight:700;text-decoration:underline;cursor:pointer;}
+.cart-auth-change-phone{display:block;margin:8px auto 0;color:var(--c-mid);}
+.cart-auth-dev-box{margin-top:14px;padding:11px 12px;border:1.5px dashed #f59e0b;border-radius:10px;background:#fffbeb;text-align:center;color:#92400e;}
+.cart-auth-dev-box strong{display:block;margin:3px 0;font:800 24px/1.2 monospace;letter-spacing:5px;}
+.cart-auth-dev-box small{display:block;color:#b45309;font-size:10px;line-height:1.4;}
 .cart-auth-dialog[dir="rtl"]{text-align:right;}
 @media(max-width:600px){.cart-auth-modal{align-items:end;padding:12px 8px calc(70px + env(safe-area-inset-bottom));}.cart-auth-dialog{width:100%;max-width:390px;padding:22px 17px 18px;border-radius:18px;}.cart-auth-dialog h3{font-size:17px;}.cart-auth-phone-row input{padding-inline:11px;}}
 @media(max-width:900px){
@@ -348,17 +362,44 @@
 <div id="guest-otp-checkout" class="cart-auth-modal" hidden role="dialog" aria-modal="true" aria-labelledby="guest-otp-title">
   <div class="cart-auth-dialog" dir="{{ $cartRtl ? 'rtl' : 'ltr' }}">
     <button type="button" class="cart-auth-close" id="guest-otp-close" aria-label="{{ $cartRtl ? 'إغلاق' : 'Close' }}">×</button>
-    <span class="cart-auth-kicker">{{ $cartRtl ? 'إتمام الطلب' : 'Complete your order' }}</span>
-    <h3 id="guest-otp-title">{{ $cartRtl ? 'اكتب رقم موبايلك' : 'Enter your mobile number' }}</h3>
-    <p>{{ $cartRtl ? 'هنبعتلك كود تأكيد عشان تكمل الطلب بسرعة.' : 'We will send you a verification code so you can continue securely.' }}</p>
-    <div class="cart-auth-phone-row">
-      <span class="cart-auth-prefix">🇪🇬 +20</span>
-      <input type="tel" id="guest-otp-phone" inputmode="tel" maxlength="11" placeholder="01xxxxxxxxx" autocomplete="tel">
+    <div id="guest-otp-phone-step" class="cart-auth-step">
+      <span class="cart-auth-kicker">{{ $cartRtl ? 'إتمام الطلب' : 'Complete your order' }}</span>
+      <h3 id="guest-otp-title">{{ $cartRtl ? 'اكتب رقم موبايلك' : 'Enter your mobile number' }}</h3>
+      <p>{{ $cartRtl ? 'هنبعتلك كود تأكيد عشان تكمل الطلب بسرعة.' : 'We will send you a verification code so you can continue securely.' }}</p>
+      <div class="cart-auth-phone-row">
+        <span class="cart-auth-prefix">🇪🇬 +20</span>
+        <input type="tel" id="guest-otp-phone" inputmode="tel" maxlength="11" placeholder="01xxxxxxxxx" autocomplete="tel">
+      </div>
+      <button type="button" class="cart-auth-submit" id="guest-otp-submit">
+        <span class="cart-auth-submit-label">{{ $cartRtl ? 'ابعت كود التأكيد' : 'Send verification code' }}</span>
+      </button>
+      <p id="guest-otp-message" class="cart-auth-message" role="status" aria-live="polite"></p>
     </div>
-    <button type="button" class="cart-auth-submit" id="guest-otp-submit">
-      <span class="cart-auth-submit-label">{{ $cartRtl ? 'ابعت كود التأكيد' : 'Send verification code' }}</span>
-    </button>
-    <p id="guest-otp-message" class="cart-auth-message" role="status" aria-live="polite"></p>
+    <div id="guest-otp-code-step" class="cart-auth-step" hidden>
+      <span class="cart-auth-kicker">{{ $cartRtl ? 'إتمام الطلب' : 'Complete your order' }}</span>
+      <h3>{{ $cartRtl ? 'اكتب كود التأكيد' : 'Enter verification code' }}</h3>
+      <p class="cart-auth-sent-copy">{{ $cartRtl ? 'الكود اتبعت على' : 'The code was sent to' }} <strong id="guest-otp-phone-display"></strong></p>
+      <div class="cart-auth-code-boxes" id="guest-otp-boxes" dir="ltr">
+        @for($i = 0; $i < 6; $i++)
+          <input type="text" inputmode="numeric" maxlength="1" class="guest-otp-code-input" autocomplete="one-time-code" aria-label="{{ $cartRtl ? 'رقم ' . ($i + 1) : 'Digit ' . ($i + 1) }}">
+        @endfor
+      </div>
+      <p id="guest-otp-code-error" class="cart-auth-message cart-auth-error" role="alert" aria-live="polite"></p>
+      <p id="guest-otp-code-success" class="cart-auth-message cart-auth-success" role="status" aria-live="polite"></p>
+      <button type="button" class="cart-auth-submit" id="guest-otp-verify">
+        <span>{{ $cartRtl ? 'تأكيد الكود' : 'Verify code' }}</span>
+      </button>
+      <div class="cart-auth-resend-row">
+        <span id="guest-otp-resend-timer">{{ $cartRtl ? 'إعادة الإرسال خلال' : 'Resend in' }} <strong id="guest-otp-countdown">60</strong> {{ $cartRtl ? 'ثانية' : 's' }}</span>
+        <button type="button" id="guest-otp-resend" hidden>{{ $cartRtl ? 'إعادة إرسال الكود' : 'Resend code' }}</button>
+      </div>
+      <button type="button" class="cart-auth-change-phone" id="guest-otp-change-phone">{{ $cartRtl ? 'تغيير رقم الموبايل' : 'Change phone number' }}</button>
+      <div id="guest-otp-dev-box" class="cart-auth-dev-box" hidden aria-live="polite">
+        <div>{{ $cartRtl ? 'وضع التجربة — كود التأكيد' : 'Development mode — verification code' }}</div>
+        <strong id="guest-otp-dev-value"></strong>
+        <small>{{ $cartRtl ? 'وضع تجربة فقط · الكود ما اتبعتش برسالة SMS حقيقية' : 'Development preview only · not sent via real SMS' }}</small>
+      </div>
+    </div>
   </div>
 </div>
 @endif
@@ -511,44 +552,109 @@ async function applyCoupon(event){
 }
 
 const guestOtpModal = document.getElementById('guest-otp-checkout');
+const guestOtpPhoneStep = document.getElementById('guest-otp-phone-step');
+const guestOtpCodeStep = document.getElementById('guest-otp-code-step');
 const guestOtpPhone = document.getElementById('guest-otp-phone');
 const guestOtpSubmit = document.getElementById('guest-otp-submit');
 const guestOtpClose = document.getElementById('guest-otp-close');
 const guestOtpMessage = document.getElementById('guest-otp-message');
+const guestOtpPhoneDisplay = document.getElementById('guest-otp-phone-display');
+const guestOtpCodeInputs = [...document.querySelectorAll('.guest-otp-code-input')];
+const guestOtpCodeError = document.getElementById('guest-otp-code-error');
+const guestOtpCodeSuccess = document.getElementById('guest-otp-code-success');
+const guestOtpVerify = document.getElementById('guest-otp-verify');
+const guestOtpResendTimer = document.getElementById('guest-otp-resend-timer');
+const guestOtpCountdown = document.getElementById('guest-otp-countdown');
+const guestOtpResend = document.getElementById('guest-otp-resend');
+const guestOtpChangePhone = document.getElementById('guest-otp-change-phone');
+const guestOtpDevBox = document.getElementById('guest-otp-dev-box');
+const guestOtpDevValue = document.getElementById('guest-otp-dev-value');
 const guestOtpLinks = document.querySelectorAll('[data-guest-otp-checkout]');
+let guestOtpPhoneValue = '';
+let guestOtpCountdownTimer = null;
+
+function setGuestOtpMessage(message, isError = false){
+  if(!guestOtpMessage) return;
+  guestOtpMessage.textContent = message || '';
+  guestOtpMessage.style.color = isError ? '#c02020' : 'var(--c-mid)';
+}
+function setGuestOtpCodeError(message){
+  if(guestOtpCodeError) guestOtpCodeError.textContent = message || '';
+  if(guestOtpCodeSuccess) guestOtpCodeSuccess.textContent = '';
+}
+function setGuestOtpCodeSuccess(message){
+  if(guestOtpCodeSuccess) guestOtpCodeSuccess.textContent = message || '';
+  if(guestOtpCodeError) guestOtpCodeError.textContent = '';
+}
+function clearGuestOtpCode(){
+  guestOtpCodeInputs.forEach((input) => { input.value = ''; input.classList.remove('filled'); });
+}
+function getGuestOtpCode(){ return guestOtpCodeInputs.map((input) => input.value).join(''); }
+function updateGuestOtpCodeState(){ guestOtpCodeInputs.forEach((input) => input.classList.toggle('filled', input.value !== '')); }
+function showGuestOtpDevelopmentCode(devOtp){
+  if(!guestOtpDevBox || !guestOtpDevValue) return;
+  if(/^\d{6}$/.test(String(devOtp || ''))){
+    guestOtpDevValue.textContent = String(devOtp);
+    guestOtpDevBox.hidden = false;
+  } else {
+    guestOtpDevValue.textContent = '';
+    guestOtpDevBox.hidden = true;
+  }
+}
+function startGuestOtpCountdown(seconds = 60){
+  clearInterval(guestOtpCountdownTimer);
+  let remaining = Math.max(0, Number(seconds) || 0);
+  if(guestOtpCountdown) guestOtpCountdown.textContent = remaining;
+  if(guestOtpResendTimer) guestOtpResendTimer.hidden = remaining <= 0;
+  if(guestOtpResend) { guestOtpResend.hidden = remaining > 0; guestOtpResend.disabled = false; }
+  if(remaining <= 0) return;
+  guestOtpCountdownTimer = setInterval(() => {
+    remaining -= 1;
+    if(guestOtpCountdown) guestOtpCountdown.textContent = remaining;
+    if(remaining <= 0){
+      clearInterval(guestOtpCountdownTimer);
+      if(guestOtpResendTimer) guestOtpResendTimer.hidden = true;
+      if(guestOtpResend) guestOtpResend.hidden = false;
+    }
+  }, 1000);
+}
+function showGuestOtpPhoneStep(){
+  clearInterval(guestOtpCountdownTimer);
+  if(guestOtpPhoneStep) guestOtpPhoneStep.hidden = false;
+  if(guestOtpCodeStep) guestOtpCodeStep.hidden = true;
+  setGuestOtpMessage(''); setGuestOtpCodeError(''); setGuestOtpCodeSuccess(''); clearGuestOtpCode(); showGuestOtpDevelopmentCode('');
+  window.setTimeout(() => guestOtpPhone?.focus(), 30);
+}
+function showGuestOtpCodeStep(phone, devOtp = ''){
+  guestOtpPhoneValue = phone;
+  if(guestOtpPhoneDisplay) guestOtpPhoneDisplay.textContent = '+20' + phone.replace(/^0/, '');
+  if(guestOtpPhoneStep) guestOtpPhoneStep.hidden = true;
+  if(guestOtpCodeStep) guestOtpCodeStep.hidden = false;
+  setGuestOtpMessage(''); setGuestOtpCodeError(''); setGuestOtpCodeSuccess(''); clearGuestOtpCode(); showGuestOtpDevelopmentCode(devOtp);
+  startGuestOtpCountdown(60);
+  window.setTimeout(() => guestOtpCodeInputs[0]?.focus(), 30);
+}
 function closeGuestOtpModal(){
   if(!guestOtpModal) return;
   guestOtpModal.hidden = true;
   document.body.style.overflow = '';
+  showGuestOtpPhoneStep();
 }
 function openGuestOtpModal(){
   if(!guestOtpModal) return;
   guestOtpModal.hidden = false;
   document.body.style.overflow = 'hidden';
-  window.setTimeout(() => guestOtpPhone?.focus(), 30);
+  showGuestOtpPhoneStep();
 }
-guestOtpLinks.forEach((link) => link.addEventListener('click', (event) => {
-  event.preventDefault();
-  openGuestOtpModal();
-}));
-guestOtpClose?.addEventListener('click', closeGuestOtpModal);
-guestOtpModal?.addEventListener('click', (event) => {
-  if(event.target === guestOtpModal) closeGuestOtpModal();
-});
-document.addEventListener('keydown', (event) => {
-  if(event.key === 'Escape' && guestOtpModal && !guestOtpModal.hidden) closeGuestOtpModal();
-});
-guestOtpPhone?.addEventListener('input', () => {
-  guestOtpPhone.value = guestOtpPhone.value.replace(/[^0-9]/g, '');
-});
-guestOtpSubmit?.addEventListener('click', async () => {
-  const phone = (guestOtpPhone?.value || '').trim();
-  if(!phone || phone.length < 9){
-    if(guestOtpMessage){ guestOtpMessage.textContent = CART_RTL ? 'اكتب رقم موبايل صحيح.' : 'Enter a valid mobile number.'; guestOtpMessage.style.color = '#c02020'; }
-    return;
+async function sendGuestOtp(phone, isResend = false){
+  const status = isResend ? setGuestOtpCodeSuccess : setGuestOtpMessage;
+  if(isResend){
+    if(guestOtpResend) guestOtpResend.disabled = true;
+    setGuestOtpCodeSuccess(CART_RTL ? 'جاري إعادة إرسال الكود…' : 'Resending code…');
+  } else {
+    if(guestOtpSubmit) guestOtpSubmit.disabled = true;
+    setGuestOtpMessage(CART_RTL ? 'بنرسل كود التأكيد…' : 'Sending verification code…');
   }
-  guestOtpSubmit.disabled = true;
-  if(guestOtpMessage){ guestOtpMessage.textContent = CART_RTL ? 'بنرسل كود التأكيد…' : 'Sending verification code…'; guestOtpMessage.style.color = 'var(--c-mid)'; }
   try{
     const res = await fetch('/auth/send-otp', {
       method:'POST',
@@ -558,13 +664,82 @@ guestOtpSubmit?.addEventListener('click', async () => {
     const contentType = res.headers.get('content-type') || '';
     const data = contentType.includes('application/json') ? await res.json() : {success:false,message:await res.text()};
     if(!data.success) throw new Error(data.message || (CART_RTL ? 'مش قادرين نبعت الكود دلوقتي.' : 'We could not send the code right now.'));
+    guestOtpPhoneValue = phone;
     sessionStorage.setItem('otp_phone', phone);
     if(data.dev_otp) sessionStorage.setItem('dev_otp', data.dev_otp);
-    window.location.href = '/auth/otp-verify';
+    if(isResend){
+      showGuestOtpDevelopmentCode(data.dev_otp);
+      setGuestOtpCodeSuccess(CART_RTL ? 'اتبعث كود جديد.' : 'A new code was sent.');
+      startGuestOtpCountdown(60);
+    } else {
+      showGuestOtpCodeStep(phone, data.dev_otp || sessionStorage.getItem('dev_otp') || '');
+      sessionStorage.removeItem('dev_otp');
+    }
   }catch(error){
-    if(guestOtpMessage){ guestOtpMessage.textContent = error?.message || (CART_RTL ? 'حصلت مشكلة. جرّب تاني.' : 'Something went wrong. Please try again.'); guestOtpMessage.style.color = '#c02020'; }
-    guestOtpSubmit.disabled = false;
+    if(isResend){
+      setGuestOtpCodeError(error?.message || (CART_RTL ? 'مش قادرين نعيد إرسال الكود دلوقتي.' : 'Could not resend the code.'));
+      if(guestOtpResend) guestOtpResend.disabled = false;
+    } else {
+      setGuestOtpMessage(error?.message || (CART_RTL ? 'حصلت مشكلة. جرّب تاني.' : 'Something went wrong. Please try again.'), true);
+      if(guestOtpSubmit) guestOtpSubmit.disabled = false;
+    }
   }
+}
+async function verifyGuestOtp(){
+  const otp = getGuestOtpCode();
+  if(otp.length !== guestOtpCodeInputs.length){ setGuestOtpCodeError(CART_RTL ? 'اكتب الـ6 أرقام كلها.' : 'Please enter all 6 digits.'); return; }
+  if(guestOtpVerify) { guestOtpVerify.disabled = true; guestOtpVerify.setAttribute('aria-busy','true'); }
+  setGuestOtpCodeError(''); setGuestOtpCodeSuccess(CART_RTL ? 'جاري التأكيد…' : 'Verifying…');
+  try{
+    const res = await fetch('/auth/verify-otp', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'Accept':'application/json'},
+      body:JSON.stringify({phone:guestOtpPhoneValue, otp})
+    });
+    const contentType = res.headers.get('content-type') || '';
+    const data = contentType.includes('application/json') ? await res.json() : {success:false,message:await res.text()};
+    if(!data.success) throw new Error(data.message || (CART_RTL ? 'الكود غير صحيح.' : 'Incorrect code.'));
+    sessionStorage.removeItem('otp_phone'); sessionStorage.removeItem('dev_otp');
+    setGuestOtpCodeSuccess(CART_RTL ? 'تم التأكيد. جاري التحويل…' : 'Verified. Redirecting…');
+    window.setTimeout(() => { window.location.href = data.redirect || '/checkout'; }, 600);
+  }catch(error){
+    setGuestOtpCodeError(error?.message || (CART_RTL ? 'في مشكلة في النت. جرّب تاني.' : 'Network error. Please try again.'));
+    setGuestOtpCodeSuccess(''); clearGuestOtpCode();
+    if(guestOtpVerify) { guestOtpVerify.disabled = false; guestOtpVerify.setAttribute('aria-busy','false'); }
+    window.setTimeout(() => guestOtpCodeInputs[0]?.focus(), 30);
+  }
+}
+guestOtpLinks.forEach((link) => link.addEventListener('click', (event) => { event.preventDefault(); openGuestOtpModal(); }));
+guestOtpClose?.addEventListener('click', closeGuestOtpModal);
+guestOtpModal?.addEventListener('click', (event) => { if(event.target === guestOtpModal) closeGuestOtpModal(); });
+document.addEventListener('keydown', (event) => { if(event.key === 'Escape' && guestOtpModal && !guestOtpModal.hidden) closeGuestOtpModal(); });
+guestOtpPhone?.addEventListener('input', () => { guestOtpPhone.value = guestOtpPhone.value.replace(/[^0-9]/g, ''); });
+guestOtpSubmit?.addEventListener('click', () => {
+  const phone = (guestOtpPhone?.value || '').trim();
+  if(!phone || phone.length < 9){ setGuestOtpMessage(CART_RTL ? 'اكتب رقم موبايل صحيح.' : 'Enter a valid mobile number.', true); return; }
+  sendGuestOtp(phone);
 });
+guestOtpCodeInputs.forEach((input, index) => {
+  input.addEventListener('input', (event) => {
+    const value = event.target.value.replace(/[^0-9]/g, '');
+    event.target.value = value.slice(-1);
+    updateGuestOtpCodeState();
+    if(value && index < guestOtpCodeInputs.length - 1) guestOtpCodeInputs[index + 1].focus();
+    if(getGuestOtpCode().length === guestOtpCodeInputs.length) verifyGuestOtp();
+  });
+  input.addEventListener('keydown', (event) => {
+    if(event.key === 'Backspace' && !input.value && index > 0){ guestOtpCodeInputs[index - 1].value = ''; guestOtpCodeInputs[index - 1].focus(); updateGuestOtpCodeState(); }
+  });
+  input.addEventListener('paste', (event) => {
+    event.preventDefault();
+    const text = (event.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '').slice(0, guestOtpCodeInputs.length);
+    [...text].forEach((digit, offset) => { if(guestOtpCodeInputs[offset]) guestOtpCodeInputs[offset].value = digit; });
+    updateGuestOtpCodeState();
+    if(text.length === guestOtpCodeInputs.length) verifyGuestOtp();
+  });
+});
+guestOtpVerify?.addEventListener('click', verifyGuestOtp);
+guestOtpResend?.addEventListener('click', () => sendGuestOtp(guestOtpPhoneValue, true));
+guestOtpChangePhone?.addEventListener('click', showGuestOtpPhoneStep);
 </script>
 @endpush
