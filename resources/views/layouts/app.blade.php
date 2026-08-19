@@ -1627,9 +1627,18 @@ function _pcUpdatePrice(pid) {
   const size  = card.dataset.selSize;
   const priceEl = document.getElementById('pc-price-'+pid);
   const origEl  = document.getElementById('pc-orig-'+pid);
-  const addBtn  = document.getElementById('pc-add-'+pid);
+  const addControl = card.querySelector('.pc-actions .card-add-btn');
   if (!priceEl || !vars.length) return;
-  // Find matching variation
+
+  const isSellable = (v) => {
+    const stockStatus = String(v.stockStatus || 'instock').toLowerCase();
+    const status = String(v.status || 'publish').toLowerCase();
+    return status === 'publish'
+      && !['outofstock', 'out_of_stock', 'out of stock'].includes(stockStatus)
+      && Number(v.stock || 0) > 0;
+  };
+
+  // Find the selected variation, if the current combination identifies one.
   let match = null;
   if (color && size) {
     match = vars.find(v => v.attrs['Color'] === color && v.attrs['Size'] === size) || null;
@@ -1638,6 +1647,20 @@ function _pcUpdatePrice(pid) {
   } else if (size && !vars.some(v => v.attrs['Color'])) {
     match = vars.find(v => v.attrs['Size'] === size) || null;
   }
+
+  // If a color or size is selected, only matching sellable variations keep
+  // the quick-add action visible. With no selection, use aggregate card stock.
+  let selectionAvailable = card.dataset.hasAvailableStock === '1';
+  if (color && !size) {
+    const colorMatches = vars.filter(v => v.attrs['Color'] === color);
+    if (colorMatches.length) selectionAvailable = colorMatches.some(isSellable);
+  } else if (size && !color) {
+    const sizeMatches = vars.filter(v => v.attrs['Size'] === size);
+    if (sizeMatches.length) selectionAvailable = sizeMatches.some(isSellable);
+  } else if (match) {
+    selectionAvailable = isSellable(match);
+  }
+
   if (match) {
     const displayPrice = match.sale && match.sale < match.price ? match.sale : match.price;
     priceEl.textContent = displayPrice.toFixed(2) + ' EGP';
@@ -1645,7 +1668,6 @@ function _pcUpdatePrice(pid) {
     if (origEl) origEl.textContent = match.sale && match.sale < match.price ? match.price.toFixed(2) : '';
     card.dataset.selVar   = match.id;
     card.dataset.selPrice = displayPrice;
-    if (addBtn) addBtn.textContent = match.stock > 0 ? STOREFRONT_COPY.add : STOREFRONT_COPY.unavailable;
   } else {
     // Show base / range
     const prices = vars.map(v => v.sale && v.sale < v.price ? v.sale : v.price);
@@ -1653,7 +1675,15 @@ function _pcUpdatePrice(pid) {
     priceEl.textContent = mn===mx ? mn.toFixed(2)+' EGP' : mn.toFixed(2)+' – '+mx.toFixed(2)+' EGP';
     card.dataset.selVar = '';
     card.dataset.selPrice = '';
-    if (addBtn) addBtn.textContent = STOREFRONT_COPY.add;
+  }
+
+  if (addControl) {
+    addControl.style.display = selectionAvailable ? '' : 'none';
+    addControl.textContent = selectionAvailable ? STOREFRONT_COPY.add : STOREFRONT_COPY.unavailable;
+    const actionWrap = card.querySelector('.pc-actions');
+    if (actionWrap && !actionWrap.querySelector('form')) {
+      actionWrap.style.display = selectionAvailable ? '' : 'none';
+    }
   }
 }
 

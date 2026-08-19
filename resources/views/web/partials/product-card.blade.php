@@ -76,13 +76,28 @@
     'price' => (float)$v->price,
     'sale'  => (float)$v->sale_price,
     'stock' => (int)$v->stock_quantity,
+    'stockStatus' => strtolower(trim((string) ($v->stock_status ?? 'instock'))),
+    'status' => strtolower(trim((string) ($v->status ?? 'publish'))),
     'attrs' => (array)($v->attributes ?? []),
     'img'   => (is_array($v->images) && count($v->images)) ? \App\Constants\AppConstants::imageUrl($v->images[0]) : null,
   ])->values()->toArray();
 
   $basePrice = $p->on_sale ? $p->sale_price : $p->price;
   $quickAddMinimum = max(1, (int) ($p->minimum_order_qty ?? 1));
-  $quickAddMaximum = max(0, (int) ($p->stock_quantity ?? 0));
+  // Variation rows are the authoritative inventory source when they exist.
+  // This prevents a stale product-level stock value from showing Add to Cart
+  // after every sellable variation has reached zero stock.
+  $variationStockTotal = null;
+  if ($vars->isNotEmpty()) {
+    $variationStockTotal = $vars->sum(function ($v) {
+      $variationStatus = strtolower(trim((string) ($v->status ?? 'publish')));
+      $stockStatus = strtolower(trim((string) ($v->stock_status ?? 'instock')));
+      $isSellable = $variationStatus === 'publish'
+        && !in_array($stockStatus, ['outofstock', 'out_of_stock', 'out of stock'], true);
+      return $isSellable ? max(0, (int) ($v->stock_quantity ?? 0)) : 0;
+    });
+  }
+  $quickAddMaximum = max(0, (int) ($variationStockTotal ?? ($p->stock_quantity ?? 0)));
   $configuredQuickAddMaximum = (int) ($p->max_orders_per_person ?? 0);
   if ($configuredQuickAddMaximum > 0) $quickAddMaximum = min($quickAddMaximum, $configuredQuickAddMaximum);
   if ($p->sold_individually ?? false) $quickAddMaximum = min($quickAddMaximum, 1);
@@ -115,6 +130,7 @@
      data-pid="{{ $pid }}"
      data-base-img="{{ $displayImg }}"
      data-base-price="{{ $basePrice }}"
+     data-has-available-stock="{{ $hasAvailableStock ? '1' : '0' }}"
      data-vars='@json($jsVars)'>
 
   <a href="{{ route('product', $pid) }}" class="product-card-img" @if($imgStyle) style="{{ $imgStyle }}" @endif>
