@@ -47,7 +47,7 @@ class OtpSmsDispatchTest extends TestCase
     protected function tearDown(): void
     {
         OtpVerification::query()
-            ->whereIn('phone', ['+201000000001', '+201000000002', '+201000000003'])
+            ->whereIn('phone', ['+201000000001', '+201000000002', '+201000000003', '+201000000004'])
             ->delete();
 
         if ($this->originalAuthSettings) {
@@ -103,6 +103,31 @@ class OtpSmsDispatchTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonMissing(['dev_otp', 'dev_note']);
+    }
+
+    public function test_checkout_otp_request_preserves_checkout_as_the_intended_destination(): void
+    {
+        config([
+            'sms.driver' => 'log',
+            'sms.development_preview' => false,
+        ]);
+
+        $csrfToken = 'otp-checkout-context-test';
+        $response = $this->withSession(['_token' => $csrfToken])
+            ->postJson(route('auth.send-otp'), [
+                '_token' => $csrfToken,
+                'phone' => '01000000004',
+                'context' => 'checkout',
+            ]);
+
+        $response->assertOk()->assertJsonPath('success', true);
+        $this->assertSame(route('checkout'), session('url.intended'));
+    }
+
+    public function test_login_checkout_flag_preserves_checkout_as_the_intended_destination(): void
+    {
+        $this->get(route('login', ['checkout' => 1]))->assertOk();
+        $this->assertSame(route('checkout'), session('url.intended'));
     }
 
     public function test_real_sms_provider_delivery_is_queued(): void

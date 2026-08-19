@@ -9,6 +9,7 @@
       ? min(100, ($afterDiscount / $freeShippingThreshold) * 100)
       : 100;
   $freeShippingRemaining = max(0, $freeShippingThreshold - $afterDiscount);
+  $guestOtpCheckout = !auth()->check() && (bool) ($authConfig['phone_otp_login'] ?? false);
 @endphp
 
 @push('styles')
@@ -102,6 +103,23 @@
 .cart-checkout-button svg{flex-shrink:0;}
 .cart-toast{position:fixed;left:50%;bottom:82px;z-index:10001;transform:translate(-50%,15px);opacity:0;pointer-events:none;background:var(--c-dark);color:#fff;border-radius:11px;padding:10px 14px;font-size:12px;box-shadow:0 9px 24px rgba(0,0,0,.2);transition:opacity .2s,transform .2s;}
 .cart-toast.show{opacity:1;transform:translate(-50%,0);}
+.cart-auth-modal{position:fixed;inset:0;z-index:10020;display:grid;place-items:center;padding:20px;background:rgba(12,12,12,.52);backdrop-filter:blur(4px);}
+.cart-auth-modal[hidden]{display:none;}
+.cart-auth-dialog{position:relative;width:min(100%,390px);padding:24px;border:1px solid var(--c-light);border-radius:20px;background:var(--c-white);box-shadow:0 20px 70px rgba(0,0,0,.22);}
+.cart-auth-close{position:absolute;top:12px;right:12px;width:34px;height:34px;border:0;border-radius:50%;background:var(--c-tag);color:var(--c-dark);font-size:21px;line-height:1;cursor:pointer;}
+.cart-auth-dialog[dir="rtl"] .cart-auth-close{right:auto;left:12px;}
+.cart-auth-kicker{display:block;margin-bottom:7px;color:var(--c-orange);font-size:11px;font-weight:850;letter-spacing:.06em;text-transform:uppercase;}
+.cart-auth-dialog h3{margin:0;color:var(--c-dark);font-size:19px;font-weight:850;}
+.cart-auth-dialog p{margin:7px 0 16px;color:var(--c-mid);font-size:12px;line-height:1.55;}
+.cart-auth-phone-row{display:flex;align-items:stretch;gap:7px;direction:ltr;}
+.cart-auth-phone-row input{min-width:0;flex:1;border:1px solid var(--c-light);border-radius:10px;padding:12px 13px;background:var(--c-bg);color:var(--c-dark);font:inherit;font-size:14px;outline:none;}
+.cart-auth-phone-row input:focus{border-color:var(--c-dark);background:var(--c-white);}
+.cart-auth-prefix{display:flex;align-items:center;padding:0 11px;border:1px solid var(--c-light);border-radius:10px;background:var(--c-bg);color:var(--c-dark);font-size:12px;font-weight:800;white-space:nowrap;}
+.cart-auth-submit{width:100%;min-height:46px;margin-top:10px;border:0;border-radius:11px;background:var(--c-dark);color:#fff;font:inherit;font-size:13px;font-weight:850;cursor:pointer;}
+.cart-auth-submit:disabled{opacity:.58;cursor:wait;}
+.cart-auth-message{min-height:18px;margin:8px 0 0!important;text-align:center;color:var(--c-mid);font-size:11px!important;}
+.cart-auth-dialog[dir="rtl"]{text-align:right;}
+@media(max-width:600px){.cart-auth-modal{align-items:end;padding:12px 12px calc(70px + env(safe-area-inset-bottom));}.cart-auth-dialog{padding:22px 17px 18px;border-radius:18px;}.cart-auth-dialog h3{font-size:17px;}.cart-auth-phone-row input{padding-inline:11px;}}
 @media(max-width:900px){
   .cart-screen-grid{grid-template-columns:1fr;}
   .cart-summary-panel{position:static;}
@@ -314,18 +332,36 @@
           <hr class="cart-summary-divider">
           <div class="cart-total-row"><span>{{ $cartRtl ? 'الإجمالي' : 'Total' }}</span><strong id="cart-total">{{ number_format($total, 2) }} EGP</strong></div>
           <p class="cart-summary-note">{{ $cartRtl ? 'الضرايب وتفاصيل التوصيل النهائية بتتأكد وقت إتمام الطلب.' : 'Final taxes and delivery details are confirmed during checkout.' }}</p>
-          <a href="{{ route('checkout') }}" class="cart-checkout-button cart-summary-checkout">{{ $cartRtl ? 'إتمام الطلب' : 'Checkout' }} <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+          <a href="{{ auth()->check() ? route('checkout') : route('login', ['checkout' => 1]) }}" class="cart-checkout-button cart-summary-checkout" @if($guestOtpCheckout) data-guest-otp-checkout @endif>{{ $cartRtl ? 'إتمام الطلب' : 'Checkout' }} <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
         </aside>
       </div>
 
       <div class="cart-checkout-bar">
         <div class="cart-checkout-total"><span>{{ $cartRtl ? 'الإجمالي الفرعي' : 'Subtotal' }}</span><strong id="cart-sticky-total">{{ number_format($total, 2) }} EGP</strong></div>
-        <a href="{{ route('checkout') }}" class="cart-checkout-button">{{ $cartRtl ? 'إتمام الطلب' : 'Checkout' }} <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+        <a href="{{ auth()->check() ? route('checkout') : route('login', ['checkout' => 1]) }}" class="cart-checkout-button" @if($guestOtpCheckout) data-guest-otp-checkout @endif>{{ $cartRtl ? 'إتمام الطلب' : 'Checkout' }} <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
       </div>
     @endif
   </main>
 </div>
 <div id="cart-toast" class="cart-toast" role="status" aria-live="polite"></div>
+@if($guestOtpCheckout)
+<div id="guest-otp-checkout" class="cart-auth-modal" hidden role="dialog" aria-modal="true" aria-labelledby="guest-otp-title">
+  <div class="cart-auth-dialog" dir="{{ $cartRtl ? 'rtl' : 'ltr' }}">
+    <button type="button" class="cart-auth-close" id="guest-otp-close" aria-label="{{ $cartRtl ? 'إغلاق' : 'Close' }}">×</button>
+    <span class="cart-auth-kicker">{{ $cartRtl ? 'إتمام الطلب' : 'Complete your order' }}</span>
+    <h3 id="guest-otp-title">{{ $cartRtl ? 'اكتب رقم موبايلك' : 'Enter your mobile number' }}</h3>
+    <p>{{ $cartRtl ? 'هنبعتلك كود تأكيد عشان تكمل الطلب بسرعة.' : 'We will send you a verification code so you can continue securely.' }}</p>
+    <div class="cart-auth-phone-row">
+      <span class="cart-auth-prefix">🇪🇬 +20</span>
+      <input type="tel" id="guest-otp-phone" inputmode="tel" maxlength="11" placeholder="01xxxxxxxxx" autocomplete="tel">
+    </div>
+    <button type="button" class="cart-auth-submit" id="guest-otp-submit">
+      <span class="cart-auth-submit-label">{{ $cartRtl ? 'ابعت كود التأكيد' : 'Send verification code' }}</span>
+    </button>
+    <p id="guest-otp-message" class="cart-auth-message" role="status" aria-live="polite"></p>
+  </div>
+</div>
+@endif
 @endsection
 
 @push('scripts')
@@ -473,5 +509,62 @@ async function applyCoupon(event){
     if(data.reload) setTimeout(()=>location.reload(),650);
   }catch(error){if(msg){msg.textContent=CART_TEXT.unableCoupon;msg.style.color='#c02020';}}
 }
+
+const guestOtpModal = document.getElementById('guest-otp-checkout');
+const guestOtpPhone = document.getElementById('guest-otp-phone');
+const guestOtpSubmit = document.getElementById('guest-otp-submit');
+const guestOtpClose = document.getElementById('guest-otp-close');
+const guestOtpMessage = document.getElementById('guest-otp-message');
+const guestOtpLinks = document.querySelectorAll('[data-guest-otp-checkout]');
+function closeGuestOtpModal(){
+  if(!guestOtpModal) return;
+  guestOtpModal.hidden = true;
+  document.body.style.overflow = '';
+}
+function openGuestOtpModal(){
+  if(!guestOtpModal) return;
+  guestOtpModal.hidden = false;
+  document.body.style.overflow = 'hidden';
+  window.setTimeout(() => guestOtpPhone?.focus(), 30);
+}
+guestOtpLinks.forEach((link) => link.addEventListener('click', (event) => {
+  event.preventDefault();
+  openGuestOtpModal();
+}));
+guestOtpClose?.addEventListener('click', closeGuestOtpModal);
+guestOtpModal?.addEventListener('click', (event) => {
+  if(event.target === guestOtpModal) closeGuestOtpModal();
+});
+document.addEventListener('keydown', (event) => {
+  if(event.key === 'Escape' && guestOtpModal && !guestOtpModal.hidden) closeGuestOtpModal();
+});
+guestOtpPhone?.addEventListener('input', () => {
+  guestOtpPhone.value = guestOtpPhone.value.replace(/[^0-9]/g, '');
+});
+guestOtpSubmit?.addEventListener('click', async () => {
+  const phone = (guestOtpPhone?.value || '').trim();
+  if(!phone || phone.length < 9){
+    if(guestOtpMessage){ guestOtpMessage.textContent = CART_RTL ? 'اكتب رقم موبايل صحيح.' : 'Enter a valid mobile number.'; guestOtpMessage.style.color = '#c02020'; }
+    return;
+  }
+  guestOtpSubmit.disabled = true;
+  if(guestOtpMessage){ guestOtpMessage.textContent = CART_RTL ? 'بنرسل كود التأكيد…' : 'Sending verification code…'; guestOtpMessage.style.color = 'var(--c-mid)'; }
+  try{
+    const res = await fetch('/auth/send-otp', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'Accept':'application/json'},
+      body:JSON.stringify({phone, context:'checkout'})
+    });
+    const contentType = res.headers.get('content-type') || '';
+    const data = contentType.includes('application/json') ? await res.json() : {success:false,message:await res.text()};
+    if(!data.success) throw new Error(data.message || (CART_RTL ? 'مش قادرين نبعت الكود دلوقتي.' : 'We could not send the code right now.'));
+    sessionStorage.setItem('otp_phone', phone);
+    if(data.dev_otp) sessionStorage.setItem('dev_otp', data.dev_otp);
+    window.location.href = '/auth/otp-verify';
+  }catch(error){
+    if(guestOtpMessage){ guestOtpMessage.textContent = error?.message || (CART_RTL ? 'حصلت مشكلة. جرّب تاني.' : 'Something went wrong. Please try again.'); guestOtpMessage.style.color = '#c02020'; }
+    guestOtpSubmit.disabled = false;
+  }
+});
 </script>
 @endpush

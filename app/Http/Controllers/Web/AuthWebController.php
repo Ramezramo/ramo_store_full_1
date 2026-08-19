@@ -17,9 +17,12 @@ class AuthWebController extends Controller
 {
     use CartTrait;
 
-    public function showLogin()
+    public function showLogin(Request $request)
     {
         if (Auth::check()) return redirect()->route('account.profile');
+        if ($request->boolean('checkout')) {
+            $request->session()->put('url.intended', route('checkout'));
+        }
         $authConfig = AuthConfig::get();
         return view('web.auth.login', compact('authConfig'));
     }

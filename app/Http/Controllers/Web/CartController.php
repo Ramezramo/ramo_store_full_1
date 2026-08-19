@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Helpers\AuthConfig;
 use App\Helpers\ShippingConfig;
 use App\Http\Controllers\CouponController;
 use App\Http\Traits\CartTrait;
@@ -115,9 +116,10 @@ class CartController extends Controller
             ? DB::table('orders')->where('customer_id', Auth::id())->exists()
             : false;
         $total       = $afterDiscount + $shippingFee;
+        $authConfig  = AuthConfig::get();
         return view('web.cart', compact(
             'cart', 'subtotal', 'discount', 'total', 'coupon', 'shippingFee',
-            'freeShippingEnabled', 'freeShippingThreshold', 'hasPreviousOrders'
+            'freeShippingEnabled', 'freeShippingThreshold', 'hasPreviousOrders', 'authConfig'
         ));
     }
 

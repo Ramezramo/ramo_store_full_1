@@ -54,6 +54,10 @@ class OtpAuthController extends Controller
     {
         $cfg = AuthConfig::get();
 
+        if ($request->input('context') === 'checkout') {
+            $request->session()->put('url.intended', route('checkout'));
+        }
+
         if (!$cfg['phone_otp_login']) {
             return response()->json(['success' => false, 'message' => $this->localized('Phone OTP login is disabled.', 'تسجيل الدخول بكود الموبايل مش متاح دلوقتي.')], 403);
         }
