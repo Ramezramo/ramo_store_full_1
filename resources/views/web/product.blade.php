@@ -827,7 +827,29 @@
   .var-swatch { width:42px; height:42px; }
 }
 
+/* Narrow-phone selector: keep the variation choices compact without hiding controls. */
+@media (max-width:520px) {
+  .pi-variations-wrap { margin:12px 0 12px; gap:10px; }
+  .pi-var-group { padding-bottom:9px; }
+  .pi-var-group .var-label { margin-bottom:7px; font-size:12px; }
+  .var-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; margin-bottom:10px; }
+  .var-color-option {
+    min-width:0; flex:initial; padding:6px 5px 5px; gap:4px; border-radius:11px;
+    box-shadow:0 1px 5px rgba(28,25,23,.045);
+  }
+  .var-color-option:has(.var-swatch.selected) { transform:none; box-shadow:0 2px 8px rgba(232,93,38,.13); }
+  .var-swatch { width:34px; height:34px; border-width:2px; outline-offset:2px; }
+  .var-swatch.selected { outline-width:2px; }
+  .var-color-name { font-size:10px; line-height:1.15; }
+  .color-qty-stepper { grid-template-columns:24px 1fr 24px; gap:3px; min-height:27px; }
+  .color-qty-stepper button { width:24px; height:27px; border-radius:7px; font-size:14px; }
+  .color-qty-stepper input { height:27px; border-radius:7px; font-size:12px; }
+  .pi-var-group .var-btn { min-width:40px; height:32px; padding:0 10px; border-radius:8px; font-size:12px; }
+  .var-hint { min-height:14px; margin-top:5px; font-size:10px; }
+}
+
 /* Color swatch CSS variables */
+
 :root {
   --swatch-white:#f5f5f5; --swatch-black:#1a1a1a; --swatch-green:#22a35c;
   --swatch-red:#e53e3e; --swatch-blue:#3182ce; --swatch-yellow:#f6e05e;
