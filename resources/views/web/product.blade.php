@@ -856,6 +856,97 @@
   .product-page-ar .product-layout { direction: rtl; }
   .product-page-ar .sticky-atc-inner { padding-right: 14px; padding-left: 14px; }
 }
+
+/* ── Narrow-phone product gallery polish ── */
+@media (max-width: 600px) {
+  .product-page .product-layout {
+    gap:18px;
+  }
+  .product-page .gallery-wrap {
+    width:100%;
+    gap:10px;
+  }
+  .product-page .gallery-main {
+    width:100%;
+    aspect-ratio:1 / 1;
+    border:1px solid #e8e8e4;
+    border-radius:18px;
+    background:#fafaf8;
+    box-shadow:0 5px 18px rgba(25,25,25,.06);
+  }
+  .product-page .gallery-main img {
+    display:block;
+    width:100%;
+    height:100%;
+    padding:8px;
+    object-fit:contain;
+    background:#fafaf8;
+  }
+  .product-page #gallery-thumbs:not(:has(.gallery-thumb:nth-child(2))) {
+    display:none !important;
+  }
+  .product-page .gallery-thumbs {
+    width:100%;
+    justify-content:flex-start;
+    gap:8px;
+    padding:2px 2px 5px;
+    scroll-snap-type:x proximity;
+  }
+  .product-page .gallery-thumb {
+    width:58px;
+    height:58px;
+    border:1.5px solid #e1e1de;
+    border-radius:10px;
+    scroll-snap-align:start;
+    background:#fafaf8;
+  }
+  .product-page .gallery-thumb.active {
+    border-color:#e85d26;
+    box-shadow:0 0 0 2px rgba(232,93,38,.14);
+  }
+  .product-page .gallery-thumb img,
+  .product-page .gallery-thumb:hover img,
+  .product-page .gallery-thumb.active img {
+    filter:none;
+  }
+  .product-page .pi-title-row {
+    align-items:flex-start;
+    gap:10px;
+    margin-bottom:12px;
+    padding-top:2px;
+  }
+  .product-page .pi-title {
+    font-size:20px;
+    line-height:1.28;
+  }
+  .product-page .pi-wish-btn {
+    width:40px;
+    height:40px;
+    margin-top:0;
+    border:1px solid #e7e2dd;
+    border-radius:12px;
+    background:#fff8f3;
+    color:#e85d26;
+    box-shadow:0 3px 10px rgba(232,93,38,.10);
+    font-family:Arial,"Segoe UI Symbol",sans-serif;
+    font-size:23px;
+    font-weight:700;
+    line-height:1;
+    font-variant-emoji:text;
+  }
+  .product-page .pi-wish-btn:hover,
+  .product-page .pi-wish-btn:focus-visible {
+    border-color:#e85d26;
+    color:#e85d26;
+    background:#fff3eb;
+    transform:none;
+  }
+  .product-page .pi-wish-btn.wished {
+    background:#e85d26;
+    border-color:#e85d26;
+    color:#fff;
+  }
+}
 </style>
 <script>
 // ── Variation Engine ──────────────────────────────────────────────────
