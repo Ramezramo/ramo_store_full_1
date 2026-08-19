@@ -1567,24 +1567,35 @@ function _pcVariationIsSellable(v) {
     && Number(v?.stock || 0) > 0;
 }
 
-function _pcSelectInitialColor(pid) {
+function _pcSelectInitialVariation(pid) {
   const card = _pcGetCard(pid);
-  if (!card || card.dataset.selColor) return;
+  if (!card || card.dataset.selColor || card.dataset.selSize || card.dataset.selVar) return;
 
-  const vars = _pcGetVars(pid);
-  const firstAvailable = vars.find(v => v.attrs?.['Color'] && _pcVariationIsSellable(v));
+  const firstAvailable = _pcGetVars(pid).find(_pcVariationIsSellable);
   if (!firstAvailable) return;
 
-  const color = firstAvailable.attrs['Color'];
-  const swatch = Array.from(card.querySelectorAll('.pc-swatch'))
-    .find(btn => btn.dataset.color === color);
-  card.dataset.selColor = color;
-  card.dataset.selColorLabel = swatch?.dataset.display || color;
-  if (swatch) {
-    card.querySelectorAll('.pc-swatch').forEach(btn => btn.classList.remove('selected'));
-    swatch.classList.add('selected');
-    const imgEl = document.getElementById('pc-img-' + pid);
-    if (imgEl && swatch.dataset.img) imgEl.src = swatch.dataset.img;
+  const attrs = firstAvailable.attrs || {};
+  const color = attrs['Color'] || '';
+  const size = attrs['Size'] || '';
+
+  if (color) {
+    const swatch = Array.from(card.querySelectorAll('.pc-swatch'))
+      .find(btn => btn.dataset.color === color);
+    card.dataset.selColor = color;
+    card.dataset.selColorLabel = swatch?.dataset.display || color;
+    if (swatch) {
+      card.querySelectorAll('.pc-swatch').forEach(btn => btn.classList.remove('selected'));
+      swatch.classList.add('selected');
+      const imgEl = document.getElementById('pc-img-' + pid);
+      if (imgEl && swatch.dataset.img) imgEl.src = swatch.dataset.img;
+    }
+  }
+
+  if (size) {
+    card.dataset.selSize = size;
+    card.querySelectorAll('.pc-size').forEach(btn => {
+      btn.classList.toggle('selected', btn.dataset.size === size);
+    });
   }
 }
 
@@ -1631,21 +1642,28 @@ function _pcUpdateSizes(pid) {
   if (!card) return;
   const vars   = _pcGetVars(pid);
   const color  = card.dataset.selColor;
+  const hasColorAttrs = vars.some(v => v.attrs?.['Color']);
   const sizeEl = document.getElementById('pc-sizes-'+pid);
-  if (!sizeEl || !color) return;
-  // Show only sizes available for this color
+  if (!sizeEl || (hasColorAttrs && !color)) return;
+  // Show only sizes that exist for the selected color, or for the product when
+  // size is the only visible variation dimension.
   sizeEl.querySelectorAll('.pc-size').forEach(btn => {
     const size = btn.dataset.size;
-    const avail = vars.some(v => v.attrs['Color'] === color && v.attrs['Size'] === size && _pcVariationIsSellable(v));
-    const exists = vars.some(v => v.attrs['Color'] === color && v.attrs['Size'] === size);
+    const matches = vars.filter(v => v.attrs?.['Size'] === size && (!color || v.attrs?.['Color'] === color));
+    const avail = matches.some(_pcVariationIsSellable);
+    const exists = matches.length > 0;
     btn.classList.toggle('unavail', !avail && exists);
+    btn.classList.toggle('selected', card.dataset.selSize === size && avail);
     btn.style.display = !exists ? 'none' : '';
   });
-  // Deselect size if now hidden
+  // Deselect size if it is not present for the selected color anymore.
   const selSize = card.dataset.selSize;
   if (selSize) {
-    const stillVisible = vars.some(v => v.attrs['Color'] === color && v.attrs['Size'] === selSize);
-    if (!stillVisible) { card.dataset.selSize = ''; card.querySelectorAll('.pc-size').forEach(b => b.classList.remove('selected')); }
+    const stillVisible = vars.some(v => v.attrs?.['Size'] === selSize && (!color || v.attrs?.['Color'] === color));
+    if (!stillVisible) {
+      card.dataset.selSize = '';
+      card.querySelectorAll('.pc-size').forEach(b => b.classList.remove('selected'));
+    }
   }
 }
 
@@ -1740,7 +1758,7 @@ function _pcUpdateSummary(pid) {
 function _pcInitializeVariations() {
   document.querySelectorAll('.product-card[data-vars]').forEach(card => {
     const pid = card.dataset.pid;
-    _pcSelectInitialColor(pid);
+    _pcSelectInitialVariation(pid);
     _pcUpdateSizes(pid);
     _pcUpdatePrice(pid);
     _pcUpdateSummary(pid);

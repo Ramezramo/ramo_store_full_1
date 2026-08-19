@@ -764,6 +764,13 @@ function toggleShopFilter() {
           grid.insertAdjacentHTML('beforeend', data.html);
         }
 
+        // Product cards arrive asynchronously after the shared DOM-ready hook.
+        // Re-run the idempotent variation initializer so shop cards select the
+        // first in-stock color and apply the same stock-aware button gating.
+        if (typeof _pcInitializeVariations === 'function') {
+          _pcInitializeVariations();
+        }
+
         if (data.hasMore) {
           nextPage = data.nextPage;
           loader.style.display = 'none';
