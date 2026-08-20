@@ -83,6 +83,68 @@
 .acc-hub-chevron { color: #ccc; flex-shrink: 0; }
 .acc-hub-chevron svg { width: 16px; height: 16px; }
 
+/* Settings group */
+.acc-hub-settings {
+  margin-top: 10px;
+  padding: 0 12px;
+}
+.acc-hub-settings .acc-hub-section-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 4px 12px;
+  color: #b85d25;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.acc-hub-settings-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #f06a22;
+  background: #fff5ed;
+  border: 1px solid #ffe0cc;
+}
+.acc-hub-settings-mark svg { width: 16px; height: 16px; }
+.acc-hub-settings .acc-hub-section {
+  overflow: hidden;
+  margin: 0;
+  background: linear-gradient(135deg, #fffaf6 0%, #fff 100%);
+  border: 1px solid #ffe6d6;
+  border-radius: 20px;
+  box-shadow: 0 8px 22px rgba(203, 106, 43, .08);
+}
+.acc-hub-settings .acc-hub-item,
+.acc-hub-settings .acc-hub-signout {
+  min-height: 70px;
+  padding: 14px 16px;
+  background: transparent;
+  border-bottom-color: #f5e4d8;
+}
+.acc-hub-settings .acc-hub-item-label,
+.acc-hub-settings .acc-hub-signout span { font-size: 16px; font-weight: 600; }
+.acc-hub-settings .acc-hub-item-sub {
+  margin-top: 4px;
+  line-height: 1.45;
+  color: #8d817a;
+}
+.acc-hub-settings .acc-hub-item-icon,
+.acc-hub-settings .acc-hub-signout-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(205, 111, 52, .08);
+}
+.acc-hub-settings .acc-hub-item:hover,
+.acc-hub-settings .acc-hub-item:active { background: #fff3e9; }
+.acc-hub-settings .acc-hub-signout:hover,
+.acc-hub-settings .acc-hub-signout:active { background: #fff4f4; }
+
 /* Sign out button row */
 .acc-hub-signout {
   display: flex; align-items: center; gap: 14px;
@@ -171,9 +233,14 @@
   </div>
 
   {{-- Account Settings --}}
-  <div class="acc-hub-section">
-    <div class="acc-hub-section-label">{{ $isAr ? 'الإعدادات' : 'Settings' }}</div>
-
+  <div class="acc-hub-settings">
+    <div class="acc-hub-section-label">
+      <span class="acc-hub-settings-mark" aria-hidden="true">
+        <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.34 1.88l.06.06-1.7 1.7-.06-.06a1.7 1.7 0 00-1.88-.34 1.7 1.7 0 00-1.03 1.56V20h-2.4v-.2a1.7 1.7 0 00-1.03-1.56 1.7 1.7 0 00-1.88.34l-.06.06-1.7-1.7.06-.06A1.7 1.7 0 008.4 15a1.7 1.7 0 00-1.56-1.03H6v-2.4h.2A1.7 1.7 0 007.76 10a1.7 1.7 0 00-.34-1.88l-.06-.06 1.7-1.7.06.06A1.7 1.7 0 0011 6.76 1.7 1.7 0 0012.03 5.2V5h2.4v.2A1.7 1.7 0 0015.46 6.76a1.7 1.7 0 001.88-.34l.06-.06 1.7 1.7-.06.06A1.7 1.7 0 0018.7 10a1.7 1.7 0 001.56 1.03h.2v2.4h-.2A1.7 1.7 0 0019.4 15z"/></svg>
+      </span>
+      <span>{{ $isAr ? 'الإعدادات' : 'Settings' }}</span>
+    </div>
+    <div class="acc-hub-section">
     <a href="{{ route('account.profile') }}" class="acc-hub-item">
       <div class="acc-hub-item-icon">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -194,6 +261,7 @@
         <span>{{ $isAr ? 'تسجيل الخروج' : 'Sign Out' }}</span>
       </button>
     </form>
+    </div>
   </div>
 
 </div>
