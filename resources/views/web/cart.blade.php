@@ -139,40 +139,53 @@
   .cart-summary-panel{position:static;}
 }
 @media(max-width:600px){
-  .cart-screen{min-height:calc(100svh - 58px);}
-  .cart-screen-header{position:sticky;top:0;z-index:20;padding:calc(10px + env(safe-area-inset-top)) 14px 11px;border-bottom:1px solid var(--c-light);background:rgba(255,255,255,.96);backdrop-filter:blur(12px);}
-  .cart-screen-back{width:44px;height:44px;border-radius:12px;}
+  .cart-screen{min-height:calc(100svh - 58px);background:linear-gradient(180deg,#fafaf9 0%,var(--c-bg) 42%);}
+  .cart-screen-header{position:sticky;top:0;z-index:20;padding:calc(10px + env(safe-area-inset-top)) 14px 11px;border-bottom:1px solid rgba(24,24,24,.08);background:rgba(255,255,255,.96);backdrop-filter:blur(12px);}
+  .cart-screen-back{width:44px;height:44px;border-radius:14px;background:#fff;box-shadow:0 3px 12px rgba(24,24,24,.05);}
   .cart-screen-title{font-size:20px;letter-spacing:-.35px;}
   .cart-screen-title span{font-size:12px;}
-  .cart-screen-body{padding:14px 14px calc(132px + env(safe-area-inset-bottom));}
-  .cart-screen-grid{display:flex;flex-direction:column;align-items:stretch;gap:14px;}
-  .cart-items-panel,.cart-summary-panel{box-sizing:border-box;border-radius:17px;box-shadow:0 4px 18px rgba(24,24,24,.04);}
-  .cart-items-panel,.cart-summary-panel{width:calc(100% + 28px);margin-left:-14px;border-left:0;border-right:0;border-radius:0;}
-  .cart-items-panel{padding:13px 14px;}
-  .cart-summary-panel{padding:15px 14px;}
-  .cart-items-heading{margin-bottom:7px;}
-  .cart-items-heading h2{font-size:14px;}
-  .cart-item-card{grid-template-columns:68px minmax(0,1fr);gap:10px 11px;padding:13px 0;align-items:start;}
-  .cart-item-card:first-of-type{padding-top:8px;}
-  .cart-item-thumb{width:68px;height:68px;border-radius:12px;}
-  .cart-item-name{font-size:13px;padding-right:30px;}
-  .cart-item-variant{font-size:10px;padding:4px 6px;}
-  .cart-item-pricing{gap:5px;}
+  .cart-screen-body{padding:16px 14px calc(128px + env(safe-area-inset-bottom));}
+  .cart-screen-grid{display:flex;flex-direction:column;align-items:stretch;gap:16px;}
+  .cart-items-panel,.cart-summary-panel{box-sizing:border-box;width:100%;margin:0;border:1px solid rgba(24,24,24,.08);border-radius:20px;box-shadow:0 8px 26px rgba(24,24,24,.055);background:rgba(255,255,255,.98);}
+  .cart-items-panel{padding:15px 16px;}
+  .cart-summary-panel{padding:16px;}
+  .cart-items-heading{margin-bottom:4px;padding:0 0 3px;}
+  .cart-items-heading h2{font-size:15px;letter-spacing:-.1px;}
+  .cart-items-heading span{padding:5px 8px;border-radius:999px;background:#f5f5f3;font-size:10px;font-weight:750;}
+  .cart-item-card{grid-template-columns:82px minmax(0,1fr);gap:12px;padding:16px 0 14px;align-items:start;}
+  .cart-item-card:first-of-type{padding-top:10px;}
+  .cart-item-thumb{width:82px;height:82px;border-radius:16px;border:1px solid rgba(24,24,24,.08);box-shadow:0 4px 12px rgba(24,24,24,.06);}
+  .cart-item-main{padding-top:1px;}
+  .cart-item-name{font-size:14px;line-height:1.35;padding:0;margin-bottom:7px;}
+  .cart-item-variants{gap:5px;margin-bottom:8px;}
+  .cart-item-variant{font-size:10px;padding:5px 7px;border-radius:8px;background:#fafafa;}
+  .cart-item-pricing{gap:5px;align-items:baseline;}
   .cart-item-unit{font-size:10px;}
-  .cart-item-line{font-size:13px;}
-  .cart-item-controls{grid-column:1 / -1;grid-row:2;flex-direction:row;align-items:center;justify-content:space-between;padding-left:79px;margin-top:-2px;}
+  .cart-item-line{font-size:15px;color:var(--c-orange);}
+  .cart-item-old{font-size:10px;}
+  .cart-item-controls{grid-column:1 / -1;grid-row:2;flex-direction:row;align-items:center;justify-content:space-between;padding:12px 0 0;margin-top:2px;border-top:1px dashed #ececea;}
   .cart-item-limit{font-size:9.5px;text-align:left;}
-  .cart-remove-icon{width:44px;height:44px;}
-  .cart-items-actions{display:flex;flex-wrap:nowrap;align-items:center;gap:8px;}
-  .cart-items-actions .btn,.cart-items-actions button{padding:10px 8px;font-size:11px;white-space:nowrap;}
-  .cart-items-actions .btn{flex:1;}
-  .cart-items-actions form{flex:0 0 auto;}
-  .cart-summary-panel{padding:15px;}
-  .cart-summary-panel h2{font-size:15px;}
+  .cart-qty-stepper{border-color:#d8d8d5;border-radius:14px;box-shadow:0 3px 10px rgba(24,24,24,.04);}
+  .cart-qty-stepper button,.cart-qty-stepper input{width:48px;height:48px;}
+  .cart-qty-stepper input{width:38px;font-size:15px;}
+  .cart-remove-icon{width:44px;height:44px;border:1px solid #ffd9d9;background:#fff7f7;color:#cf5757;border-radius:13px;}
+  .cart-items-actions{display:flex;flex-wrap:nowrap;align-items:stretch;gap:10px;margin-top:2px;padding-top:15px;border-top:1px solid #ededeb;}
+  .cart-items-actions .btn,.cart-items-actions button{min-height:46px;padding:0 10px;font-size:11.5px;white-space:nowrap;border-radius:13px;}
+  .cart-items-actions .btn{flex:1;background:#fff;}
+  .cart-items-actions form{flex:1;}
+  .cart-items-actions .cart-clear-btn{width:100%;border:1px solid #fecaca;background:#fff7f7;color:#c24141;font:inherit;font-weight:800;cursor:pointer;}
+  .cart-summary-panel h2{font-size:16px;}
+  .cart-summary-head{margin-bottom:14px;}
+  .cart-shipping-progress{margin-bottom:14px;}
+  .cart-summary-row{margin-bottom:10px;font-size:12.5px;}
+  .cart-total-row{padding:14px;border:1px solid rgba(24,24,24,.06);border-radius:15px;background:linear-gradient(135deg,#f7f7f5 0%,#efefec 100%);}
+  .cart-total-row strong{font-size:19px;}
   .cart-summary-checkout{display:none;}
-  .cart-checkout-bar{position:fixed;left:0;right:0;bottom:58px;z-index:9998;margin:0;padding:10px 14px calc(10px + env(safe-area-inset-bottom));border-radius:16px 16px 0 0;border-left:0;border-right:0;border-bottom:0;box-shadow:0 -6px 24px rgba(24,24,24,.13);display:flex;}
-  .cart-checkout-total strong{font-size:16px;}
-  .cart-checkout-button{min-width:0;flex:1;min-height:50px;font-size:13px;border-radius:12px;}
+  .cart-checkout-bar{position:fixed;left:10px;right:10px;bottom:calc(58px + 8px + env(safe-area-inset-bottom));z-index:9998;margin:0;padding:10px;border:1px solid rgba(24,24,24,.1);border-radius:18px;box-shadow:0 8px 28px rgba(24,24,24,.16);background:rgba(255,255,255,.98);backdrop-filter:blur(14px);display:flex;gap:10px;}
+  .cart-checkout-total{padding:0 3px;gap:2px;}
+  .cart-checkout-total span{font-size:10px;font-weight:700;}
+  .cart-checkout-total strong{font-size:17px;}
+  .cart-checkout-button{min-width:0;flex:0 0 56%;min-height:48px;font-size:13px;border-radius:13px;box-shadow:0 4px 12px rgba(0,0,0,.12);}
   .cart-empty-state{margin:12px auto 0;padding:52px 20px;border-radius:18px;}
 }
 /* Egyptian Arabic / RTL cart layout */
@@ -183,9 +196,7 @@
 .cart-screen[dir="rtl"] .cart-qty-stepper{direction:ltr;}
 .cart-screen[dir="rtl"] .cart-item-pricing,.cart-screen[dir="rtl"] .cart-total-row strong,.cart-screen[dir="rtl"] .cart-summary-row strong,.cart-screen[dir="rtl"] .cart-checkout-total strong{direction:ltr;unicode-bidi:embed;}
 @media(max-width:600px){
-  .cart-screen[dir="rtl"] .cart-items-panel,.cart-screen[dir="rtl"] .cart-summary-panel{margin-left:0;margin-right:-14px;}
-  .cart-screen[dir="rtl"] .cart-item-name{padding-left:30px;padding-right:0;}
-  .cart-screen[dir="rtl"] .cart-item-controls{padding-left:0;padding-right:79px;}
+  .cart-screen[dir="rtl"] .cart-item-name{padding:0;}
   .cart-screen[dir="rtl"] .cart-item-limit{text-align:right;}
 }
 @media(max-width:340px){
@@ -351,7 +362,7 @@
       </div>
 
       <div class="cart-checkout-bar">
-        <div class="cart-checkout-total"><span>{{ $cartRtl ? 'الإجمالي الفرعي' : 'Subtotal' }}</span><strong id="cart-sticky-total">{{ number_format($total, 2) }} EGP</strong></div>
+        <div class="cart-checkout-total"><span>{{ $cartRtl ? 'الإجمالي' : 'Total' }}</span><strong id="cart-sticky-total">{{ number_format($total, 2) }} EGP</strong></div>
         <a href="{{ auth()->check() ? route('checkout') : route('login', ['checkout' => 1]) }}" class="cart-checkout-button" @if($guestOtpCheckout) data-guest-otp-checkout @endif>{{ $cartRtl ? 'إتمام الطلب' : 'Checkout' }} <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
       </div>
     @endif
