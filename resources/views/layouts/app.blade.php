@@ -763,6 +763,10 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
   .nav-badge{top:2px;right:1px;min-width:15px;height:15px;font-size:8px;border-width:1.5px}
   .nav--rtl .nav-actions{margin-inline-start:auto}
   .nav--rtl .nav-hamburger{margin:0}
+  /* The open drawer owns the whole area between the sticky header and bottom nav.
+     Otherwise the auto-height panel leaves the page visible through the backdrop. */
+  .nav-mobile-menu{top:69px;bottom:calc(var(--mobile-nav-height) + var(--mobile-nav-viewport-offset, 0px));}
+  .nav-mobile-panel{height:100%;min-height:100%;max-height:none;box-shadow:0 8px 32px rgba(0,0,0,.12);}
   /* 58px bottom nav + 16px breathing room = 74px so nothing scrolls behind the nav */
   .page{padding:20px 14px 74px}
 }
