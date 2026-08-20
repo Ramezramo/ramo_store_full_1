@@ -1911,22 +1911,60 @@ refreshWishlistState();
 
   const attemptKey = 'ramo_locale_country_lookup_attempted';
   try {
-    if (window.sessionStorage.getItem(attemptKey)) return;
-    window.sessionStorage.setItem(attemptKey, '1');
+    // Do not duplicate an in-flight lookup, but allow a later page load to retry
+    // when an earlier provider or network request failed.
+    if (window.sessionStorage.getItem(attemptKey) === 'in_progress') return;
+    window.sessionStorage.setItem(attemptKey, 'in_progress');
   } catch (error) {
-    // Storage can be unavailable in private browsing; continue safely once.
+    // Storage can be unavailable in private browsing; continue without it.
   }
 
-  fetch('https://api.country.is/', {
-    headers: {'Accept': 'application/json'},
-    cache: 'no-store'
-  })
-    .then((response) => response.ok ? response.json() : null)
-    .then((payload) => {
-      const country = typeof payload?.country === 'string'
-        ? payload.country.trim().toUpperCase()
-        : '';
-      if (!/^[A-Z]{2}$/.test(country)) return null;
+  const providers = [
+    {
+      url: 'https://api.country.is/',
+      readCountry: (payload) => payload?.country
+    },
+    {
+      url: 'https://ipwho.is/',
+      readCountry: (payload) => payload?.country_code
+    }
+  ];
+
+  const validCountry = (value) => {
+    const country = typeof value === 'string' ? value.trim().toUpperCase() : '';
+    return /^[A-Z]{2}$/.test(country) ? country : null;
+  };
+
+  const lookupCountry = async () => {
+    for (const provider of providers) {
+      try {
+        const response = await fetch(provider.url, {
+          headers: {'Accept': 'application/json'},
+          cache: 'no-store'
+        });
+        if (!response.ok) continue;
+
+        const country = validCountry(provider.readCountry(await response.json()));
+        if (country) return country;
+      } catch (error) {
+        // Try the next provider; a temporary lookup failure must not lock the
+        // browser into English for the rest of the session.
+      }
+    }
+
+    return null;
+  };
+
+  const clearAttempt = () => {
+    try { window.sessionStorage.removeItem(attemptKey); } catch (error) {}
+  };
+
+  lookupCountry()
+    .then((country) => {
+      if (!country) {
+        clearAttempt();
+        return null;
+      }
 
       return fetch(@json(route('language.auto-country')), {
         method: 'POST',
@@ -1941,9 +1979,14 @@ refreshWishlistState();
     })
     .then((response) => response && response.ok ? response.json() : null)
     .then((result) => {
-      if (result?.updated === true) window.location.replace(window.location.href);
+      if (result?.updated === true) {
+        try { window.sessionStorage.setItem(attemptKey, 'completed'); } catch (error) {}
+        window.location.replace(window.location.href);
+      } else if (!result) {
+        clearAttempt();
+      }
     })
-    .catch(() => {});
+    .catch(() => clearAttempt());
 })();
 </script>
 @stack('scripts')

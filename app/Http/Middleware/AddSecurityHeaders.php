@@ -28,7 +28,7 @@ class AddSecurityHeaders
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=()');
         $response->headers->set(
             'Content-Security-Policy-Report-Only',
-            "base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; connect-src 'self' https://api.country.is; upgrade-insecure-requests"
+            "base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; connect-src 'self' https://api.country.is https://ipwho.is; upgrade-insecure-requests"
         );
         $response->headers->remove('X-Powered-By');
 

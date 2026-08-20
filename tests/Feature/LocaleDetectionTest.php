@@ -89,4 +89,13 @@ class LocaleDetectionTest extends TestCase
             ->assertSessionHas('locale', 'en')
             ->assertSessionHas('locale_source', 'fallback_pending');
     }
+
+    public function test_first_visit_fallback_uses_a_backup_provider_and_retries_after_lookup_failure(): void
+    {
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('https://api.country.is/', false)
+            ->assertSee('https://ipwho.is/', false)
+            ->assertSee('window.sessionStorage.removeItem(attemptKey)', false);
+    }
 }
