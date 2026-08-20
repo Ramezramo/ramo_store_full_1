@@ -103,25 +103,32 @@
 .cart-checkout-button svg{flex-shrink:0;}
 .cart-toast{position:fixed;left:50%;bottom:82px;z-index:10001;transform:translate(-50%,15px);opacity:0;pointer-events:none;background:var(--c-dark);color:#fff;border-radius:11px;padding:10px 14px;font-size:12px;box-shadow:0 9px 24px rgba(0,0,0,.2);transition:opacity .2s,transform .2s;}
 .cart-toast.show{opacity:1;transform:translate(-50%,0);}
-.cart-auth-modal{position:fixed;inset:0;z-index:10020;display:grid;place-items:center;box-sizing:border-box;width:100%;height:100%;padding:20px;overflow-x:hidden;background:rgba(12,12,12,.52);backdrop-filter:blur(4px);}
+.cart-auth-modal{position:fixed;inset:0;z-index:10020;display:grid;place-items:center;box-sizing:border-box;width:100%;height:100%;padding:20px;overflow:hidden;overscroll-behavior:contain;background:rgba(12,12,12,.58);backdrop-filter:blur(7px);}
 .cart-auth-modal[hidden]{display:none;}
-.cart-auth-dialog{position:relative;box-sizing:border-box;width:min(100%,390px);max-width:100%;min-width:0;padding:24px;border:1px solid var(--c-light);border-radius:20px;background:var(--c-white);box-shadow:0 20px 70px rgba(0,0,0,.22);}
-.cart-auth-close{position:absolute;top:12px;right:12px;width:34px;height:34px;border:0;border-radius:50%;background:var(--c-tag);color:var(--c-dark);font-size:21px;line-height:1;cursor:pointer;}
-.cart-auth-dialog[dir="rtl"] .cart-auth-close{right:auto;left:12px;}
-.cart-auth-kicker{display:block;margin-bottom:7px;color:var(--c-orange);font-size:11px;font-weight:850;letter-spacing:.06em;text-transform:uppercase;}
-.cart-auth-dialog h3{margin:0;color:var(--c-dark);font-size:19px;font-weight:850;}
-.cart-auth-dialog p{margin:7px 0 16px;color:var(--c-mid);font-size:12px;line-height:1.55;}
-.cart-auth-phone-row{display:flex;align-items:stretch;gap:7px;min-width:0;direction:ltr;}
-.cart-auth-phone-row input{min-width:0;flex:1;border:1px solid var(--c-light);border-radius:10px;padding:12px 13px;background:var(--c-bg);color:var(--c-dark);font:inherit;font-size:14px;outline:none;}
-.cart-auth-phone-row input:focus{border-color:var(--c-dark);background:var(--c-white);}
-.cart-auth-prefix{display:flex;align-items:center;padding:0 11px;border:1px solid var(--c-light);border-radius:10px;background:var(--c-bg);color:var(--c-dark);font-size:12px;font-weight:800;white-space:nowrap;}
-.cart-auth-submit{width:100%;min-height:46px;margin-top:10px;border:0;border-radius:11px;background:var(--c-dark);color:#fff;font:inherit;font-size:13px;font-weight:850;cursor:pointer;}
+.cart-auth-dialog{position:relative;box-sizing:border-box;width:min(100%,390px);max-width:100%;min-width:0;max-height:calc(100svh - 92px);overflow:auto;padding:26px;border:1px solid rgba(24,24,24,.08);border-radius:24px;background:var(--c-white);box-shadow:0 24px 80px rgba(0,0,0,.28);overscroll-behavior:contain;}
+.cart-auth-close{position:absolute;top:14px;right:14px;width:40px;height:40px;border:1px solid rgba(24,24,24,.06);border-radius:14px;background:#f5f5f3;color:var(--c-dark);font-size:24px;line-height:1;cursor:pointer;transition:background .16s,transform .16s;}
+.cart-auth-close:hover,.cart-auth-close:focus-visible{background:#ecece8;outline:none;transform:rotate(4deg);}
+.cart-auth-dialog[dir="rtl"] .cart-auth-close{right:auto;left:14px;}
+.cart-auth-heading{padding-inline-end:48px;}
+.cart-auth-kicker{display:inline-flex;align-items:center;min-height:24px;margin-bottom:9px;padding:4px 9px;border:1px solid #ffe0cf;border-radius:999px;background:#fff7f2;color:var(--c-orange);font-size:10px;font-weight:850;letter-spacing:.04em;text-transform:uppercase;}
+.cart-auth-dialog h3{margin:0;color:var(--c-dark);font-size:22px;line-height:1.25;font-weight:900;letter-spacing:-.25px;}
+.cart-auth-dialog p{margin:9px 0 18px;color:var(--c-mid);font-size:12px;line-height:1.65;}
+.cart-auth-field-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 7px;}
+.cart-auth-label{color:var(--c-dark);font-size:12px;font-weight:850;}
+.cart-auth-helper{color:var(--c-mid);font-size:10px;}
+.cart-auth-phone-row{display:flex;align-items:stretch;gap:8px;min-width:0;direction:ltr;}
+.cart-auth-phone-row input{min-width:0;flex:1;height:52px;box-sizing:border-box;border:1px solid #deded9;border-radius:13px;padding:12px 13px;background:#fafaf8;color:var(--c-dark);font:inherit;font-size:15px;outline:none;transition:border-color .16s,box-shadow .16s,background .16s;}
+.cart-auth-phone-row input:focus{border-color:var(--c-orange);background:var(--c-white);box-shadow:0 0 0 4px rgba(232,99,39,.11);}
+.cart-auth-prefix{display:flex;align-items:center;justify-content:center;min-width:70px;height:52px;box-sizing:border-box;padding:0 10px;border:1px solid #deded9;border-radius:13px;background:#f7f7f4;color:var(--c-dark);font-size:12px;font-weight:850;white-space:nowrap;}
+.cart-auth-submit{width:100%;min-height:52px;margin-top:13px;border:0;border-radius:14px;background:var(--c-dark);color:#fff;font:inherit;font-size:14px;font-weight:900;cursor:pointer;transition:transform .16s,background .16s,box-shadow .16s;box-shadow:0 7px 16px rgba(24,24,24,.14);}
+.cart-auth-submit:hover,.cart-auth-submit:focus-visible{background:#222;outline:none;box-shadow:0 9px 20px rgba(24,24,24,.2);}
+.cart-auth-submit:active{transform:scale(.985);}
 .cart-auth-submit:disabled{opacity:.58;cursor:wait;}
-.cart-auth-message{min-height:18px;margin:8px 0 0!important;text-align:center;color:var(--c-mid);font-size:11px!important;}
+.cart-auth-message{min-height:18px;margin:9px 0 0!important;text-align:center;color:var(--c-mid);font-size:11px!important;}
 .cart-auth-code-boxes{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:clamp(4px,2vw,8px);width:100%;margin:18px 0 10px;direction:ltr;}
-.guest-otp-code-input{width:100%;min-width:0;height:clamp(42px,13vw,52px);box-sizing:border-box;border:2px solid var(--c-light);border-radius:10px;background:var(--c-bg);color:var(--c-dark);font:700 20px/1 inherit;text-align:center;outline:none;}
-.guest-otp-code-input:focus{border-color:var(--c-dark);background:var(--c-white);}
-.guest-otp-code-input.filled{border-color:#22c55e;}
+.guest-otp-code-input{width:100%;min-width:0;height:clamp(42px,13vw,52px);box-sizing:border-box;border:2px solid #deded9;border-radius:12px;background:#fafaf8;color:var(--c-dark);font:700 20px/1 inherit;text-align:center;outline:none;transition:border-color .16s,box-shadow .16s,background .16s;}
+.guest-otp-code-input:focus{border-color:var(--c-orange);background:var(--c-white);box-shadow:0 0 0 4px rgba(232,99,39,.11);}
+.guest-otp-code-input.filled{border-color:#22c55e;background:#f4fff7;}
 .cart-auth-sent-copy{text-align:center!important;margin-bottom:5px!important;}
 .cart-auth-sent-copy strong{display:block;margin-top:3px;color:var(--c-dark);direction:ltr;unicode-bidi:embed;}
 .cart-auth-error{color:#c02020!important;}
@@ -133,7 +140,8 @@
 .cart-auth-dev-box strong{display:block;margin:3px 0;font:800 24px/1.2 monospace;letter-spacing:5px;}
 .cart-auth-dev-box small{display:block;color:#b45309;font-size:10px;line-height:1.4;}
 .cart-auth-dialog[dir="rtl"]{text-align:right;}
-@media(max-width:600px){.cart-auth-modal{align-items:end;padding:12px 8px calc(70px + env(safe-area-inset-bottom));}.cart-auth-dialog{width:100%;max-width:390px;padding:22px 17px 18px;border-radius:18px;}.cart-auth-dialog h3{font-size:17px;}.cart-auth-phone-row input{padding-inline:11px;}}
+@media(prefers-reduced-motion:no-preference){.cart-auth-dialog{animation:cartAuthDialogIn .22s cubic-bezier(.23,1,.32,1);}@keyframes cartAuthDialogIn{from{opacity:0;transform:translateY(12px) scale(.985);}to{opacity:1;transform:none;}}}
+@media(max-width:600px){.cart-auth-modal{align-items:end;padding:12px 8px calc(70px + env(safe-area-inset-bottom));}.cart-auth-dialog{width:100%;max-width:390px;padding:28px 17px 20px;border-radius:24px 24px 18px 18px;}.cart-auth-dialog::before{content:'';display:block;width:38px;height:4px;margin:-15px auto 17px;border-radius:999px;background:#d9d9d4;}.cart-auth-dialog h3{font-size:20px;}.cart-auth-phone-row input{padding-inline:12px;}}
 @media(max-width:900px){
   .cart-screen-grid{grid-template-columns:1fr;}
   .cart-summary-panel{position:static;}
@@ -374,9 +382,15 @@
   <div class="cart-auth-dialog" dir="{{ $cartRtl ? 'rtl' : 'ltr' }}">
     <button type="button" class="cart-auth-close" id="guest-otp-close" aria-label="{{ $cartRtl ? 'إغلاق' : 'Close' }}">×</button>
     <div id="guest-otp-phone-step" class="cart-auth-step">
-      <span class="cart-auth-kicker">{{ $cartRtl ? 'إتمام الطلب' : 'Complete your order' }}</span>
-      <h3 id="guest-otp-title">{{ $cartRtl ? 'اكتب رقم موبايلك' : 'Enter your mobile number' }}</h3>
+      <div class="cart-auth-heading">
+        <span class="cart-auth-kicker">{{ $cartRtl ? 'إتمام الطلب' : 'Complete your order' }}</span>
+        <h3 id="guest-otp-title">{{ $cartRtl ? 'اكتب رقم موبايلك' : 'Enter your mobile number' }}</h3>
+      </div>
       <p>{{ $cartRtl ? 'هنبعتلك كود تأكيد عشان تكمل الطلب بسرعة.' : 'We will send you a verification code so you can continue securely.' }}</p>
+      <div class="cart-auth-field-heading">
+        <label class="cart-auth-label" for="guest-otp-phone">{{ $cartRtl ? 'رقم الموبايل' : 'Mobile number' }}</label>
+        <span class="cart-auth-helper">{{ $cartRtl ? 'من غير +20' : 'Without +20' }}</span>
+      </div>
       <div class="cart-auth-phone-row">
         <span class="cart-auth-prefix">🇪🇬 +20</span>
         <input type="tel" id="guest-otp-phone" inputmode="tel" maxlength="11" placeholder="01xxxxxxxxx" autocomplete="tel">
@@ -387,8 +401,10 @@
       <p id="guest-otp-message" class="cart-auth-message" role="status" aria-live="polite"></p>
     </div>
     <div id="guest-otp-code-step" class="cart-auth-step" hidden>
-      <span class="cart-auth-kicker">{{ $cartRtl ? 'إتمام الطلب' : 'Complete your order' }}</span>
-      <h3>{{ $cartRtl ? 'اكتب كود التأكيد' : 'Enter verification code' }}</h3>
+      <div class="cart-auth-heading">
+        <span class="cart-auth-kicker">{{ $cartRtl ? 'إتمام الطلب' : 'Complete your order' }}</span>
+        <h3>{{ $cartRtl ? 'اكتب كود التأكيد' : 'Enter verification code' }}</h3>
+      </div>
       <p class="cart-auth-sent-copy">{{ $cartRtl ? 'الكود اتبعت على' : 'The code was sent to' }} <strong id="guest-otp-phone-display"></strong></p>
       <div class="cart-auth-code-boxes" id="guest-otp-boxes" dir="ltr">
         @for($i = 0; $i < 6; $i++)
