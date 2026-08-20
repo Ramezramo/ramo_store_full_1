@@ -42,6 +42,7 @@
   $suppressMobileNav = request()->is([
     'register', 'forgot-password', 'reset-password', 'auth/*',
   ]);
+  $isAccountPage = request()->is(['account', 'account/*']);
 @endphp
 <!DOCTYPE html>
 <html lang="{{ $timelineLocale }}" dir="{{ $headerIsArabic ? 'rtl' : 'ltr' }}">
@@ -749,6 +750,8 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 }
 @media(max-width:768px){
   .nav{background:rgba(255,255,255,.97);border-bottom-color:#e8e5df;box-shadow:0 4px 18px rgba(17,17,17,.055)}
+  /* Keep the customer account header visible while the account list scrolls. */
+  body.account-page .nav{position:fixed;top:0;right:0;left:0;width:100%;}
   .nav-inner{height:68px;padding:0 14px;gap:8px}
   .nav-logo{font-size:18px;letter-spacing:.45px;padding:7px 10px;border-radius:10px;line-height:1}
   .nav-logo span{color:var(--c-orange)}
@@ -769,6 +772,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
   .nav-mobile-panel{height:100%;min-height:100%;max-height:none;box-shadow:0 8px 32px rgba(0,0,0,.12);}
   /* 58px bottom nav + 16px breathing room = 74px so nothing scrolls behind the nav */
   .page{padding:20px 14px 74px}
+  body.account-page .page{padding-top:88px}
 }
 /* At very narrow phones the "Sign In" text overflows — hide it since bottom nav has it */
 @media(max-width:390px){
@@ -949,7 +953,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 </style>
 @stack('styles')
 </head>
-<body class="{{ $suppressMobileNav ? 'mobile-auth-screen' : '' }}">
+<body class="{{ trim(($suppressMobileNav ? 'mobile-auth-screen ' : '') . ($isAccountPage ? 'account-page' : '')) }}">
 
 <!-- NAV -->
 <nav class="nav{{ $headerIsArabic ? ' nav--rtl' : '' }}" dir="{{ $headerIsArabic ? 'rtl' : 'ltr' }}">

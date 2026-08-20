@@ -104,6 +104,10 @@
 [dir="rtl"] .acc-hub-signout { text-align: right; }
 
 /* Desktop: wider card layout */
+@media(max-width: 768px) {
+  .acc-hub-wrap { padding-top: 68px; }
+}
+
 @media(min-width: 769px) {
   .acc-hub-wrap { padding: 32px 16px 60px; }
   .acc-hub-hero { border-radius: 14px; margin-bottom: 4px; }
