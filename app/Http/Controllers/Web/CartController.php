@@ -177,11 +177,16 @@ class CartController extends Controller
             $item['stock'] = $liveStock;
             $item['minimum_qty'] = $minimumQuantity;
             $item['maximum_qty'] = $maximumQuantity;
+            $item['is_unavailable'] = ! $varRow
+                || $liveStock < 1
+                || (($varRow->status ?? 'publish') !== 'publish')
+                || (($varRow->stock_status ?? 'instock') !== 'instock');
 
             $currentQuantity = (int) ($item['qty'] ?? 0);
-            if ($maximumQuantity < $minimumQuantity) {
-                unset($cart[$rowId]);
-                session()->flash('error', $this->localized("\"{$product->name}\" was removed because it no longer has enough stock to meet its minimum order quantity.", "\"{$this->localizedCartProductName($product)}\" اتشال من السلة عشان المخزون مش مكفي للحد الأدنى للطلب."));
+            if ($item['is_unavailable'] || $maximumQuantity < $minimumQuantity) {
+                // Keep the row visible so the customer can understand why checkout
+                // is blocked and remove the stale item manually.
+                $item['is_unavailable'] = true;
                 continue;
             }
             if ($currentQuantity > $maximumQuantity) {

@@ -10,6 +10,7 @@
       : 100;
   $freeShippingRemaining = max(0, $freeShippingThreshold - $afterDiscount);
   $guestOtpCheckout = !auth()->check() && (bool) ($authConfig['phone_otp_login'] ?? false);
+  $hasUnavailableItems = collect($cart)->contains(fn ($item) => !empty($item['is_unavailable']));
 @endphp
 
 @push('styles')
@@ -32,7 +33,14 @@
 .cart-item-card:first-of-type{padding-top:6px;}
 .cart-item-card:last-of-type{border-bottom:0;}
 .cart-item-card.is-updating{opacity:.58;}
-.cart-item-card.is-removing{opacity:0;transform:translateX(16px);}
+  .cart-item-card.is-removing{opacity:0;transform:translateX(16px);}
+  .cart-item-card.is-unavailable{padding-inline:10px;border:1px solid #fecaca;border-radius:14px;background:#fff8f8;}
+  .cart-item-unavailable{display:inline-flex;align-items:center;gap:5px;margin:0 0 7px;padding:5px 8px;border:1px solid #fecaca;border-radius:999px;background:#fff0f0;color:#b42318;font-size:10.5px;font-weight:850;line-height:1.2;}
+  .cart-item-unavailable svg{flex-shrink:0;}
+  .cart-qty-stepper.is-disabled{border-color:#f0d7d7;background:#f8eeee;opacity:.62;}
+  .cart-qty-stepper.is-disabled button,.cart-qty-stepper.is-disabled input{color:#9f7777;cursor:not-allowed;}
+  .cart-remove-icon.is-priority{color:#c02020;background:#fff0f0;}
+
 .cart-item-thumb{display:block;width:72px;height:72px;overflow:hidden;border-radius:14px;background:var(--c-bg);}
 .cart-item-thumb img{display:block;width:100%;height:100%;object-fit:cover;}
 .cart-item-placeholder{width:100%;height:100%;display:grid;place-items:center;font-size:26px;color:var(--c-mid);}
@@ -85,7 +93,11 @@
 .cart-total-row{display:flex;align-items:center;justify-content:space-between;gap:15px;color:var(--c-dark);font-size:15px;font-weight:850;background:var(--c-tag);border-radius:12px;padding:13px;margin-top:2px;}
 .cart-total-row strong{font-size:18px;}
 .cart-summary-note{font-size:10.5px;line-height:1.45;color:var(--c-mid);margin:12px 0 0;}
-.cart-summary-checkout{width:100%;margin-top:16px;}
+  .cart-summary-checkout{width:100%;margin-top:16px;}
+  .cart-checkout-button.is-blocked{background:#c8c8c3;color:#fff;cursor:not-allowed;opacity:.78;box-shadow:none;transform:none;}
+  .cart-checkout-warning{margin-top:12px;padding:10px 11px;border:1px solid #fecaca;border-radius:11px;background:#fff7f7;color:#b42318;font-size:11px;font-weight:750;line-height:1.5;}
+  .cart-checkout-warning[hidden]{display:none;}
+
 .cart-empty-state{max-width:470px;margin:42px auto 0;padding:54px 24px;text-align:center;background:var(--c-white);border:1px solid var(--c-light);border-radius:22px;box-shadow:0 6px 24px rgba(24,24,24,.045);}
 .cart-empty-icon{width:74px;height:74px;display:grid;place-items:center;margin:0 auto 16px;border-radius:22px;background:var(--c-tag);color:var(--c-orange);font-size:34px;}
 .cart-empty-state h2{margin:0 0 7px;font-size:22px;color:var(--c-dark);}
@@ -94,7 +106,9 @@
 .cart-empty-state .cart-empty-actions .btn{margin:0;min-width:182px;border-radius:11px;padding:12px 20px;}
 .cart-empty-order-link{background:var(--c-white)!important;color:var(--c-dark)!important;border:1.5px solid var(--c-dark)!important;}
 .cart-empty-order-link:hover,.cart-empty-order-link:focus-visible{background:var(--c-tag)!important;outline:none;}
-.cart-checkout-bar{max-width:1180px;margin:18px auto 0;padding:15px 18px;border:1px solid var(--c-light);border-radius:17px;background:rgba(255,255,255,.96);display:none;align-items:center;justify-content:space-between;gap:18px;box-shadow:0 7px 24px rgba(24,24,24,.07);}
+  .cart-checkout-bar{max-width:1180px;margin:18px auto 0;padding:15px 18px;border:1px solid var(--c-light);border-radius:17px;background:rgba(255,255,255,.96);display:none;align-items:center;justify-content:space-between;gap:18px;box-shadow:0 7px 24px rgba(24,24,24,.07);}
+  .cart-checkout-warning-bar{flex-basis:100%;margin:0;}
+
 .cart-checkout-total{display:flex;flex-direction:column;gap:3px;min-width:0;}
 .cart-checkout-total span{font-size:11px;color:var(--c-mid);}
 .cart-checkout-total strong{font-size:18px;color:var(--c-dark);white-space:nowrap;}
@@ -189,7 +203,7 @@
   .cart-total-row{padding:14px;border:1px solid rgba(24,24,24,.06);border-radius:15px;background:linear-gradient(135deg,#f7f7f5 0%,#efefec 100%);}
   .cart-total-row strong{font-size:19px;}
   .cart-summary-checkout{display:none;}
-  .cart-checkout-bar{position:fixed;left:10px;right:10px;bottom:calc(58px + 8px + env(safe-area-inset-bottom));z-index:9998;margin:0;padding:10px;border:1px solid rgba(24,24,24,.1);border-radius:18px;box-shadow:0 8px 28px rgba(24,24,24,.16);background:rgba(255,255,255,.98);backdrop-filter:blur(14px);display:flex;gap:10px;}
+  .cart-checkout-bar{position:fixed;left:10px;right:10px;bottom:calc(58px + 8px + env(safe-area-inset-bottom));z-index:9998;margin:0;padding:10px;border:1px solid rgba(24,24,24,.1);border-radius:18px;box-shadow:0 8px 28px rgba(24,24,24,.16);background:rgba(255,255,255,.98);backdrop-filter:blur(14px);display:flex;flex-wrap:wrap;gap:10px;}
   .cart-checkout-total{padding:0 3px;gap:2px;}
   .cart-checkout-total span{font-size:10px;font-weight:700;}
   .cart-checkout-total strong{font-size:17px;}
@@ -269,7 +283,7 @@
 
           <div id="cart-items-wrap">
             @foreach($cart as $rowId => $item)
-              <article class="cart-item-card" id="row-{{ $rowId }}" data-row-id="{{ $rowId }}" data-unit-price="{{ $item['price'] }}">
+              <article class="cart-item-card{{ !empty($item['is_unavailable']) ? ' is-unavailable' : '' }}" id="row-{{ $rowId }}" data-row-id="{{ $rowId }}" data-unit-price="{{ $item['price'] }}" data-out-of-stock="{{ !empty($item['is_unavailable']) ? '1' : '0' }}">
                 <a href="{{ route('product', $item['product_id']) }}" class="cart-item-thumb" aria-label="{{ $cartRtl ? 'عرض' : 'View' }} {{ $item['display_name'] ?? $item['name'] }}">
                   @if($item['image'])
                     <img src="{{ $item['image'] }}" alt="{{ $item['name'] }}">
@@ -279,6 +293,12 @@
                 </a>
                 <div class="cart-item-main">
                   <a href="{{ route('product', $item['product_id']) }}" class="cart-item-name">{{ $item['display_name'] ?? $item['name'] }}</a>
+                  @if(!empty($item['is_unavailable']))
+                    <div class="cart-item-unavailable" role="status">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5M12 16h.01"/></svg>
+                      {{ $cartRtl ? 'المنتج غير متوفر' : 'Out of stock' }}
+                    </div>
+                  @endif
                   @if(!empty($item['attrs']) || !empty($item['sku']))
                     <div class="cart-item-variants" aria-label="{{ $cartRtl ? 'الاختيارات المحددة' : 'Selected options' }}">
                       @if(!empty($item['sku']))<span class="cart-item-variant"><strong>{{ $cartRtl ? 'كود المنتج' : 'SKU' }}</strong> {{ $item['sku'] }}</span>@endif
@@ -298,12 +318,12 @@
                   </div>
                 </div>
                 <div class="cart-item-controls">
-                  <div class="cart-qty-stepper" aria-label="{{ $cartRtl ? 'الكمية لـ' : 'Quantity for' }} {{ $item['display_name'] ?? $item['name'] }}">
-                    <button type="button" onclick="updateQty('{{ $rowId }}', -1)" aria-label="{{ $cartRtl ? 'قلّل الكمية' : 'Decrease quantity' }}">−</button>
-                    <input type="number" id="qty-{{ $rowId }}" value="{{ $item['qty'] }}" min="{{ $item['minimum_qty'] ?? 1 }}" max="{{ max(1, $item['maximum_qty'] ?? $item['stock']) }}" data-approved-qty="{{ $item['qty'] }}" onchange="setQty('{{ $rowId }}', this.value)" aria-label="{{ $cartRtl ? 'الكمية' : 'Quantity' }}">
-                    <button type="button" onclick="updateQty('{{ $rowId }}', 1)" aria-label="{{ $cartRtl ? 'زوّد الكمية' : 'Increase quantity' }}">+</button>
+                  <div class="cart-qty-stepper{{ !empty($item['is_unavailable']) ? ' is-disabled' : '' }}" aria-label="{{ $cartRtl ? 'الكمية لـ' : 'Quantity for' }} {{ $item['display_name'] ?? $item['name'] }}">
+                    <button type="button" onclick="updateQty('{{ $rowId }}', -1)" aria-label="{{ $cartRtl ? 'قلّل الكمية' : 'Decrease quantity' }}" @disabled(!empty($item['is_unavailable']))>−</button>
+                    <input type="number" id="qty-{{ $rowId }}" value="{{ $item['qty'] }}" min="{{ $item['minimum_qty'] ?? 1 }}" max="{{ max(1, $item['maximum_qty'] ?? $item['stock']) }}" data-approved-qty="{{ $item['qty'] }}" onchange="setQty('{{ $rowId }}', this.value)" aria-label="{{ $cartRtl ? 'الكمية' : 'Quantity' }}" @disabled(!empty($item['is_unavailable']))>
+                    <button type="button" onclick="updateQty('{{ $rowId }}', 1)" aria-label="{{ $cartRtl ? 'زوّد الكمية' : 'Increase quantity' }}" @disabled(!empty($item['is_unavailable']))>+</button>
                   </div>
-                  <button type="button" class="cart-remove-icon" onclick="removeItem('{{ $rowId }}')" aria-label="{{ $cartRtl ? 'شيل' : 'Remove' }} {{ $item['display_name'] ?? $item['name'] }}" title="{{ $cartRtl ? 'شيل المنتج' : 'Remove item' }}">
+                  <button type="button" class="cart-remove-icon{{ !empty($item['is_unavailable']) ? ' is-priority' : '' }}" onclick="removeItem('{{ $rowId }}')" aria-label="{{ $cartRtl ? 'شيل' : 'Remove' }} {{ $item['display_name'] ?? $item['name'] }}" title="{{ $cartRtl ? 'شيل المنتج' : 'Remove item' }}">
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                   </button>
                 </div>
@@ -365,13 +385,15 @@
           <hr class="cart-summary-divider">
           <div class="cart-total-row"><span>{{ $cartRtl ? 'الإجمالي' : 'Total' }}</span><strong id="cart-total">{{ number_format($total, 2) }} EGP</strong></div>
           <p class="cart-summary-note">{{ $cartRtl ? 'الضرايب وتفاصيل التوصيل النهائية بتتأكد وقت إتمام الطلب.' : 'Final taxes and delivery details are confirmed during checkout.' }}</p>
-          <a href="{{ auth()->check() ? route('checkout') : route('login', ['checkout' => 1]) }}" class="cart-checkout-button cart-summary-checkout" @if($guestOtpCheckout) data-guest-otp-checkout @endif>{{ $cartRtl ? 'إتمام الطلب' : 'Checkout' }} <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+          <div class="cart-checkout-warning" data-cart-checkout-warning @if(!$hasUnavailableItems) hidden @endif>{{ $cartRtl ? 'فيه منتج غير متوفر. شيله من السلة عشان تقدر تكمل الطلب.' : 'One or more items are out of stock. Remove them from your cart to continue.' }}</div>
+          <a href="{{ auth()->check() ? route('checkout') : route('login', ['checkout' => 1]) }}" class="cart-checkout-button cart-summary-checkout{{ $hasUnavailableItems ? ' is-blocked' : '' }}" data-cart-checkout @if($hasUnavailableItems) aria-disabled="true" tabindex="-1" @endif @if($guestOtpCheckout) data-guest-otp-checkout @endif>{{ $cartRtl ? 'إتمام الطلب' : 'Checkout' }} <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
         </aside>
       </div>
 
       <div class="cart-checkout-bar">
+        <div class="cart-checkout-warning cart-checkout-warning-bar" data-cart-checkout-warning @if(!$hasUnavailableItems) hidden @endif>{{ $cartRtl ? 'فيه منتج غير متوفر. شيله من السلة عشان تقدر تكمل الطلب.' : 'Remove out-of-stock items to continue.' }}</div>
         <div class="cart-checkout-total"><span>{{ $cartRtl ? 'الإجمالي' : 'Total' }}</span><strong id="cart-sticky-total">{{ number_format($total, 2) }} EGP</strong></div>
-        <a href="{{ auth()->check() ? route('checkout') : route('login', ['checkout' => 1]) }}" class="cart-checkout-button" @if($guestOtpCheckout) data-guest-otp-checkout @endif>{{ $cartRtl ? 'إتمام الطلب' : 'Checkout' }} <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+        <a href="{{ auth()->check() ? route('checkout') : route('login', ['checkout' => 1]) }}" class="cart-checkout-button{{ $hasUnavailableItems ? ' is-blocked' : '' }}" data-cart-checkout @if($hasUnavailableItems) aria-disabled="true" tabindex="-1" @endif @if($guestOtpCheckout) data-guest-otp-checkout @endif>{{ $cartRtl ? 'إتمام الطلب' : 'Checkout' }} <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
       </div>
     @endif
   </main>
@@ -449,7 +471,8 @@ const CART_TEXT = CART_RTL ? {
   itemRemoved: 'اتشال المنتج من السلة',
   unableRemove: 'مش قادرين نشيل المنتج دلوقتي. جرّب تاني.',
   applying: 'بنعمل تطبيق للكود…',
-  unableCoupon: 'مش قادرين نطبّق الكود. جرّب تاني.'
+  unableCoupon: 'مش قادرين نطبّق الكود. جرّب تاني.',
+  unavailableCheckout: 'فيه منتج غير متوفر. شيله من السلة عشان تقدر تكمل الطلب.'
 } : {
   free: 'Free',
   freeShipping: 'You unlocked free shipping.',
@@ -463,7 +486,8 @@ const CART_TEXT = CART_RTL ? {
   itemRemoved: 'Item removed',
   unableRemove: 'Unable to remove this item. Please try again.',
   applying: 'Applying…',
-  unableCoupon: 'Unable to apply the code. Try again.'
+  unableCoupon: 'Unable to apply the code. Try again.',
+  unavailableCheckout: 'One or more items are out of stock. Remove them from your cart to continue.'
 };
 const cartScreen = document.querySelector('.cart-screen');
 
@@ -490,6 +514,22 @@ function showCartQuantityError(message){
 }
 function clearCartQuantityError(){ const el = document.getElementById('cart-quantity-error'); if(el) el.style.display='none'; }
 function updateNavCount(n){ const badge=document.getElementById('cart-badge'); if(badge) badge.textContent=n; }
+function hasUnavailableCartItems(){ return [...document.querySelectorAll('#cart-items-wrap [data-out-of-stock="1"]')].length > 0; }
+function updateCheckoutAvailability(){
+  const blocked = hasUnavailableCartItems();
+  document.querySelectorAll('[data-cart-checkout]').forEach((link) => {
+    link.classList.toggle('is-blocked', blocked);
+    link.setAttribute('aria-disabled', blocked ? 'true' : 'false');
+    link.tabIndex = blocked ? -1 : 0;
+  });
+  document.querySelectorAll('[data-cart-checkout-warning]').forEach((warning) => { warning.hidden = !blocked; });
+}
+function preventUnavailableCheckout(event){
+  if(!hasUnavailableCartItems()) return;
+  event.preventDefault();
+  showCartQuantityError(CART_TEXT.unavailableCheckout);
+  document.querySelector('[data-out-of-stock="1"]')?.scrollIntoView({behavior:'smooth',block:'center'});
+}
 function money(value){ return Number(value || 0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' EGP'; }
 function updateCartSummary(data){
   const subtotal = document.getElementById('cart-subtotal');
@@ -519,6 +559,8 @@ function optimisticLineTotal(rowId, qty){
   if(line) line.textContent = money(unit * qty);
 }
 async function updateQty(rowId, delta){
+  const row = document.getElementById('row-' + rowId);
+  if(row?.dataset.outOfStock === '1') return;
   const input = document.getElementById('qty-' + rowId);
   if(!input) return;
   const current = parseInt(input.value,10) || parseInt(input.min,10) || 1;
@@ -530,7 +572,7 @@ async function updateQty(rowId, delta){
 async function setQty(rowId, val, previousVal = null){
   const input = document.getElementById('qty-' + rowId);
   const row = document.getElementById('row-' + rowId);
-  if(!input || !row) return;
+  if(!input || !row || row.dataset.outOfStock === '1') return;
   const approved = parseInt(input.dataset.approvedQty,10) || parseInt(input.value,10) || 1;
   const requested = parseInt(val,10);
   const restore = previousVal ?? approved;
@@ -561,7 +603,7 @@ async function removeItem(rowId){
     const res=await fetch('/cart/remove/' + encodeURIComponent(rowId),{method:'DELETE',headers:{'X-CSRF-TOKEN':CSRF,'Accept':'application/json'}});
     const data=await res.json();
     if(!data.success) throw new Error(CART_RTL ? CART_TEXT.unableRemove : (data.message || CART_TEXT.unableRemove));
-    setTimeout(()=>row.remove(),220); updateCartSummary(data); updateNavCount(data.count); showCartToast(CART_TEXT.itemRemoved);
+    setTimeout(()=>{ row.remove(); updateCheckoutAvailability(); },220); updateCartSummary(data); updateNavCount(data.count); showCartToast(CART_TEXT.itemRemoved);
     if(data.count === 0) setTimeout(()=>location.reload(),260);
   }catch(error){ row.classList.remove('is-removing'); showCartQuantityError(CART_RTL ? CART_TEXT.unableRemove : (error.message || CART_TEXT.unableRemove)); }
 }
@@ -596,7 +638,6 @@ const guestOtpResend = document.getElementById('guest-otp-resend');
 const guestOtpChangePhone = document.getElementById('guest-otp-change-phone');
 const guestOtpDevBox = document.getElementById('guest-otp-dev-box');
 const guestOtpDevValue = document.getElementById('guest-otp-dev-value');
-const guestOtpLinks = document.querySelectorAll('[data-guest-otp-checkout]');
 let guestOtpPhoneValue = '';
 let guestOtpCountdownTimer = null;
 
@@ -736,7 +777,11 @@ async function verifyGuestOtp(){
     window.setTimeout(() => guestOtpCodeInputs[0]?.focus(), 30);
   }
 }
-guestOtpLinks.forEach((link) => link.addEventListener('click', (event) => { event.preventDefault(); openGuestOtpModal(); }));
+document.querySelectorAll('[data-cart-checkout]').forEach((link) => link.addEventListener('click', (event) => {
+  if(hasUnavailableCartItems()) { preventUnavailableCheckout(event); return; }
+  if(link.hasAttribute('data-guest-otp-checkout')) { event.preventDefault(); openGuestOtpModal(); }
+}));
+updateCheckoutAvailability();
 guestOtpClose?.addEventListener('click', closeGuestOtpModal);
 guestOtpModal?.addEventListener('click', (event) => { if(event.target === guestOtpModal) closeGuestOtpModal(); });
 document.addEventListener('keydown', (event) => { if(event.key === 'Escape' && guestOtpModal && !guestOtpModal.hidden) closeGuestOtpModal(); });

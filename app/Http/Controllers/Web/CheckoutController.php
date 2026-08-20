@@ -60,6 +60,9 @@ class CheckoutController extends Controller
             if (! $product || ! $variation || (int) $variation->product_id !== $productId) {
                 return $this->localized('One or more items in your cart are no longer available. Please review your cart.', 'منتج أو أكتر في السلة مبقاش متاح. راجع السلة.');
             }
+            if (($product->status ?? 'publish') !== 'publish' || ($variation->status ?? 'publish') !== 'publish' || ($variation->stock_status ?? 'instock') !== 'instock' || (int) ($variation->stock_quantity ?? 0) < 1) {
+                return $this->localized('One or more items in your cart are out of stock. Remove them before continuing.', 'فيه منتج أو أكتر في السلة مش متوفر. شيله قبل ما تكمل.');
+            }
 
             $minimumQuantity = max(1, (int) ($product->minimum_order_qty ?? 1));
             $maximumQuantity = max(0, (int) ($variation->stock_quantity ?? 0));
