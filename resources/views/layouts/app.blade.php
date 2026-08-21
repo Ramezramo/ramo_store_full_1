@@ -847,8 +847,8 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 .pc-size.unavail{opacity:.35;text-decoration:line-through;cursor:not-allowed}
 /* ── HOMEPAGE TIMELINE SECTIONS ── */
 .tl-banner-slider{position:relative;overflow:hidden;border-radius:8px;margin-bottom:32px}
-.tl-slides{display:flex;transition:transform .5s cubic-bezier(.4,0,.2,1)}
-.tl-slide{min-width:100%;position:relative}
+.tl-slides{display:flex;direction:ltr;transition:transform .5s cubic-bezier(.4,0,.2,1)}
+.tl-slide{min-width:100%;position:relative;direction:rtl}
 .tl-slide img{width:100%;display:block;object-fit:cover}
 @media(max-width:640px){
   .tl-banner-slider{max-height:none !important}
