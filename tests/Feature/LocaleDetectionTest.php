@@ -96,6 +96,9 @@ class LocaleDetectionTest extends TestCase
             ->assertOk()
             ->assertSee('https://api.country.is/', false)
             ->assertSee('https://ipwho.is/', false)
-            ->assertSee('window.sessionStorage.removeItem(attemptKey)', false);
+            ->assertSee('window.sessionStorage.removeItem(attemptKey)', false)
+            ->assertSee('html.locale-pending body{visibility:hidden}', false)
+            ->assertSee("document.documentElement.classList.add('locale-pending')", false)
+            ->assertSee('window.revealRamoLocalePage', false);
     }
 }

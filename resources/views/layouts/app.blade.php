@@ -952,6 +952,19 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 .vendor-banner-btn:hover{background:#d44f1a}
 </style>
 @stack('styles')
+@if (session('locale_source') === 'fallback_pending')
+<style id="ramo-locale-pending-style">
+  html.locale-pending body{visibility:hidden}
+  html.locale-pending::after{content:'RamoStore';position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:#fff;color:#111;font:800 18px/1.2 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase}
+</style>
+<script>
+  (function(){
+    document.documentElement.classList.add('locale-pending');
+    window.revealRamoLocalePage = function(){ document.documentElement.classList.remove('locale-pending'); };
+    window.setTimeout(window.revealRamoLocalePage, 5000);
+  })();
+</script>
+@endif
 </head>
 <body class="{{ trim(($suppressMobileNav ? 'mobile-auth-screen ' : '') . ($isAccountPage ? 'account-page' : '')) }}">
 
@@ -1988,11 +2001,16 @@ refreshWishlistState();
       if (result?.updated === true) {
         try { window.sessionStorage.setItem(attemptKey, 'completed'); } catch (error) {}
         window.location.replace(window.location.href);
-      } else if (!result) {
-        clearAttempt();
+        return;
       }
+
+      clearAttempt();
+      if (typeof window.revealRamoLocalePage === 'function') window.revealRamoLocalePage();
     })
-    .catch(() => clearAttempt());
+    .catch(() => {
+      clearAttempt();
+      if (typeof window.revealRamoLocalePage === 'function') window.revealRamoLocalePage();
+    });
 })();
 </script>
 @stack('scripts')
