@@ -68,15 +68,19 @@
   .checkout-page .ck-summary .ck-item{box-shadow:0 3px 10px rgba(24,24,24,.035)}
   .checkout-page .ck-summary .ck-item-price{font-size:12px}
   .checkout-page .ck-items{gap:10px;margin-bottom:16px}
-  .checkout-page .ck-item{display:grid;grid-template-columns:56px minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px;border:1px solid #eeeeee;border-radius:14px;background:#fff;box-shadow:0 4px 12px rgba(24,24,24,.035)}
-  .checkout-page .ck-item-img{width:56px;height:56px;border-radius:12px;background:#f7f7f5;box-shadow:inset 0 0 0 1px rgba(24,24,24,.04)}
-  .checkout-page .ck-item-qty{top:-4px;right:-4px;width:19px;height:19px;background:#e85d26;font-size:10px;box-shadow:0 2px 5px rgba(232,93,38,.24)}
-  .checkout-page .ck-item-name{min-width:0;font-size:13px;font-weight:800;line-height:1.35;overflow-wrap:anywhere}
+  .checkout-page .ck-item{display:grid;grid-template-columns:64px minmax(0,1fr) auto;align-items:center;gap:11px;padding:10px;border:1px solid #eeeeee;border-radius:14px;background:#fff;box-shadow:0 4px 12px rgba(24,24,24,.035)}
+  .checkout-page .ck-item-img{position:relative;width:64px;height:64px;border-radius:13px;background:#f7f7f5;box-shadow:inset 0 0 0 1px rgba(24,24,24,.04);overflow:visible}
+  .checkout-page .ck-item-img img{display:block;width:100%;height:100%;border-radius:inherit;object-fit:cover}
+  .checkout-page .ck-item-qty{top:-6px;right:-6px;width:22px;height:22px;background:#e85d26;font-size:10px;font-weight:850;box-shadow:0 2px 5px rgba(232,93,38,.24)}
+  .checkout-page .ck-item-details{min-width:0}
+  .checkout-page .ck-item-name{display:block;min-width:0;font-size:13px;font-weight:800;line-height:1.35;overflow-wrap:anywhere}
   .checkout-page .ck-item-sku{margin-top:3px;font-size:10px;color:#8a8a8a}
-  .checkout-page .ck-item-attrs{gap:4px;margin-top:6px}
-  .checkout-page .ck-item-attrs span{padding:3px 7px;border:1px solid #eeeeee;background:#f8f8f7;color:#777;font-size:10px;line-height:1.2}
+  .checkout-page .ck-item-attrs{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
+  .checkout-page .ck-item-attrs span{padding:4px 7px;border:1px solid #eeeeee;background:#f8f8f7;color:#777;font-size:10px;line-height:1.15;border-radius:7px}
   .checkout-page .ck-item-attrs span strong{color:#292929}
-  .checkout-page .ck-item-price{align-self:center;color:#c94717;font-size:12px;font-weight:850;line-height:1.25;text-align:end}
+  .checkout-page .ck-item-price-wrap{min-width:92px;text-align:end}
+  .checkout-page .ck-item-price-label{display:block;margin-bottom:3px;color:#999;font-size:9px;line-height:1.2}
+  .checkout-page .ck-item-price{color:#c94717;font-size:13px;font-weight:850;line-height:1.25;text-align:end;white-space:nowrap}
   .checkout-page .ck-totals{margin-top:4px;padding:14px 13px 5px;border:1px solid #eeeeec;border-radius:15px;background:#fafaf9}
   .checkout-page .ck-totals .summary-row{min-height:22px;margin-bottom:8px;color:#777;font-size:12px;line-height:1.35}
   .checkout-page .ck-totals .summary-row span:first-child{display:inline-flex;align-items:center;gap:5px}
@@ -90,7 +94,8 @@
   .checkout-page .ck-totals .total-row{min-height:42px;margin:0;padding:10px 11px;border-radius:11px;background:#fff;color:#222;font-size:16px;font-weight:850}
   .checkout-page .ck-totals .total-row span:last-child{color:#e85d26;font-size:19px;letter-spacing:-.02em}
   .checkout-page .ck-totals .total-note{margin:9px 1px 0;color:#8a8a8a;font-size:10px;line-height:1.4}
-  @media(max-width:600px){.ck-auth-widget{align-items:flex-start;flex-direction:column;gap:13px;padding:15px}.ck-auth-actions{justify-content:flex-start;width:100%}.ck-auth-action{flex:1;padding:0 10px}.ck-save-address{min-height:58px;padding:11px 13px}.ck-location-fallback{align-items:stretch;flex-direction:column}.ck-location-fallback-actions{justify-content:stretch}.ck-location-fallback-btn{flex:1}.checkout-page .ck-summary{padding:14px 12px;border-radius:17px}.checkout-page .ck-summary-header{margin-bottom:12px}.checkout-page .ck-summary>.ck-summary-header .ck-title{font-size:16px}.checkout-page .ck-summary-caption{font-size:10px}.checkout-page .ck-summary-count{padding:5px 8px}.checkout-page .ck-item{grid-template-columns:52px minmax(0,1fr) auto;gap:8px;padding:8px;border-radius:12px}.checkout-page .ck-item-img{width:52px;height:52px;border-radius:10px}.checkout-page .ck-item-name{font-size:12px}.checkout-page .ck-item-price{font-size:11px}.checkout-page .ck-totals{padding:11px 9px 4px}.checkout-page .ck-totals .summary-row{font-size:11.5px}.checkout-page .ck-totals .total-row{font-size:14px}.checkout-page .ck-totals .total-row span:last-child{font-size:17px}}
+  @media(max-width:600px){.ck-auth-widget{align-items:flex-start;flex-direction:column;gap:13px;padding:15px}.ck-auth-actions{justify-content:flex-start;width:100%}.ck-auth-action{flex:1;padding:0 10px}.ck-save-address{min-height:58px;padding:11px 13px}.ck-location-fallback{align-items:stretch;flex-direction:column}.ck-location-fallback-actions{justify-content:stretch}.ck-location-fallback-btn{flex:1}.checkout-page .ck-summary{padding:14px 12px;border-radius:17px}.checkout-page .ck-summary-header{margin-bottom:12px}.checkout-page .ck-summary>.ck-summary-header .ck-title{font-size:16px}.checkout-page .ck-summary-caption{font-size:10px}.checkout-page .ck-summary-count{padding:5px 8px}.checkout-page .ck-item{grid-template-columns:54px minmax(0,1fr) auto;gap:8px;padding:8px;border-radius:12px}.checkout-page .ck-item-img{width:54px;height:54px;border-radius:11px}.checkout-page .ck-item-name{font-size:12px}.checkout-page .ck-item-price-wrap{min-width:78px}.checkout-page .ck-item-price-label{font-size:8px}.checkout-page .ck-item-price{font-size:11px}.checkout-page .ck-totals{padding:11px 9px 4px}
+.checkout-page .ck-totals .summary-row{font-size:11.5px}.checkout-page .ck-totals .total-row{font-size:14px}.checkout-page .ck-totals .total-row span:last-child{font-size:17px}}
   @media(max-width:900px){.checkout-page form{display:flex;flex-direction:column}.checkout-page .checkout-shipping-section{order:-1}}
 </style>
 @endpush
@@ -329,8 +334,8 @@
             @endif
             <span class="ck-item-qty">{{ $item['qty'] }}</span>
           </div>
-          <div class="ck-item-name">
-            {{ Str::limit($item['name'], 35) }}
+          <div class="ck-item-details">
+            <div class="ck-item-name">{{ Str::limit($item['name'], 35) }}</div>
             @if(!empty($item['sku']))
               <div class="ck-item-sku">{{ $isAr ? 'الكود:' : 'SKU:' }} {{ $item['sku'] }}</div>
             @endif
@@ -342,7 +347,10 @@
               </div>
             @endif
           </div>
-          <div class="ck-item-price">{{ number_format($item['price'] * $item['qty'], 2) }} EGP</div>
+          <div class="ck-item-price-wrap">
+            <span class="ck-item-price-label">{{ $isAr ? 'إجمالي المنتج' : 'Item total' }}</span>
+            <div class="ck-item-price">{{ number_format($item['price'] * $item['qty'], 2) }} EGP</div>
+          </div>
         </div>
         @endforeach
       </div>
