@@ -1342,6 +1342,9 @@ if ('serviceWorker' in navigator) {
 // opened — whether via Back/Forward, a fresh link click, or the cached
 // Home/Shop pages above.
 (function scrollMemory() {
+  const scrollMemoryEnabled = location.pathname === '/' || location.pathname === '/shop';
+  if (!scrollMemoryEnabled) return;
+
   const KEY_PREFIX = 'ramo_scroll::';
   const key = KEY_PREFIX + location.pathname + location.search;
 
