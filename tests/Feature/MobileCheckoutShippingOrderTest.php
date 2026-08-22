@@ -32,7 +32,15 @@ class MobileCheckoutShippingOrderTest extends TestCase
             $template,
         );
         $this->assertStringContainsString(
-            'id="manual-location-mode-btn" aria-pressed="true"',
+            '<input type="checkbox" id="manual-location-mode-switch" checked role="switch" aria-checked="true"',
+            $template,
+        );
+        $this->assertStringContainsString(
+            'class="ck-location-switch"',
+            $template,
+        );
+        $this->assertStringContainsString(
+            'ck-location-switch input:checked + .ck-switch-track',
             $template,
         );
         $this->assertStringContainsString(
@@ -44,6 +52,10 @@ class MobileCheckoutShippingOrderTest extends TestCase
             $template,
         );
         $this->assertStringContainsString(
+            "manualModeSwitch.setAttribute('aria-checked', String(enabled));",
+            $template,
+        );
+        $this->assertStringContainsString(
             "if (!manualLocationEnabled) {\n        setStatus(checkoutText.autoLocked);\n        return;\n      }",
             $template,
         );
@@ -52,7 +64,11 @@ class MobileCheckoutShippingOrderTest extends TestCase
             $template,
         );
         $this->assertStringContainsString(
-            'manualModeBtn?.addEventListener(\'click\'',
+            "manualModeSwitch?.addEventListener('change'",
+            $template,
+        );
+        $this->assertStringContainsString(
+            "const enabled = event.target.checked;",
             $template,
         );
     }
