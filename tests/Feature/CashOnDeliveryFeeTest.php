@@ -75,9 +75,15 @@ class CashOnDeliveryFeeTest extends TestCase
 
             $checkoutPage = $this->actingAs($user)->get(route('checkout'));
             $checkoutPage->assertOk()
+                ->assertSee('id="checkout-summary-title"', false)
+                ->assertSee('ck-summary-caption', false)
+                ->assertSee('class="ck-summary-count"', false)
                 ->assertSee('id="cod-fee-summary-row"', false)
+                ->assertSee('class="summary-row free-shipping-row"', false)
+                ->assertSee('class="summary-row cod-fee-row"', false)
                 ->assertSee('40.00 EGP', false)
-                ->assertSee('Cash on Delivery fee', false);
+                ->assertSee('Cash on Delivery fee', false)
+                ->assertSee('Final total', false);
 
             $response = $this->actingAs($user)->post(route('checkout.place'), [
                 'first_name' => 'COD',

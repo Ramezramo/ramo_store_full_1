@@ -58,8 +58,15 @@
   .ck-save-address{display:flex;align-items:center;gap:13px;min-height:64px;margin-top:4px;padding:12px 15px;border:1px solid #e4e4e4;border-radius:12px;background:#fcfcfc;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s}.ck-save-address:hover{border-color:#cfcfcf;background:#fff}.ck-save-address:has(input:focus-visible){border-color:#e85d26;box-shadow:0 0 0 3px rgba(232,93,38,.14)}.ck-save-address input[type="checkbox"]{width:20px!important;height:20px!important;min-width:20px;margin:0!important;flex:0 0 20px;accent-color:#e85d26;cursor:pointer}.ck-save-address-copy{display:flex;flex-direction:column;gap:3px;min-width:0}.ck-save-address-title{color:#202020;font-size:13px;font-weight:800;line-height:1.25}.ck-save-address-desc{color:#777;font-size:12px;line-height:1.35}
   .ck-location-empty{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:12px;padding:18px;border:1px dashed #e8c4b3;border-radius:14px;background:linear-gradient(145deg,#fffaf7,#fff);}.ck-location-empty[hidden],.ck-location-map-panel[hidden]{display:none}.ck-location-empty-copy{display:flex;flex-direction:column;gap:5px;min-width:0}.ck-location-empty-title{color:#222;font-size:14px;font-weight:800}.ck-location-empty-copy span{color:#777;font-size:12px;line-height:1.45}.ck-location-choose-btn{min-height:42px;padding:0 15px;border:1px solid #e85d26;border-radius:9px;background:#e85d26;color:#fff;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}.ck-location-choose-btn:hover{background:#c94717;border-color:#c94717}.ck-location-choose-btn:focus-visible{outline:3px solid rgba(232,93,38,.24);outline-offset:2px}.ck-location-actions{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:12px}.ck-location-action{flex:1;min-height:42px;padding:0 13px;border:1px solid #e85d26;border-radius:9px;background:#fff;color:#c94717;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}.ck-location-action-primary{background:#e85d26;color:#fff}.ck-location-action:hover{background:#fff1e9}.ck-location-action-primary:hover{background:#c94717;color:#fff}.ck-location-action:focus-visible{outline:3px solid rgba(232,93,38,.24);outline-offset:2px}.ck-location-action[aria-pressed="true"]{border-color:#238653;background:#f0fff7;color:#17663d}.ck-location-action:disabled{cursor:wait;opacity:.65}.ck-location-switch{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:1;min-height:42px;padding:0 13px;border:1px solid #e85d26;border-radius:9px;background:#fff;color:#c94717;font-size:12px;font-weight:800;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s}.ck-location-switch:hover{background:#fff1e9}.ck-location-switch:has(input:focus-visible){outline:3px solid rgba(232,93,38,.24);outline-offset:2px}.ck-location-switch input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}.ck-switch-track{position:relative;display:inline-flex;width:40px;height:22px;flex:0 0 40px;align-items:center;padding:3px;border-radius:999px;background:#c9c9c9;transition:background .15s}.ck-switch-track::after{width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.22);content:"";transition:transform .15s}.ck-location-switch input:checked + .ck-switch-track{background:#238653}.ck-location-switch input:checked + .ck-switch-track::after{transform:translateX(18px)}.checkout-page-ar .ck-location-switch input:checked + .ck-switch-track::after{transform:translateX(-18px)}.ck-location-mode-note{display:block;margin:-4px 0 10px;color:#697586;font-size:11px;line-height:1.45}.ck-location-fallback{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;padding:12px;border:1px solid #f0d6ca;border-radius:12px;background:#fff9f6}.ck-location-fallback[hidden]{display:none}.ck-location-fallback-copy{color:#8a4c38;font-size:12px;line-height:1.45}.ck-location-fallback-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px}.ck-location-fallback-btn{min-height:36px;padding:0 11px;border:1px solid #e85d26;border-radius:8px;background:#fff;color:#c94717;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap}.ck-location-fallback-btn-primary{background:#e85d26;color:#fff}.ck-location-fallback-btn:hover{background:#fff1e9}.ck-location-fallback-btn-primary:hover{background:#c94717;color:#fff}.ck-location-fallback-btn:focus-visible{outline:3px solid rgba(232,93,38,.24);outline-offset:2px}.ck-map-shell{position:relative;width:100%;height:280px;margin-bottom:12px;border:1px solid rgba(0,0,0,.08);border-radius:14px;overflow:hidden;background:#f8f8f8}.ck-map-shell.map-location-locked{border-color:#b7d9c6}.ck-map-canvas{width:100%;height:100%}.ck-map-canvas.map-location-locked{cursor:default}.ck-map-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(145deg,#fffdfb,#f7f7f6);z-index:2;text-align:center}.ck-map-placeholder[hidden]{display:none}.ck-map-placeholder-inner{display:flex;max-width:240px;align-items:center;flex-direction:column;gap:8px}.ck-map-placeholder-icon{display:flex;width:40px;height:40px;align-items:center;justify-content:center;border-radius:50%;background:#fff1e9;color:#e85d26;font-size:21px}.ck-map-placeholder-title{color:#222;font-size:14px;font-weight:800}.ck-map-placeholder-copy{color:#757575;font-size:12px;line-height:1.4}.ck-map-load-btn{min-height:38px;margin-top:2px;padding:0 13px;border:1px solid #e85d26;border-radius:9px;background:#fff;color:#c94717;font-size:12px;font-weight:800;cursor:pointer}.ck-map-load-btn:hover{background:#fff4ef}.ck-map-load-btn:focus-visible{outline:3px solid rgba(232,93,38,.24);outline-offset:2px}
   .checkout-page-ar{font-family:'Cairo','Tahoma',sans-serif;text-align:right}.checkout-page-ar .ck-auth-actions{justify-content:flex-start}.checkout-page-ar .ck-save-address{direction:rtl}.checkout-page-ar .checkout-layout{direction:rtl}.checkout-page-ar .summary-row{direction:rtl}
-  .checkout-page .ck-summary{padding:20px;border:1px solid #ececec;border-radius:18px;background:linear-gradient(145deg,#fff,#fcfcfb);box-shadow:0 10px 28px rgba(24,24,24,.06)}
-  .checkout-page .ck-summary>.ck-title{margin:0 0 16px;font-size:18px;letter-spacing:-.02em}
+  .checkout-page .ck-summary{padding:20px;border:1px solid #e8e8e8;border-radius:20px;background:linear-gradient(145deg,#fff,#fcfcfb);box-shadow:0 12px 30px rgba(24,24,24,.07)}
+  .checkout-page .ck-summary-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}
+  .checkout-page .ck-summary-heading{min-width:0}
+  .checkout-page .ck-summary>.ck-summary-header .ck-title{margin:0;font-size:18px;letter-spacing:-.02em}
+  .checkout-page .ck-summary-caption{margin:4px 0 0;color:#8a8a8a;font-size:10.5px;line-height:1.4}
+  .checkout-page .ck-summary-count{flex:0 0 auto;padding:6px 9px;border:1px solid #eeeeec;border-radius:999px;background:#f8f8f7;color:#6d6d6d;font-size:10px;font-weight:800;white-space:nowrap}
+  .checkout-page .ck-summary .ck-items{margin-bottom:14px}
+  .checkout-page .ck-summary .ck-item{box-shadow:0 3px 10px rgba(24,24,24,.035)}
+  .checkout-page .ck-summary .ck-item-price{font-size:12px}
   .checkout-page .ck-items{gap:10px;margin-bottom:16px}
   .checkout-page .ck-item{display:grid;grid-template-columns:56px minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px;border:1px solid #eeeeee;border-radius:14px;background:#fff;box-shadow:0 4px 12px rgba(24,24,24,.035)}
   .checkout-page .ck-item-img{width:56px;height:56px;border-radius:12px;background:#f7f7f5;box-shadow:inset 0 0 0 1px rgba(24,24,24,.04)}
@@ -70,14 +77,20 @@
   .checkout-page .ck-item-attrs span{padding:3px 7px;border:1px solid #eeeeee;background:#f8f8f7;color:#777;font-size:10px;line-height:1.2}
   .checkout-page .ck-item-attrs span strong{color:#292929}
   .checkout-page .ck-item-price{align-self:center;color:#c94717;font-size:12px;font-weight:850;line-height:1.25;text-align:end}
-  .checkout-page .ck-totals{margin-top:4px;padding:14px 12px 4px;border-top:1px solid #ededed;border-radius:12px;background:#fafaf9}
-  .checkout-page .ck-totals .summary-row{margin-bottom:9px;color:#777;font-size:12px}
-  .checkout-page .ck-totals .summary-row span:last-child{color:#333;font-weight:750}
-  .checkout-page .ck-totals .discount-row span:last-child{color:#238653}
+  .checkout-page .ck-totals{margin-top:4px;padding:14px 13px 5px;border:1px solid #eeeeec;border-radius:15px;background:#fafaf9}
+  .checkout-page .ck-totals .summary-row{min-height:22px;margin-bottom:8px;color:#777;font-size:12px;line-height:1.35}
+  .checkout-page .ck-totals .summary-row span:first-child{display:inline-flex;align-items:center;gap:5px}
+  .checkout-page .ck-totals .summary-row span:last-child{color:#333;font-weight:750;text-align:end}
+  .checkout-page .ck-totals .discount-row{padding:7px 8px;border:1px solid #ccebd8;border-radius:9px;background:#f2fff6;color:#197044}
+  .checkout-page .ck-totals .discount-row span:last-child{color:#238653;font-weight:850}
+  .checkout-page .ck-totals .free-shipping-row span:last-child{color:#238653;font-weight:850}
+  .checkout-page .ck-totals .cod-fee-row{padding:7px 8px;border:1px solid #f4d2c4;border-radius:9px;background:#fff8f4;color:#9a3412}
+  .checkout-page .ck-totals .cod-fee-row span:last-child{color:#9a3412;font-weight:850}
   .checkout-page .ck-totals .summary-divider{margin:11px 0;border-color:#e3e3e1}
-  .checkout-page .ck-totals .total-row{margin-bottom:0;color:#222;font-size:16px;font-weight:850}
-  .checkout-page .ck-totals .total-row span:last-child{color:#e85d26;font-size:18px}
-  @media(max-width:600px){.ck-auth-widget{align-items:flex-start;flex-direction:column;gap:13px;padding:15px}.ck-auth-actions{justify-content:flex-start;width:100%}.ck-auth-action{flex:1;padding:0 10px}.ck-save-address{min-height:58px;padding:11px 13px}.ck-location-fallback{align-items:stretch;flex-direction:column}.ck-location-fallback-actions{justify-content:stretch}.ck-location-fallback-btn{flex:1}.checkout-page .ck-summary{padding:13px 12px;border-radius:16px}.checkout-page .ck-summary>.ck-title{margin-bottom:12px;font-size:16px}.checkout-page .ck-item{grid-template-columns:52px minmax(0,1fr) auto;gap:8px;padding:8px;border-radius:12px}.checkout-page .ck-item-img{width:52px;height:52px;border-radius:10px}.checkout-page .ck-item-name{font-size:12px}.checkout-page .ck-item-price{font-size:11px}.checkout-page .ck-totals{padding:12px 10px 3px}.checkout-page .ck-totals .total-row{font-size:14px}.checkout-page .ck-totals .total-row span:last-child{font-size:16px}}
+  .checkout-page .ck-totals .total-row{min-height:42px;margin:0;padding:10px 11px;border-radius:11px;background:#fff;color:#222;font-size:16px;font-weight:850}
+  .checkout-page .ck-totals .total-row span:last-child{color:#e85d26;font-size:19px;letter-spacing:-.02em}
+  .checkout-page .ck-totals .total-note{margin:9px 1px 0;color:#8a8a8a;font-size:10px;line-height:1.4}
+  @media(max-width:600px){.ck-auth-widget{align-items:flex-start;flex-direction:column;gap:13px;padding:15px}.ck-auth-actions{justify-content:flex-start;width:100%}.ck-auth-action{flex:1;padding:0 10px}.ck-save-address{min-height:58px;padding:11px 13px}.ck-location-fallback{align-items:stretch;flex-direction:column}.ck-location-fallback-actions{justify-content:stretch}.ck-location-fallback-btn{flex:1}.checkout-page .ck-summary{padding:14px 12px;border-radius:17px}.checkout-page .ck-summary-header{margin-bottom:12px}.checkout-page .ck-summary>.ck-summary-header .ck-title{font-size:16px}.checkout-page .ck-summary-caption{font-size:10px}.checkout-page .ck-summary-count{padding:5px 8px}.checkout-page .ck-item{grid-template-columns:52px minmax(0,1fr) auto;gap:8px;padding:8px;border-radius:12px}.checkout-page .ck-item-img{width:52px;height:52px;border-radius:10px}.checkout-page .ck-item-name{font-size:12px}.checkout-page .ck-item-price{font-size:11px}.checkout-page .ck-totals{padding:11px 9px 4px}.checkout-page .ck-totals .summary-row{font-size:11.5px}.checkout-page .ck-totals .total-row{font-size:14px}.checkout-page .ck-totals .total-row span:last-child{font-size:17px}}
   @media(max-width:900px){.checkout-page form{display:flex;flex-direction:column}.checkout-page .checkout-shipping-section{order:-1}}
 </style>
 @endpush
@@ -297,8 +310,14 @@
     </div>
 
     {{-- ORDER SUMMARY --}}
-    <div class="ck-summary">
-      <h3 class="ck-title">{{ $isAr ? 'ملخص الطلب' : 'Order Summary' }}</h3>
+    <div class="ck-summary" aria-labelledby="checkout-summary-title">
+      <div class="ck-summary-header">
+        <div class="ck-summary-heading">
+          <h3 class="ck-title" id="checkout-summary-title">{{ $isAr ? 'ملخص الطلب' : 'Order Summary' }}</h3>
+          <p class="ck-summary-caption">{{ $isAr ? 'راجع التفاصيل قبل تأكيد الطلب' : 'Review the details before placing your order' }}</p>
+        </div>
+        <span class="ck-summary-count">{{ count($cart) }} {{ $isAr ? (count($cart) === 1 ? 'منتج' : 'منتجات') : (count($cart) === 1 ? 'item' : 'items') }}</span>
+      </div>
       <div class="ck-items">
         @foreach($cart as $item)
         <div class="ck-item">
@@ -331,10 +350,12 @@
         <div class="summary-row"><span>{{ $isAr ? 'الإجمالي الفرعي' : 'Subtotal' }}</span><span>{{ number_format($subtotal, 2) }} EGP</span></div>
         @if($coupon && $discount > 0)
           <div class="summary-row discount-row"><span>{{ $isAr ? 'كود خصم' : 'Coupon' }} ({{ $coupon['code'] }})</span><span>−{{ number_format($discount, 2) }} EGP</span></div>
+        @elseif($coupon && !empty($coupon['free_shipping']))
+          <div class="summary-row discount-row"><span>{{ $isAr ? 'ميزة الكوبون' : 'Coupon benefit' }} ({{ $coupon['code'] }})</span><span>{{ $isAr ? 'توصيل مجاني' : 'Free shipping' }}</span></div>
         @endif
         <div class="summary-row"><span>{{ $isAr ? 'التوصيل المتوقع' : 'Estimated Delivery' }}</span><span>{{ $isAr ? 'من يومين لـ 4 أيام' : '2–4 days' }}</span></div>
-        <div class="summary-row"><span>{{ $isAr ? 'الشحن' : 'Shipping' }}</span><span>{{ $shippingFee > 0 ? number_format($shippingFee, 2) . ' EGP' : ($isAr ? 'مجاني' : 'Free') }}</span></div>
-        <div class="summary-row" id="cod-fee-summary-row" data-cod-fee-row {{ $codFee > 0 ? '' : 'hidden' }}>
+        <div class="summary-row free-shipping-row"><span>{{ $isAr ? 'الشحن' : 'Shipping' }}</span><span>{{ $shippingFee > 0 ? number_format($shippingFee, 2) . ' EGP' : ($isAr ? 'مجاني' : 'Free') }}</span></div>
+        <div class="summary-row cod-fee-row" id="cod-fee-summary-row" data-cod-fee-row {{ $codFee > 0 ? '' : 'hidden' }}>
           <span>{{ $isAr ? 'رسوم الدفع عند الاستلام' : 'Cash on Delivery fee' }}</span>
           <span id="cod-fee-summary-value">{{ number_format($codFee, 2) }} EGP</span>
         </div>
@@ -342,7 +363,8 @@
           <div class="summary-row"><span>{{ $isAr ? 'الضريبة' : 'Tax' }}</span><span>{{ number_format($totalTax, 2) }} EGP</span></div>
         @endif
         <div class="summary-divider"></div>
-        <div class="summary-row total-row"><span>{{ $isAr ? 'الإجمالي' : 'Total' }}</span><span id="checkout-total-value" data-base-total="{{ $baseTotal }}">{{ number_format($total, 2) }} EGP</span></div>
+        <div class="summary-row total-row"><span>{{ $isAr ? 'الإجمالي النهائي' : 'Final total' }}</span><span id="checkout-total-value" data-base-total="{{ $baseTotal }}">{{ number_format($total, 2) }} EGP</span></div>
+        <p class="total-note">{{ $isAr ? 'الشحن ورسوم الدفع عند الاستلام محسوبين حسب اختيارك.' : 'Shipping and Cash on Delivery fees reflect your selected options.' }}</p>
       </div>
     </div>
 
