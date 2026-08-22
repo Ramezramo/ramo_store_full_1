@@ -41,9 +41,10 @@
     'accessBlocked' => $isAr ? 'الوصول لمكانك متوقف. فعّله من إعدادات المتصفح وجرّب تاني.' : 'Location access is blocked. Please enable it in your browser settings and try again.',
     'detectFailed' => $isAr ? 'ماقدرناش نحدد مكانك. اسمح بالوصول للموقع وجرّب تاني.' : 'Could not detect your location. Please allow location access and try again.',
     'locationFallback' => $isAr ? 'تقدر تختار مكانك يدويًا على الخريطة، أو تحاول تحديد موقعك تاني.' : 'You can choose your location manually on the map or try detecting it again.',
-    'manualLocation' => $isAr ? 'اختار يدويًا على الخريطة' : 'Choose manually on map',
+    'manualLocation' => $isAr ? 'تحديد المكان يدويًا' : 'Choose location manually',
     'retryLocation' => $isAr ? 'حاول تحديد موقعي تاني' : 'Try my location again',
-    'manualReady' => $isAr ? 'اختار مكان التوصيل بالضغط على الخريطة أو اسحب العلامة.' : 'Choose your delivery location by tapping the map or dragging the pin.',
+    'autoLocked' => $isAr ? 'تم تثبيت موقعك الحالي. استخدم «تحديد المكان يدويًا» لو عايز تغيّره.' : 'Your current location is locked. Use “Choose location manually” if you need to change it.',
+    'manualReady' => $isAr ? 'التحديد اليدوي شغال. اضغط على الخريطة أو اسحب العلامة لتغيير المكان.' : 'Manual selection is on. Tap the map or drag the pin to change the location.',
   ];
 @endphp
 @section('title', $isAr ? 'إتمام الطلب — Ramo Store' : 'Checkout — Ramo Store')
@@ -55,7 +56,7 @@
   .ck-auth-title{margin:0;color:#181818;font-size:15px;font-weight:800}.ck-auth-desc{margin:4px 0 0;color:#686868;font-size:12px;line-height:1.45}
   .ck-auth-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}.ck-auth-action{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:0 12px;border:1px solid #1b1b1b;border-radius:9px;background:#1b1b1b;color:#fff;font-size:12px;font-weight:750;line-height:1;text-decoration:none;white-space:nowrap;transition:.15s}.ck-auth-action:hover{background:#343434;border-color:#343434;color:#fff}.ck-auth-action-light{border-color:#d5d5d5;background:#fff;color:#272727}.ck-auth-action-light:hover{border-color:#aaa;background:#f6f6f6;color:#111}
   .ck-save-address{display:flex;align-items:center;gap:13px;min-height:64px;margin-top:4px;padding:12px 15px;border:1px solid #e4e4e4;border-radius:12px;background:#fcfcfc;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s}.ck-save-address:hover{border-color:#cfcfcf;background:#fff}.ck-save-address:has(input:focus-visible){border-color:#e85d26;box-shadow:0 0 0 3px rgba(232,93,38,.14)}.ck-save-address input[type="checkbox"]{width:20px!important;height:20px!important;min-width:20px;margin:0!important;flex:0 0 20px;accent-color:#e85d26;cursor:pointer}.ck-save-address-copy{display:flex;flex-direction:column;gap:3px;min-width:0}.ck-save-address-title{color:#202020;font-size:13px;font-weight:800;line-height:1.25}.ck-save-address-desc{color:#777;font-size:12px;line-height:1.35}
-  .ck-location-empty{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:12px;padding:18px;border:1px dashed #e8c4b3;border-radius:14px;background:linear-gradient(145deg,#fffaf7,#fff);}.ck-location-empty[hidden],.ck-location-map-panel[hidden]{display:none}.ck-location-empty-copy{display:flex;flex-direction:column;gap:5px;min-width:0}.ck-location-empty-title{color:#222;font-size:14px;font-weight:800}.ck-location-empty-copy span{color:#777;font-size:12px;line-height:1.45}.ck-location-choose-btn{min-height:42px;padding:0 15px;border:1px solid #e85d26;border-radius:9px;background:#e85d26;color:#fff;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}.ck-location-choose-btn:hover{background:#c94717;border-color:#c94717}.ck-location-choose-btn:focus-visible{outline:3px solid rgba(232,93,38,.24);outline-offset:2px}.ck-location-fallback{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;padding:12px;border:1px solid #f0d6ca;border-radius:12px;background:#fff9f6}.ck-location-fallback[hidden]{display:none}.ck-location-fallback-copy{color:#8a4c38;font-size:12px;line-height:1.45}.ck-location-fallback-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px}.ck-location-fallback-btn{min-height:36px;padding:0 11px;border:1px solid #e85d26;border-radius:8px;background:#fff;color:#c94717;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap}.ck-location-fallback-btn-primary{background:#e85d26;color:#fff}.ck-location-fallback-btn:hover{background:#fff1e9}.ck-location-fallback-btn-primary:hover{background:#c94717;color:#fff}.ck-location-fallback-btn:focus-visible{outline:3px solid rgba(232,93,38,.24);outline-offset:2px}.ck-map-shell{position:relative;width:100%;height:280px;margin-bottom:12px;border:1px solid rgba(0,0,0,.08);border-radius:14px;overflow:hidden;background:#f8f8f8}.ck-map-canvas{width:100%;height:100%}.ck-map-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(145deg,#fffdfb,#f7f7f6);z-index:2;text-align:center}.ck-map-placeholder[hidden]{display:none}.ck-map-placeholder-inner{display:flex;max-width:240px;align-items:center;flex-direction:column;gap:8px}.ck-map-placeholder-icon{display:flex;width:40px;height:40px;align-items:center;justify-content:center;border-radius:50%;background:#fff1e9;color:#e85d26;font-size:21px}.ck-map-placeholder-title{color:#222;font-size:14px;font-weight:800}.ck-map-placeholder-copy{color:#757575;font-size:12px;line-height:1.4}.ck-map-load-btn{min-height:38px;margin-top:2px;padding:0 13px;border:1px solid #e85d26;border-radius:9px;background:#fff;color:#c94717;font-size:12px;font-weight:800;cursor:pointer}.ck-map-load-btn:hover{background:#fff4ef}.ck-map-load-btn:focus-visible{outline:3px solid rgba(232,93,38,.24);outline-offset:2px}
+  .ck-location-empty{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:12px;padding:18px;border:1px dashed #e8c4b3;border-radius:14px;background:linear-gradient(145deg,#fffaf7,#fff);}.ck-location-empty[hidden],.ck-location-map-panel[hidden]{display:none}.ck-location-empty-copy{display:flex;flex-direction:column;gap:5px;min-width:0}.ck-location-empty-title{color:#222;font-size:14px;font-weight:800}.ck-location-empty-copy span{color:#777;font-size:12px;line-height:1.45}.ck-location-choose-btn{min-height:42px;padding:0 15px;border:1px solid #e85d26;border-radius:9px;background:#e85d26;color:#fff;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}.ck-location-choose-btn:hover{background:#c94717;border-color:#c94717}.ck-location-choose-btn:focus-visible{outline:3px solid rgba(232,93,38,.24);outline-offset:2px}.ck-location-actions{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:12px}.ck-location-action{flex:1;min-height:42px;padding:0 13px;border:1px solid #e85d26;border-radius:9px;background:#fff;color:#c94717;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}.ck-location-action-primary{background:#e85d26;color:#fff}.ck-location-action:hover{background:#fff1e9}.ck-location-action-primary:hover{background:#c94717;color:#fff}.ck-location-action:focus-visible{outline:3px solid rgba(232,93,38,.24);outline-offset:2px}.ck-location-action[aria-pressed="true"]{border-color:#238653;background:#f0fff7;color:#17663d}.ck-location-action:disabled{cursor:wait;opacity:.65}.ck-location-mode-note{display:block;margin:-4px 0 10px;color:#697586;font-size:11px;line-height:1.45}.ck-location-fallback{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;padding:12px;border:1px solid #f0d6ca;border-radius:12px;background:#fff9f6}.ck-location-fallback[hidden]{display:none}.ck-location-fallback-copy{color:#8a4c38;font-size:12px;line-height:1.45}.ck-location-fallback-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px}.ck-location-fallback-btn{min-height:36px;padding:0 11px;border:1px solid #e85d26;border-radius:8px;background:#fff;color:#c94717;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap}.ck-location-fallback-btn-primary{background:#e85d26;color:#fff}.ck-location-fallback-btn:hover{background:#fff1e9}.ck-location-fallback-btn-primary:hover{background:#c94717;color:#fff}.ck-location-fallback-btn:focus-visible{outline:3px solid rgba(232,93,38,.24);outline-offset:2px}.ck-map-shell{position:relative;width:100%;height:280px;margin-bottom:12px;border:1px solid rgba(0,0,0,.08);border-radius:14px;overflow:hidden;background:#f8f8f8}.ck-map-shell.map-location-locked{border-color:#b7d9c6}.ck-map-canvas{width:100%;height:100%}.ck-map-canvas.map-location-locked{cursor:default}.ck-map-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(145deg,#fffdfb,#f7f7f6);z-index:2;text-align:center}.ck-map-placeholder[hidden]{display:none}.ck-map-placeholder-inner{display:flex;max-width:240px;align-items:center;flex-direction:column;gap:8px}.ck-map-placeholder-icon{display:flex;width:40px;height:40px;align-items:center;justify-content:center;border-radius:50%;background:#fff1e9;color:#e85d26;font-size:21px}.ck-map-placeholder-title{color:#222;font-size:14px;font-weight:800}.ck-map-placeholder-copy{color:#757575;font-size:12px;line-height:1.4}.ck-map-load-btn{min-height:38px;margin-top:2px;padding:0 13px;border:1px solid #e85d26;border-radius:9px;background:#fff;color:#c94717;font-size:12px;font-weight:800;cursor:pointer}.ck-map-load-btn:hover{background:#fff4ef}.ck-map-load-btn:focus-visible{outline:3px solid rgba(232,93,38,.24);outline-offset:2px}
   .checkout-page-ar{font-family:'Cairo','Tahoma',sans-serif;text-align:right}.checkout-page-ar .ck-auth-actions{justify-content:flex-start}.checkout-page-ar .ck-save-address{direction:rtl}.checkout-page-ar .checkout-layout{direction:rtl}.checkout-page-ar .summary-row{direction:rtl}
   .checkout-page .ck-summary{padding:20px;border:1px solid #ececec;border-radius:18px;background:linear-gradient(145deg,#fff,#fcfcfb);box-shadow:0 10px 28px rgba(24,24,24,.06)}
   .checkout-page .ck-summary>.ck-title{margin:0 0 16px;font-size:18px;letter-spacing:-.02em}
@@ -166,14 +167,18 @@
               <button type="button" id="choose-location-btn" class="ck-location-choose-btn">{{ $isAr ? 'اختار المكان' : 'Choose location' }}</button>
             </div>
             <div id="checkout-location-map-panel" class="ck-location-map-panel">
-              <button type="button" class="btn btn-outline" id="use-current-location-btn" style="margin-bottom:12px">📍 {{ $isAr ? 'استخدم موقعي الحالي' : 'Use My Current Location' }}</button>
+              <div class="ck-location-actions" aria-label="{{ $isAr ? 'اختيار موقع التوصيل' : 'Delivery location selection' }}">
+                <button type="button" class="ck-location-action ck-location-action-primary" id="use-current-location-btn">📍 {{ $isAr ? 'استخدم موقعي الحالي' : 'Use My Current Location' }}</button>
+                <button type="button" class="ck-location-action" id="manual-location-mode-btn" aria-pressed="true">⌖ {{ $checkoutText['manualLocation'] }}</button>
+              </div>
+              <span id="location-mode-note" class="ck-location-mode-note">{{ $checkoutText['manualReady'] }}</span>
               <div class="ck-map-shell">
                 <div id="checkout-map" class="ck-map-canvas" aria-label="{{ $isAr ? 'خريطة مكان التوصيل التفاعلية' : 'Interactive delivery location map' }}"></div>
                 <div id="checkout-map-placeholder" class="ck-map-placeholder">
                   <div class="ck-map-placeholder-inner">
                     <span class="ck-map-placeholder-icon" aria-hidden="true">⌖</span>
                     <span class="ck-map-placeholder-title">{{ $isAr ? 'اختار مكان التوصيل' : 'Choose a delivery pin' }}</span>
-                    <span class="ck-map-placeholder-copy">{{ $isAr ? 'بنحمّل الخريطة تلقائيًا. تقدر تختار أو تعدّل مكان التوصيل أول ما تفتح.' : 'The interactive map loads automatically. You can choose or adjust your delivery location as soon as it opens.' }}</span>
+                    <span class="ck-map-placeholder-copy">{{ $isAr ? 'بنحمّل الخريطة تلقائيًا. تقدر تحدد المكان يدويًا، وبعد استخدام موقعك الحالي هيثبت المؤشر لتجنب تغييره بالغلط.' : 'The interactive map loads automatically. You can choose a location manually; after using your current location, the pin will lock to prevent accidental changes.' }}</span>
                     <button type="button" id="load-checkout-map-btn" class="ck-map-load-btn" aria-controls="checkout-map" hidden>{{ $checkoutText['mapRetry'] }}</button>
                   </div>
                 </div>
@@ -372,12 +377,30 @@ document.addEventListener('DOMContentLoaded', () => {
   const locationFallback = document.getElementById('location-fallback');
   const locationFallbackCopy = document.getElementById('location-fallback-copy');
   const manualLocationBtn = document.getElementById('manual-location-btn');
+  const manualModeBtn = document.getElementById('manual-location-mode-btn');
+  const locationModeNote = document.getElementById('location-mode-note');
+  const mapShell = mapEl?.closest('.ck-map-shell');
   const retryLocationBtn = document.getElementById('retry-location-btn');
   const latitudeInput = document.getElementById('checkout-latitude');
   const longitudeInput = document.getElementById('checkout-longitude');
   let map = null;
   let marker = null;
   let mapLoadPromise = null;
+  let manualLocationEnabled = true;
+
+  const setManualLocationMode = (enabled) => {
+    manualLocationEnabled = enabled;
+    if (marker?.dragging) {
+      enabled ? marker.dragging.enable() : marker.dragging.disable();
+    }
+    mapShell?.classList.toggle('map-location-locked', !enabled);
+    mapEl?.classList.toggle('map-location-locked', !enabled);
+    mapEl?.setAttribute('aria-label', enabled
+      ? (checkoutText.isAr ? 'خريطة مكان التوصيل — التحديد اليدوي مفعّل' : 'Delivery location map — manual selection enabled')
+      : (checkoutText.isAr ? 'خريطة مكان التوصيل — الموقع الحالي مثبت' : 'Delivery location map — current location locked'));
+    manualModeBtn?.setAttribute('aria-pressed', String(enabled));
+    if (locationModeNote) locationModeNote.textContent = enabled ? checkoutText.manualReady : checkoutText.autoLocked;
+  };
 
   const setStatus = (msg) => {
     if (locationStatus) locationStatus.textContent = msg;
@@ -441,13 +464,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }).addTo(map);
     marker = L.marker([lat, lng], { draggable: true }).addTo(map);
     marker.on('dragend', () => {
+      if (!manualLocationEnabled) return;
       const p = marker.getLatLng();
       updateFields(p.lat, p.lng);
     });
     map.on('click', (e) => {
+      if (!manualLocationEnabled) {
+        setStatus(checkoutText.autoLocked);
+        return;
+      }
       marker.setLatLng(e.latlng);
       updateFields(e.latlng.lat, e.latlng.lng);
     });
+    setManualLocationMode(manualLocationEnabled);
     mapPlaceholder?.setAttribute('hidden', '');
     window.setTimeout(() => map.invalidateSize(), 0);
     return map;
@@ -536,12 +565,13 @@ document.addEventListener('DOMContentLoaded', () => {
       navigator.geolocation.getCurrentPosition(async (pos) => {
         const { latitude, longitude, accuracy } = pos.coords;
         setCoords(latitude, longitude);
+        setManualLocationMode(false);
         updateFields(latitude, longitude);
         try {
           await ensureMap(latitude, longitude);
           setStatus(accuracy
-            ? (checkoutText.isAr ? `${checkoutText.detected} (دقة ${Math.round(accuracy)} متر). ${checkoutText.dragPin}` : `Location detected (${Math.round(accuracy)}m accuracy). You can drag the pin to adjust it.`)
-            : `${checkoutText.detected}. ${checkoutText.dragPin}`);
+            ? (checkoutText.isAr ? `${checkoutText.detected} (دقة ${Math.round(accuracy)} متر). ${checkoutText.autoLocked}` : `Location detected (${Math.round(accuracy)}m accuracy). ${checkoutText.autoLocked}`)
+            : `${checkoutText.detected}. ${checkoutText.autoLocked}`);
         } catch (_) {
           setStatus(`${checkoutText.detected}. ${checkoutText.manualAddress}`);
         } finally {
@@ -586,8 +616,13 @@ document.addEventListener('DOMContentLoaded', () => {
       revealMap();
       requestCurrentLocation();
     });
+    manualModeBtn?.addEventListener('click', () => {
+      setManualLocationMode(true);
+      setStatus(checkoutText.manualReady);
+    });
     manualLocationBtn?.addEventListener('click', () => {
       hideLocationFallback();
+      setManualLocationMode(true);
       revealMap(true).then(() => setStatus(checkoutText.manualReady));
     });
     retryLocationBtn?.addEventListener('click', requestCurrentLocation);

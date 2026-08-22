@@ -31,6 +31,30 @@ class MobileCheckoutShippingOrderTest extends TestCase
             "// Always show and initialize the map so a new customer can choose a pin immediately.\n    loadMap();",
             $template,
         );
+        $this->assertStringContainsString(
+            'id="manual-location-mode-btn" aria-pressed="true"',
+            $template,
+        );
+        $this->assertStringContainsString(
+            "const setManualLocationMode = (enabled) => {",
+            $template,
+        );
+        $this->assertStringContainsString(
+            "enabled ? marker.dragging.enable() : marker.dragging.disable();",
+            $template,
+        );
+        $this->assertStringContainsString(
+            "if (!manualLocationEnabled) {\n        setStatus(checkoutText.autoLocked);\n        return;\n      }",
+            $template,
+        );
+        $this->assertStringContainsString(
+            "setManualLocationMode(false);\n        updateFields(latitude, longitude);",
+            $template,
+        );
+        $this->assertStringContainsString(
+            'manualModeBtn?.addEventListener(\'click\'',
+            $template,
+        );
     }
 }
 
