@@ -364,7 +364,7 @@
 
           @if($coupon)
             <div class="cart-applied-coupon">
-              <span>{{ $cartRtl ? 'كود الخصم' : 'Coupon' }} <strong>{{ strtoupper($coupon['code']) }}</strong> {{ $cartRtl ? 'اتطبّق' : 'applied' }}</span>
+              <span>{{ !empty($coupon['free_shipping']) && $cartRtl ? 'كوبون توصيل مجاني' : (!empty($coupon['free_shipping']) ? 'Free shipping coupon' : ($cartRtl ? 'كود الخصم' : 'Coupon')) }} <strong>{{ strtoupper($coupon['code']) }}</strong> {{ $cartRtl ? 'اتطبّق' : 'applied' }}</span>
               <form action="{{ route('cart.coupon.remove') }}" method="POST">@csrf @method('DELETE')<button type="submit">{{ $cartRtl ? 'شيل' : 'Remove' }}</button></form>
             </div>
           @else
@@ -379,7 +379,11 @@
           @endif
 
           <div class="cart-summary-row"><span>{{ $cartRtl ? 'الإجمالي الفرعي' : 'Subtotal' }}</span><strong id="cart-subtotal">{{ number_format($subtotal, 2) }} EGP</strong></div>
-          @if($coupon)<div class="cart-summary-row cart-discount"><span>{{ $cartRtl ? 'الخصم' : 'Discount' }}</span><strong id="cart-discount">−{{ number_format($discount, 2) }} EGP</strong></div>@endif
+          @if($coupon && $discount > 0)
+            <div class="cart-summary-row cart-discount"><span>{{ $cartRtl ? 'الخصم' : 'Discount' }}</span><strong id="cart-discount">−{{ number_format($discount, 2) }} EGP</strong></div>
+          @elseif($coupon && !empty($coupon['free_shipping']))
+            <div class="cart-summary-row cart-discount"><span>{{ $cartRtl ? 'ميزة الكوبون' : 'Coupon benefit' }}</span><strong id="cart-discount">{{ $cartRtl ? 'توصيل مجاني' : 'Free shipping' }}</strong></div>
+          @endif
           <div class="cart-summary-row"><span>{{ $cartRtl ? 'الشحن' : 'Shipping' }}</span><strong id="cart-shipping" class="{{ $shippingFee == 0 ? 'summary-shipping-free' : '' }}">{{ $shippingFee > 0 ? number_format($shippingFee, 2) . ' EGP' : ($cartRtl ? 'مجاني' : 'Free') }}</strong></div>
           <div class="cart-summary-row"><span>{{ $cartRtl ? 'الضرايب' : 'Tax' }}</span><strong style="color:var(--c-mid)">{{ $cartRtl ? 'هيتحدد' : 'TBA' }}</strong></div>
           <hr class="cart-summary-divider">
@@ -541,7 +545,13 @@ function updateCartSummary(data){
   if(total && data.cart_total !== undefined) total.textContent = data.cart_total + ' EGP';
   if(stickyTotal && data.cart_total !== undefined) stickyTotal.textContent = data.cart_total + ' EGP';
   const discount = document.getElementById('cart-discount');
-  if(discount && data.cart_discount !== undefined) discount.textContent = '−' + data.cart_discount + ' EGP';
+  if(discount && data.cart_discount !== undefined) {
+    if(data.coupon_free_shipping) {
+      discount.textContent = CART_TEXT.freeShipping;
+    } else {
+      discount.textContent = '−' + data.cart_discount + ' EGP';
+    }
+  }
   const fill = document.getElementById('cart-shipping-fill');
   const percent = document.getElementById('cart-shipping-percent');
   const message = document.getElementById('cart-shipping-message');

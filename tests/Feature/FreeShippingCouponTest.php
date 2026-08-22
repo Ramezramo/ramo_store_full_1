@@ -17,6 +17,53 @@ class FreeShippingCouponTest extends TestCase
         $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
     }
 
+    public function test_saved_coupon_is_refreshed_from_database(): void
+    {
+        $suffix = strtoupper(substr(sha1(uniqid('', true)), 0, 10));
+        $code = 'REFRESH'.$suffix;
+        $couponId = DB::table('coupons')->insertGetId([
+            'code' => $code,
+            'amount' => 25,
+            'discount_type' => 'percent',
+            'status' => 'publish',
+            'usage_count' => 0,
+            'usage_limit_per_user' => null,
+            'minimum_amount' => 0,
+            'maximum_amount' => 0,
+            'date_created' => now(),
+            'date_created_gmt' => now(),
+            'date_modified' => now(),
+            'date_modified_gmt' => now(),
+            'free_shipping' => true,
+            'description' => 'Refreshed coupon test',
+            'meta_data' => '[]',
+        ]);
+
+        try {
+            $this->withSession([
+                'ramo_coupon' => [
+                    'code' => strtolower($code),
+                    'amount' => 0,
+                    'discount_type' => 'fixed_cart',
+                    'free_shipping' => false,
+                ],
+            ]);
+
+            $controller = app(\App\Http\Controllers\Web\CartController::class);
+            $method = new \ReflectionMethod($controller, 'appliedCoupon');
+            $method->setAccessible(true);
+            $refreshed = $method->invoke($controller);
+
+            $this->assertSame($code, $refreshed['code']);
+            $this->assertSame(25.0, (float) $refreshed['amount']);
+            $this->assertSame('percent', $refreshed['discount_type']);
+            $this->assertTrue($refreshed['free_shipping']);
+            $this->assertSame(25.0, (float) session('ramo_coupon.amount'));
+        } finally {
+            DB::table('coupons')->where('id', $couponId)->delete();
+        }
+    }
+
     public function test_free_shipping_seeder_is_idempotent_and_offers_page_shows_expiry(): void
     {
         $codes = ['AC46264BD', 'BK13H16D'];
@@ -140,6 +187,11 @@ class FreeShippingCouponTest extends TestCase
             ]);
             $applyResponse->assertOk()->assertJson(['success' => true, 'reload' => true]);
             $this->assertTrue((bool) session('ramo_coupon.free_shipping'));
+
+            $cartPage = $this->actingAs($user)->withSession(['locale' => 'ar'])->get(route('cart'));
+            $cartPage->assertOk()
+                ->assertSee('توصيل مجاني')
+                ->assertDontSee('−0.00 EGP');
 
             $checkoutPage = $this->actingAs($user)->get(route('checkout'));
             $checkoutPage->assertOk();
