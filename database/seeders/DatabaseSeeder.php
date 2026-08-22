@@ -10,5 +10,6 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(RamoStoreSeeder::class);
         $this->call(FreeShippingCouponsSeeder::class);
+        $this->call(GameChangerCouponSeeder::class);
     }
 }
