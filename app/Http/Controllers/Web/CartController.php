@@ -15,6 +15,9 @@ class CartController extends Controller
 {
     use CartTrait;
 
+    private bool $couponWasInvalidated = false;
+    private string $couponInvalidationMessage = '';
+
     /**
      * Return the seller-configured quantity range constrained by live variation stock.
      * A zero maximum means "unlimited" apart from stock availability.
@@ -105,8 +108,8 @@ class CartController extends Controller
             }
         }
 
-        $coupon   = $this->appliedCoupon();
         $subtotal = collect($cart)->sum(fn($i) => $i['price'] * $i['qty']);
+        $coupon   = $this->appliedCoupon($subtotal);
         $discount = 0;
 
         if ($coupon) {
@@ -388,7 +391,7 @@ class CartController extends Controller
         return response()->json($response);
     }
 
-    private function appliedCoupon(): ?array
+    private function appliedCoupon(?float $subtotal = null): ?array
     {
         $coupon = session('ramo_coupon');
         if (!is_array($coupon) || empty($coupon['code'])) {
@@ -397,9 +400,31 @@ class CartController extends Controller
 
         $record = DB::table('coupons')
             ->whereRaw('LOWER(code) = ?', [strtolower(trim((string) $coupon['code']))])
-            ->first(['code', 'discount_type', 'amount', 'free_shipping', 'description']);
-        if (!$record) {
-            return $coupon;
+            ->first(['code', 'discount_type', 'amount', 'free_shipping', 'description', 'status', 'date_expires', 'minimum_amount', 'maximum_amount']);
+
+        $invalidMessage = null;
+        if (! $record || ($record->status ?? 'publish') !== 'publish') {
+            $invalidMessage = $this->localized('This coupon is no longer available.', 'الكوبون ده مبقاش متاح.');
+        } elseif ($record->date_expires && now()->isAfter($record->date_expires)) {
+            $invalidMessage = $this->localized('This coupon has expired.', 'الكوبون ده انتهت صلاحيته.');
+        } elseif ($subtotal !== null && $subtotal < (float) ($record->minimum_amount ?? 0)) {
+            $invalidMessage = $this->localized(
+                'This coupon requires a higher cart subtotal.',
+                'الكوبون ده محتاج قيمة سلة أعلى من '.$record->minimum_amount.' جنيه.'
+            );
+        } elseif ($subtotal !== null && (float) ($record->maximum_amount ?? 0) > 0 && $subtotal > (float) $record->maximum_amount) {
+            $invalidMessage = $this->localized(
+                'This coupon cannot be used above its maximum cart subtotal.',
+                'الكوبون ده متاح لحد قيمة سلة '.$record->maximum_amount.' جنيه بس. عدّل الكمية أو شيل الكوبون عشان تكمل.'
+            );
+        }
+
+        if ($invalidMessage !== null) {
+            session()->forget('ramo_coupon');
+            session()->flash('error', $invalidMessage);
+            $this->couponWasInvalidated = true;
+            $this->couponInvalidationMessage = $invalidMessage;
+            return null;
         }
 
         $coupon['code'] = $record->code;
@@ -414,7 +439,7 @@ class CartController extends Controller
 
     private function calcTotals(float $subtotal): array
     {
-        $coupon   = $this->appliedCoupon();
+        $coupon   = $this->appliedCoupon($subtotal);
         $discount = 0;
         if ($coupon) {
             $discount = $coupon['discount_type'] === 'percent'
@@ -437,6 +462,8 @@ class CartController extends Controller
             'shippingFee'           => $shippingFee,
             'total'                 => $afterDiscount + $shippingFee,
             'freeShippingCoupon'    => $freeShipping,
+            'couponInvalid'         => $this->couponWasInvalidated,
+            'couponMessage'         => $this->couponInvalidationMessage,
             'freeShippingEnabled'   => $enabled,
             'freeShippingThreshold' => $threshold,
             'freeShippingRemaining' => max(0, $threshold - $afterDiscount),
@@ -490,6 +517,8 @@ class CartController extends Controller
             'cart_total'             => number_format($totals['total'], 2),
             'cart_discount'           => number_format($totals['discount'], 2),
             'coupon_free_shipping'    => $totals['freeShippingCoupon'],
+            'coupon_invalid'          => $totals['couponInvalid'],
+            'coupon_message'          => $totals['couponMessage'],
             'free_shipping_enabled'  => $totals['freeShippingEnabled'],
             'free_shipping_threshold' => number_format($totals['freeShippingThreshold'], 2),
             'free_shipping_remaining' => number_format($totals['freeShippingRemaining'], 2),
@@ -515,6 +544,8 @@ class CartController extends Controller
             'cart_total'             => number_format($totals['total'], 2),
             'cart_discount'         => number_format($totals['discount'], 2),
             'coupon_free_shipping'  => $totals['freeShippingCoupon'],
+            'coupon_invalid'        => $totals['couponInvalid'],
+            'coupon_message'        => $totals['couponMessage'],
             'free_shipping_enabled' => $totals['freeShippingEnabled'],
             'free_shipping_threshold' => number_format($totals['freeShippingThreshold'], 2),
             'free_shipping_remaining' => number_format($totals['freeShippingRemaining'], 2),

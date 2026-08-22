@@ -476,6 +476,7 @@ const CART_TEXT = CART_RTL ? {
   unableRemove: 'مش قادرين نشيل المنتج دلوقتي. جرّب تاني.',
   applying: 'بنعمل تطبيق للكود…',
   unableCoupon: 'مش قادرين نطبّق الكود. جرّب تاني.',
+  couponInvalid: 'الكوبون ده مبقاش مناسب لقيمة السلة الحالية. عدّل الكمية أو شيله عشان تكمل.',
   unavailableCheckout: 'فيه منتج غير متوفر. شيله من السلة عشان تقدر تكمل الطلب.'
 } : {
   free: 'Free',
@@ -491,6 +492,7 @@ const CART_TEXT = CART_RTL ? {
   unableRemove: 'Unable to remove this item. Please try again.',
   applying: 'Applying…',
   unableCoupon: 'Unable to apply the code. Try again.',
+  couponInvalid: 'This coupon is no longer valid for the current cart total. Adjust the quantity or remove it to continue.',
   unavailableCheckout: 'One or more items are out of stock. Remove them from your cart to continue.'
 };
 const cartScreen = document.querySelector('.cart-screen');
@@ -536,6 +538,11 @@ function preventUnavailableCheckout(event){
 }
 function money(value){ return Number(value || 0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' EGP'; }
 function updateCartSummary(data){
+  if(data.coupon_invalid) {
+    showCartQuantityError(data.coupon_message || CART_TEXT.couponInvalid);
+    window.setTimeout(() => location.reload(), 450);
+    return;
+  }
   const subtotal = document.getElementById('cart-subtotal');
   const shipping = document.getElementById('cart-shipping');
   const total = document.getElementById('cart-total');

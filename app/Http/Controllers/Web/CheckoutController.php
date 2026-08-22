@@ -43,6 +43,28 @@ class CheckoutController extends Controller
         return trim((string) ($arabic['name'] ?? '')) ?: $fallback;
     }
 
+    private function couponValidationError(string $message): string
+    {
+        if (str_contains(strtolower($message), 'cannot exceed')) {
+            return $this->localized(
+                'This coupon cannot be used above the current cart subtotal. Adjust the quantity or remove it to continue.',
+                'الكوبون ده مش متاح لقيمة السلة الحالية لأنها عدّت الحد الأقصى. عدّل الكمية أو شيل الكوبون عشان تكمل.'
+            );
+        }
+
+        if (str_contains(strtolower($message), 'at least')) {
+            return $this->localized(
+                'This coupon requires a higher cart subtotal. Adjust the quantity or remove it to continue.',
+                'الكوبون ده محتاج قيمة سلة أعلى. زوّد الكمية أو شيل الكوبون عشان تكمل.'
+            );
+        }
+
+        return $this->localized(
+            'The applied coupon is no longer valid for this cart. Remove it to continue.',
+            'الكوبون المطبّق مبقاش صالح للسلة دي. شيله عشان تكمل.'
+        );
+    }
+
     private function cartQuantityIssue(array $cart): ?string
     {
         $productIds = collect($cart)->pluck('product_id')->map(fn ($id) => (int) $id)->unique()->values()->all();
@@ -118,9 +140,33 @@ class CheckoutController extends Controller
             // should return the customer to this checkout after authentication.
             session(['url.intended' => route('checkout')]);
         }
-        $coupon     = session('ramo_coupon');
-        $subtotal   = collect($cart)->sum(fn ($item) => $item['price'] * $item['qty']);
-        $discount   = $this->calcDiscount($subtotal, $coupon);
+        $coupon   = session('ramo_coupon');
+        $subtotal = collect($cart)->sum(fn ($item) => $item['price'] * $item['qty']);
+
+        if (is_array($coupon) && ! empty($coupon['code'])) {
+            $couponValidation = app(\App\Http\Controllers\CouponController::class)->validateCouponRules(
+                (string) $coupon['code'],
+                (float) $subtotal,
+                Auth::id()
+            );
+
+            if (! $couponValidation['valid']) {
+                session()->forget('ramo_coupon');
+                return redirect()->route('cart')->with('error', $this->couponValidationError((string) ($couponValidation['message'] ?? '')));
+            }
+
+            $couponRecord = $couponValidation['data']['coupon'];
+            $coupon = [
+                'code' => $couponRecord->code,
+                'discount_type' => $couponRecord->discount_type ?? 'percent',
+                'amount' => $couponRecord->amount ?? 0,
+                'free_shipping' => (bool) ($couponRecord->free_shipping ?? false),
+                'description' => $couponRecord->description ?? '',
+            ];
+            session(['ramo_coupon' => $coupon]);
+        }
+
+        $discount = $this->calcDiscount($subtotal, $coupon);
         $afterDiscount = max(0, $subtotal - $discount);
         $freeShipping = is_array($coupon) && ! empty($coupon['free_shipping']);
         $shippingFee = $freeShipping ? 0.0 : ShippingConfig::feeForSubtotal($afterDiscount);
