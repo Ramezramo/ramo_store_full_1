@@ -59,7 +59,7 @@ class CartController extends Controller
         return $fallback;
     }
 
-    private function quantityError(string $productName, int $quantity, int $minimum, int $maximum): ?string
+    private function quantityError(string $productName, int $quantity, int $minimum, int $maximum, int $existingQuantity = 0): ?string
     {
         if ($quantity < $minimum) {
             return $this->localized("Minimum order quantity for \"{$productName}\" is {$minimum}.", "أقل كمية للطلب من \"{$productName}\" هي {$minimum}.");
@@ -68,6 +68,15 @@ class CartController extends Controller
             return $this->localized("\"{$productName}\" does not have enough stock to meet its minimum order quantity of {$minimum}.", "\"{$productName}\" مفيش منه مخزون كفاية للحد الأدنى اللي هو {$minimum}.");
         }
         if ($quantity > $maximum) {
+            $existingQuantity = max(0, $existingQuantity);
+            if ($existingQuantity > 0) {
+                $additionalAvailable = max(0, $maximum - $existingQuantity);
+                return $this->localized(
+                    "You already have {$existingQuantity} unit(s) of \"{$productName}\" in your cart, and that quantity counts against the available stock. Only {$additionalAvailable} more unit(s) can be added (maximum {$maximum} per order).",
+                    "إنت ضايف {$existingQuantity} قطعة من \"{$productName}\" في السلة، والكمية دي محسوبة من المتاح. المتبقي للإضافة {$additionalAvailable} قطعة بس (الحد الأقصى {$maximum} في الطلب الواحد)."
+                );
+            }
+
             return $this->localized("You can order up to {$maximum} unit(s) of \"{$productName}\" per order.", "تقدر تطلب لحد {$maximum} قطعة من \"{$productName}\" في الطلب الواحد.");
         }
 
@@ -242,10 +251,11 @@ class CartController extends Controller
 
         $resolvedVariationId = (int) $variation->id;
         $rowId = md5($product->id . '_' . $resolvedVariationId);
-        $newQuantity = (int) ($cart[$rowId]['qty'] ?? 0) + $qty;
+        $existingQuantity = (int) ($cart[$rowId]['qty'] ?? 0);
+        $newQuantity = $existingQuantity + $qty;
         [$minimumQuantity, $maximumQuantity] = $this->quantityBounds($product, $stock);
 
-        if ($error = $this->quantityError((string) $product->name, $newQuantity, $minimumQuantity, $maximumQuantity)) {
+        if ($error = $this->quantityError((string) $product->name, $newQuantity, $minimumQuantity, $maximumQuantity, $existingQuantity)) {
             return ['success' => false, 'message' => $error, 'row_id' => $rowId];
         }
 
