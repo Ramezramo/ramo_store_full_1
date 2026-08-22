@@ -151,8 +151,13 @@ class CheckoutController extends Controller
             );
 
             if (! $couponValidation['valid']) {
+                $couponError = $this->couponValidationError((string) ($couponValidation['message'] ?? ''));
+                $couponErrorCode = strtoupper(trim((string) ($coupon['code'] ?? '')));
                 session()->forget('ramo_coupon');
-                return redirect()->route('cart')->with('error', $this->couponValidationError((string) ($couponValidation['message'] ?? '')));
+                return redirect()->route('cart')->with([
+                    'coupon_error' => $couponError,
+                    'coupon_error_code' => $couponErrorCode,
+                ]);
             }
 
             $couponRecord = $couponValidation['data']['coupon'];

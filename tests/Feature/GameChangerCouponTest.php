@@ -127,8 +127,15 @@ class GameChangerCouponTest extends TestCase
             ])->get(route('checkout'));
 
             $response->assertRedirect(route('cart'))
-                ->assertSessionHas('error', 'الكوبون ده مش متاح لقيمة السلة الحالية لأنها عدّت الحد الأقصى. عدّل الكمية أو شيل الكوبون عشان تكمل.');
+                ->assertSessionHas('coupon_error', 'الكوبون ده مش متاح لقيمة السلة الحالية لأنها عدّت الحد الأقصى. عدّل الكمية أو شيل الكوبون عشان تكمل.')
+                ->assertSessionHas('coupon_error_code', 'GAME_CHANGER');
             $this->assertNull(session('ramo_coupon'));
+
+            $cartPage = $this->withSession(['locale' => 'ar'])->get(route('cart'));
+            $cartPage->assertOk()
+                ->assertSee('مشكلة في الكوبون')
+                ->assertSee('GAME_CHANGER')
+                ->assertSee('الكوبون ده مش متاح لقيمة السلة الحالية');
         } finally {
             DB::table('coupons')->where('code', 'GAME_CHANGER')->delete();
             if ($user) DB::table('cart_items')->where('user_id', $user->id)->delete();
@@ -229,7 +236,8 @@ class GameChangerCouponTest extends TestCase
             ])->post(route('cart.update', $rowId), ['qty' => 2]);
 
             $response->assertRedirect(route('cart'))
-                ->assertSessionHas('error', 'الكوبون ده متاح لحد قيمة سلة 2000.00 جنيه بس. عدّل الكمية أو شيل الكوبون عشان تكمل.');
+                ->assertSessionHas('coupon_error', 'الكوبون ده متاح لحد قيمة سلة 2000.00 جنيه بس. عدّل الكمية أو شيل الكوبون عشان تكمل.')
+                ->assertSessionHas('coupon_error_code', 'GAME_CHANGER');
             $this->assertNull(session('ramo_coupon'));
         } finally {
             DB::table('coupons')->where('code', 'GAME_CHANGER')->delete();

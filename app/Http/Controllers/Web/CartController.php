@@ -17,6 +17,7 @@ class CartController extends Controller
 
     private bool $couponWasInvalidated = false;
     private string $couponInvalidationMessage = '';
+    private string $couponInvalidationCode = '';
 
     /**
      * Return the seller-configured quantity range constrained by live variation stock.
@@ -420,10 +421,12 @@ class CartController extends Controller
         }
 
         if ($invalidMessage !== null) {
-            session()->forget('ramo_coupon');
-            session()->flash('error', $invalidMessage);
             $this->couponWasInvalidated = true;
             $this->couponInvalidationMessage = $invalidMessage;
+            $this->couponInvalidationCode = strtoupper(trim((string) ($coupon['code'] ?? '')));
+            session()->forget('ramo_coupon');
+            session()->flash('coupon_error', $invalidMessage);
+            session()->flash('coupon_error_code', $this->couponInvalidationCode);
             return null;
         }
 
@@ -464,6 +467,7 @@ class CartController extends Controller
             'freeShippingCoupon'    => $freeShipping,
             'couponInvalid'         => $this->couponWasInvalidated,
             'couponMessage'         => $this->couponInvalidationMessage,
+            'couponErrorCode'       => $this->couponInvalidationCode,
             'freeShippingEnabled'   => $enabled,
             'freeShippingThreshold' => $threshold,
             'freeShippingRemaining' => max(0, $threshold - $afterDiscount),
@@ -527,12 +531,13 @@ class CartController extends Controller
         ];
 
         if (! $r->expectsJson()) {
-            return redirect()->route('cart')->with(
-                $totals['couponInvalid'] ? 'error' : 'success',
-                $totals['couponInvalid']
-                    ? $totals['couponMessage']
-                    : $this->localized('Quantity updated.', 'الكمية اتحدّثت.')
-            );
+            if ($totals['couponInvalid']) {
+                return redirect()->route('cart')->with([
+                    'coupon_error' => $totals['couponMessage'],
+                    'coupon_error_code' => $totals['couponErrorCode'],
+                ]);
+            }
+            return redirect()->route('cart')->with('success', $this->localized('Quantity updated.', 'الكمية اتحدّثت.'));
         }
 
         return response()->json($response);
@@ -564,12 +569,13 @@ class CartController extends Controller
         ];
 
         if (! $r->expectsJson()) {
-            return redirect()->route('cart')->with(
-                $totals['couponInvalid'] ? 'error' : 'success',
-                $totals['couponInvalid']
-                    ? $totals['couponMessage']
-                    : $this->localized('Item removed.', 'المنتج اتشال من السلة.')
-            );
+            if ($totals['couponInvalid']) {
+                return redirect()->route('cart')->with([
+                    'coupon_error' => $totals['couponMessage'],
+                    'coupon_error_code' => $totals['couponErrorCode'],
+                ]);
+            }
+            return redirect()->route('cart')->with('success', $this->localized('Item removed.', 'المنتج اتشال من السلة.'));
         }
 
         return response()->json($response);
@@ -590,7 +596,11 @@ class CartController extends Controller
         $subtotal = round(collect($cart)->sum(fn ($item) => (float) ($item['price'] ?? 0) * (int) ($item['qty'] ?? 0)), 2);
 
         if ($subtotal <= 0) {
-            return response()->json(['success' => false, 'message' => $this->localized('Your cart is empty.', 'السلة فاضية.')], 422);
+            $message = $this->localized('Your cart is empty.', 'السلة فاضية.');
+            if (! $r->expectsJson()) {
+                return redirect()->route('cart')->with('coupon_error', $message);
+            }
+            return response()->json(['success' => false, 'message' => $message], 422);
         }
 
         $validation = app(CouponController::class)->validateCouponRules(
@@ -602,7 +612,10 @@ class CartController extends Controller
         if (! $validation['valid']) {
             $message = $this->localized($validation['message'], 'الكوبون ده مش متاح للسلة دي.');
             if (! $r->expectsJson()) {
-                return redirect()->route('cart')->with('error', $message);
+                return redirect()->route('cart')->with([
+                    'coupon_error' => $message,
+                    'coupon_error_code' => $code,
+                ]);
             }
             return response()->json([
                 'success' => false,
@@ -614,7 +627,10 @@ class CartController extends Controller
         if (! $coupon || ! empty($coupon->vendor_id)) {
             $message = $this->localized('This is a vendor-specific promo code.', 'كود الخصم ده خاص بمتجر معين.');
             if (! $r->expectsJson()) {
-                return redirect()->route('cart')->with('error', $message);
+                return redirect()->route('cart')->with([
+                    'coupon_error' => $message,
+                    'coupon_error_code' => $code,
+                ]);
             }
             return response()->json([
                 'success' => false,

@@ -93,8 +93,14 @@
 .cart-promo-form input{min-width:0;flex:1;border:1px solid var(--c-light);border-radius:9px;padding:10px 11px;font:inherit;font-size:12px;background:var(--c-bg);outline:none;}
 .cart-promo-form input:focus{border-color:var(--c-dark);background:#fff;}
 .cart-promo-form button{border:0;border-radius:9px;background:var(--c-dark);color:#fff;padding:0 14px;font-size:11px;font-weight:800;cursor:pointer;}
-.cart-applied-coupon{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid #bbf7d0;background:#f0fdf4;border-radius:10px;padding:10px 11px;font-size:11px;color:#166534;margin-bottom:15px;}
-.cart-applied-coupon button{border:0;background:none;color:#b42323;font-weight:750;cursor:pointer;padding:4px;}
+  .cart-coupon-widget{margin-bottom:15px;}
+  .cart-coupon-error{display:flex;flex-direction:column;gap:6px;margin-bottom:9px;padding:11px 12px;border:1px solid #f3b5b5;border-radius:12px;background:#fff5f5;color:#a61b1b;font-size:11px;line-height:1.55;}
+  .cart-coupon-error-title{display:flex;align-items:center;justify-content:space-between;gap:10px;font-weight:850;}
+  .cart-coupon-error-title strong{direction:ltr;color:#8d1717;font-size:11px;letter-spacing:.2px;}
+  .cart-coupon-error p{margin:0;font-weight:650;}
+  .cart-applied-coupon{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid #bbf7d0;background:#f0fdf4;border-radius:10px;padding:10px 11px;font-size:11px;color:#166534;margin-bottom:0;}
+  .cart-applied-coupon button{border:0;background:none;color:#b42323;font-weight:750;cursor:pointer;padding:4px;}
+
 .cart-summary-row{display:flex;justify-content:space-between;align-items:center;gap:14px;font-size:13px;color:var(--c-mid);margin:0 0 12px;}
 .cart-summary-row strong{color:var(--c-dark);font-weight:750;}
 .cart-summary-divider{border:0;border-top:1px solid var(--c-light);margin:14px 0;}
@@ -256,7 +262,7 @@
   </header>
 
   <main class="cart-screen-body">
-    @if(session('error'))
+    @if(session('error') && !session('coupon_error'))
       <div class="alert-box alert-err">{{ session('error') }}</div>
     @endif
     @if(session('success'))
@@ -395,23 +401,36 @@
             </div>
           @endif
 
-          @if($coupon)
-            <div class="cart-applied-coupon">
-              <span>{{ !empty($coupon['free_shipping']) && $cartRtl ? 'كوبون توصيل مجاني' : (!empty($coupon['free_shipping']) ? 'Free shipping coupon' : ($cartRtl ? 'كود الخصم' : 'Coupon')) }} <strong>{{ strtoupper($coupon['code']) }}</strong> {{ $cartRtl ? 'اتطبّق' : 'applied' }}</span>
-              <form action="{{ route('cart.coupon.remove') }}" method="POST" data-cart-request>@csrf @method('DELETE')<button type="submit">
-{{ $cartRtl ? 'شيل' : 'Remove' }}</button></form>
-            </div>
-          @else
-            <details class="cart-promo">
-              <summary>{{ $cartRtl ? 'معاك كود خصم؟' : 'Have a promo code?' }}</summary>
-              <form class="cart-promo-form" action="{{ route('cart.coupon') }}" method="POST" data-cart-request>
-                @csrf
-                <input type="text" name="code" placeholder="{{ $cartRtl ? 'اكتب كود الخصم' : 'Enter promo code' }}" autocomplete="off" required>
-                <button type="submit">{{ $cartRtl ? 'طبّق' : 'Apply' }}</button>
-              </form>
-              <div id="coupon-msg" style="font-size:11px;margin-top:7px"></div>
-            </details>
-          @endif
+          @php
+            $couponError = session('coupon_error');
+            $couponErrorCode = session('coupon_error_code');
+          @endphp
+          <div class="cart-coupon-widget" aria-live="polite">
+            @if($couponError)
+              <div class="cart-coupon-error" role="alert">
+                <div class="cart-coupon-error-title">
+                  <span>{{ $cartRtl ? 'مشكلة في الكوبون' : 'Coupon issue' }}</span>
+                  @if($couponErrorCode)<strong>{{ strtoupper($couponErrorCode) }}</strong>@endif
+                </div>
+                <p>{{ $couponError }}</p>
+              </div>
+            @endif
+            @if($coupon)
+              <div class="cart-applied-coupon">
+                <span>{{ !empty($coupon['free_shipping']) && $cartRtl ? 'كوبون توصيل مجاني' : (!empty($coupon['free_shipping']) ? 'Free shipping coupon' : ($cartRtl ? 'كود الخصم' : 'Coupon')) }} <strong>{{ strtoupper($coupon['code']) }}</strong> {{ $cartRtl ? 'اتطبّق' : 'applied' }}</span>
+                <form action="{{ route('cart.coupon.remove') }}" method="POST" data-cart-request>@csrf @method('DELETE')<button type="submit">{{ $cartRtl ? 'شيل' : 'Remove' }}</button></form>
+              </div>
+            @else
+              <details class="cart-promo" @if($couponError) open @endif>
+                <summary>{{ $cartRtl ? 'معاك كود خصم؟' : 'Have a promo code?' }}</summary>
+                <form class="cart-promo-form" action="{{ route('cart.coupon') }}" method="POST" data-cart-request>
+                  @csrf
+                  <input type="text" name="code" value="{{ $couponErrorCode }}" placeholder="{{ $cartRtl ? 'اكتب كود الخصم' : 'Enter promo code' }}" autocomplete="off" required>
+                  <button type="submit">{{ $cartRtl ? 'طبّق' : 'Apply' }}</button>
+                </form>
+              </details>
+            @endif
+          </div>
 
           <div class="cart-summary-row"><span>{{ $cartRtl ? 'الإجمالي الفرعي' : 'Subtotal' }}</span><strong id="cart-subtotal">{{ number_format($subtotal, 2) }} EGP</strong></div>
           @if($coupon && $discount > 0)
