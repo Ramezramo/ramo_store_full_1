@@ -112,7 +112,7 @@
                 · {{ $isAr ? 'بحد أقصى ' : 'up to ' }}{{ number_format((float) $coupon->maximum_amount, 0) }} EGP
               @endif
               @if($expiry)
-                · {{ $isAr ? 'ساري لحد ' : 'Valid until ' }}{{ $isAr ? $expiry->locale('ar')->translatedFormat('j F Y') : $expiry->format('d M Y') }}
+                · {{ $isAr ? 'ساري لحد ' : 'Valid until ' }}{{ $expiry->format('d/m/Y') }}
               @endif
             </div>
           </div>

@@ -122,7 +122,8 @@ class CheckoutController extends Controller
         $subtotal   = collect($cart)->sum(fn ($item) => $item['price'] * $item['qty']);
         $discount   = $this->calcDiscount($subtotal, $coupon);
         $afterDiscount = max(0, $subtotal - $discount);
-        $shippingFee = ShippingConfig::feeForSubtotal($afterDiscount);
+        $freeShipping = is_array($coupon) && ! empty($coupon['free_shipping']);
+        $shippingFee = $freeShipping ? 0.0 : ShippingConfig::feeForSubtotal($afterDiscount);
         $cartTax = TaxConfig::cartTax($afterDiscount);
         $shippingTax = TaxConfig::shippingTax($shippingFee);
         $totalTax = round($cartTax + $shippingTax, 2);
@@ -369,6 +370,7 @@ class CheckoutController extends Controller
                         'code' => $couponRecord->code,
                         'discount_type' => $couponRecord->discount_type ?? 'percent',
                         'amount' => (float) ($couponRecord->amount ?? 0),
+                        'free_shipping' => (bool) ($couponRecord->free_shipping ?? false),
                     ];
                 }
 
@@ -381,7 +383,9 @@ class CheckoutController extends Controller
                 }
                 $discount = $this->calcDiscount($subtotal, $appliedCoupon);
                 $afterDiscount = max(0, $subtotal - $discount);
-                $shippingFee = ShippingConfig::feeForSubtotal($afterDiscount);
+                $shippingFee = (bool) ($couponRecord->free_shipping ?? false)
+                    ? 0.0
+                    : ShippingConfig::feeForSubtotal($afterDiscount);
                 $cartTax = TaxConfig::cartTax($afterDiscount);
                 $shippingTax = TaxConfig::shippingTax($shippingFee);
                 $totalTax = round($cartTax + $shippingTax, 2);
