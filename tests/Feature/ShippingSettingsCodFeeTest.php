@@ -5,12 +5,11 @@ namespace Tests\Feature;
 use App\Helpers\ShippingConfig;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class ShippingSettingsCodFeeTest extends TestCase
 {
-    public function test_admin_can_change_cod_fee_from_shipping_settings(): void
+    public function test_shipping_settings_no_longer_exposes_or_persists_cod_fee(): void
     {
         $originalConfig = ShippingConfig::get();
         $admin = null;
@@ -18,7 +17,7 @@ class ShippingSettingsCodFeeTest extends TestCase
 
         try {
             $admin = User::create([
-                'name' => 'Shipping COD Admin',
+                'name' => 'Shipping Settings Admin',
                 'email' => 'shipping-cod-admin-'.$suffix.'@ramostore.local',
                 'password' => 'temporary-test-password',
             ]);
@@ -37,12 +36,12 @@ class ShippingSettingsCodFeeTest extends TestCase
                 ]);
 
             $response->assertOk()->assertJson(['success' => true]);
-            $this->assertSame(55.0, ShippingConfig::codFee());
+            $this->assertArrayNotHasKey('cod_fee', ShippingConfig::get());
 
             $page = $this->actingAs($admin)->get(route('admin.shipping-settings'));
             $page->assertOk()
-                ->assertSee('name="cod_fee"', false)
-                ->assertSee('value="55"', false);
+                ->assertDontSee('name="cod_fee"', false)
+                ->assertDontSee('Cash on Delivery Fee', false);
         } finally {
             if ($admin) {
                 $admin->delete();

@@ -98,21 +98,6 @@
     </div>
   </div>
 
-  <div class="setting-section">
-    <div class="setting-section-title">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h.01M7 13h.01M11 9h6M11 13h6"/></svg>
-      Cash on Delivery
-    </div>
-
-    <div class="num-row">
-      <div>
-        <div class="toggle-label">Cash on Delivery Fee (EGP)</div>
-        <div class="toggle-sub">Added only when the customer chooses Cash on Delivery</div>
-      </div>
-      <input type="number" name="cod_fee" class="num-input" min="0" max="100000" step="0.01" value="{{ $config['cod_fee'] ?? 40 }}">
-    </div>
-  </div>
-
 </div>
 
 <div class="save-bar">
@@ -141,7 +126,6 @@ async function saveSettings() {
     free_shipping_enabled: formData.has('free_shipping_enabled'),
     free_shipping_threshold: parseFloat(formData.get('free_shipping_threshold') || '0'),
     standard_shipping_fee: parseFloat(formData.get('standard_shipping_fee') || '0'),
-    cod_fee: parseFloat(formData.get('cod_fee') || '40'),
   };
 
   try {

@@ -62,7 +62,6 @@ class FreeShippingCouponTest extends TestCase
             ShippingConfig::save([
                 'standard_shipping_fee' => 100,
                 'free_shipping_enabled' => false,
-                'cod_fee' => 40,
             ]);
 
             $user = User::create([
@@ -164,7 +163,8 @@ class FreeShippingCouponTest extends TestCase
             $this->assertGreaterThan(0, $orderId);
             $order = DB::table('orders')->where('id', $orderId)->first();
             $this->assertSame('0.00', number_format((float) $order->shipping_total, 2, '.', ''));
-            $this->assertSame('140.00', number_format((float) $order->final_total, 2, '.', ''));
+            $this->assertSame('100.00', number_format((float) $order->final_total, 2, '.', ''));
+            $this->assertSame([], json_decode($order->fee_lines ?? '[]', true) ?: []);
         } finally {
             DB::table('order_sub_orders')->where('parent_order_id', $orderId)->delete();
             if ($orderId) DB::table('orders')->where('id', $orderId)->delete();

@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Constants\AppConstants;
 use App\Helpers\ResponseHandlerRam;
-use App\Helpers\PaymentConfig;
 use App\Helpers\ShippingConfig;
 use App\Models\Order;
 use App\Models\Product;
@@ -771,8 +770,7 @@ class OrdersController extends Controller
                 }
                 $afterDiscount = max(0, $calculatedTotal - (float) $discountTotal);
                 $shippingFee = ShippingConfig::feeForSubtotal($afterDiscount);
-                $codFee = $validatedData['payment_method'] === 'cod' ? PaymentConfig::codFee() : 0.0;
-                $finalTotal = round($afterDiscount + $shippingFee + $codFee, 2);
+                $finalTotal = round($afterDiscount + $shippingFee, 2);
                 $shippingMethodId = preg_replace('/[^a-zA-Z0-9:_-]/', '', (string) ($validatedData['shipping_lines'][0]['method_id'] ?? 'standard_shipping')) ?: 'standard_shipping';
                 $shippingLines = [[
                     'method_id' => $shippingMethodId,
@@ -863,10 +861,7 @@ class OrdersController extends Controller
                     })->values()->all(),
                     'tax_lines'          => [],
                     'shipping_lines'     => $shippingLines,
-                    'fee_lines'          => $codFee > 0 ? [[
-                        'name' => 'Cash on Delivery fee',
-                        'total' => number_format($codFee, 2, '.', ''),
-                    ]] : [],
+                    'fee_lines'          => [],
                     'coupon_lines'       => $couponLines,
                     'refunds'            => [],
                     'payment_url'        => '',

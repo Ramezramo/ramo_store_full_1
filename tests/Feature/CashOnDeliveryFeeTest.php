@@ -17,7 +17,7 @@ class CashOnDeliveryFeeTest extends TestCase
         $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
     }
 
-    public function test_cod_fee_is_configurable_and_added_to_web_order_total(): void
+    public function test_cod_has_no_extra_fee_in_web_order_total(): void
     {
         $originalConfig = ShippingConfig::get();
         $user = null;
@@ -28,9 +28,6 @@ class CashOnDeliveryFeeTest extends TestCase
         $suffix = uniqid('cod-fee-', true);
 
         try {
-            ShippingConfig::save(['cod_fee' => 40]);
-            $this->assertSame(40.0, ShippingConfig::codFee());
-
             $user = User::create([
                 'name' => 'COD Fee Tester',
                 'email' => 'cod-fee-'.$suffix.'@ramostore.local',
@@ -75,9 +72,8 @@ class CashOnDeliveryFeeTest extends TestCase
 
             $checkoutPage = $this->actingAs($user)->get(route('checkout'));
             $checkoutPage->assertOk()
-                ->assertSee('id="cod-fee-summary-row"', false)
-                ->assertSee('40.00 EGP', false)
-                ->assertSee('Cash on Delivery fee', false);
+                ->assertDontSee('id="cod-fee-summary-row"', false)
+                ->assertDontSee('Cash on Delivery fee', false);
 
             $response = $this->actingAs($user)->post(route('checkout.place'), [
                 'first_name' => 'COD',
@@ -101,11 +97,9 @@ class CashOnDeliveryFeeTest extends TestCase
             $this->assertGreaterThan(0, $orderId);
 
             $order = DB::table('orders')->where('id', $orderId)->first();
-            $expectedTotal = 100 + ShippingConfig::feeForSubtotal(100.0) + 40;
+            $expectedTotal = 100 + ShippingConfig::feeForSubtotal(100.0);
             $this->assertSame(number_format($expectedTotal, 2, '.', ''), number_format((float) $order->final_total, 2, '.', ''));
-            $feeLines = json_decode($order->fee_lines ?? '[]', true) ?: [];
-            $this->assertSame('40.00', (string) ($feeLines[0]['total'] ?? ''));
-            $this->assertSame('cod_fee', $feeLines[0]['code'] ?? null);
+            $this->assertSame([], json_decode($order->fee_lines ?? '[]', true) ?: []);
         } finally {
             DB::table('order_sub_orders')->where('parent_order_id', $orderId)->delete();
             if ($orderId) {
@@ -140,7 +134,6 @@ class CashOnDeliveryFeeTest extends TestCase
         $suffix = uniqid('non-cod-fee-', true);
 
         try {
-            ShippingConfig::save(['cod_fee' => 40]);
             PaymentConfig::save(['credit_card_enabled' => true]);
             $user = User::create([
                 'name' => 'Non COD Fee Tester',

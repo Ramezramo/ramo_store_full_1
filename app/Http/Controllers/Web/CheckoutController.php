@@ -130,9 +130,7 @@ class CheckoutController extends Controller
         $baseTotal = round($afterDiscount + $shippingFee + $totalTax, 2);
         $paymentMethods = PaymentConfig::checkoutMethods();
         $selectedPaymentMethod = old('payment_method', array_key_first($paymentMethods) ?: 'cod');
-        $codFeeAmount = PaymentConfig::codFee();
-        $codFee = $selectedPaymentMethod === 'cod' ? $codFeeAmount : 0.0;
-        $total = round($baseTotal + $codFee, 2);
+        $total = $baseTotal;
 
         $user = Auth::user();
         $checkoutIdempotencyKey = session('checkout_idempotency_key');
@@ -150,7 +148,7 @@ class CheckoutController extends Controller
         }
 
         return view('web.checkout', compact(
-            'cart', 'subtotal', 'discount', 'shippingFee', 'cartTax', 'shippingTax', 'totalTax', 'baseTotal', 'codFeeAmount', 'codFee', 'total', 'coupon',
+            'cart', 'subtotal', 'discount', 'shippingFee', 'cartTax', 'shippingTax', 'totalTax', 'baseTotal', 'total', 'coupon',
             'user', 'savedAddress', 'authConfig', 'paymentMethods', 'selectedPaymentMethod', 'checkoutIdempotencyKey'
         ));
     }
@@ -212,7 +210,6 @@ class CheckoutController extends Controller
 
         $paymentTitle = $paymentMethods[$r->payment_method]['title'];
         $isManualPayment = PaymentConfig::isManualMethod($r->payment_method);
-        $codFeeAmount = PaymentConfig::codFee();
         session(['checkout_save_address' => $r->boolean('save_address')]);
 
         $billing = [
@@ -233,7 +230,7 @@ class CheckoutController extends Controller
         $customerId = Auth::id();
 
         try {
-            $checkoutResult = DB::transaction(function () use ($cart, $r, $billing, $paymentTitle, $isManualPayment, $codFeeAmount, $idempotencyKey, $idempotencyUserId, $coupon, $customerId) {
+            $checkoutResult = DB::transaction(function () use ($cart, $r, $billing, $paymentTitle, $isManualPayment, $idempotencyKey, $idempotencyUserId, $coupon, $customerId) {
                 // Claim the key inside the same transaction as stock changes and order creation.
                 // A double-click or retry can therefore never create a second order.
                 $claimed = DB::table('idempotency_keys')->insertOrIgnore([
@@ -389,8 +386,7 @@ class CheckoutController extends Controller
                 $cartTax = TaxConfig::cartTax($afterDiscount);
                 $shippingTax = TaxConfig::shippingTax($shippingFee);
                 $totalTax = round($cartTax + $shippingTax, 2);
-                $codFee = $r->payment_method === 'cod' ? $codFeeAmount : 0.0;
-                $total = round($afterDiscount + $shippingFee + $totalTax + $codFee, 2);
+                $total = round($afterDiscount + $shippingFee + $totalTax, 2);
 
                 // Stock is decremented only after each locked variation has passed validation.
                 foreach ($verifiedCart as $item) {
@@ -428,11 +424,7 @@ class CheckoutController extends Controller
                     'discount_total'       => $discount,
                     'coupon_code'          => $appliedCoupon['code'] ?? null,
                     'coupon_applied'       => $appliedCoupon ? 1 : 0,
-                    'fee_lines'            => json_encode($codFee > 0 ? [[
-                        'code' => 'cod_fee',
-                        'name' => 'Cash on Delivery fee',
-                        'total' => number_format($codFee, 2, '.', ''),
-                    ]] : []),
+                    'fee_lines'            => json_encode([]),
                     'customer_note'        => $r->notes ?? '',
                     'order_key'            => 'wc_' . Str::random(20),
                     'date_created'         => $now,
