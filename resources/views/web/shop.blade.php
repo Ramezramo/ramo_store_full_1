@@ -390,10 +390,42 @@
 .shop-filter-toggle:hover { background: var(--c-tag); }
 
 @media (max-width: 860px) {
-  .shop-layout { grid-template-columns: 1fr; }
+  .shop-layout { grid-template-columns: minmax(0, 1fr); }
   .shop-filter-toggle { display: inline-flex; }
-  .sidebar { display: none; position: static; }
-  .sidebar.mobile-open { display: block; }
+
+  /* Keep the complete desktop filter set available on phones. The panel gets
+     its own scroll area so the fixed bottom navigation never hides its last
+     widget or any category rows. */
+  .shop-page .sidebar {
+    display: none;
+    position: static;
+    width: 100%;
+    max-height: calc(100dvh - 190px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable;
+    box-sizing: border-box;
+    padding: 16px;
+    border-radius: 16px;
+  }
+  .shop-page .sidebar.mobile-open { display: block; }
+  .shop-page .sidebar.mobile-open .widget-body { overflow: visible; }
+  .shop-page .sidebar.mobile-open .widget-header { min-height: 42px; box-sizing: border-box; }
+  .shop-page .sidebar.mobile-open .widget-divider { margin: 12px 0; }
+}
+
+@media (max-width: 480px) {
+  .shop-page .sidebar {
+    max-height: calc(100dvh - 178px);
+    padding: 14px 12px;
+  }
+  .shop-page .sidebar.mobile-open .cat-all-pill,
+  .shop-page .sidebar.mobile-open .cat-parent-btn {
+    min-height: 42px;
+    box-sizing: border-box;
+  }
 }
 
 /* ── Arabic RTL shop page and phone search ────────────────── */
