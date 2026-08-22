@@ -176,6 +176,33 @@ class GameChangerCouponTest extends TestCase
             ]);
             $rowId = md5($productId.'_'.$variationId);
 
+            $cartPage = $this->withSession([
+                'locale' => 'ar',
+                'ramo_cart' => [
+                    $rowId => [
+                        'rowId' => $rowId,
+                        'product_id' => $productId,
+                        'variation_id' => $variationId,
+                        'name' => 'GAME_CHANGER limit product',
+                        'price' => 1500,
+                        'qty' => 1,
+                        'stock' => 5,
+                        'attrs' => [],
+                    ],
+                ],
+                'ramo_coupon' => [
+                    'code' => 'GAME_CHANGER',
+                    'amount' => 20,
+                    'discount_type' => 'percent',
+                    'free_shipping' => false,
+                ],
+            ])->get(route('cart'));
+            $cartPage->assertOk()
+                ->assertSee('<meta http-equiv="refresh" content="20">', false)
+                ->assertDontSee("fetch('/cart/update", false)
+                ->assertDontSee('onclick="updateQty', false)
+                ->assertDontSee('onsubmit="applyCoupon', false);
+
             $response = $this->withSession([
                 'locale' => 'ar',
                 'ramo_cart' => [
@@ -196,12 +223,10 @@ class GameChangerCouponTest extends TestCase
                     'discount_type' => 'percent',
                     'free_shipping' => false,
                 ],
-            ])->postJson(route('cart.update', $rowId), ['qty' => 2]);
+            ])->post(route('cart.update', $rowId), ['qty' => 2]);
 
-            $response->assertOk()
-                ->assertJsonPath('success', true)
-                ->assertJsonPath('coupon_invalid', true)
-                ->assertJsonPath('coupon_message', 'الكوبون ده متاح لحد قيمة سلة 2000.00 جنيه بس. عدّل الكمية أو شيل الكوبون عشان تكمل.');
+            $response->assertRedirect(route('cart'))
+                ->assertSessionHas('error', 'الكوبون ده متاح لحد قيمة سلة 2000.00 جنيه بس. عدّل الكمية أو شيل الكوبون عشان تكمل.');
             $this->assertNull(session('ramo_coupon'));
         } finally {
             DB::table('coupons')->where('code', 'GAME_CHANGER')->delete();

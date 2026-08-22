@@ -56,11 +56,13 @@
 .cart-item-old{font-size:10.5px;color:var(--c-mid);text-decoration:line-through;white-space:nowrap;}
 .cart-item-controls{display:flex;flex-direction:column;align-items:flex-end;gap:9px;}
 .cart-qty-stepper{display:inline-flex;align-items:center;border:1px solid #d9d9d9;border-radius:12px;overflow:hidden;background:var(--c-white);}
-.cart-qty-stepper button,.cart-qty-stepper input{width:44px;height:44px;border:0;background:transparent;color:var(--c-dark);font:inherit;display:grid;place-items:center;}
-.cart-qty-stepper button{font-size:20px;cursor:pointer;transition:background .15s;}
-.cart-qty-stepper button:hover,.cart-qty-stepper button:focus-visible{background:var(--c-tag);outline:none;}
-.cart-qty-stepper input{width:36px;text-align:center;font-size:14px;font-weight:800;outline:none;-moz-appearance:textfield;}
-.cart-qty-stepper input::-webkit-outer-spin-button,.cart-qty-stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+  .cart-qty-stepper button,.cart-qty-stepper .cart-qty-value{width:44px;height:44px;border:0;background:transparent;color:var(--c-dark);font:inherit;display:grid;place-items:center;}
+  .cart-qty-stepper .cart-qty-form,.cart-remove-form{display:contents;}
+  .cart-qty-stepper .cart-qty-value{width:36px;text-align:center;font-size:14px;font-weight:800;}
+  .cart-qty-stepper button{font-size:20px;cursor:pointer;transition:background .15s;}
+
+  .cart-qty-stepper button:hover,.cart-qty-stepper button:focus-visible{background:var(--c-tag);outline:none;}
+
 .cart-remove-icon{width:44px;height:44px;display:grid;place-items:center;border:0;background:transparent;color:#a0a0a0;border-radius:11px;cursor:pointer;transition:color .15s,background .15s;}
 .cart-remove-icon:hover,.cart-remove-icon:focus-visible{color:#d52b2b;background:#fff0f0;outline:none;}
 .cart-item-limit{font-size:10px;color:var(--c-mid);text-align:right;}
@@ -232,10 +234,9 @@
 @endpush
 
 @section('content')
-<div id="cart-loading-overlay" class="cart-loading-overlay"><div class="cart-spinner"></div></div>
 <div class="cart-screen" dir="{{ $cartRtl ? 'rtl' : 'ltr' }}" data-free-shipping-enabled="{{ $freeShippingEnabled ? '1' : '0' }}" data-free-shipping-threshold="{{ $freeShippingThreshold }}" data-discount="{{ $discount }}">
   <header class="cart-screen-header">
-    <a href="{{ route('shop') }}" class="cart-screen-back" onclick="return cartGoBack(event)" aria-label="{{ $cartRtl ? 'ارجع' : 'Go back' }}">
+    <a href="{{ route('shop') }}" class="cart-screen-back" aria-label="{{ $cartRtl ? 'ارجع' : 'Go back' }}">
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </a>
     <h1 class="cart-screen-title">{{ $cartRtl ? 'سلتك' : 'Your Cart' }} <span>({{ $itemCount }} {{ $cartRtl ? ($itemCount === 1 ? 'منتج' : 'منتجات') : ($itemCount === 1 ? 'item' : 'items') }})</span></h1>
@@ -245,7 +246,9 @@
     @if(session('error'))
       <div class="alert-box alert-err">{{ session('error') }}</div>
     @endif
-    <div id="cart-quantity-error" class="alert-box alert-err" style="display:none"></div>
+    @if(session('success'))
+      <div class="alert-box alert-ok">{{ session('success') }}</div>
+    @endif
 
     @if(empty($cart))
       <section class="cart-empty-state" aria-live="polite">
@@ -276,7 +279,8 @@
     @else
       <div class="cart-screen-grid">
         <section class="cart-items-panel" aria-labelledby="cart-items-heading">
-          <div class="cart-items-heading">
+                        <div class="cart-items-heading">
+
             <h2 id="cart-items-heading">{{ $cartRtl ? 'المنتجات اللي في سلتك' : 'Items in your cart' }}</h2>
             <span>{{ $itemCount }} {{ $cartRtl ? ($itemCount === 1 ? 'منتج' : 'منتجات') : ($itemCount === 1 ? 'item' : 'items') }}</span>
           </div>
@@ -285,7 +289,7 @@
             @foreach($cart as $rowId => $item)
               <article class="cart-item-card{{ !empty($item['is_unavailable']) ? ' is-unavailable' : '' }}" id="row-{{ $rowId }}" data-row-id="{{ $rowId }}" data-unit-price="{{ $item['price'] }}" data-out-of-stock="{{ !empty($item['is_unavailable']) ? '1' : '0' }}">
                 <a href="{{ route('product', $item['product_id']) }}" class="cart-item-thumb" aria-label="{{ $cartRtl ? 'عرض' : 'View' }} {{ $item['display_name'] ?? $item['name'] }}">
-                  @if($item['image'])
+                  @if(!empty($item['image']))
                     <img src="{{ $item['image'] }}" alt="{{ $item['name'] }}">
                   @else
                     <span class="cart-item-placeholder" aria-hidden="true">👕</span>
@@ -318,14 +322,30 @@
                   </div>
                 </div>
                 <div class="cart-item-controls">
+                  @php
+                    $itemMinimum = (int) ($item['minimum_qty'] ?? 1);
+                    $itemMaximum = max($itemMinimum, (int) ($item['maximum_qty'] ?? $item['stock']));
+                  @endphp
                   <div class="cart-qty-stepper{{ !empty($item['is_unavailable']) ? ' is-disabled' : '' }}" aria-label="{{ $cartRtl ? 'الكمية لـ' : 'Quantity for' }} {{ $item['display_name'] ?? $item['name'] }}">
-                    <button type="button" onclick="updateQty('{{ $rowId }}', -1)" aria-label="{{ $cartRtl ? 'قلّل الكمية' : 'Decrease quantity' }}" @disabled(!empty($item['is_unavailable']))>−</button>
-                    <input type="number" id="qty-{{ $rowId }}" value="{{ $item['qty'] }}" min="{{ $item['minimum_qty'] ?? 1 }}" max="{{ max(1, $item['maximum_qty'] ?? $item['stock']) }}" data-approved-qty="{{ $item['qty'] }}" onchange="setQty('{{ $rowId }}', this.value)" aria-label="{{ $cartRtl ? 'الكمية' : 'Quantity' }}" @disabled(!empty($item['is_unavailable']))>
-                    <button type="button" onclick="updateQty('{{ $rowId }}', 1)" aria-label="{{ $cartRtl ? 'زوّد الكمية' : 'Increase quantity' }}" @disabled(!empty($item['is_unavailable']))>+</button>
+                    <form method="POST" action="{{ route('cart.update', $rowId) }}" class="cart-qty-form">
+                      @csrf
+                      <input type="hidden" name="qty" value="{{ max($itemMinimum, $item['qty'] - 1) }}">
+                      <button type="submit" aria-label="{{ $cartRtl ? 'قلّل الكمية' : 'Decrease quantity' }}" @disabled(!empty($item['is_unavailable']) || $item['qty'] <= $itemMinimum)>−</button>
+                    </form>
+                    <span class="cart-qty-value" aria-label="{{ $cartRtl ? 'الكمية' : 'Quantity' }}">{{ $item['qty'] }}</span>
+                    <form method="POST" action="{{ route('cart.update', $rowId) }}" class="cart-qty-form">
+                      @csrf
+                      <input type="hidden" name="qty" value="{{ min($itemMaximum, $item['qty'] + 1) }}">
+                      <button type="submit" aria-label="{{ $cartRtl ? 'زوّد الكمية' : 'Increase quantity' }}" @disabled(!empty($item['is_unavailable']) || $item['qty'] >= $itemMaximum)>+</button>
+                    </form>
                   </div>
-                  <button type="button" class="cart-remove-icon{{ !empty($item['is_unavailable']) ? ' is-priority' : '' }}" onclick="removeItem('{{ $rowId }}')" aria-label="{{ $cartRtl ? 'شيل' : 'Remove' }} {{ $item['display_name'] ?? $item['name'] }}" title="{{ $cartRtl ? 'شيل المنتج' : 'Remove item' }}">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                  </button>
+                  <form method="POST" action="{{ route('cart.remove', $rowId) }}" class="cart-remove-form">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="cart-remove-icon{{ !empty($item['is_unavailable']) ? ' is-priority' : '' }}" aria-label="{{ $cartRtl ? 'شيل' : 'Remove' }} {{ $item['display_name'] ?? $item['name'] }}" title="{{ $cartRtl ? 'شيل المنتج' : 'Remove item' }}">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                    </button>
+                  </form>
                 </div>
               </article>
             @endforeach
@@ -370,8 +390,9 @@
           @else
             <details class="cart-promo">
               <summary>{{ $cartRtl ? 'معاك كود خصم؟' : 'Have a promo code?' }}</summary>
-              <form class="cart-promo-form" onsubmit="applyCoupon(event)">
-                <input type="text" id="coupon-input" placeholder="{{ $cartRtl ? 'اكتب كود الخصم' : 'Enter promo code' }}" autocomplete="off">
+              <form class="cart-promo-form" action="{{ route('cart.coupon') }}" method="POST">
+                @csrf
+                <input type="text" name="code" placeholder="{{ $cartRtl ? 'اكتب كود الخصم' : 'Enter promo code' }}" autocomplete="off" required>
                 <button type="submit">{{ $cartRtl ? 'طبّق' : 'Apply' }}</button>
               </form>
               <div id="coupon-msg" style="font-size:11px;margin-top:7px"></div>
@@ -462,181 +483,6 @@
 <script>
 const CSRF = '{{ csrf_token() }}';
 const CART_RTL = {{ $cartRtl ? 'true' : 'false' }};
-const CART_TEXT = CART_RTL ? {
-  free: 'مجاني',
-  freeShipping: 'الشحن بقى مجاني ليك.',
-  addMore: 'زوّد',
-  forFreeShipping: 'جنيه عشان الشحن يبقى مجاني',
-  quantityUpdated: 'اتحدّثت الكمية',
-  quantityRange: 'اختار كمية من',
-  quantityRangeTo: 'لحد',
-  unableUpdate: 'مش قادرين نحدّث الكمية دلوقتي. جرّب تاني.',
-  removeConfirm: 'عايز تشيل المنتج ده من السلة؟',
-  itemRemoved: 'اتشال المنتج من السلة',
-  unableRemove: 'مش قادرين نشيل المنتج دلوقتي. جرّب تاني.',
-  applying: 'بنعمل تطبيق للكود…',
-  unableCoupon: 'مش قادرين نطبّق الكود. جرّب تاني.',
-  couponInvalid: 'الكوبون ده مبقاش مناسب لقيمة السلة الحالية. عدّل الكمية أو شيله عشان تكمل.',
-  unavailableCheckout: 'فيه منتج غير متوفر. شيله من السلة عشان تقدر تكمل الطلب.'
-} : {
-  free: 'Free',
-  freeShipping: 'You unlocked free shipping.',
-  addMore: 'Add',
-  forFreeShipping: 'more for free shipping',
-  quantityUpdated: 'Quantity updated',
-  quantityRange: 'Choose a quantity from',
-  quantityRangeTo: 'to',
-  unableUpdate: 'Unable to update this quantity. Please try again.',
-  removeConfirm: 'Remove this item from your cart?',
-  itemRemoved: 'Item removed',
-  unableRemove: 'Unable to remove this item. Please try again.',
-  applying: 'Applying…',
-  unableCoupon: 'Unable to apply the code. Try again.',
-  couponInvalid: 'This coupon is no longer valid for the current cart total. Adjust the quantity or remove it to continue.',
-  unavailableCheckout: 'One or more items are out of stock. Remove them from your cart to continue.'
-};
-const cartScreen = document.querySelector('.cart-screen');
-
-function showCartLoading(){ document.getElementById('cart-loading-overlay')?.classList.add('active'); }
-function hideCartLoading(){ document.getElementById('cart-loading-overlay')?.classList.remove('active'); }
-function showCartToast(message){
-  const toast = document.getElementById('cart-toast');
-  if(!toast) return;
-  toast.textContent = message;
-  toast.classList.add('show');
-  clearTimeout(window.cartToastTimer);
-  window.cartToastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
-}
-function cartGoBack(event){
-  if(window.history.length > 1){ event.preventDefault(); window.history.back(); return false; }
-  return true;
-}
-function showCartQuantityError(message){
-  const el = document.getElementById('cart-quantity-error');
-  if(!el) return;
-  el.textContent = message;
-  el.style.display = '';
-  el.scrollIntoView({behavior:'smooth',block:'nearest'});
-}
-function clearCartQuantityError(){ const el = document.getElementById('cart-quantity-error'); if(el) el.style.display='none'; }
-function updateNavCount(n){ const badge=document.getElementById('cart-badge'); if(badge) badge.textContent=n; }
-function hasUnavailableCartItems(){ return [...document.querySelectorAll('#cart-items-wrap [data-out-of-stock="1"]')].length > 0; }
-function updateCheckoutAvailability(){
-  const blocked = hasUnavailableCartItems();
-  document.querySelectorAll('[data-cart-checkout]').forEach((link) => {
-    link.classList.toggle('is-blocked', blocked);
-    link.setAttribute('aria-disabled', blocked ? 'true' : 'false');
-    link.tabIndex = blocked ? -1 : 0;
-  });
-  document.querySelectorAll('[data-cart-checkout-warning]').forEach((warning) => { warning.hidden = !blocked; });
-}
-function preventUnavailableCheckout(event){
-  if(!hasUnavailableCartItems()) return;
-  event.preventDefault();
-  showCartQuantityError(CART_TEXT.unavailableCheckout);
-  document.querySelector('[data-out-of-stock="1"]')?.scrollIntoView({behavior:'smooth',block:'center'});
-}
-function money(value){ return Number(value || 0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' EGP'; }
-function updateCartSummary(data){
-  if(data.coupon_invalid) {
-    showCartQuantityError(data.coupon_message || CART_TEXT.couponInvalid);
-    window.setTimeout(() => location.reload(), 450);
-    return;
-  }
-  const subtotal = document.getElementById('cart-subtotal');
-  const shipping = document.getElementById('cart-shipping');
-  const total = document.getElementById('cart-total');
-  const stickyTotal = document.getElementById('cart-sticky-total');
-  if(subtotal && data.cart_subtotal !== undefined) subtotal.textContent = data.cart_subtotal + ' EGP';
-  if(shipping) { shipping.textContent = data.shipping_fee ? data.shipping_fee + ' EGP' : CART_TEXT.free; shipping.classList.toggle('summary-shipping-free', !data.shipping_fee); }
-  if(total && data.cart_total !== undefined) total.textContent = data.cart_total + ' EGP';
-  if(stickyTotal && data.cart_total !== undefined) stickyTotal.textContent = data.cart_total + ' EGP';
-  const discount = document.getElementById('cart-discount');
-  if(discount && data.cart_discount !== undefined) {
-    if(data.coupon_free_shipping) {
-      discount.textContent = CART_TEXT.freeShipping;
-    } else {
-      discount.textContent = '−' + data.cart_discount + ' EGP';
-    }
-  }
-  const fill = document.getElementById('cart-shipping-fill');
-  const percent = document.getElementById('cart-shipping-percent');
-  const message = document.getElementById('cart-shipping-message');
-  if(fill && data.free_shipping_progress !== undefined) fill.style.width = Math.min(100, Number(data.free_shipping_progress)) + '%';
-  if(percent && data.free_shipping_progress !== undefined) percent.textContent = Math.round(Number(data.free_shipping_progress)) + '%';
-  if(message && data.free_shipping_remaining !== undefined){
-    const remaining = Number(String(data.free_shipping_remaining).replace(/,/g,''));
-    message.innerHTML = remaining > 0 ? CART_TEXT.addMore + ' <strong>' + money(remaining) + '</strong> ' + CART_TEXT.forFreeShipping : '<span class="cart-shipping-done">' + CART_TEXT.freeShipping + '</span>';
-  }
-}
-function optimisticLineTotal(rowId, qty){
-  const row = document.getElementById('row-' + rowId);
-  const unit = Number(row?.dataset.unitPrice || 0);
-  const line = document.getElementById('sub-' + rowId);
-  if(line) line.textContent = money(unit * qty);
-}
-async function updateQty(rowId, delta){
-  const row = document.getElementById('row-' + rowId);
-  if(row?.dataset.outOfStock === '1') return;
-  const input = document.getElementById('qty-' + rowId);
-  if(!input) return;
-  const current = parseInt(input.value,10) || parseInt(input.min,10) || 1;
-  const minimum = parseInt(input.min,10) || 1;
-  const maximum = parseInt(input.max,10) || minimum;
-  const requested = Math.max(minimum, Math.min(maximum, current + delta));
-  if(requested !== current) await setQty(rowId, requested, current);
-}
-async function setQty(rowId, val, previousVal = null){
-  const input = document.getElementById('qty-' + rowId);
-  const row = document.getElementById('row-' + rowId);
-  if(!input || !row || row.dataset.outOfStock === '1') return;
-  const approved = parseInt(input.dataset.approvedQty,10) || parseInt(input.value,10) || 1;
-  const requested = parseInt(val,10);
-  const restore = previousVal ?? approved;
-  const minimum = parseInt(input.min,10) || 1;
-  const maximum = parseInt(input.max,10) || minimum;
-  if(!Number.isInteger(requested) || requested < minimum || requested > maximum){ input.value=approved; showCartQuantityError(`${CART_TEXT.quantityRange} ${minimum} ${CART_TEXT.quantityRangeTo} ${maximum}.`); return; }
-  clearCartQuantityError();
-  input.value = requested;
-  optimisticLineTotal(rowId, requested);
-  row.classList.add('is-updating');
-  try{
-    const res = await fetch('/cart/update/' + encodeURIComponent(rowId), {method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'Accept':'application/json'},body:JSON.stringify({qty:requested})});
-    const data = await res.json();
-    if(!data.success) throw new Error(CART_RTL ? CART_TEXT.unableUpdate : (data.message || CART_TEXT.unableUpdate));
-    input.dataset.approvedQty = requested;
-    const oldEl=document.getElementById('sub-old-' + rowId);
-    if(oldEl){ if(data.item_subtotal_old){oldEl.textContent=data.item_subtotal_old+' EGP';oldEl.style.display='';}else oldEl.style.display='none'; }
-    updateCartSummary(data); updateNavCount(data.count); showCartToast(CART_TEXT.quantityUpdated);
-  }catch(error){
-    input.value = restore; optimisticLineTotal(rowId, restore); showCartQuantityError(CART_RTL ? CART_TEXT.unableUpdate : (error.message || CART_TEXT.unableUpdate));
-  }finally{ row.classList.remove('is-updating'); }
-}
-async function removeItem(rowId){
-  const row=document.getElementById('row-' + rowId);
-  if(!row || !confirm(CART_TEXT.removeConfirm)) return;
-  row.classList.add('is-removing');
-  try{
-    const res=await fetch('/cart/remove/' + encodeURIComponent(rowId),{method:'DELETE',headers:{'X-CSRF-TOKEN':CSRF,'Accept':'application/json'}});
-    const data=await res.json();
-    if(!data.success) throw new Error(CART_RTL ? CART_TEXT.unableRemove : (data.message || CART_TEXT.unableRemove));
-    setTimeout(()=>{ row.remove(); updateCheckoutAvailability(); },220); updateCartSummary(data); updateNavCount(data.count); showCartToast(CART_TEXT.itemRemoved);
-    if(data.count === 0) setTimeout(()=>location.reload(),260);
-  }catch(error){ row.classList.remove('is-removing'); showCartQuantityError(CART_RTL ? CART_TEXT.unableRemove : (error.message || CART_TEXT.unableRemove)); }
-}
-async function applyCoupon(event){
-  event?.preventDefault();
-  const input=document.getElementById('coupon-input'); const msg=document.getElementById('coupon-msg');
-  const code=(input?.value || '').trim(); if(!code) return;
-  if(msg){msg.textContent=CART_TEXT.applying;msg.style.color='var(--c-mid)';}
-  try{
-    const res=await fetch('/cart/coupon',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'Accept':'application/json'},body:JSON.stringify({code})});
-    const data=await res.json();
-    if(msg){msg.textContent=CART_RTL ? (data.success ? 'اتطبّق كود الخصم.' : 'الكود مش صالح أو منتهي.') : (data.message || '');msg.style.color=data.success?'#208a4b':'#c02020';}
-    if(data.reload) setTimeout(()=>location.reload(),650);
-  }catch(error){if(msg){msg.textContent=CART_TEXT.unableCoupon;msg.style.color='#c02020';}}
-}
-
 const guestOtpModal = document.getElementById('guest-otp-checkout');
 const guestOtpPhoneStep = document.getElementById('guest-otp-phone-step');
 const guestOtpCodeStep = document.getElementById('guest-otp-code-step');
@@ -794,11 +640,10 @@ async function verifyGuestOtp(){
     window.setTimeout(() => guestOtpCodeInputs[0]?.focus(), 30);
   }
 }
-document.querySelectorAll('[data-cart-checkout]').forEach((link) => link.addEventListener('click', (event) => {
-  if(hasUnavailableCartItems()) { preventUnavailableCheckout(event); return; }
-  if(link.hasAttribute('data-guest-otp-checkout')) { event.preventDefault(); openGuestOtpModal(); }
+document.querySelectorAll('[data-cart-checkout][data-guest-otp-checkout]').forEach((link) => link.addEventListener('click', (event) => {
+  event.preventDefault();
+  openGuestOtpModal();
 }));
-updateCheckoutAvailability();
 guestOtpClose?.addEventListener('click', closeGuestOtpModal);
 guestOtpModal?.addEventListener('click', (event) => { if(event.target === guestOtpModal) closeGuestOtpModal(); });
 document.addEventListener('keydown', (event) => { if(event.key === 'Escape' && guestOtpModal && !guestOtpModal.hidden) closeGuestOtpModal(); });

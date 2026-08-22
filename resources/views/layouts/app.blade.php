@@ -55,6 +55,9 @@
 <link rel="icon" type="image/png" sizes="256x256" href="{{ asset('favicon.png') }}">
 <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
 <meta name="theme-color" content="#111111">
+@if(request()->routeIs('cart'))
+<meta http-equiv="refresh" content="20">
+@endif
 <meta name="robots" content="@yield('meta_robots', $storefrontNoIndex ? 'noindex,nofollow' : 'index,follow')">
 <link rel="canonical" href="@yield('canonical', url()->current())">
 <title>@yield('title', $headerIsArabic ? 'رامو ستور' : 'Ramo Store') — {{ $headerIsArabic ? 'موضة وأكثر' : 'Fashion & More' }}</title>

@@ -508,7 +508,7 @@ class CartController extends Controller
         $item     = $cart[$rowId];
         $hasOldPrice = !empty($item['regular_price']) && $item['regular_price'] > $item['price'];
 
-        return response()->json([
+        $response = [
             'success'           => true,
             'item_subtotal'     => number_format($item['price'] * $item['qty'], 2),
             'item_subtotal_old' => $hasOldPrice ? number_format($item['regular_price'] * $item['qty'], 2) : null,
@@ -524,10 +524,21 @@ class CartController extends Controller
             'free_shipping_remaining' => number_format($totals['freeShippingRemaining'], 2),
             'free_shipping_progress'  => $totals['freeShippingProgress'],
             'count'                  => count($cart),
-        ]);
+        ];
+
+        if (! $r->expectsJson()) {
+            return redirect()->route('cart')->with(
+                $totals['couponInvalid'] ? 'error' : 'success',
+                $totals['couponInvalid']
+                    ? $totals['couponMessage']
+                    : $this->localized('Quantity updated.', 'الكمية اتحدّثت.')
+            );
+        }
+
+        return response()->json($response);
     }
 
-    public function remove($rowId)
+    public function remove(Request $r, $rowId)
     {
         $cart = $this->getCart();
         unset($cart[$rowId]);
@@ -536,7 +547,7 @@ class CartController extends Controller
         $subtotal = collect($cart)->sum(fn($i) => $i['price'] * $i['qty']);
         $totals   = $this->calcTotals($subtotal);
 
-        return response()->json([
+        $response = [
             'success'       => true,
             'count'         => count($cart),
             'cart_subtotal' => number_format($totals['subtotal'], 2),
@@ -550,7 +561,18 @@ class CartController extends Controller
             'free_shipping_threshold' => number_format($totals['freeShippingThreshold'], 2),
             'free_shipping_remaining' => number_format($totals['freeShippingRemaining'], 2),
             'free_shipping_progress' => $totals['freeShippingProgress'],
-        ]);
+        ];
+
+        if (! $r->expectsJson()) {
+            return redirect()->route('cart')->with(
+                $totals['couponInvalid'] ? 'error' : 'success',
+                $totals['couponInvalid']
+                    ? $totals['couponMessage']
+                    : $this->localized('Item removed.', 'المنتج اتشال من السلة.')
+            );
+        }
+
+        return response()->json($response);
     }
 
     public function clear()
@@ -578,17 +600,25 @@ class CartController extends Controller
         );
 
         if (! $validation['valid']) {
+            $message = $this->localized($validation['message'], 'الكوبون ده مش متاح للسلة دي.');
+            if (! $r->expectsJson()) {
+                return redirect()->route('cart')->with('error', $message);
+            }
             return response()->json([
                 'success' => false,
-                'message' => $this->localized($validation['message'], 'الكوبون ده مش متاح للسلة دي.'),
+                'message' => $message,
             ], $validation['code'] ?: 422);
         }
 
         $coupon = DB::table('coupons')->where('code', $code)->first();
         if (! $coupon || ! empty($coupon->vendor_id)) {
+            $message = $this->localized('This is a vendor-specific promo code.', 'كود الخصم ده خاص بمتجر معين.');
+            if (! $r->expectsJson()) {
+                return redirect()->route('cart')->with('error', $message);
+            }
             return response()->json([
                 'success' => false,
-                'message' => $this->localized('This is a vendor-specific promo code.', 'كود الخصم ده خاص بمتجر معين.'),
+                'message' => $message,
             ], 422);
         }
 
@@ -599,6 +629,10 @@ class CartController extends Controller
             'free_shipping' => (bool) ($coupon->free_shipping ?? false),
             'description'   => $coupon->description ?? '',
         ]]);
+
+        if (! $r->expectsJson()) {
+            return redirect()->route('cart')->with('success', $this->localized('Coupon applied!', 'كود الخصم اتطبق!'));
+        }
 
         return response()->json(['success' => true, 'message' => $this->localized('Coupon applied!', 'كود الخصم اتطبق!'), 'reload' => true]);
     }
