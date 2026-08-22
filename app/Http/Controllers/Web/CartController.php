@@ -105,7 +105,7 @@ class CartController extends Controller
             }
         }
 
-        $coupon   = session('ramo_coupon');
+        $coupon   = $this->appliedCoupon();
         $subtotal = collect($cart)->sum(fn($i) => $i['price'] * $i['qty']);
         $discount = 0;
 
@@ -388,9 +388,33 @@ class CartController extends Controller
         return response()->json($response);
     }
 
+    private function appliedCoupon(): ?array
+    {
+        $coupon = session('ramo_coupon');
+        if (!is_array($coupon) || empty($coupon['code'])) {
+            return null;
+        }
+
+        $record = DB::table('coupons')
+            ->whereRaw('LOWER(code) = ?', [strtolower(trim((string) $coupon['code']))])
+            ->first(['code', 'discount_type', 'amount', 'free_shipping', 'description']);
+        if (!$record) {
+            return $coupon;
+        }
+
+        $coupon['code'] = $record->code;
+        $coupon['discount_type'] = $record->discount_type ?? 'percent';
+        $coupon['amount'] = $record->amount ?? 0;
+        $coupon['free_shipping'] = (bool) ($record->free_shipping ?? false);
+        $coupon['description'] = $record->description ?? ($coupon['description'] ?? '');
+        session(['ramo_coupon' => $coupon]);
+
+        return $coupon;
+    }
+
     private function calcTotals(float $subtotal): array
     {
-        $coupon   = session('ramo_coupon');
+        $coupon   = $this->appliedCoupon();
         $discount = 0;
         if ($coupon) {
             $discount = $coupon['discount_type'] === 'percent'
