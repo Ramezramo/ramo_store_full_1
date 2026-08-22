@@ -77,6 +77,7 @@
   .checkout-page .ck-totals .total-row{margin-bottom:0;color:#222;font-size:16px;font-weight:850}
   .checkout-page .ck-totals .total-row span:last-child{color:#e85d26;font-size:18px}
   @media(max-width:600px){.ck-auth-widget{align-items:flex-start;flex-direction:column;gap:13px;padding:15px}.ck-auth-actions{justify-content:flex-start;width:100%}.ck-auth-action{flex:1;padding:0 10px}.ck-save-address{min-height:58px;padding:11px 13px}.ck-location-fallback{align-items:stretch;flex-direction:column}.ck-location-fallback-actions{justify-content:stretch}.ck-location-fallback-btn{flex:1}.checkout-page .ck-summary{padding:13px 12px;border-radius:16px}.checkout-page .ck-summary>.ck-title{margin-bottom:12px;font-size:16px}.checkout-page .ck-item{grid-template-columns:52px minmax(0,1fr) auto;gap:8px;padding:8px;border-radius:12px}.checkout-page .ck-item-img{width:52px;height:52px;border-radius:10px}.checkout-page .ck-item-name{font-size:12px}.checkout-page .ck-item-price{font-size:11px}.checkout-page .ck-totals{padding:12px 10px 3px}.checkout-page .ck-totals .total-row{font-size:14px}.checkout-page .ck-totals .total-row span:last-child{font-size:16px}}
+  @media(max-width:900px){.checkout-page form{display:flex;flex-direction:column}.checkout-page .checkout-shipping-section{order:-1}}
 </style>
 @endpush
 
@@ -153,7 +154,7 @@
         </div>
 
         {{-- SHIPPING ADDRESS --}}
-        <div class="ck-section">
+        <div class="ck-section checkout-shipping-section">
           <h3 class="ck-title">{{ $isAr ? 'عنوان الشحن' : 'Shipping Address' }}</h3>
           <div class="form-group">
             <label>{{ $isAr ? 'حدّد مكان التوصيل' : 'Choose your delivery location' }}</label>
