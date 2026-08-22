@@ -180,14 +180,10 @@
             <span class="pi-disc-badge" id="disc-badge" style="display:none"></span>
           @endif
         </div>
-        @if($hasDisc)
+        @if($hasDisc && $isRange)
         <div class="pi-sale-note" role="note">
           <span class="pi-sale-note-title">{{ $isAr ? 'ليه فيه سعرين؟' : 'Why are there two prices?' }}</span>
-          @if($isRange)
-            <span>{{ $isAr ? 'السعر بيتغير حسب اللون أو المقاس اللي هتختاره. الأسعار المعروضة هي نطاق أسعار الاختيارات المتاحة.' : 'The price changes according to the color or size you choose. The displayed amount is the price range for the available options.' }}</span>
-          @else
-            <span>{{ $isAr ? 'السعر الرمادي المشطوب هو السعر الأصلي قبل الخصم، والسعر البرتقالي هو السعر بعد الخصم.' : 'The gray crossed-out price is the original price before the discount, and the orange price is the price after the discount.' }}</span>
-          @endif
+          <span>{{ $isAr ? 'السعر بيتغير حسب اللون أو المقاس اللي هتختاره. الأسعار المعروضة هي نطاق أسعار الاختيارات المتاحة.' : 'The price changes according to the color or size you choose. The displayed amount is the price range for the available options.' }}</span>
           <span class="pi-sale-saving">🏷️ {{ $isAr ? 'بتوفّر ' . round($discPct) . '% من السعر الأصلي' : 'You save ' . round($discPct) . '% off the original price' }}</span>
         </div>
         @elseif($isRange)

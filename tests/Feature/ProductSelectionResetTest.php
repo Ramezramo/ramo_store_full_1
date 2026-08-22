@@ -43,9 +43,10 @@ class ProductSelectionResetTest extends TestCase
         $product = file_get_contents(resource_path('views/web/product.blade.php'));
 
         $this->assertIsString($product);
+        $this->assertStringContainsString('@if($hasDisc && $isRange)', $product);
         $this->assertStringContainsString('ليه فيه سعرين؟', $product);
-        $this->assertStringContainsString('السعر الرمادي المشطوب هو السعر الأصلي قبل الخصم، والسعر البرتقالي هو السعر بعد الخصم.', $product);
         $this->assertStringContainsString('السعر بيتغير حسب اللون أو المقاس اللي هتختاره.', $product);
+        $this->assertStringContainsString('pi-price-orig', $product);
         $this->assertStringContainsString('Why are there two prices?', $product);
         $this->assertStringContainsString('pi-price-explanation', $product);
     }
