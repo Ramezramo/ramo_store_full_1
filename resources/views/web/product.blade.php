@@ -181,7 +181,20 @@
           @endif
         </div>
         @if($hasDisc)
-        <div class="pi-sale-note">🏷️ {{ $isAr ? 'سعر التخفيض — بتوفّر ' . round($discPct) . '% من السعر الأصلي' : 'Sale price — you save ' . round($discPct) . '% off the original price' }}</div>
+        <div class="pi-sale-note" role="note">
+          <span class="pi-sale-note-title">{{ $isAr ? 'ليه فيه سعرين؟' : 'Why are there two prices?' }}</span>
+          @if($isRange)
+            <span>{{ $isAr ? 'السعر بيتغير حسب اللون أو المقاس اللي هتختاره. الأسعار المعروضة هي نطاق أسعار الاختيارات المتاحة.' : 'The price changes according to the color or size you choose. The displayed amount is the price range for the available options.' }}</span>
+          @else
+            <span>{{ $isAr ? 'السعر الرمادي المشطوب هو السعر الأصلي قبل الخصم، والسعر البرتقالي هو السعر بعد الخصم.' : 'The gray crossed-out price is the original price before the discount, and the orange price is the price after the discount.' }}</span>
+          @endif
+          <span class="pi-sale-saving">🏷️ {{ $isAr ? 'بتوفّر ' . round($discPct) . '% من السعر الأصلي' : 'You save ' . round($discPct) . '% off the original price' }}</span>
+        </div>
+        @elseif($isRange)
+        <div class="pi-price-explanation" role="note">
+          <span class="pi-price-note-title">{{ $isAr ? 'السعر حسب الاختيار' : 'Price depends on your selection' }}</span>
+          <span>{{ $isAr ? 'السعر بيتغير حسب اللون أو المقاس اللي هتختاره.' : 'The price changes according to the color or size you choose.' }}</span>
+        </div>
         @endif
       </div>
 
@@ -1946,10 +1959,20 @@ function deleteReview(btn, id, productId) {
   background: #e85d26; color: #fff; font-size: 12px; font-weight: 700;
   padding: 3px 9px; border-radius: 20px; letter-spacing: .03em;
 }
-.pi-sale-note {
-  font-size: 12px; color: #22a35c; font-weight: 600;
+.pi-sale-note,
+.pi-price-explanation {
+  display: flex; flex-direction: column; gap: 3px;
+  font-size: 12px; color: #166534; font-weight: 600;
   background: #f0fdf4; border: 1px solid #bbf7d0;
-  padding: 6px 12px; border-radius: 8px; margin-top: 6px; display: inline-block;
+  padding: 8px 12px; border-radius: 8px; margin-top: 7px;
+  line-height: 1.55; max-width: 100%;
+}
+.pi-sale-note-title,
+.pi-price-note-title { font-weight: 800; color: #14532d; }
+.pi-sale-saving { font-weight: 700; }
+@media(max-width:640px) {
+  .pi-sale-note,
+  .pi-price-explanation { font-size: 11px; padding: 8px 10px; }
 }
 
 /* Variations wrapper */
