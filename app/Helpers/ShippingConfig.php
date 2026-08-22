@@ -11,6 +11,7 @@ class ShippingConfig
         'free_shipping_enabled'   => true,
         'free_shipping_threshold' => 1000,
         'standard_shipping_fee'   => 0,
+        'cod_fee'                 => 40,
     ];
 
     public static function get(): array
@@ -22,7 +23,6 @@ class ShippingConfig
 
             if ($row && $row->value) {
                 $stored = json_decode($row->value, true) ?? [];
-                unset($stored['cod_fee']);
                 return array_merge(self::$defaults, $stored);
             }
             return self::$defaults;
@@ -35,10 +35,16 @@ class ShippingConfig
         return $cfg[$key] ?? $fallback ?? self::$defaults[$key] ?? null;
     }
 
+    public static function codFee(?array $config = null): float
+    {
+        $config ??= self::get();
+
+        return round(max(0, (float) ($config['cod_fee'] ?? 40)), 2);
+    }
+
     public static function save(array $data): void
     {
         $current = self::get();
-        unset($data['cod_fee']);
         $merged  = array_merge($current, $data);
 
         $exists = DB::table('app_configs')->where('config_key', 'shipping_settings')->exists();

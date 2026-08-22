@@ -35,6 +35,11 @@ class PaymentConfig
         return array_merge(self::$defaults, $stored);
     }
 
+    public static function codFee(?array $config = null): float
+    {
+        return ShippingConfig::codFee();
+    }
+
     public static function save(array $data): void
     {
         $merged = array_merge(self::get(), $data);

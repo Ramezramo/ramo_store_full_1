@@ -254,6 +254,12 @@
               <div>
                 <div class="pay-title">{{ $paymentCopy['title'] ?? $method['title'] }}</div>
                 <div class="pay-desc">{{ $paymentCopy['description'] ?? $method['description'] }}</div>
+                @if($val === 'cod' && $codFeeAmount > 0)
+                  <div class="pay-data" style="color:#9a3412">
+                    <span>{{ $isAr ? 'رسوم الدفع عند الاستلام' : 'Cash on Delivery fee' }}:</span>
+                    <strong>{{ number_format($codFeeAmount, 2) }} EGP</strong>
+                  </div>
+                @endif
                 @if($method['data'] ?? '')
                   <div class="pay-data">
                     <span>{{ $paymentCopy['data_label'] ?? ($method['data_label'] ?? ($isAr ? 'التفاصيل' : 'Details')) }}:</span>
@@ -328,6 +334,10 @@
         @endif
         <div class="summary-row"><span>{{ $isAr ? 'التوصيل المتوقع' : 'Estimated Delivery' }}</span><span>{{ $isAr ? 'من يومين لـ 4 أيام' : '2–4 days' }}</span></div>
         <div class="summary-row"><span>{{ $isAr ? 'الشحن' : 'Shipping' }}</span><span>{{ $shippingFee > 0 ? number_format($shippingFee, 2) . ' EGP' : ($isAr ? 'مجاني' : 'Free') }}</span></div>
+        <div class="summary-row" id="cod-fee-summary-row" data-cod-fee-row {{ $codFee > 0 ? '' : 'hidden' }}>
+          <span>{{ $isAr ? 'رسوم الدفع عند الاستلام' : 'Cash on Delivery fee' }}</span>
+          <span id="cod-fee-summary-value">{{ number_format($codFee, 2) }} EGP</span>
+        </div>
         @if($totalTax > 0)
           <div class="summary-row"><span>{{ $isAr ? 'الضريبة' : 'Tax' }}</span><span>{{ number_format($totalTax, 2) }} EGP</span></div>
         @endif
@@ -350,8 +360,25 @@ document.addEventListener('DOMContentLoaded', () => {
       option.classList.toggle('selected', option.querySelector('input')?.checked === true);
     });
   };
-  paymentOptions.forEach((input) => input.addEventListener('change', updateSelectedMethod));
+  const codFeeAmount = Number(@json($codFeeAmount));
+  const baseTotal = Number(@json($baseTotal));
+  const codFeeRow = document.getElementById('cod-fee-summary-row');
+  const codFeeValue = document.getElementById('cod-fee-summary-value');
+  const checkoutTotalValue = document.getElementById('checkout-total-value');
+  const formatEgp = (value) => `${Number(value).toFixed(2)} EGP`;
+  const updateCheckoutTotal = () => {
+    const selected = document.querySelector('input[name="payment_method"]:checked')?.value;
+    const fee = selected === 'cod' ? codFeeAmount : 0;
+    if (codFeeRow) codFeeRow.hidden = fee <= 0;
+    if (codFeeValue) codFeeValue.textContent = formatEgp(fee);
+    if (checkoutTotalValue) checkoutTotalValue.textContent = formatEgp(baseTotal + fee);
+  };
+  paymentOptions.forEach((input) => input.addEventListener('change', () => {
+    updateSelectedMethod();
+    updateCheckoutTotal();
+  }));
   updateSelectedMethod();
+  updateCheckoutTotal();
 
   const checkoutForm = document.getElementById('checkout-form');
   checkoutForm?.addEventListener('submit', (event) => {

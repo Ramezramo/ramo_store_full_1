@@ -35,12 +35,21 @@
             default => ucfirst($displayOrderStatus),
           };
     @endphp
+    @php
+      $rawFeeLines = $order->fee_lines ?? [];
+      $feeLines = is_string($rawFeeLines) ? (json_decode($rawFeeLines, true) ?: []) : (is_array($rawFeeLines) ? $rawFeeLines : []);
+      $codFeeLine = collect($feeLines)->first(fn ($line) => ($line['code'] ?? null) === 'cod_fee' || ($line['name'] ?? null) === 'Cash on Delivery fee');
+      $codFee = (float) ($codFeeLine['total'] ?? 0);
+    @endphp
     <div class="od-row"><span class="od-label">{{ $isAr ? 'حالة الطلب' : 'Status' }}</span><span class="status-badge status-{{ $displayOrderStatus }}">{{ $displayOrderLabel }}</span></div>
     @if(\App\Helpers\PaymentConfig::isManualMethod($order->payment_method ?? null))
       <div class="od-row"><span class="od-label">{{ $isAr ? 'حالة الدفع' : 'Payment status' }}</span><span class="status-badge" style="background:#fff7ed;color:#9a3412">{{ $isAr ? match(strtolower($order->payment_status ?? 'pending_payment')) { 'confirmed' => 'تم التأكيد', 'failed' => 'فشل', default => 'في الانتظار' } : ucwords(str_replace('_', ' ', $order->payment_status ?? 'pending_payment')) }}</span></div>
     @endif
     <div class="od-row"><span class="od-label">{{ $isAr ? 'طريقة الدفع' : 'Payment' }}</span><span>{{ $order->payment_method_title }}</span></div>
     <div class="od-row"><span class="od-label">{{ $isAr ? 'التاريخ' : 'Date' }}</span><span>{{ $isAr ? \Carbon\Carbon::parse($order->date_created)->locale('ar')->translatedFormat('j F Y، g:i A') : \Carbon\Carbon::parse($order->date_created)->format('M d, Y h:i A') }}</span></div>
+    @if(($order->payment_method ?? null) === 'cod' && $codFee > 0)
+      <div class="od-row"><span class="od-label">{{ $isAr ? 'رسوم الدفع عند الاستلام' : 'Cash on Delivery fee' }}</span><span>{{ number_format($codFee, 2) }} EGP</span></div>
+    @endif
     @if((float) ($order->total_tax ?? 0) > 0)
       <div class="od-row"><span class="od-label">{{ $isAr ? 'الضريبة' : 'Tax' }}</span><span>{{ number_format($order->total_tax, 2) }} EGP</span></div>
     @endif

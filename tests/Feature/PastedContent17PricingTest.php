@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Helpers\PaymentConfig;
 use App\Helpers\ShippingConfig;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -230,8 +231,10 @@ class PastedContent17PricingTest extends TestCase
             $this->assertSame('150.00', number_format((float) $order->original_total, 2, '.', ''));
             $this->assertSame('15.00', number_format((float) $order->discount_total, 2, '.', ''));
             $this->assertSame(number_format($shippingFee, 2, '.', ''), number_format((float) $order->shipping_total, 2, '.', ''));
-            $this->assertSame(number_format(135 + $shippingFee, 2, '.', ''), number_format((float) $order->final_total, 2, '.', ''));
-            $this->assertSame([], json_decode($order->fee_lines ?? '[]', true) ?: []);
+            $codFee = PaymentConfig::codFee();
+            $this->assertSame(number_format(135 + $shippingFee + $codFee, 2, '.', ''), number_format((float) $order->final_total, 2, '.', ''));
+            $feeLines = json_decode($order->fee_lines ?? '[]', true) ?: [];
+            $this->assertSame(number_format($codFee, 2, '.', ''), (string) ($feeLines[0]['total'] ?? ''));
 
             $lineItems = json_decode($order->line_items, true);
             $this->assertCount(1, $lineItems);
