@@ -153,6 +153,10 @@
   }
   .timeline-widgets .product-grid .pc-coupon-bar { display:none !important; }
 }
+@media(max-width:640px) {
+  /* Banner navigation is touch-first on phones; keep product-scroll arrows untouched. */
+  .tl-banner-slider .tl-arrow { display:none !important; }
+}
 </style>
 
 @php
