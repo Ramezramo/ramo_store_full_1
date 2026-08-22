@@ -1891,6 +1891,59 @@ const sliderState = {};
 
 function initSlider(id, count, autoPlay) {
   sliderState[id] = { current: 0, count, timer: null };
+  const slider = document.getElementById(id);
+  if (slider && !slider.dataset.touchBound) {
+    slider.dataset.touchBound = 'true';
+    let startX = 0;
+    let startY = 0;
+    let tracking = false;
+    let horizontalMove = false;
+    let suppressClick = false;
+
+    slider.addEventListener('touchstart', (event) => {
+      if (!window.matchMedia('(max-width: 640px)').matches || event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      startX = touch.clientX;
+      startY = touch.clientY;
+      tracking = true;
+      horizontalMove = false;
+      slider.classList.add('is-touching');
+    }, { passive: true });
+
+    slider.addEventListener('touchmove', (event) => {
+      if (!tracking || event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      const deltaX = touch.clientX - startX;
+      const deltaY = touch.clientY - startY;
+      if (Math.abs(deltaX) > 8 && Math.abs(deltaX) > Math.abs(deltaY)) {
+        horizontalMove = true;
+      }
+    }, { passive: true });
+
+    const finishTouch = (event) => {
+      if (!tracking) return;
+      const touch = event.changedTouches?.[0];
+      const deltaX = touch ? touch.clientX - startX : 0;
+      const deltaY = touch ? touch.clientY - startY : 0;
+      tracking = false;
+      slider.classList.remove('is-touching');
+
+      if (!window.matchMedia('(max-width: 640px)').matches || !horizontalMove || Math.abs(deltaX) < 45 || Math.abs(deltaX) <= Math.abs(deltaY)) return;
+      if (deltaX < 0) slideNext(id);
+      else slidePrev(id);
+      suppressClick = true;
+      window.setTimeout(() => { suppressClick = false; }, 450);
+    };
+
+    slider.addEventListener('touchend', finishTouch, { passive: true });
+    slider.addEventListener('touchcancel', finishTouch, { passive: true });
+    slider.addEventListener('click', (event) => {
+      if (!suppressClick) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      suppressClick = false;
+    }, true);
+  }
   if (autoPlay && count > 1) {
     sliderState[id].timer = setInterval(() => slideNext(id), 4000);
   }

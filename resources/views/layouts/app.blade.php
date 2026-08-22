@@ -851,7 +851,8 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 .tl-slide{min-width:100%;position:relative;direction:rtl}
 .tl-slide img{width:100%;display:block;object-fit:cover}
 @media(max-width:640px){
-  .tl-banner-slider{max-height:none !important}
+  .tl-banner-slider{max-height:none !important;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+  .tl-banner-slider.is-touching{cursor:grabbing}
   .tl-slide img{height:56vw !important;max-height:none !important}
 }
 .tl-slide-link{display:block;position:relative}
