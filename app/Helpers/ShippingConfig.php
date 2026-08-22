@@ -11,6 +11,7 @@ class ShippingConfig
         'free_shipping_enabled'   => true,
         'free_shipping_threshold' => 1000,
         'standard_shipping_fee'   => 0,
+        'cod_fee'                 => 40,
     ];
 
     public static function get(): array
@@ -32,6 +33,13 @@ class ShippingConfig
     {
         $cfg = self::get();
         return $cfg[$key] ?? $fallback ?? self::$defaults[$key] ?? null;
+    }
+
+    public static function codFee(?array $config = null): float
+    {
+        $config ??= self::get();
+
+        return round(max(0, (float) ($config['cod_fee'] ?? 40)), 2);
     }
 
     public static function save(array $data): void

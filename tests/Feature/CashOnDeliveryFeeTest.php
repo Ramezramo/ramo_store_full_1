@@ -19,7 +19,7 @@ class CashOnDeliveryFeeTest extends TestCase
 
     public function test_cod_fee_is_configurable_and_added_to_web_order_total(): void
     {
-        $originalConfig = PaymentConfig::get();
+        $originalConfig = ShippingConfig::get();
         $user = null;
         $productId = null;
         $variationId = null;
@@ -28,8 +28,8 @@ class CashOnDeliveryFeeTest extends TestCase
         $suffix = uniqid('cod-fee-', true);
 
         try {
-            PaymentConfig::save(['cod_enabled' => true, 'cod_fee' => 40]);
-            $this->assertSame(40.0, PaymentConfig::codFee());
+            ShippingConfig::save(['cod_fee' => 40]);
+            $this->assertSame(40.0, ShippingConfig::codFee());
 
             $user = User::create([
                 'name' => 'COD Fee Tester',
@@ -124,13 +124,14 @@ class CashOnDeliveryFeeTest extends TestCase
             if ($user) {
                 $user->delete();
             }
-            PaymentConfig::save($originalConfig);
+            ShippingConfig::save($originalConfig);
         }
     }
 
     public function test_non_cod_web_order_does_not_receive_cod_fee(): void
     {
-        $originalConfig = PaymentConfig::get();
+        $originalConfig = ShippingConfig::get();
+        $originalPaymentConfig = PaymentConfig::get();
         $user = null;
         $productId = null;
         $variationId = null;
@@ -139,7 +140,8 @@ class CashOnDeliveryFeeTest extends TestCase
         $suffix = uniqid('non-cod-fee-', true);
 
         try {
-            PaymentConfig::save(['cod_fee' => 40, 'credit_card_enabled' => true]);
+            ShippingConfig::save(['cod_fee' => 40]);
+            PaymentConfig::save(['credit_card_enabled' => true]);
             $user = User::create([
                 'name' => 'Non COD Fee Tester',
                 'email' => 'non-cod-fee-'.$suffix.'@ramostore.local',
@@ -225,7 +227,8 @@ class CashOnDeliveryFeeTest extends TestCase
             if ($user) {
                 $user->delete();
             }
-            PaymentConfig::save($originalConfig);
+            ShippingConfig::save($originalConfig);
+            PaymentConfig::save($originalPaymentConfig);
         }
     }
 }

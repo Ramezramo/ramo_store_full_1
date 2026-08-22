@@ -44,12 +44,6 @@
               {{ $method['title'] }}
             </label>
             <div style="font-size:12px;color:var(--muted);margin-bottom:12px">{{ $method['description'] }}</div>
-            @if($method['key'] === 'cod')
-              <label style="display:block;color:var(--muted);font-size:12px;margin-bottom:6px">Cash on Delivery fee (EGP)</label>
-              <input type="number" name="cod_fee" min="0" max="100000" step="0.01" required value="{{ old('cod_fee', $settings['cod_fee'] ?? 40) }}"
-                     style="width:100%;padding:11px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);margin-bottom:12px">
-              <div style="font-size:12px;color:var(--muted);margin-bottom:12px">This fee is added only when the customer selects Cash on Delivery.</div>
-            @endif
             <label style="display:block;color:var(--muted);font-size:12px;margin-bottom:6px">{{ $method['data_label'] }}</label>
             <textarea name="{{ $method['key'] }}_data" rows="2" placeholder="{{ $method['placeholder'] }}"
               style="width:100%;padding:11px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);resize:vertical">{{ old($method['key'].'_data', $settings[$method['key'].'_data']) }}</textarea>

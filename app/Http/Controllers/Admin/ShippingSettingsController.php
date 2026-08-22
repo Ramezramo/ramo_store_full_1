@@ -43,12 +43,14 @@ class ShippingSettingsController extends Controller
             'free_shipping_enabled'   => 'nullable|boolean',
             'free_shipping_threshold' => 'required|numeric|min:0',
             'standard_shipping_fee'   => 'required|numeric|min:0',
+            'cod_fee'                 => 'required|numeric|min:0|max:100000',
         ]);
 
         $data = [
             'free_shipping_enabled'   => $request->boolean('free_shipping_enabled'),
             'free_shipping_threshold' => round((float) $request->input('free_shipping_threshold', 1000), 2),
             'standard_shipping_fee'   => round((float) $request->input('standard_shipping_fee', 0), 2),
+            'cod_fee'                 => round((float) $request->input('cod_fee', 40), 2),
         ];
 
         try {
