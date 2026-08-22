@@ -204,6 +204,7 @@ Route::prefix('admin')->middleware(['auth', 'admin.auth', \App\Http\Middleware\R
     Route::get('/analytics', [AdminDashboardController::class, 'analytics'])->name('admin.analytics');
     Route::get('/coupons', [AdminDashboardController::class, 'coupons'])->name('admin.coupons');
     Route::post('/coupons', [AdminDashboardController::class, 'createCoupon'])->name('admin.coupons.create');
+    Route::patch('/coupons/{id}', [AdminDashboardController::class, 'updateCoupon'])->name('admin.coupons.update');
     Route::patch('/coupons/{id}/toggle', [AdminDashboardController::class, 'toggleCoupon'])->name('admin.coupons.toggle');
     Route::delete('/coupons/{id}', [AdminDashboardController::class, 'deleteCoupon'])->name('admin.coupons.delete');
     Route::get('/refunds', [AdminDashboardController::class, 'refunds'])->name('admin.refunds');

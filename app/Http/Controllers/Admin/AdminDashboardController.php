@@ -981,8 +981,22 @@ class AdminDashboardController extends Controller
         $request->validate([
             'code'          => 'required|string|max:50',
             'amount'        => 'required|numeric|min:0',
-            'discount_type' => 'required|in:percent,fixed_cart',
-            'vendor_id'     => 'nullable|integer|exists:vendor_users,id',
+            'discount_type'          => 'required|in:percent,fixed_cart',
+            'vendor_id'              => 'nullable|integer|exists:vendor_users,id',
+            'usage_limit'            => 'nullable|integer|min:1',
+            'usage_limit_per_user'   => 'nullable|integer|min:1',
+            'limit_usage_to_x_items' => 'nullable|integer|min:1',
+            'minimum_amount'         => 'nullable|numeric|min:0',
+            'maximum_amount'         => 'nullable|numeric|min:0',
+            'date_expires'           => 'nullable|date',
+            'free_shipping'          => 'nullable|boolean',
+            'exclude_sale_items'     => 'nullable|boolean',
+            'individual_use'         => 'nullable|boolean',
+            'product_ids'            => 'nullable|string|max:5000',
+            'excluded_product_ids'   => 'nullable|string|max:5000',
+            'product_categories'     => 'nullable|string|max:5000',
+            'excluded_product_categories' => 'nullable|string|max:5000',
+            'description'            => 'nullable|string|max:5000',
         ]);
 
         $exists = DB::table('coupons')->whereRaw('LOWER(code) = ?', [strtolower($request->code)])->exists();
@@ -995,26 +1009,98 @@ class AdminDashboardController extends Controller
             'discount_type'               => $request->discount_type,
             'status'                      => 'publish',
             'usage_count'                 => 0,
-            'usage_limit'                 => $request->filled('usage_limit') ? (int)$request->usage_limit : null,
-            'minimum_amount'              => $request->input('minimum_amount', 0),
-            'maximum_amount'              => 0,
+            'usage_limit'                 => $request->filled('usage_limit') ? (int) $request->usage_limit : null,
+            'usage_limit_per_user'        => $request->filled('usage_limit_per_user') ? (int) $request->usage_limit_per_user : null,
+            'limit_usage_to_x_items'      => $request->filled('limit_usage_to_x_items') ? (int) $request->limit_usage_to_x_items : null,
+            'minimum_amount'              => round((float) $request->input('minimum_amount', 0), 2),
+            'maximum_amount'              => round((float) $request->input('maximum_amount', 0), 2),
             'date_expires'                => $request->filled('date_expires') ? $request->date_expires : null,
             'date_created'                => now(),
             'date_created_gmt'            => now(),
             'date_modified'               => now(),
             'date_modified_gmt'           => now(),
-            'individual_use'              => false,
-            'free_shipping'               => false,
-            'exclude_sale_items'          => false,
-            'product_ids'                 => '[]',
-            'excluded_product_ids'        => '[]',
-            'product_categories'          => '[]',
-            'excluded_product_categories' => '[]',
+            'individual_use'              => $request->boolean('individual_use'),
+            'free_shipping'               => $request->boolean('free_shipping'),
+            'exclude_sale_items'          => $request->boolean('exclude_sale_items'),
+            'product_ids'                 => $this->csvToJson($request->input('product_ids')),
+            'excluded_product_ids'        => $this->csvToJson($request->input('excluded_product_ids')),
+            'product_categories'          => $this->csvToJson($request->input('product_categories')),
+            'excluded_product_categories' => $this->csvToJson($request->input('excluded_product_categories')),
             'email_restrictions'          => '[]',
+            'description'                 => trim((string) $request->input('description', '')) ?: null,
             'meta_data'                   => '[]',
         ]);
 
         return back()->with('success', 'Coupon '.strtoupper($request->code).' created.');
+    }
+
+    public function updateCoupon(Request $request, int $id)
+    {
+        $coupon = DB::table('coupons')->where('id', $id)->first();
+        if (!$coupon) abort(404);
+
+        $request->validate([
+            'code'          => 'required|string|max:50',
+            'amount'        => 'required|numeric|min:0',
+            'discount_type' => 'required|in:percent,fixed_cart',
+            'vendor_id'     => 'nullable|integer|exists:vendor_users,id',
+            'usage_limit'            => 'nullable|integer|min:1',
+            'usage_limit_per_user'   => 'nullable|integer|min:1',
+            'limit_usage_to_x_items' => 'nullable|integer|min:1',
+            'minimum_amount'         => 'nullable|numeric|min:0',
+            'maximum_amount'         => 'nullable|numeric|min:0',
+            'date_expires'           => 'nullable|date',
+            'free_shipping'          => 'nullable|boolean',
+            'exclude_sale_items'     => 'nullable|boolean',
+            'individual_use'         => 'nullable|boolean',
+            'product_ids'            => 'nullable|string|max:5000',
+            'excluded_product_ids'   => 'nullable|string|max:5000',
+            'product_categories'     => 'nullable|string|max:5000',
+            'excluded_product_categories' => 'nullable|string|max:5000',
+            'description'            => 'nullable|string|max:5000',
+        ]);
+
+        $code = strtoupper(trim((string) $request->input('code')));
+        $duplicate = DB::table('coupons')
+            ->whereRaw('LOWER(code) = ?', [strtolower($code)])
+            ->where('id', '!=', $id)
+            ->exists();
+        if ($duplicate) return back()->with('error', 'Coupon code already exists.')->withInput();
+
+        DB::table('coupons')->where('id', $id)->update([
+            'code'                        => $code,
+            'vendor_id'                   => $request->filled('vendor_id') ? (int) $request->vendor_id : null,
+            'amount'                      => round((float) $request->input('amount'), 2),
+            'discount_type'               => $request->input('discount_type'),
+            'usage_limit'                 => $request->filled('usage_limit') ? (int) $request->usage_limit : null,
+            'usage_limit_per_user'        => $request->filled('usage_limit_per_user') ? (int) $request->usage_limit_per_user : null,
+            'limit_usage_to_x_items'      => $request->filled('limit_usage_to_x_items') ? (int) $request->limit_usage_to_x_items : null,
+            'minimum_amount'              => round((float) $request->input('minimum_amount', 0), 2),
+            'maximum_amount'              => round((float) $request->input('maximum_amount', 0), 2),
+            'date_expires'                => $request->filled('date_expires') ? $request->date_expires : null,
+            'individual_use'              => $request->boolean('individual_use'),
+            'free_shipping'               => $request->boolean('free_shipping'),
+            'exclude_sale_items'          => $request->boolean('exclude_sale_items'),
+            'product_ids'                 => $this->csvToJson($request->input('product_ids')),
+            'excluded_product_ids'        => $this->csvToJson($request->input('excluded_product_ids')),
+            'product_categories'          => $this->csvToJson($request->input('product_categories')),
+            'excluded_product_categories' => $this->csvToJson($request->input('excluded_product_categories')),
+            'description'                 => trim((string) $request->input('description', '')) ?: null,
+            'date_modified'               => now(),
+            'date_modified_gmt'           => now(),
+        ]);
+
+        return back()->with('success', 'Coupon '.$code.' updated.');
+    }
+
+    private function csvToJson(?string $value): string
+    {
+        $items = array_values(array_filter(array_map(
+            static fn ($item) => trim((string) $item),
+            explode(',', (string) $value)
+        ), static fn ($item) => $item !== ''));
+
+        return json_encode($items, JSON_UNESCAPED_UNICODE);
     }
 
     public function toggleCoupon(int $id)
