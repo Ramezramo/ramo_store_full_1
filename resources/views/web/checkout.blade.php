@@ -158,14 +158,14 @@
           <h3 class="ck-title">{{ $isAr ? 'عنوان الشحن' : 'Shipping Address' }}</h3>
           <div class="form-group">
             <label>{{ $isAr ? 'حدّد مكان التوصيل' : 'Choose your delivery location' }}</label>
-            <div id="checkout-location-empty" class="ck-location-empty" @if($hasSavedLocation) hidden @endif>
+            <div id="checkout-location-empty" class="ck-location-empty" hidden>
               <div class="ck-location-empty-copy">
                 <strong class="ck-location-empty-title">{{ $isAr ? 'اختار مكان التوصيل الأول' : 'Choose your delivery location first' }}</strong>
                 <span>{{ $isAr ? 'اختار مكانك على الخريطة عشان نعرف نوصل طلبك بسهولة.' : 'Pick your location on the map so we can deliver your order easily.' }}</span>
               </div>
               <button type="button" id="choose-location-btn" class="ck-location-choose-btn">{{ $isAr ? 'اختار المكان' : 'Choose location' }}</button>
             </div>
-            <div id="checkout-location-map-panel" class="ck-location-map-panel" @unless($hasSavedLocation) hidden @endunless>
+            <div id="checkout-location-map-panel" class="ck-location-map-panel">
               <button type="button" class="btn btn-outline" id="use-current-location-btn" style="margin-bottom:12px">📍 {{ $isAr ? 'استخدم موقعي الحالي' : 'Use My Current Location' }}</button>
               <div class="ck-map-shell">
                 <div id="checkout-map" class="ck-map-canvas" aria-label="{{ $isAr ? 'خريطة مكان التوصيل التفاعلية' : 'Interactive delivery location map' }}"></div>
@@ -518,7 +518,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       });
     };
-    if (hasInitialLocation) loadMap();
+    // Always show and initialize the map so a new customer can choose a pin immediately.
+    loadMap();
 
     const mapOverlay = document.getElementById('map-locating-overlay');
     const showMapLoading = () => { if (mapOverlay) mapOverlay.style.display = 'flex'; };

@@ -19,6 +19,18 @@ class MobileCheckoutShippingOrderTest extends TestCase
             '@media(max-width:900px){.checkout-page form{display:flex;flex-direction:column}.checkout-page .checkout-shipping-section{order:-1}}',
             $template,
         );
+        $this->assertStringContainsString(
+            '<div id="checkout-location-empty" class="ck-location-empty" hidden>',
+            $template,
+        );
+        $this->assertStringContainsString(
+            '<div id="checkout-location-map-panel" class="ck-location-map-panel">',
+            $template,
+        );
+        $this->assertStringContainsString(
+            "// Always show and initialize the map so a new customer can choose a pin immediately.\n    loadMap();",
+            $template,
+        );
     }
 }
 
