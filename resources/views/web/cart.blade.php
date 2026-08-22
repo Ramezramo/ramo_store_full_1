@@ -517,6 +517,7 @@
 const CSRF = '{{ csrf_token() }}';
 const CART_RTL = {{ $cartRtl ? 'true' : 'false' }};
 const cartRequestOverlay = document.getElementById('cart-request-overlay');
+const cartRequestPositionKey = 'ramo_cart_request_position';
 let cartRequestPending = false;
 function showCartRequestLoading(){
   if(cartRequestPending) return;
@@ -524,11 +525,38 @@ function showCartRequestLoading(){
   if(cartRequestOverlay) cartRequestOverlay.hidden = false;
   document.querySelectorAll('[data-cart-request] button').forEach((button) => { button.disabled = true; button.setAttribute('aria-busy', 'true'); });
 }
-document.querySelectorAll('form[data-cart-request]').forEach((form) => form.addEventListener('submit', showCartRequestLoading));
+function rememberCartRequestPosition(form){
+  try {
+    const row = form.closest('[data-row-id]');
+    sessionStorage.setItem(cartRequestPositionKey, JSON.stringify({
+      path: location.pathname,
+      rowId: row?.dataset.rowId || null,
+      y: Math.max(0, Math.round(window.scrollY || window.pageYOffset || 0)),
+      createdAt: Date.now()
+    }));
+  } catch (error) {}
+}
+function restoreCartRequestPosition(){
+  try {
+    const raw = sessionStorage.getItem(cartRequestPositionKey);
+    if(!raw) return;
+    sessionStorage.removeItem(cartRequestPositionKey);
+    const state = JSON.parse(raw);
+    if(state.path !== location.pathname || Date.now() - Number(state.createdAt || 0) > 120000) return;
+    const row = state.rowId ? document.getElementById('row-' + state.rowId) : null;
+    if(row) row.scrollIntoView({behavior:'auto', block:'center'});
+    else if(Number.isFinite(Number(state.y))) window.scrollTo(0, Number(state.y));
+  } catch (error) {}
+}
+document.querySelectorAll('form[data-cart-request]').forEach((form) => form.addEventListener('submit', () => {
+  rememberCartRequestPosition(form);
+  showCartRequestLoading();
+}));
 document.querySelectorAll('[data-cart-checkout]:not([data-guest-otp-checkout])').forEach((link) => link.addEventListener('click', showCartRequestLoading));
 window.addEventListener('pageshow', () => {
   cartRequestPending = false;
   if(cartRequestOverlay) cartRequestOverlay.hidden = true;
+  window.setTimeout(restoreCartRequestPosition, 0);
 });
 const guestOtpModal = document.getElementById('guest-otp-checkout');
 const guestOtpPhoneStep = document.getElementById('guest-otp-phone-step');

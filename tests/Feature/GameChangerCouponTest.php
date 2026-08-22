@@ -209,6 +209,9 @@ class GameChangerCouponTest extends TestCase
                 ->assertSee('id="cart-request-overlay"', false)
                 ->assertSee('data-cart-request', false)
                 ->assertSee('showCartRequestLoading', false)
+                ->assertSee('rememberCartRequestPosition', false)
+                ->assertSee('restoreCartRequestPosition', false)
+                ->assertSee('ramo_cart_request_position', false)
                 ->assertDontSee("fetch('/cart/update", false)
                 ->assertDontSee('onclick="updateQty', false)
                 ->assertDontSee('onsubmit="applyCoupon', false);
