@@ -1432,6 +1432,12 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
+function notifyProductCartAddFinished(success) {
+  if (typeof window.productCartAddFinished === 'function') {
+    window.productCartAddFinished(Boolean(success));
+  }
+}
+
 function showToast(msg, type = 'default') {
   const t = document.getElementById('toast');
   document.getElementById('toast-msg').textContent = msg;
@@ -1470,11 +1476,14 @@ async function addToCart(productId, name, price, image, variationId = null, qty 
     if (data.success) {
       updateCartBadge(data.count);
       openAtcDrawer({ image, oldPrice, varLabel, items: data.items, count: data.count, cartTotal: data.cart_total, rowId: data.row_id });
+      notifyProductCartAddFinished(true);
     } else {
       showToast(data.message || STOREFRONT_COPY.addError, 'err');
+      notifyProductCartAddFinished(false);
     }
   } catch(e) {
     showToast(STOREFRONT_COPY.networkError, 'err');
+    notifyProductCartAddFinished(false);
   }
 }
 
@@ -1510,11 +1519,14 @@ async function addMultipleToCart(productId, items) {
       updateCartBadge(data.count);
       openAtcDrawer({ items: data.items, count: data.count, cartTotal: data.cart_total, rowIds: data.row_ids || [] });
       if (data.failed_items && data.failed_items.length) showBulkAddFailures(data);
+      notifyProductCartAddFinished(true);
     } else {
       showBulkAddFailures(data);
+      notifyProductCartAddFinished(false);
     }
   } catch (e) {
     showToast(STOREFRONT_COPY.networkError, 'err');
+    notifyProductCartAddFinished(false);
   }
 }
 

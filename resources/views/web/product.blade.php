@@ -1135,6 +1135,8 @@ const SOLD_INDIVIDUALLY = {{ ($product->sold_individually ?? false) ? 'true' : '
 const PRODUCT_STOCK_QTY = {{ $initialStockQty }};
 const PRODUCT_TEXT = @json($productText);
 const ATTR_KEYS = [...new Set(VAR_DATA.flatMap(v => Object.keys(v.attrs)))];
+const INITIAL_GALLERY_HTML = document.getElementById('gallery-thumbs')?.innerHTML || '';
+let productCartRequestPending = false;
 let selectedAttrs = {};
 let selectedColorValues = new Set();
 let colorQuantities = {};
@@ -1547,8 +1549,52 @@ function slugify(str) {
   return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
+function resetProductSelections() {
+  selectedAttrs = {};
+  selectedColorValues = new Set();
+  colorQuantities = {};
+  currentVariation = null;
+  _lockedImgUrl = null;
+
+  document.querySelectorAll('[data-attr-key].selected').forEach((button) => button.classList.remove('selected'));
+
+  const gallery = document.getElementById('gallery-thumbs');
+  if (gallery && INITIAL_GALLERY_HTML) gallery.innerHTML = INITIAL_GALLERY_HTML;
+
+  const mainImage = document.getElementById('main-img');
+  const originalImage = mainImage?.dataset.originalSrc;
+  if (originalImage) setMainImg(originalImage, false);
+
+  updateAvailability();
+  renderPriceStock(null);
+  const stockDisplay = document.getElementById('stock-display');
+  if (stockDisplay) stockDisplay.innerHTML = PRODUCT_STOCK_QTY > 0
+    ? `<span class="badge-stock-ok">✓ ${PRODUCT_TEXT.inStock} (${PRODUCT_STOCK_QTY.toLocaleString()} ${PRODUCT_TEXT.available})</span>`
+    : `<span class="badge-stock-no">${PRODUCT_TEXT.outOfStock}</span>`;
+  syncQuantityBounds(PRODUCT_STOCK_QTY);
+  const quantityInput = document.getElementById('qty');
+  if (quantityInput) quantityInput.value = Math.max(MIN_ORDER_QTY, Math.min(maximumOrderQuantity(PRODUCT_STOCK_QTY) || MIN_ORDER_QTY, MIN_ORDER_QTY));
+  updateSelectedLabels();
+  updateSelectedSummary();
+  updateHints();
+  updateAddButtonState();
+  if (ATTR_KEYS.length > 0) {
+    const addBtn = document.getElementById('add-to-cart-btn');
+    const stickyBtn = document.querySelector('.sticky-atc-btn');
+    if (addBtn) { addBtn.disabled = true; addBtn.textContent = selectionPrompt(); }
+    if (stickyBtn) { stickyBtn.disabled = true; stickyBtn.textContent = selectionPrompt(); }
+  }
+}
+
+window.productCartAddFinished = function (success) {
+  productCartRequestPending = false;
+  if (success) resetProductSelections();
+  else updateAddButtonState();
+};
+
 // ── Cart integration ──────────────────────────────────────────────────
 function handleAddToCart(id, name, basePrice, image) {
+  if (productCartRequestPending) return;
   if (COLOR_ATTR_KEY) {
     const items = selectedColorVariations().map(({ value, variation }) => {
       const maximum = variation ? maximumOrderQuantity(variation.stock) : 0;
@@ -1567,6 +1613,11 @@ function handleAddToCart(id, name, basePrice, image) {
       });
       return;
     }
+    productCartRequestPending = true;
+    const addBtn = document.getElementById('add-to-cart-btn');
+    const stickyBtn = document.querySelector('.sticky-atc-btn');
+    if (addBtn) addBtn.disabled = true;
+    if (stickyBtn) stickyBtn.disabled = true;
     addMultipleToCart(id, items.map(({ variation_id, qty }) => ({ variation_id, qty })));
     return;
   }
@@ -1595,6 +1646,11 @@ function handleAddToCart(id, name, basePrice, image) {
     if (reg > price) oldPrice = reg;
   }
   const varLabel = currentVariation ? Object.entries(currentVariation.attrs).filter(([k]) => !String(k).startsWith('_')).map(([k,v]) => `${k}: ${v}`).join(', ') : null;
+  productCartRequestPending = true;
+  const addBtn = document.getElementById('add-to-cart-btn');
+  const stickyBtn = document.querySelector('.sticky-atc-btn');
+  if (addBtn) addBtn.disabled = true;
+  if (stickyBtn) stickyBtn.disabled = true;
   addToCart(id, name, price, image, varId, qty, varLabel, oldPrice);
 }
 
