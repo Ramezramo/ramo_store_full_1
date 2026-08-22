@@ -32,7 +32,14 @@
 .cart-item-card{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:13px;align-items:center;padding:14px 0;border-bottom:1px solid #ededed;transition:opacity .2s,transform .2s,max-height .25s;}
 .cart-item-card:first-of-type{padding-top:6px;}
 .cart-item-card:last-of-type{border-bottom:0;}
-.cart-item-card.is-updating{opacity:.58;}
+  .cart-request-overlay{position:fixed;inset:0;z-index:10050;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(255,255,255,.76);backdrop-filter:blur(5px);}
+  .cart-request-overlay[hidden]{display:none;}
+  .cart-request-dialog{min-width:210px;padding:22px 24px;border:1px solid var(--c-light);border-radius:18px;background:var(--c-white);box-shadow:0 14px 42px rgba(17,17,17,.16);text-align:center;color:var(--c-dark);}
+  .cart-request-spinner{width:32px;height:32px;margin:0 auto 12px;border:3px solid #e5e5e5;border-top-color:var(--c-dark);border-radius:50%;animation:cart-request-spin .8s linear infinite;}
+  .cart-request-dialog p{font-size:13px;font-weight:750;}
+  @keyframes cart-request-spin{to{transform:rotate(360deg);}}
+  .cart-item-card.is-updating{opacity:.58;}
+
   .cart-item-card.is-removing{opacity:0;transform:translateX(16px);}
   .cart-item-card.is-unavailable{padding-inline:10px;border:1px solid #fecaca;border-radius:14px;background:#fff8f8;}
   .cart-item-unavailable{display:inline-flex;align-items:center;gap:5px;margin:0 0 7px;padding:5px 8px;border:1px solid #fecaca;border-radius:999px;background:#fff0f0;color:#b42318;font-size:10.5px;font-weight:850;line-height:1.2;}
@@ -235,6 +242,12 @@
 
 @section('content')
 <div class="cart-screen" dir="{{ $cartRtl ? 'rtl' : 'ltr' }}" data-free-shipping-enabled="{{ $freeShippingEnabled ? '1' : '0' }}" data-free-shipping-threshold="{{ $freeShippingThreshold }}" data-discount="{{ $discount }}">
+  <div id="cart-request-overlay" class="cart-request-overlay" hidden role="status" aria-live="polite">
+    <div class="cart-request-dialog">
+      <div class="cart-request-spinner" aria-hidden="true"></div>
+      <p>{{ $cartRtl ? 'جاري تحديث السلة…' : 'Updating your cart…' }}</p>
+    </div>
+  </div>
   <header class="cart-screen-header">
     <a href="{{ route('shop') }}" class="cart-screen-back" aria-label="{{ $cartRtl ? 'ارجع' : 'Go back' }}">
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
@@ -327,19 +340,19 @@
                     $itemMaximum = max($itemMinimum, (int) ($item['maximum_qty'] ?? $item['stock']));
                   @endphp
                   <div class="cart-qty-stepper{{ !empty($item['is_unavailable']) ? ' is-disabled' : '' }}" aria-label="{{ $cartRtl ? 'الكمية لـ' : 'Quantity for' }} {{ $item['display_name'] ?? $item['name'] }}">
-                    <form method="POST" action="{{ route('cart.update', $rowId) }}" class="cart-qty-form">
+                    <form method="POST" action="{{ route('cart.update', $rowId) }}" class="cart-qty-form" data-cart-request>
                       @csrf
                       <input type="hidden" name="qty" value="{{ max($itemMinimum, $item['qty'] - 1) }}">
                       <button type="submit" aria-label="{{ $cartRtl ? 'قلّل الكمية' : 'Decrease quantity' }}" @disabled(!empty($item['is_unavailable']) || $item['qty'] <= $itemMinimum)>−</button>
                     </form>
                     <span class="cart-qty-value" aria-label="{{ $cartRtl ? 'الكمية' : 'Quantity' }}">{{ $item['qty'] }}</span>
-                    <form method="POST" action="{{ route('cart.update', $rowId) }}" class="cart-qty-form">
+                    <form method="POST" action="{{ route('cart.update', $rowId) }}" class="cart-qty-form" data-cart-request>
                       @csrf
                       <input type="hidden" name="qty" value="{{ min($itemMaximum, $item['qty'] + 1) }}">
                       <button type="submit" aria-label="{{ $cartRtl ? 'زوّد الكمية' : 'Increase quantity' }}" @disabled(!empty($item['is_unavailable']) || $item['qty'] >= $itemMaximum)>+</button>
                     </form>
                   </div>
-                  <form method="POST" action="{{ route('cart.remove', $rowId) }}" class="cart-remove-form">
+                  <form method="POST" action="{{ route('cart.remove', $rowId) }}" class="cart-remove-form" data-cart-request>
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="cart-remove-icon{{ !empty($item['is_unavailable']) ? ' is-priority' : '' }}" aria-label="{{ $cartRtl ? 'شيل' : 'Remove' }} {{ $item['display_name'] ?? $item['name'] }}" title="{{ $cartRtl ? 'شيل المنتج' : 'Remove item' }}">
@@ -353,7 +366,7 @@
 
           <div class="cart-items-actions">
             <a href="{{ route('shop') }}" class="btn btn-outline">{{ $cartRtl ? 'كمّل تسوّق →' : '← Continue Shopping' }}</a>
-            <form action="{{ route('cart.clear') }}" method="POST">
+            <form action="{{ route('cart.clear') }}" method="POST" data-cart-request>
               @csrf @method('DELETE')
               <button type="submit" class="cart-clear-btn" onclick="return confirm('{{ $cartRtl ? 'عايز تفضّي السلة كلها؟' : 'Clear entire cart?' }}')">{{ $cartRtl ? 'فضّي السلة' : 'Clear Cart' }}</button>
             </form>
@@ -385,12 +398,13 @@
           @if($coupon)
             <div class="cart-applied-coupon">
               <span>{{ !empty($coupon['free_shipping']) && $cartRtl ? 'كوبون توصيل مجاني' : (!empty($coupon['free_shipping']) ? 'Free shipping coupon' : ($cartRtl ? 'كود الخصم' : 'Coupon')) }} <strong>{{ strtoupper($coupon['code']) }}</strong> {{ $cartRtl ? 'اتطبّق' : 'applied' }}</span>
-              <form action="{{ route('cart.coupon.remove') }}" method="POST">@csrf @method('DELETE')<button type="submit">{{ $cartRtl ? 'شيل' : 'Remove' }}</button></form>
+              <form action="{{ route('cart.coupon.remove') }}" method="POST" data-cart-request>@csrf @method('DELETE')<button type="submit">
+{{ $cartRtl ? 'شيل' : 'Remove' }}</button></form>
             </div>
           @else
             <details class="cart-promo">
               <summary>{{ $cartRtl ? 'معاك كود خصم؟' : 'Have a promo code?' }}</summary>
-              <form class="cart-promo-form" action="{{ route('cart.coupon') }}" method="POST">
+              <form class="cart-promo-form" action="{{ route('cart.coupon') }}" method="POST" data-cart-request>
                 @csrf
                 <input type="text" name="code" placeholder="{{ $cartRtl ? 'اكتب كود الخصم' : 'Enter promo code' }}" autocomplete="off" required>
                 <button type="submit">{{ $cartRtl ? 'طبّق' : 'Apply' }}</button>
@@ -483,6 +497,20 @@
 <script>
 const CSRF = '{{ csrf_token() }}';
 const CART_RTL = {{ $cartRtl ? 'true' : 'false' }};
+const cartRequestOverlay = document.getElementById('cart-request-overlay');
+let cartRequestPending = false;
+function showCartRequestLoading(){
+  if(cartRequestPending) return;
+  cartRequestPending = true;
+  if(cartRequestOverlay) cartRequestOverlay.hidden = false;
+  document.querySelectorAll('[data-cart-request] button').forEach((button) => { button.disabled = true; button.setAttribute('aria-busy', 'true'); });
+}
+document.querySelectorAll('form[data-cart-request]').forEach((form) => form.addEventListener('submit', showCartRequestLoading));
+document.querySelectorAll('[data-cart-checkout]:not([data-guest-otp-checkout])').forEach((link) => link.addEventListener('click', showCartRequestLoading));
+window.addEventListener('pageshow', () => {
+  cartRequestPending = false;
+  if(cartRequestOverlay) cartRequestOverlay.hidden = true;
+});
 const guestOtpModal = document.getElementById('guest-otp-checkout');
 const guestOtpPhoneStep = document.getElementById('guest-otp-phone-step');
 const guestOtpCodeStep = document.getElementById('guest-otp-code-step');
