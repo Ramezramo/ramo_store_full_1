@@ -64,5 +64,8 @@ class ProductSelectionResetTest extends TestCase
         $this->assertStringContainsString('onclick="selectColorCard(event, this)"', $product);
         $this->assertStringContainsString("event.target.closest('.var-swatch') || event.target.closest('.color-qty-stepper')", $product);
         $this->assertStringContainsString('function selectColorCard(event, card)', $product);
+        $this->assertStringContainsString('event?.stopPropagation();', $product);
+        $this->assertStringContainsString("input.addEventListener('click', (event) => event.stopPropagation())", $product);
+        $this->assertStringContainsString("input.addEventListener('change', (event) =>", $product);
     }
 }

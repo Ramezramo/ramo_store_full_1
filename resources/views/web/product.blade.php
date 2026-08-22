@@ -1522,7 +1522,11 @@ function updateColorSteppers() {
     stepper.hidden = false;
     stepper.innerHTML = `<button type="button" onclick="changeColorQty('${String(COLOR_ATTR_KEY).replace(/'/g, "\'")}','${String(value).replace(/'/g, "\'")}',-1,event)" aria-label="Decrease">−</button><input type="number" min="${MIN_ORDER_QTY}" max="${Math.max(1, maximum)}" value="${quantity}" aria-label="${PRODUCT_TEXT.quantity || 'Quantity'}"><button type="button" onclick="changeColorQty('${String(COLOR_ATTR_KEY).replace(/'/g, "\'")}','${String(value).replace(/'/g, "\'")}',1,event)" aria-label="Increase">+</button>`;
     const input = stepper.querySelector('input');
-    input.addEventListener('change', () => setColorQty(COLOR_ATTR_KEY, value, input.value));
+    input.addEventListener('click', (event) => event.stopPropagation());
+    input.addEventListener('change', (event) => {
+      event.stopPropagation();
+      setColorQty(COLOR_ATTR_KEY, value, input.value);
+    });
   });
 }
 
@@ -1538,6 +1542,7 @@ function setColorQty(key, value, rawQty) {
 
 function changeColorQty(key, value, delta, event) {
   event?.preventDefault();
+  event?.stopPropagation();
   setColorQty(key, value, (colorQuantities[colorQuantityKey(value)] || MIN_ORDER_QTY) + delta);
 }
 
