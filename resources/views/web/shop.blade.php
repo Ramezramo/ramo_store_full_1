@@ -379,6 +379,25 @@
 }
 .active-cat-strip a:hover { opacity: 1; }
 
+/* ── Price range widget ────────────────────────────────────── */
+.shop-price-form { padding: 2px 0 4px; }
+.shop-price-range-labels { display:flex; justify-content:space-between; gap:8px; color:var(--c-mid); font-size:10px; margin-bottom:8px; }
+.shop-price-sliders { position:relative; height:25px; margin:0 2px 7px; }
+.shop-price-sliders input[type="range"] { position:absolute; inset:4px 0 0; width:100%; height:6px; margin:0; appearance:none; -webkit-appearance:none; background:var(--c-light); border-radius:10px; pointer-events:none; }
+.shop-price-sliders input[type="range"]::-webkit-slider-thumb { appearance:none; -webkit-appearance:none; width:19px; height:19px; border-radius:50%; background:var(--c-orange); border:3px solid #fff; box-shadow:0 0 0 1px var(--c-orange); cursor:pointer; pointer-events:auto; }
+.shop-price-sliders input[type="range"]::-moz-range-thumb { width:14px; height:14px; border-radius:50%; background:var(--c-orange); border:3px solid #fff; box-shadow:0 0 0 1px var(--c-orange); cursor:pointer; pointer-events:auto; }
+.shop-price-inputs { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.shop-price-inputs label { display:flex; flex-direction:column; gap:3px; color:var(--c-mid); font-size:10px; }
+.shop-price-inputs input { width:100%; padding:7px 8px; border:1.5px solid var(--c-light); border-radius:8px; background:var(--c-bg); color:var(--c-dark); font:inherit; font-size:12px; outline:0; }
+.shop-price-inputs input:focus { border-color:var(--c-orange); }
+.shop-price-submit { width:100%; margin-top:10px; padding:8px 10px; border:0; border-radius:8px; background:var(--c-dark); color:#fff; font:inherit; font-size:12px; font-weight:700; cursor:pointer; }
+.shop-price-submit:active,.shop-filter-apply:active { transform:scale(.98); }
+
+/* ── Mobile filter alert / bottom sheet ─────────────────────── */
+.shop-filter-alert { display:contents; }
+.shop-filter-backdrop,.shop-filter-panel-header,.shop-filter-panel-actions { display:none; }
+.shop-filter-panel-scroll { display:contents; }
+
 /* ── Mobile toggle ────────────────────────────────────────── */
 .shop-filter-toggle {
   display: none; align-items: center; gap: 7px;
@@ -393,40 +412,91 @@
   .shop-layout { grid-template-columns: minmax(0, 1fr); }
   .shop-filter-toggle { display: inline-flex; }
 
-  /* Keep the complete desktop filter set available on phones. The panel gets
-     its own scroll area so the fixed bottom navigation never hides its last
-     widget or any category rows. */
-  .shop-page .sidebar {
+  .shop-page .shop-filter-alert {
     display: none;
-    position: static;
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+  }
+  .shop-page .shop-filter-alert.open { display: block; }
+  .shop-page .shop-filter-backdrop {
+    display: block;
+    position: absolute;
+    inset: 0;
     width: 100%;
-    max-height: calc(100dvh - 190px);
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: rgba(17,17,17,.48);
+    backdrop-filter: blur(2px);
+    cursor: pointer;
+  }
+  .shop-page .shop-filter-panel {
+    position: absolute;
+    left: max(10px, env(safe-area-inset-left));
+    right: max(10px, env(safe-area-inset-right));
+    bottom: calc(var(--mobile-nav-height, 0px) + var(--mobile-nav-viewport-offset, 0px) + max(10px, env(safe-area-inset-bottom)));
+    max-height: calc(100dvh - var(--mobile-nav-height, 0px) - var(--mobile-nav-viewport-offset, 0px) - 20px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--c-white);
+    border: 1px solid rgba(17,17,17,.1);
+    border-radius: 22px;
+    box-shadow: 0 18px 60px rgba(0,0,0,.24);
+    animation: shop-filter-alert-in .2s cubic-bezier(.23,1,.32,1);
+  }
+  .shop-page .shop-filter-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex: 0 0 auto;
+    padding: 17px 18px 13px;
+    border-bottom: 1px solid var(--c-light);
+  }
+  .shop-page .shop-filter-kicker { display:block; color:var(--c-orange); font-size:9px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
+  .shop-page .shop-filter-panel-header h2 { margin-top:2px; color:var(--c-dark); font-size:19px; line-height:1.25; }
+  .shop-page .shop-filter-close { display:flex; align-items:center; justify-content:center; flex:0 0 auto; width:36px; height:36px; border:1px solid var(--c-light); border-radius:50%; background:var(--c-bg); color:var(--c-dark); cursor:pointer; }
+  .shop-page .shop-filter-panel-scroll {
+    display: block;
+    min-height: 0;
+    flex: 1 1 auto;
     overflow-y: auto;
-    overflow-x: hidden;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
     scrollbar-gutter: stable;
-    box-sizing: border-box;
-    padding: 16px;
-    border-radius: 16px;
+    padding: 5px 18px 14px;
   }
-  .shop-page .sidebar.mobile-open { display: block; }
-  .shop-page .sidebar.mobile-open .widget-body { overflow: visible; }
-  .shop-page .sidebar.mobile-open .widget-header { min-height: 42px; box-sizing: border-box; }
-  .shop-page .sidebar.mobile-open .widget-divider { margin: 12px 0; }
+  .shop-page .shop-filter-panel-scroll .sidebar {
+    display: block;
+    position: static;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  .shop-page .shop-filter-panel-scroll .widget-header { min-height: 44px; box-sizing:border-box; }
+  .shop-page .shop-filter-panel-scroll .widget-divider { margin: 12px 0; }
+  .shop-page .shop-filter-panel-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 0 auto;
+    padding: 12px 18px calc(12px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--c-light);
+    background: rgba(255,255,255,.98);
+  }
+  .shop-page .shop-filter-apply { flex: 1; min-height: 42px; border:0; border-radius:10px; background:var(--c-orange); color:#fff; font:inherit; font-size:13px; font-weight:800; cursor:pointer; }
+  .shop-page .shop-filter-clear { flex:0 0 auto; padding:8px 3px; color:var(--c-mid); font-size:12px; font-weight:700; text-decoration:underline; }
+  body.shop-filter-open { overflow: hidden; }
 }
 
-@media (max-width: 480px) {
-  .shop-page .sidebar {
-    max-height: calc(100dvh - 178px);
-    padding: 14px 12px;
-  }
-  .shop-page .sidebar.mobile-open .cat-all-pill,
-  .shop-page .sidebar.mobile-open .cat-parent-btn {
-    min-height: 42px;
-    box-sizing: border-box;
-  }
-}
+@keyframes shop-filter-alert-in { from { opacity:0; transform:translateY(12px) scale(.985); } to { opacity:1; transform:translateY(0) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .shop-filter-panel { animation:none !important; } }
 
 /* ── Arabic RTL shop page and phone search ────────────────── */
 .shop-mobile-search{display:none;}
@@ -676,14 +746,27 @@
     </form>
   </div>
 
-  <button class="shop-filter-toggle" id="shop-filter-btn" onclick="toggleShopFilter()" aria-expanded="false">
+  <button type="button" class="shop-filter-toggle" id="shop-filter-btn" onclick="toggleShopFilter()" aria-expanded="false" aria-controls="shop-filter-alert">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
     {{ $shopRtl ? $shopCopy['filters'] : 'Filters & Categories' }}
   </button>
 
   <div class="shop-layout">
 
-    {{-- ══ SIDEBAR ══════════════════════════════════════════════ --}}
+    {{-- ══ SIDEBAR / MOBILE FILTER ALERT ═══════════════════════ --}}
+    <div class="shop-filter-alert" id="shop-filter-alert" aria-hidden="false">
+      <button type="button" class="shop-filter-backdrop" onclick="closeShopFilter()" aria-label="{{ $shopRtl ? 'اقفل نافذة الفلاتر' : 'Close filters' }}"></button>
+      <section class="shop-filter-panel" role="dialog" aria-modal="true" aria-labelledby="shop-filter-title" tabindex="-1">
+        <header class="shop-filter-panel-header">
+          <div>
+            <span class="shop-filter-kicker">{{ $shopRtl ? 'تصفية المنتجات' : 'REFINE PRODUCTS' }}</span>
+            <h2 id="shop-filter-title">{{ $shopRtl ? 'اختار اللي يناسبك' : 'Find what fits' }}</h2>
+          </div>
+          <button type="button" class="shop-filter-close" id="shop-filter-close" onclick="closeShopFilter()" aria-label="{{ $shopRtl ? 'اقفل الفلاتر' : 'Close filters' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="17" height="17"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </header>
+        <div class="shop-filter-panel-scroll">
     <aside class="sidebar" id="shop-sidebar">
 
       {{-- ── Widget: Categories ───────────────────────────────── --}}
@@ -806,6 +889,51 @@
 
       <hr class="widget-divider">
 
+      {{-- ── Widget: Price Range ──────────────────────────────── --}}
+      @php
+        $shopPriceMinBound = max(0, (float) ($priceRange->min_price ?? 0));
+        $shopPriceMaxBound = max($shopPriceMinBound, (float) ($priceRange->max_price ?? $shopPriceMinBound));
+        $shopPriceMinValue = $minPrice ?? $shopPriceMinBound;
+        $shopPriceMaxValue = $maxPrice ?? $shopPriceMaxBound;
+      @endphp
+      <div class="widget" id="widget-price">
+        <div class="widget-header" onclick="toggleWidget('widget-price')" title="{{ $shopRtl ? 'اضغط عشان تقفل القسم' : 'Click to collapse' }}">
+          <span class="widget-header-left">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+            {{ $shopRtl ? 'نطاق السعر' : 'Price range' }}
+          </span>
+          <span class="widget-fold-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="9" height="9"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </div>
+        <div class="widget-body">
+          <form method="GET" action="{{ route('shop') }}" id="shop-price-form" class="shop-price-form">
+            @foreach(request()->except(['min_price', 'max_price', 'page']) as $k => $v)
+              <input type="hidden" name="{{ $k }}" value="{{ $v }}">
+            @endforeach
+            <div class="shop-price-range-labels">
+              <span>{{ number_format($shopPriceMinBound, 2) }} EGP</span>
+              <span>{{ number_format($shopPriceMaxBound, 2) }} EGP</span>
+            </div>
+            <div class="shop-price-sliders" aria-label="{{ $shopRtl ? 'اختار أقل وأعلى سعر' : 'Choose minimum and maximum price' }}">
+              <input type="range" id="shop-min-range" min="{{ $shopPriceMinBound }}" max="{{ $shopPriceMaxBound }}" step="0.01" value="{{ $shopPriceMinValue }}" aria-label="{{ $shopRtl ? 'أقل سعر' : 'Minimum price' }}">
+              <input type="range" id="shop-max-range" min="{{ $shopPriceMinBound }}" max="{{ $shopPriceMaxBound }}" step="0.01" value="{{ $shopPriceMaxValue }}" aria-label="{{ $shopRtl ? 'أعلى سعر' : 'Maximum price' }}">
+            </div>
+            <div class="shop-price-inputs">
+              <label>
+                <span>{{ $shopRtl ? 'من' : 'From' }}</span>
+                <input type="number" id="shop-min-price" name="min_price" min="{{ $shopPriceMinBound }}" max="{{ $shopPriceMaxBound }}" step="0.01" value="{{ $minPrice !== null ? $minPrice : '' }}" placeholder="{{ number_format($shopPriceMinBound, 2) }}">
+              </label>
+              <label>
+                <span>{{ $shopRtl ? 'لحد' : 'To' }}</span>
+                <input type="number" id="shop-max-price" name="max_price" min="{{ $shopPriceMinBound }}" max="{{ $shopPriceMaxBound }}" step="0.01" value="{{ $maxPrice !== null ? $maxPrice : '' }}" placeholder="{{ number_format($shopPriceMaxBound, 2) }}">
+              </label>
+            </div>
+            <button type="submit" class="shop-price-submit">{{ $shopRtl ? 'طبّق نطاق السعر' : 'Apply price range' }}</button>
+          </form>
+        </div>
+      </div>
+
+      <hr class="widget-divider">
+
       {{-- ── Widget: Sort By ──────────────────────────────────── --}}
       <div class="widget" id="widget-sort">
 
@@ -835,6 +963,13 @@
       </div>{{-- /widget-sort --}}
 
     </aside>
+        </div>
+        <footer class="shop-filter-panel-actions">
+          <button type="button" class="shop-filter-apply" onclick="applyShopPriceFilter()">{{ $shopRtl ? 'تطبيق الفلاتر' : 'Apply filters' }}</button>
+          <a href="{{ route('shop') }}" class="shop-filter-clear">{{ $shopRtl ? 'مسح الكل' : 'Clear all' }}</a>
+        </footer>
+      </section>
+    </div>
 
     {{-- ══ MAIN ════════════════════════════════════════════════ --}}
     <div>
@@ -857,6 +992,15 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               {{ $shopRtl ? 'الماركة:' : 'Brand:' }} {{ $activeBrandName }}
               <a href="{{ route('shop', array_filter(request()->except('brand','page'))) }}" title="{{ $shopRtl ? 'امسح الماركة' : 'Clear brand' }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </a>
+            </span>
+          @endif
+          @if($minPrice !== null || $maxPrice !== null)
+            <span class="active-cat-strip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+              {{ $shopRtl ? 'السعر:' : 'Price:' }} {{ $minPrice !== null ? number_format($minPrice, 2) : '0' }} – {{ $maxPrice !== null ? number_format($maxPrice, 2) : number_format((float) ($priceRange->max_price ?? 0), 2) }} EGP
+              <a href="{{ route('shop', request()->except(['min_price', 'max_price', 'page'])) }}" title="{{ $shopRtl ? 'امسح نطاق السعر' : 'Clear price range' }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </a>
             </span>
@@ -947,16 +1091,102 @@ function toggleCatChildren(id, btn) {
   if (svg) svg.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
 }
 
-/* ── Mobile sidebar toggle ─────────────────────────────────── */
-function toggleShopFilter() {
-  const sidebar = document.getElementById('shop-sidebar');
+/* ── Mobile filter alert / focus management ─────────────────── */
+let shopFilterPreviousFocus = null;
+
+function setShopFilterButton(open) {
   const btn = document.getElementById('shop-filter-btn');
-  const open = sidebar.classList.toggle('mobile-open');
+  if (!btn) return;
   btn.setAttribute('aria-expanded', open ? 'true' : 'false');
   btn.innerHTML = open
     ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> ' + shopI18n.closeFilters
     : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg> ' + shopI18n.filters;
 }
+
+function toggleShopFilter() {
+  const alert = document.getElementById('shop-filter-alert');
+  if (!alert) return;
+  if (alert.classList.contains('open')) closeShopFilter();
+  else openShopFilter();
+}
+
+function openShopFilter() {
+  const alert = document.getElementById('shop-filter-alert');
+  const panel = alert && alert.querySelector('.shop-filter-panel');
+  if (!alert || !panel) return;
+  shopFilterPreviousFocus = document.activeElement;
+  alert.classList.add('open');
+  alert.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('shop-filter-open');
+  setShopFilterButton(true);
+  window.setTimeout(() => panel.focus(), 0);
+}
+
+function closeShopFilter() {
+  const alert = document.getElementById('shop-filter-alert');
+  if (!alert) return;
+  alert.classList.remove('open');
+  alert.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('shop-filter-open');
+  setShopFilterButton(false);
+  if (shopFilterPreviousFocus && typeof shopFilterPreviousFocus.focus === 'function') {
+    shopFilterPreviousFocus.focus();
+  }
+  shopFilterPreviousFocus = null;
+}
+
+document.addEventListener('keydown', function (event) {
+  if (event.key === 'Escape' && document.getElementById('shop-filter-alert')?.classList.contains('open')) {
+    event.preventDefault();
+    closeShopFilter();
+  }
+});
+
+/* ── Price range controls ───────────────────────────────────── */
+(function () {
+  const minRange = document.getElementById('shop-min-range');
+  const maxRange = document.getElementById('shop-max-range');
+  const minInput = document.getElementById('shop-min-price');
+  const maxInput = document.getElementById('shop-max-price');
+  const form = document.getElementById('shop-price-form');
+  if (!minRange || !maxRange || !minInput || !maxInput || !form) return;
+
+  const formatPrice = value => Number(value).toFixed(2).replace(/\.00$/, '');
+  const syncFromSliders = function () {
+    let min = Number(minRange.value);
+    let max = Number(maxRange.value);
+    if (min > max) {
+      if (this === minRange) maxRange.value = minRange.value;
+      else minRange.value = maxRange.value;
+      min = Number(minRange.value);
+      max = Number(maxRange.value);
+    }
+    minInput.value = formatPrice(min);
+    maxInput.value = formatPrice(max);
+  };
+  const syncFromInputs = function () {
+    let min = minInput.value === '' ? null : Number(minInput.value);
+    let max = maxInput.value === '' ? null : Number(maxInput.value);
+    if (min !== null && Number.isFinite(min)) min = Math.min(Number(minRange.max), Math.max(Number(minRange.min), min));
+    if (max !== null && Number.isFinite(max)) max = Math.min(Number(maxRange.max), Math.max(Number(maxRange.min), max));
+    if (min !== null) minRange.value = min;
+    if (max !== null) maxRange.value = max;
+    if (min !== null && max !== null && min > max) {
+      max = min;
+      maxRange.value = max;
+      maxInput.value = formatPrice(max);
+    }
+  };
+  minRange.addEventListener('input', syncFromSliders);
+  maxRange.addEventListener('input', syncFromSliders);
+  minInput.addEventListener('change', syncFromInputs);
+  maxInput.addEventListener('change', syncFromInputs);
+  window.applyShopPriceFilter = function () {
+    if (minInput.value !== '' || maxInput.value !== '') syncFromInputs();
+    if (form.requestSubmit) form.requestSubmit();
+    else form.submit();
+  };
+})();
 
 /* ── Infinite scroll ────────────────────────────────────────── */
 (function () {

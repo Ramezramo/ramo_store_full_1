@@ -356,6 +356,57 @@ class WebController extends Controller
         $isProductRequest = $request->ajax();
         $locale = strtolower((string) session('locale', 'en'));
         $flashSale = $isProductRequest ? FlashSaleService::getActive($locale) : null;
+
+        // Shop prices are the minimum variation prices shown on each product card.
+        // Accept only plain non-negative decimal values; malformed or complex input
+        // is ignored instead of being passed into the query.
+        $parseShopPrice = static function ($value): ?float {
+            if (! is_scalar($value)) {
+                return null;
+            }
+
+            $value = trim((string) $value);
+            if ($value === '' || strlen($value) > 18 || ! preg_match('/^\\d+(?:\\.\\d{1,2})?$/D', $value)) {
+                return null;
+            }
+
+            $price = (float) $value;
+            return is_finite($price) && $price >= 0 ? $price : null;
+        };
+        $minPrice = $parseShopPrice($request->input('min_price'));
+        $maxPrice = $parseShopPrice($request->input('max_price'));
+
+        // A reversed range is normalized consistently so a pasted/edited URL still
+        // produces a useful result and a coherent pair of controls.
+        if ($minPrice !== null && $maxPrice !== null && $minPrice > $maxPrice) {
+            [$minPrice, $maxPrice] = [$maxPrice, $minPrice];
+        }
+
+        $priceRange = null;
+        if (! $isProductRequest) {
+            // Keep the range aligned with the Search page: only published,
+            // approved products with a positive regular price are sellable.
+            $priceRange = DB::table('product_variations as pv')
+                ->join('products_data as p', 'p.id', '=', 'pv.product_id')
+                ->where('p.status', 'publish')
+                ->where('p.acceptance_status', 'approved')
+                ->where('pv.regular_price', '>', 0)
+                ->selectRaw('MIN(pv.price::numeric) as min_price, MAX(pv.price::numeric) as max_price')
+                ->first();
+
+            $rangeMin = max(0, (float) ($priceRange->min_price ?? 0));
+            $rangeMax = max($rangeMin, (float) ($priceRange->max_price ?? $rangeMin));
+            if ($minPrice !== null) {
+                $minPrice = min($rangeMax, max(0, $minPrice));
+            }
+            if ($maxPrice !== null) {
+                $maxPrice = min($rangeMax, max(0, $maxPrice));
+            }
+            if ($minPrice !== null && $maxPrice !== null && $minPrice > $maxPrice) {
+                [$minPrice, $maxPrice] = [$maxPrice, $minPrice];
+            }
+        }
+
         $query = $this->baseProductQuery();
 
         // Build category hierarchy for sidebar
@@ -409,6 +460,15 @@ class WebController extends Controller
                 $q->where('p.name', 'ilike', "%$search%")
                   ->orWhere('p.description', 'ilike', "%$search%");
             });
+        }
+
+        // The selected card price is MIN(pv.price), so filter the grouped query
+        // with HAVING rather than a row-level variation predicate.
+        if ($minPrice !== null) {
+            $query->havingRaw('MIN(pv.price::numeric) >= ?', [$minPrice]);
+        }
+        if ($maxPrice !== null) {
+            $query->havingRaw('MIN(pv.price::numeric) <= ?', [$maxPrice]);
         }
 
         if ($request->sort === 'price_asc')  $query->orderBy('price', 'asc');
@@ -499,7 +559,8 @@ class WebController extends Controller
             ->view('web.shop', compact(
                 'products', 'parentCats', 'childCats',
                 'activeCategoryId', 'activeParentId', 'catCounts',
-                'activeBrandName', 'allBrands', 'shopMobileLayout'
+                'activeBrandName', 'allBrands', 'shopMobileLayout',
+                'priceRange', 'minPrice', 'maxPrice'
             ))
             ->header('Cache-Control', 'private, no-cache');
     }
