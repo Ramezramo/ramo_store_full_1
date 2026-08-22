@@ -41,6 +41,7 @@ Route::post('/language/auto-country', [WebController::class, 'setLocaleFromClien
     ->middleware('throttle:20,1')
     ->name('language.auto-country');
 Route::get('/shop', [WebController::class, 'shop'])->name('shop');
+Route::get('/offers', [WebController::class, 'offers'])->name('offers');
 Route::get('/product/{id}', [WebController::class, 'product'])->name('product');
 Route::get('/vendor/{id}', [WebController::class, 'vendor'])->name('vendor.store');
 

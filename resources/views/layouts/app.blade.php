@@ -6,6 +6,7 @@
   $headerIsArabic = $timelineLocale === 'ar';
   $headerHomeLabel = $headerIsArabic ? 'الرئيسية' : 'Home';
   $headerShopLabel = $headerIsArabic ? 'تسوّق' : 'Shop';
+  $headerOffersLabel = $headerIsArabic ? 'العروض' : 'Offers';
   $headerTrackOrderLabel = $headerIsArabic ? 'تتبّع طلبك' : 'Track Order';
   $headerSearchPlaceholder = $headerIsArabic ? 'دوّر على منتجات…' : 'Search products…';
   $headerSearchActionLabel = $headerIsArabic ? 'بحث' : 'Search';
@@ -18,6 +19,7 @@
   $mobileSearchActionLabel = $headerIsArabic ? 'بحث' : 'Search products';
   $mobileHomeLabel = $headerIsArabic ? 'الرئيسية' : 'Home';
   $mobileShopLabel = $headerIsArabic ? 'تسوّق' : 'Shop';
+  $mobileOffersLabel = $headerIsArabic ? 'العروض والكوبونات' : 'Offers & Coupons';
   $mobileCartLabel = $headerIsArabic ? 'السلة' : 'Cart';
   $mobileWishlistLabel = $headerIsArabic ? 'المفضلة' : 'Wishlist';
   $mobileTrackOrderLabel = $headerIsArabic ? 'تتبّع طلبك' : 'Track Order';
@@ -979,6 +981,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
     <div class="nav-links">
       <a href="{{ route('home') }}"  class="{{ request()->routeIs('home') ? 'active' : '' }}">{{ $headerHomeLabel }}</a>
       <a href="{{ route('shop') }}"  class="{{ request()->routeIs('shop') ? 'active' : '' }}">{{ $headerShopLabel }}</a>
+      <a href="{{ route('offers') }}" class="{{ request()->routeIs('offers') ? 'active' : '' }}">{{ $headerOffersLabel }}</a>
       <a href="{{ route('order.track') }}" class="{{ request()->routeIs('order.track*') ? 'active' : '' }}">{{ $headerTrackOrderLabel }}</a>
     </div>
     <div class="nav-search">
@@ -1147,6 +1150,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
     <div class="nav-mobile-links">
       <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}">🏠 {{ $mobileHomeLabel }}</a>
       <a href="{{ route('shop') }}" class="{{ request()->routeIs('shop') ? 'active' : '' }}">🛍️ {{ $mobileShopLabel }}</a>
+      <a href="{{ route('offers') }}" class="{{ request()->routeIs('offers') ? 'active' : '' }}">🎁 {{ $mobileOffersLabel }}</a>
       <a href="{{ route('cart') }}" class="{{ request()->routeIs('cart') ? 'active' : '' }}">
         🛒 {{ $mobileCartLabel }}
         @php

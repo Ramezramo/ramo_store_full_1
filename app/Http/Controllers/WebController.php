@@ -349,6 +349,26 @@ class WebController extends Controller
         ));
     }
 
+    public function offers()
+    {
+        $coupons = DB::table('coupons')
+            ->where('status', 'publish')
+            ->where(function ($query): void {
+                $query->whereNull('date_expires')
+                    ->orWhere('date_expires', '>', now());
+            })
+            ->where(function ($query): void {
+                $query->whereNull('usage_limit')
+                    ->orWhereColumn('usage_count', '<', 'usage_limit');
+            })
+            ->orderByDesc('free_shipping')
+            ->orderByDesc('amount')
+            ->orderByDesc('date_created')
+            ->get();
+
+        return view('web.offers', compact('coupons'));
+    }
+
     public function shop(Request $request)
     {
         // Keep the navigation/filter shell fast. Product data is loaded by the
