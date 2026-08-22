@@ -47,6 +47,8 @@ class ProductSelectionResetTest extends TestCase
         $this->assertStringContainsString('ليه فيه سعرين؟', $product);
         $this->assertStringContainsString('السعر بيتغير حسب اللون أو المقاس اللي هتختاره.', $product);
         $this->assertStringContainsString('pi-price-orig', $product);
+        $this->assertStringContainsString('id="price-range-note"', $product);
+        $this->assertStringContainsString("rangeNote.style.display = v ? 'none' : ''", $product);
         $this->assertStringContainsString('Why are there two prices?', $product);
         $this->assertStringContainsString('pi-price-explanation', $product);
     }

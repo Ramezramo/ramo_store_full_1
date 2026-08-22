@@ -181,13 +181,13 @@
           @endif
         </div>
         @if($hasDisc && $isRange)
-        <div class="pi-sale-note" role="note">
+        <div class="pi-sale-note" id="price-range-note" role="note" style="display:none">
           <span class="pi-sale-note-title">{{ $isAr ? 'ليه فيه سعرين؟' : 'Why are there two prices?' }}</span>
           <span>{{ $isAr ? 'السعر بيتغير حسب اللون أو المقاس اللي هتختاره. الأسعار المعروضة هي نطاق أسعار الاختيارات المتاحة.' : 'The price changes according to the color or size you choose. The displayed amount is the price range for the available options.' }}</span>
           <span class="pi-sale-saving">🏷️ {{ $isAr ? 'بتوفّر ' . round($discPct) . '% من السعر الأصلي' : 'You save ' . round($discPct) . '% off the original price' }}</span>
         </div>
         @elseif($isRange)
-        <div class="pi-price-explanation" role="note">
+        <div class="pi-price-explanation" id="price-range-note" role="note" style="display:none">
           <span class="pi-price-note-title">{{ $isAr ? 'السعر حسب الاختيار' : 'Price depends on your selection' }}</span>
           <span>{{ $isAr ? 'السعر بيتغير حسب اللون أو المقاس اللي هتختاره.' : 'The price changes according to the color or size you choose.' }}</span>
         </div>
@@ -1408,6 +1408,8 @@ function renderPriceStock(v) {
   const badgeEl = document.getElementById('disc-badge');
   const stockEl = document.getElementById('stock-display');
   const singleQty = document.getElementById('single-qty-controls');
+  const rangeNote = document.getElementById('price-range-note');
+  if (rangeNote) rangeNote.style.display = v ? 'none' : '';
 
   function effectivePrice(item) {
     const reg = item.reg > 0 ? item.reg : item.price;
