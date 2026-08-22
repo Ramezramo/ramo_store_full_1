@@ -9,6 +9,7 @@ class PaymentConfig
     private static array $defaults = [
         'cod_enabled' => true,
         'cod_data' => 'Pay when your order arrives',
+        'cod_fee' => 40,
         'vodafone_cash_enabled' => true,
         'vodafone_cash_data' => 'Send to 01xxxxxxxxx',
         'bank_transfer_enabled' => true,
@@ -33,6 +34,13 @@ class PaymentConfig
         $stored = $row && $row->value ? (json_decode($row->value, true) ?: []) : [];
 
         return array_merge(self::$defaults, $stored);
+    }
+
+    public static function codFee(?array $config = null): float
+    {
+        $config ??= self::get();
+
+        return round(max(0, (float) ($config['cod_fee'] ?? 40)), 2);
     }
 
     public static function save(array $data): void
