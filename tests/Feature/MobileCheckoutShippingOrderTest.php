@@ -71,6 +71,22 @@ class MobileCheckoutShippingOrderTest extends TestCase
             "const enabled = event.target.checked;",
             $template,
         );
+        $this->assertStringContainsString(
+            'zoom=18&addressdetails=1&accept-language=',
+            $template,
+        );
+        $this->assertStringContainsString(
+            'const detailParts = [',
+            $template,
+        );
+        $this->assertStringContainsString(
+            'addr.village !== city ? addr.village :',
+            $template,
+        );
+        $this->assertStringContainsString(
+            'addr.municipality,',
+            $template,
+        );
     }
 }
 

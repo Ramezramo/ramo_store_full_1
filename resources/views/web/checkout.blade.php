@@ -468,12 +468,41 @@ document.addEventListener('DOMContentLoaded', () => {
   const updateFields = async (lat, lng) => {
     setCoords(lat, lng);
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=15&addressdetails=1`);
+      const language = checkoutText.isAr ? 'ar,en' : 'en';
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&zoom=18&addressdetails=1&accept-language=${encodeURIComponent(language)}`);
       const data = await res.json();
       const addr = data.address || {};
-      const street = [addr.house_number, addr.road, addr.neighbourhood, addr.suburb, addr.hamlet, addr.village].filter(Boolean).join(' ') || data.display_name || '';
-      const city = addr.city || addr.town || addr.village || addr.municipality || addr.county || addr.suburb || addr.city_district || addr.hamlet || '';
-      const state = addr.state || addr.region || addr.state_district || addr.province || addr.county || addr.country || '';
+      const firstNonEmpty = (values) => values.find((value) => value && String(value).trim())?.toString().trim() || '';
+      const city = firstNonEmpty([
+        addr.city,
+        addr.town,
+        addr.municipality,
+        addr.county,
+        addr.city_district,
+        addr.village,
+        addr.hamlet,
+      ]);
+      const state = firstNonEmpty([
+        addr.state,
+        addr.region,
+        addr.state_district,
+        addr.province,
+      ]);
+      const detailParts = [
+        addr.house_number,
+        addr.road,
+        addr.pedestrian,
+        addr.footway,
+        addr.neighbourhood,
+        addr.quarter,
+        addr.residential,
+        addr.suburb,
+        addr.locality,
+        addr.hamlet !== city ? addr.hamlet : '',
+        addr.village !== city ? addr.village : '',
+        addr.postcode,
+      ].filter((value, index, values) => value && values.indexOf(value) === index);
+      const street = detailParts.join(', ') || data.display_name || [city, state].filter(Boolean).join(', ');
       if (addressInput) addressInput.value = street;
       if (cityInput) cityInput.value = city;
       if (addressInput) addressInput.dispatchEvent(new Event('input', { bubbles: true }));
