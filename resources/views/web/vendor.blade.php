@@ -56,7 +56,7 @@
   </div>
 
   @if($products->count())
-    <div class="product-grid" style="margin-bottom:40px">
+    <div class="product-grid vendor-products-grid" style="margin-bottom:40px">
       @foreach($products as $p)
         @include('web.partials.product-card', ['p' => $p, 'cardVariations' => []])
       @endforeach
@@ -125,6 +125,49 @@
 }
 
 .vendor-storefront-ar{font-family:'Cairo','Tahoma',sans-serif;text-align:right}.vendor-storefront-ar .vendor-page-identity,.vendor-storefront-ar .vendor-page-toolbar{direction:rtl}.vendor-storefront-ar .vendor-page-toolbar{flex-direction:row}
+
+/* Vendor storefront cards keep a comfortable desktop layout while the phone view
+   uses a deliberately compact two-column grid. */
+.vendor-products-grid{align-items:stretch}
+.vendor-products-grid .product-card{min-width:0;border-radius:14px;box-shadow:0 5px 18px rgba(35,25,16,.06)}
+.vendor-products-grid .product-card-img{aspect-ratio:1 / 1.08}
+.vendor-products-grid .product-card-body{min-width:0;padding:12px 10px 10px;gap:7px}
+.vendor-products-grid .product-card-name{min-width:0}
+.vendor-products-grid .product-card-price{gap:4px 6px}
+.vendor-products-grid .pc-actions{min-width:0}
+.vendor-products-grid .card-add-btn,.vendor-products-grid .card-details-btn{letter-spacing:0}
+
+@media(max-width:600px){
+  .vendor-storefront{padding-bottom:calc(var(--mobile-nav-height, 72px) + 24px)}
+  .vendor-page-header{margin-bottom:24px}
+  .vendor-page-banner{border-radius:16px}
+  .vendor-page-identity{gap:10px;padding:0 2px}
+  .vendor-page-meta{min-width:0;padding-bottom:2px}
+  .vendor-page-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .vendor-page-stats{gap:5px 8px}
+  .vendor-stat{font-size:11px;line-height:1.35}
+  .vendor-page-toolbar{gap:10px;margin-bottom:16px;padding:10px 12px;border-radius:14px}
+  .vendor-page-toolbar > div:first-child{font-size:12px !important;white-space:nowrap}
+  .vendor-page-toolbar > div:last-child{min-width:0;gap:5px !important}
+  .vendor-page-toolbar > div:last-child > span{font-size:11px !important;white-space:nowrap}
+  .vendor-page-toolbar .sort-select{max-width:52vw;padding:8px 8px;font-size:12px !important}
+  .vendor-products-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:12px 10px}
+  .vendor-products-grid .product-card-img{aspect-ratio:1 / 1.08}
+  .vendor-products-grid .product-card-body{padding:9px 8px 8px;gap:6px}
+  .vendor-products-grid .product-card-name{font-size:12px;line-height:1.45}
+  .vendor-products-grid .product-card-price{padding-top:0;gap:3px 5px}
+  .vendor-products-grid .price-main{font-size:12.5px}
+  .vendor-products-grid .price-old{font-size:11px}
+  .vendor-products-grid .card-add-btn,.vendor-products-grid .card-details-btn{padding:8px 5px;font-size:10px;line-height:1.25}
+  .vendor-products-grid .wish-btn{top:8px;right:8px;width:30px;height:30px;font-size:15px}
+  .vendor-products-grid .product-card-img .badge-sale{top:8px;left:8px;padding:3px 6px;font-size:9px}
+}
+
+@media(max-width:360px){
+  .vendor-products-grid{gap:10px 8px !important}
+  .vendor-products-grid .product-card-body{padding-left:6px;padding-right:6px}
+  .vendor-products-grid .card-add-btn,.vendor-products-grid .card-details-btn{padding-left:3px;padding-right:3px;font-size:9.5px}
+}
 
 @media(max-width:640px) {
   .vendor-page-banner { height: 120px; margin-bottom: -36px; }
