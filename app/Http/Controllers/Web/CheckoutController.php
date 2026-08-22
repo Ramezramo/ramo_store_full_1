@@ -43,25 +43,11 @@ class CheckoutController extends Controller
         return trim((string) ($arabic['name'] ?? '')) ?: $fallback;
     }
 
-    private function couponValidationError(string $message): string
+    private function couponValidationError(array $validation): string
     {
-        if (str_contains(strtolower($message), 'cannot exceed')) {
-            return $this->localized(
-                'This coupon cannot be used above the current cart subtotal. Adjust the quantity or remove it to continue.',
-                'الكوبون ده مش متاح لقيمة السلة الحالية لأنها عدّت الحد الأقصى. عدّل الكمية أو شيل الكوبون عشان تكمل.'
-            );
-        }
-
-        if (str_contains(strtolower($message), 'at least')) {
-            return $this->localized(
-                'This coupon requires a higher cart subtotal. Adjust the quantity or remove it to continue.',
-                'الكوبون ده محتاج قيمة سلة أعلى. زوّد الكمية أو شيل الكوبون عشان تكمل.'
-            );
-        }
-
-        return $this->localized(
-            'The applied coupon is no longer valid for this cart. Remove it to continue.',
-            'الكوبون المطبّق مبقاش صالح للسلة دي. شيله عشان تكمل.'
+        return app(\App\Http\Controllers\CouponController::class)->localizedValidationMessage(
+            $validation,
+            session('locale', 'en') === 'ar'
         );
     }
 
@@ -151,7 +137,7 @@ class CheckoutController extends Controller
             );
 
             if (! $couponValidation['valid']) {
-                $couponError = $this->couponValidationError((string) ($couponValidation['message'] ?? ''));
+                $couponError = $this->couponValidationError($couponValidation);
                 $couponErrorCode = strtoupper(trim((string) ($coupon['code'] ?? '')));
                 session()->forget('ramo_coupon');
                 return redirect()->route('cart')->with([

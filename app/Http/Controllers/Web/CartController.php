@@ -404,20 +404,34 @@ class CartController extends Controller
             ->first(['code', 'discount_type', 'amount', 'free_shipping', 'description', 'status', 'date_expires', 'minimum_amount', 'maximum_amount']);
 
         $invalidMessage = null;
-        if (! $record || ($record->status ?? 'publish') !== 'publish') {
-            $invalidMessage = $this->localized('This coupon is no longer available.', 'الكوبون ده مبقاش متاح.');
+        $invalidReason = null;
+        $invalidData = [];
+        if (! $record) {
+            $invalidReason = 'not_found';
+        } elseif (($record->status ?? 'publish') !== 'publish') {
+            $invalidReason = 'inactive';
         } elseif ($record->date_expires && now()->isAfter($record->date_expires)) {
-            $invalidMessage = $this->localized('This coupon has expired.', 'الكوبون ده انتهت صلاحيته.');
+            $invalidReason = 'expired';
+            $invalidData = ['expires_at' => $record->date_expires];
         } elseif ($subtotal !== null && $subtotal < (float) ($record->minimum_amount ?? 0)) {
-            $invalidMessage = $this->localized(
-                'This coupon requires a higher cart subtotal.',
-                'الكوبون ده محتاج قيمة سلة أعلى من '.$record->minimum_amount.' جنيه.'
-            );
+            $invalidReason = 'minimum_amount';
+            $invalidData = [
+                'cart_total' => $subtotal,
+                'minimum_amount' => (float) ($record->minimum_amount ?? 0),
+            ];
         } elseif ($subtotal !== null && (float) ($record->maximum_amount ?? 0) > 0 && $subtotal > (float) $record->maximum_amount) {
-            $invalidMessage = $this->localized(
-                'This coupon cannot be used above its maximum cart subtotal.',
-                'الكوبون ده متاح لحد قيمة سلة '.$record->maximum_amount.' جنيه بس. عدّل الكمية أو شيل الكوبون عشان تكمل.'
-            );
+            $invalidReason = 'maximum_amount';
+            $invalidData = [
+                'cart_total' => $subtotal,
+                'maximum_amount' => (float) $record->maximum_amount,
+            ];
+        }
+
+        if ($invalidReason !== null) {
+            $invalidMessage = app(CouponController::class)->localizedValidationMessage([
+                'reason' => $invalidReason,
+                'data' => $invalidData,
+            ], session('locale', 'en') === 'ar');
         }
 
         if ($invalidMessage !== null) {
@@ -610,7 +624,10 @@ class CartController extends Controller
         );
 
         if (! $validation['valid']) {
-            $message = $this->localized($validation['message'], 'الكوبون ده مش متاح للسلة دي.');
+            $message = app(CouponController::class)->localizedValidationMessage(
+                $validation,
+                session('locale', 'en') === 'ar'
+            );
             if (! $r->expectsJson()) {
                 return redirect()->route('cart')->with([
                     'coupon_error' => $message,

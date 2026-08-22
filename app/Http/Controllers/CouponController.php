@@ -395,35 +395,67 @@ class CouponController extends Controller
         float $cart_total,
         ?int $user_id = null
     ): array {
-        // Find coupon
-        $coupon = Coupon::where('code', $code)->active()->first();
+        // Load the record without the active scope so the user can be told
+        // whether the code is missing, disabled, or expired.
+        $coupon = Coupon::whereRaw('LOWER(code) = ?', [strtolower(trim($code))])->first();
 
         if (! $coupon) {
             return [
                 'valid' => false,
-                'message' => 'Invalid or expired coupon code',
+                'reason' => 'not_found',
+                'message' => 'Coupon code was not found',
                 'code' => 404,
                 'data' => null,
             ];
         }
 
-        // ✅ CHECK MINIMUM AMOUNT
-        if ($cart_total < $coupon->minimum_amount) {
+        if (($coupon->status ?? 'publish') !== 'publish') {
             return [
                 'valid' => false,
-                'message' => "Cart total must be at least {$coupon->minimum_amount}",
+                'reason' => 'inactive',
+                'message' => 'Coupon is currently disabled',
                 'code' => 422,
                 'data' => null,
             ];
         }
 
-        // ✅ CHECK MAXIMUM AMOUNT
-        if ($coupon->maximum_amount > 0 && $cart_total > $coupon->maximum_amount) {
+        if ($coupon->date_expires && $coupon->date_expires->isPast()) {
             return [
                 'valid' => false,
+                'reason' => 'expired',
+                'message' => 'Coupon has expired',
+                'code' => 422,
+                'data' => [
+                    'expires_at' => $coupon->date_expires,
+                ],
+            ];
+        }
+
+        // ✅ CHECK MINIMUM AMOUNT
+        if ($cart_total < (float) $coupon->minimum_amount) {
+            return [
+                'valid' => false,
+                'reason' => 'minimum_amount',
+                'message' => "Cart total must be at least {$coupon->minimum_amount}",
+                'code' => 422,
+                'data' => [
+                    'cart_total' => $cart_total,
+                    'minimum_amount' => (float) $coupon->minimum_amount,
+                ],
+            ];
+        }
+
+        // ✅ CHECK MAXIMUM AMOUNT
+        if ((float) $coupon->maximum_amount > 0 && $cart_total > (float) $coupon->maximum_amount) {
+            return [
+                'valid' => false,
+                'reason' => 'maximum_amount',
                 'message' => "Cart total cannot exceed {$coupon->maximum_amount}",
                 'code' => 422,
-                'data' => null,
+                'data' => [
+                    'cart_total' => $cart_total,
+                    'maximum_amount' => (float) $coupon->maximum_amount,
+                ],
             ];
         }
 
@@ -431,9 +463,12 @@ class CouponController extends Controller
         if ((int) ($coupon->usage_limit ?? 0) > 0 && (int) ($coupon->usage_count ?? 0) >= (int) $coupon->usage_limit) {
             return [
                 'valid' => false,
+                'reason' => 'usage_limit',
                 'message' => 'Coupon usage limit reached',
                 'code' => 422,
-                'data' => null,
+                'data' => [
+                    'usage_limit' => (int) $coupon->usage_limit,
+                ],
             ];
         }
 
@@ -444,12 +479,16 @@ class CouponController extends Controller
                 ->where('user_id', $user_id)
                 ->value('use_count') ?? 0);
             if ($userUses >= (int) $coupon->usage_limit_per_user) {
-                return [
-                    'valid' => false,
-                    'message' => 'Coupon usage limit reached for this user',
-                    'code' => 422,
-                    'data' => null,
-                ];
+                                    return [
+                        'valid' => false,
+                        'reason' => 'usage_limit_per_user',
+                        'message' => 'Coupon usage limit reached for this user',
+                        'code' => 422,
+                        'data' => [
+                            'usage_limit_per_user' => (int) $coupon->usage_limit_per_user,
+                        ],
+                    ];
+
             }
         }
 
@@ -458,6 +497,7 @@ class CouponController extends Controller
 
         return [
             'valid' => true,
+            'reason' => 'valid',
             'message' => 'Coupon is valid',
             'code' => 200,
             'data' => [
@@ -467,6 +507,40 @@ class CouponController extends Controller
                 'new_total' => max(0, $cart_total - $discount),
             ],
         ];
+    }
+
+    public function localizedValidationMessage(array $validation, bool $arabic = false): string
+    {
+        $reason = (string) ($validation['reason'] ?? 'invalid');
+        $data = is_array($validation['data'] ?? null) ? $validation['data'] : [];
+        $money = static fn ($value): string => number_format((float) $value, 2).' EGP';
+
+        return match ($reason) {
+            'not_found' => $arabic
+                ? 'الكود ده مش موجود. اتأكد من كتابته وجرب تاني.'
+                : 'This coupon code was not found. Check the spelling and try again.',
+            'inactive' => $arabic
+                ? 'الكوبون ده متوقف حاليًا ومش متاح للاستخدام.'
+                : 'This coupon is currently disabled and cannot be used.',
+            'expired' => $arabic
+                ? 'الكوبون ده انتهت صلاحيته ومبقاش متاح.'
+                : 'This coupon has expired and is no longer available.',
+            'minimum_amount' => $arabic
+                ? 'الكوبون ده محتاج قيمة سلة لا تقل عن '.$money($data['minimum_amount'] ?? 0).'. قيمة سلتك الحالية '.$money($data['cart_total'] ?? 0).'.'
+                : 'This coupon requires a cart subtotal of at least '.$money($data['minimum_amount'] ?? 0).'. Your current subtotal is '.$money($data['cart_total'] ?? 0).'.',
+            'maximum_amount' => $arabic
+                ? 'الكوبون ده متاح لحد قيمة سلة '.$money($data['maximum_amount'] ?? 0).' بس. قيمة سلتك الحالية '.$money($data['cart_total'] ?? 0).'.'
+                : 'This coupon is available only up to a cart subtotal of '.$money($data['maximum_amount'] ?? 0).'. Your current subtotal is '.$money($data['cart_total'] ?? 0).'.',
+            'usage_limit' => $arabic
+                ? 'الكوبون ده خلص عدد مرات استخدامه ومبقاش متاح.'
+                : 'This coupon has reached its total usage limit and is no longer available.',
+            'usage_limit_per_user' => $arabic
+                ? 'إنت استخدمت الكوبون ده الحد المسموح ليك ('.$data['usage_limit_per_user'].' مرة)، ومش هينفع تستخدمه تاني.'
+                : 'You have reached your allowed usage limit for this coupon ('.$data['usage_limit_per_user'].' use(s)).',
+            default => $arabic
+                ? 'الكوبون ده مش متاح للسلة الحالية. راجع شروطه وجرب تاني.'
+                : 'This coupon is not valid for the current cart. Check its terms and try again.',
+        };
     }
 
     public function validateCoupon(Request $request): JsonResponse
@@ -485,7 +559,7 @@ class CouponController extends Controller
 
             if (! $validation['valid']) {
                 return $this->failureResponse(
-                    message: $validation['message'],
+                    message: $this->localizedValidationMessage($validation),
                     code: $validation['code']
                 );
             }
