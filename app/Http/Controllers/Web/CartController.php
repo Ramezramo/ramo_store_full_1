@@ -118,7 +118,8 @@ class CartController extends Controller
         }
 
         $afterDiscount = max(0, $subtotal - $discount);
-        $shippingFee = ShippingConfig::feeForSubtotal($afterDiscount);
+        $freeShipping = is_array($coupon) && ! empty($coupon['free_shipping']);
+        $shippingFee = $freeShipping ? 0.0 : ShippingConfig::feeForSubtotal($afterDiscount);
         $freeShippingEnabled = (bool) ShippingConfig::val('free_shipping_enabled', true);
         $freeShippingThreshold = (float) ShippingConfig::val('free_shipping_threshold', 1000);
         $hasPreviousOrders = empty($cart) && Auth::check()
@@ -397,7 +398,8 @@ class CartController extends Controller
                 : min((float) $coupon['amount'], $subtotal);
         }
         $afterDiscount = max(0, $subtotal - $discount);
-        $shippingFee   = ShippingConfig::feeForSubtotal($afterDiscount);
+        $freeShipping = is_array($coupon) && ! empty($coupon['free_shipping']);
+        $shippingFee   = $freeShipping ? 0.0 : ShippingConfig::feeForSubtotal($afterDiscount);
 
         $enabled = (bool) ShippingConfig::val('free_shipping_enabled', true);
         $threshold = (float) ShippingConfig::val('free_shipping_threshold', 1000);
@@ -536,6 +538,7 @@ class CartController extends Controller
             'code'          => $coupon->code,
             'discount_type' => $coupon->discount_type ?? 'percent',
             'amount'        => $coupon->amount ?? 0,
+            'free_shipping' => (bool) ($coupon->free_shipping ?? false),
             'description'   => $coupon->description ?? '',
         ]]);
 

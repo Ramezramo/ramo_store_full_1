@@ -135,25 +135,17 @@ class FreeShippingCouponTest extends TestCase
                 'meta_data' => '[]',
             ]);
 
-            $checkoutPage = $this->actingAs($user)->withSession([
-                'ramo_coupon' => [
-                    'code' => $couponCode,
-                    'discount_type' => 'fixed_cart',
-                    'amount' => 0,
-                    'free_shipping' => true,
-                ],
-            ])->get(route('checkout'));
+            $applyResponse = $this->actingAs($user)->postJson(route('cart.coupon'), [
+                'code' => $couponCode,
+            ]);
+            $applyResponse->assertOk()->assertJson(['success' => true, 'reload' => true]);
+            $this->assertTrue((bool) session('ramo_coupon.free_shipping'));
+
+            $checkoutPage = $this->actingAs($user)->get(route('checkout'));
             $checkoutPage->assertOk();
             $this->assertSame(0.0, (float) $checkoutPage->viewData('shippingFee'));
 
-            $response = $this->actingAs($user)->withSession([
-                'ramo_coupon' => [
-                    'code' => $couponCode,
-                    'discount_type' => 'fixed_cart',
-                    'amount' => 0,
-                    'free_shipping' => true,
-                ],
-            ])->post(route('checkout.place'), [
+            $response = $this->actingAs($user)->post(route('checkout.place'), [
                 'first_name' => 'Free',
                 'last_name' => 'Shipping',
                 'email' => $user->email,
