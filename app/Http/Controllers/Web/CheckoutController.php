@@ -130,7 +130,8 @@ class CheckoutController extends Controller
         $baseTotal = round($afterDiscount + $shippingFee + $totalTax, 2);
         $paymentMethods = PaymentConfig::checkoutMethods();
         $selectedPaymentMethod = old('payment_method', array_key_first($paymentMethods) ?: 'cod');
-        $codFeeAmount = PaymentConfig::codFee();
+        // A free-shipping coupon waives delivery-related charges, including COD.
+        $codFeeAmount = $freeShipping ? 0.0 : PaymentConfig::codFee();
         $codFee = $selectedPaymentMethod === 'cod' ? $codFeeAmount : 0.0;
         $total = round($baseTotal + $codFee, 2);
 
@@ -233,7 +234,7 @@ class CheckoutController extends Controller
         $customerId = Auth::id();
 
         try {
-            $checkoutResult = DB::transaction(function () use ($cart, $r, $billing, $paymentTitle, $isManualPayment, $codFeeAmount, $idempotencyKey, $idempotencyUserId, $coupon, $customerId) {
+            $checkoutResult = DB::transaction(function () use ($cart, $r, $billing, $paymentTitle, $isManualPayment, $idempotencyKey, $idempotencyUserId, $coupon, $customerId) {
                 // Claim the key inside the same transaction as stock changes and order creation.
                 // A double-click or retry can therefore never create a second order.
                 $claimed = DB::table('idempotency_keys')->insertOrIgnore([
@@ -389,7 +390,9 @@ class CheckoutController extends Controller
                 $cartTax = TaxConfig::cartTax($afterDiscount);
                 $shippingTax = TaxConfig::shippingTax($shippingFee);
                 $totalTax = round($cartTax + $shippingTax, 2);
-                $codFee = $r->payment_method === 'cod' ? $codFeeAmount : 0.0;
+                $codFee = $r->payment_method === 'cod' && ! (bool) ($couponRecord?->free_shipping ?? false)
+                    ? PaymentConfig::codFee()
+                    : 0.0;
                 $total = round($afterDiscount + $shippingFee + $totalTax + $codFee, 2);
 
                 // Stock is decremented only after each locked variation has passed validation.

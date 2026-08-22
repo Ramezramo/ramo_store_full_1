@@ -770,8 +770,13 @@ class OrdersController extends Controller
                     $couponData['amount'] = (string) ($couponData['amount'] ?? 0);
                 }
                 $afterDiscount = max(0, $calculatedTotal - (float) $discountTotal);
-                $shippingFee = ShippingConfig::feeForSubtotal($afterDiscount);
-                $codFee = $validatedData['payment_method'] === 'cod' ? PaymentConfig::codFee() : 0.0;
+                $hasFreeShippingCoupon = (bool) ($couponData['free_shipping'] ?? false);
+                $shippingFee = $hasFreeShippingCoupon
+                    ? 0.0
+                    : ShippingConfig::feeForSubtotal($afterDiscount);
+                $codFee = $validatedData['payment_method'] === 'cod' && ! $hasFreeShippingCoupon
+                    ? PaymentConfig::codFee()
+                    : 0.0;
                 $finalTotal = round($afterDiscount + $shippingFee + $codFee, 2);
                 $shippingMethodId = preg_replace('/[^a-zA-Z0-9:_-]/', '', (string) ($validatedData['shipping_lines'][0]['method_id'] ?? 'standard_shipping')) ?: 'standard_shipping';
                 $shippingLines = [[
