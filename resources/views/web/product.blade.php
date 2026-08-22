@@ -248,7 +248,14 @@
             <div class="var-options" id="opts-{{ Str::slug($attrKey) }}">
               @foreach($attrValues as $val)
                 @if($isColor)
-                  <div class="var-color-option">
+                  <div class="var-color-option"
+                       data-attr-key="{{ $attrKey }}"
+                       data-attr-val="{{ $val }}"
+                       role="button"
+                       tabindex="0"
+                       aria-label="{{ $isAr ? 'اختيار اللون: ' : 'Select color: ' }}{{ \App\Support\StorefrontLabels::color($val, $isAr) }}"
+                       onclick="selectColorCard(event, this)"
+                       onkeydown="if(event.key === 'Enter' || event.key === ' '){event.preventDefault();selectColorCard(event, this)}">
                     <button class="var-swatch"
                             data-attr-key="{{ $attrKey }}"
                             data-attr-val="{{ $val }}"
@@ -794,6 +801,7 @@
 .var-options { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-start; }
 .var-color-option {
   display:flex; flex-direction:column; align-items:center; gap:8px;
+  cursor:pointer;
   flex:0 0 112px; min-width:112px; padding:10px 8px 9px;
   border:1px solid #ebe7e2; border-radius:14px; background:#fff;
   box-shadow:0 2px 8px rgba(28,25,23,.04);
@@ -810,6 +818,8 @@
   transition:transform .18s, outline-color .18s, box-shadow .18s;
 }
 .var-swatch:hover { transform:scale(1.06); }
+.var-color-option:focus-visible { outline:3px solid var(--c-orange, #e85d26); outline-offset:3px; }
+.color-qty-stepper { cursor:default; }
 .var-swatch.selected { outline:3px solid #171717; outline-offset:2px; box-shadow:0 3px 8px rgba(0,0,0,.2); }
 .var-swatch[disabled] { cursor:not-allowed; opacity:.35; filter:grayscale(1); }
 .var-swatch.out-of-stock { opacity:.35; filter:grayscale(1); }
@@ -1283,6 +1293,13 @@ function updateAvailability() {
   updateAvailability();
   tryFindVariation();
 })();
+
+function selectColorCard(event, card) {
+  if (event && event.type === 'click' && (event.target.closest('.var-swatch') || event.target.closest('.color-qty-stepper'))) return;
+  const swatch = card?.querySelector('.var-swatch');
+  if (!swatch || swatch.disabled || swatch.classList.contains('out-of-stock')) return;
+  selectAttr(swatch.dataset.attrKey, swatch.dataset.attrVal, swatch);
+}
 
 function selectAttr(key, value, btn) {
   if (key.toLowerCase() === 'color') {

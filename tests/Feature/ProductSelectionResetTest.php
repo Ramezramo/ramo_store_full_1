@@ -49,4 +49,17 @@ class ProductSelectionResetTest extends TestCase
         $this->assertStringContainsString('Why are there two prices?', $product);
         $this->assertStringContainsString('pi-price-explanation', $product);
     }
+
+    public function test_color_variation_card_is_clickable_without_interfering_with_quantity_controls(): void
+    {
+        $product = file_get_contents(resource_path('views/web/product.blade.php'));
+
+        $this->assertIsString($product);
+        $this->assertStringContainsString('class="var-color-option"', $product);
+        $this->assertStringContainsString('role="button"', $product);
+        $this->assertStringContainsString('tabindex="0"', $product);
+        $this->assertStringContainsString('onclick="selectColorCard(event, this)"', $product);
+        $this->assertStringContainsString("event.target.closest('.var-swatch') || event.target.closest('.color-qty-stepper')", $product);
+        $this->assertStringContainsString('function selectColorCard(event, card)', $product);
+    }
 }
