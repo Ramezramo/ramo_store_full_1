@@ -281,6 +281,11 @@ class ReferralProgramTest extends TestCase
         $referrer = $this->makeUser('referrer-'.uniqid().'@example.test');
         $this->get('/register?ref='.$referrer->referral_code)
             ->assertRedirect(route('login', ['ref' => $referrer->referral_code]));
+        $this->withSession(['locale' => 'ar'])
+            ->get('/login?ref='.$referrer->referral_code)
+            ->assertOk()
+            ->assertSee('تمت دعوتك بواسطة')
+            ->assertSee('Referral');
         app()->instance('request', Request::create('/', 'GET', [], [], [], ['REMOTE_ADDR' => '198.51.100.99']));
 
         $referred = $this->makeUser('referred-'.uniqid().'@example.test');
@@ -302,6 +307,26 @@ class ReferralProgramTest extends TestCase
             ->assertSee('استلام العمولة')
             ->assertDontSee('الأدمن')
             ->assertDontSee('>rejected<');
+    }
+
+    public function test_referral_invitation_banner_requires_a_valid_referral_code(): void
+    {
+        AuthConfig::save([
+            'phone_otp_login' => false,
+            'email_login' => true,
+            'google_login' => false,
+        ]);
+
+        $referrer = $this->makeUser('referrer-'.uniqid().'@example.test');
+        $this->get('/register?ref='.$referrer->referral_code)
+            ->assertOk()
+            ->assertSee('You were invited by')
+            ->assertSee('Referral');
+
+        $this->get('/register?ref=INVALID-CODE')
+            ->assertOk()
+            ->assertDontSee('You were invited by')
+            ->assertDontSee('تمت دعوتك بواسطة');
     }
 
     public function test_earnings_card_only_shows_approved_or_paid_commissions(): void

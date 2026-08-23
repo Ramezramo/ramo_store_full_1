@@ -73,6 +73,13 @@
       <p class="auth-sub">{{ $loginRtl ? $loginCopy['accountHint'] : 'Sign in to your account' }}</p>
     @endif
 
+    @if(!empty($referralInviterName))
+      <div style="display:flex;align-items:center;gap:11px;margin:16px 0;padding:13px 14px;border:1px solid #ffd7b8;border-radius:13px;background:linear-gradient(135deg,#fff7ef,#fff);color:#6d4935">
+        <span style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;flex:0 0 34px;border-radius:50%;background:#f06a22;color:#fff;font-size:18px" aria-hidden="true">↗</span>
+        <span style="display:block;font-size:13px;line-height:1.55"><strong style="display:block;color:#bd5317">{{ $loginRtl ? 'تمت دعوتك بواسطة' : 'You were invited by' }} {{ $referralInviterName }}</strong><small style="display:block;margin-top:2px;color:#8b7568">{{ $loginRtl ? 'سجّل من الدعوة دي وابدأ التسوق معانا.' : 'Sign up through this invitation and start shopping with us.' }}</small></span>
+      </div>
+    @endif
+
     @if(session('status'))
       <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:12px 16px;margin-bottom:16px;color:#15803d;font-size:14px">
         {{ session('status') }}

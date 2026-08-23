@@ -24,7 +24,8 @@ class AuthWebController extends Controller
             $request->session()->put('url.intended', route('checkout'));
         }
         $authConfig = AuthConfig::get();
-        return view('web.auth.login', compact('authConfig'));
+        $referralInviterName = $this->referralInviterName($request);
+        return view('web.auth.login', compact('authConfig', 'referralInviterName'));
     }
 
     public function login(Request $r)
@@ -55,6 +56,7 @@ class AuthWebController extends Controller
         if (Auth::check()) return redirect()->route('account.profile');
 
         $authConfig = AuthConfig::get();
+        $referralInviterName = $this->referralInviterName($request);
         $referralQuery = $request->filled('ref') ? ['ref' => $request->query('ref')] : [];
         $phoneOtpEnabled = (bool) ($authConfig['phone_otp_login'] ?? false);
         $emailEnabled = (bool) ($authConfig['email_login'] ?? true);
@@ -70,7 +72,26 @@ class AuthWebController extends Controller
             return redirect()->route('auth.google', $referralQuery);
         }
 
-        return view('web.auth.register', compact('authConfig'));
+        return view('web.auth.register', compact('authConfig', 'referralInviterName'));
+    }
+
+    private function referralInviterName(Request $request): ?string
+    {
+        $code = trim((string) ($request->query('ref') ?: $request->cookie('ref_code')));
+        if ($code === '') {
+            return null;
+        }
+
+        $referrer = User::query()
+            ->where('referral_code', $code)
+            ->first(['first_name', 'name']);
+
+        if (! $referrer) {
+            return null;
+        }
+
+        $name = trim((string) ($referrer->first_name ?: $referrer->name));
+        return $name !== '' ? $name : null;
     }
 
     public function register(Request $r)

@@ -9,6 +9,13 @@
     <h2 class="auth-title">{{ $isAr ? 'اعمل حساب' : 'Create an account' }}</h2>
     <p class="auth-sub">{{ $isAr ? 'انضم لرامو ستور وتجربة تسوّق أحلى.' : 'Join RamoStore for a better shopping experience' }}</p>
 
+    @if(!empty($referralInviterName))
+      <div style="display:flex;align-items:center;gap:11px;margin:16px 0;padding:13px 14px;border:1px solid #ffd7b8;border-radius:13px;background:linear-gradient(135deg,#fff7ef,#fff);color:#6d4935">
+        <span style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;flex:0 0 34px;border-radius:50%;background:#f06a22;color:#fff;font-size:18px" aria-hidden="true">↗</span>
+        <span style="display:block;font-size:13px;line-height:1.55"><strong style="display:block;color:#bd5317">{{ $isAr ? 'تمت دعوتك بواسطة' : 'You were invited by' }} {{ $referralInviterName }}</strong><small style="display:block;margin-top:2px;color:#8b7568">{{ $isAr ? 'سجّل من الدعوة دي وابدأ التسوق معانا.' : 'Sign up through this invitation and start shopping with us.' }}</small></span>
+      </div>
+    @endif
+
     @if($errors->any())
       <div class="alert-box alert-err">{{ $errors->first() }}</div>
     @endif
