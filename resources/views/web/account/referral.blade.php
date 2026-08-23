@@ -47,7 +47,7 @@
   <table class="referral-rules-table">
     <tr><td>{{ $isAr ? 'قيمة أول أوردر مؤهل' : 'Minimum qualifying order' }}</td><td>{{ number_format($minimumOrder, 2) }} {{ $isAr ? 'جنيه أو أكثر بعد الخصم' : 'EGP or more after discounts' }}</td></tr>
     <tr><td>{{ $isAr ? 'طريقة الحساب' : 'Commission calculation' }}</td><td>{{ $commissionType === 'flat' ? number_format($commissionValue, 2).' '.($isAr ? 'جنيه ثابت' : 'EGP fixed') : number_format($commissionValue, 2).'% '.($isAr ? 'من السعر النهائي' : 'of the final total') }}</td></tr>
-    <tr><td>{{ $isAr ? 'مثال عند الحد الأدنى' : 'Example at the minimum' }}</td><td>{{ number_format($exampleCommission, 2) }} {{ $isAr ? 'جنيه تقريبًا' : 'EGP approximately' }}</td></tr>
+    <tr><td>{{ $isAr ? 'انت كدا عمولتك' : 'Your commission would be' }}</td><td>{{ number_format($exampleCommission, 2) }} {{ $isAr ? 'جنيه تقريبًا' : 'EGP approximately' }}</td></tr>
     <tr><td>{{ $isAr ? 'متى يظهر المبلغ؟' : 'When is it shown?' }}</td><td>{{ $isAr ? 'بعد اكتمال أول أوردر، ثم يدخل مراجعة الأدمن' : 'After the first order is completed, then it enters admin review' }}</td></tr>
   </table>
   <div class="referral-steps">
