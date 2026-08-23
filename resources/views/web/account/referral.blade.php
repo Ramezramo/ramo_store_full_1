@@ -36,7 +36,7 @@
 
 <div class="referral-user-card" dir="{{ $isAr ? 'rtl' : 'ltr' }}">
   <h1>{{ $isAr ? 'شارك واربح' : 'Share and earn' }}</h1>
-  <p>{{ $isAr ? 'ابعت رابطك لحد من أصحابك. لما يعمل أول طلب مكتمل مستوفي الحد الأدنى، الإحالة تدخل المراجعة والعمولة يحددها الأدمن.' : 'Share your link with a friend. When their first completed order meets the minimum, the referral enters review and the admin-controlled commission is created.' }}</p>
+  <p>{{ $isAr ? 'ابعت رابطك لحد من أصحابك. لما يعمل أول طلب مكتمل مستوفي الحد الأدنى، الإحالة تتأهل والعمولة تظهر لك حسب الشروط الموضحة.' : 'Share your link with a friend. When their first completed order meets the minimum, the referral qualifies and your commission is calculated according to the rules shown below.' }}</p>
   <div class="referral-link-box"><input id="referral-link" type="text" readonly value="{{ route('register', ['ref' => $user->referral_code]) }}"><button type="button" id="copy-referral-link">{{ $isAr ? 'نسخ الرابط' : 'Copy link' }}</button></div>
   <div class="referral-code">{{ $user->referral_code }}</div>
 </div>
@@ -49,20 +49,20 @@
     <tr><td>{{ $isAr ? 'قيمة أول أوردر مؤهل' : 'Minimum qualifying order' }}</td><td>{{ number_format($minimumOrder, 2) }} {{ $isAr ? 'جنيه أو أكثر بعد الخصم' : 'EGP or more after discounts' }}</td></tr>
     <tr><td>{{ $isAr ? 'طريقة الحساب' : 'Commission calculation' }}</td><td>{{ $commissionType === 'flat' ? number_format($commissionValue, 2).' '.($isAr ? 'جنيه ثابت' : 'EGP fixed') : number_format($commissionValue, 2).'% '.($isAr ? 'من السعر النهائي' : 'of the final total') }}</td></tr>
     <tr><td>{{ $isAr ? 'انت كدا عمولتك' : 'Your commission would be' }}</td><td>{{ number_format($exampleCommission, 2) }} {{ $isAr ? 'جنيه تقريبًا' : 'EGP approximately' }}</td></tr>
-    <tr><td>{{ $isAr ? 'متى يظهر المبلغ؟' : 'When is it shown?' }}</td><td>{{ $isAr ? 'بعد اكتمال أول أوردر، ثم يدخل مراجعة الأدمن' : 'After the first order is completed, then it enters admin review' }}</td></tr>
+    <tr><td>{{ $isAr ? 'متى يظهر المبلغ؟' : 'When is it shown?' }}</td><td>{{ $isAr ? 'بعد اكتمال أول أوردر واستيفاء الشروط' : 'After the first order is completed and the conditions are met' }}</td></tr>
   </table>
   <div class="referral-steps">
     <div class="referral-step"><b>1</b><strong>{{ $isAr ? 'ابعت الرابط' : 'Share the link' }}</strong><span>{{ $isAr ? 'ابعت رابط الإحالة لصاحبك.' : 'Send your referral link to your friend.' }}</span></div>
     <div class="referral-step"><b>2</b><strong>{{ $isAr ? 'يسجل من الرابط' : 'They register' }}</strong><span>{{ $isAr ? 'يسجل من نفس الرابط ويتعمل له ربط بالإحالة.' : 'They register through the same link and become attributed to you.' }}</span></div>
     <div class="referral-step"><b>3</b><strong>{{ $isAr ? 'يعمل أول أوردر' : 'First order' }}</strong><span>{{ $isAr ? 'يعمل أول طلب مكتمل بقيمة نهائية لا تقل عن الحد الأدنى.' : 'They complete their first order at or above the minimum final total.' }}</span></div>
-    <div class="referral-step"><b>4</b><strong>{{ $isAr ? 'مراجعة وصرف يدوي' : 'Review and manual payout' }}</strong><span>{{ $isAr ? 'الأدمن يراجع العمولة ويوافق عليها، والصرف يتم يدويًا حسب آلية المتجر.' : 'Admin reviews and approves it; payout is handled manually by the store.' }}</span></div>
+    <div class="referral-step"><b>4</b><strong>{{ $isAr ? 'استلام العمولة' : 'Receive your commission' }}</strong><span>{{ $isAr ? 'بعد استيفاء الشروط تظهر العمولة، ويتم صرفها يدويًا حسب آلية المتجر.' : 'Once the conditions are met, the commission appears and is paid manually according to the store process.' }}</span></div>
   </div>
-  <div class="referral-note {{ $referralEnabled ? '' : 'off' }}">{{ $referralEnabled ? ($isAr ? 'البرنامج مفعّل حاليًا. العمولة لا تُصرف تلقائيًا وتظل تحت مراجعة الأدمن.' : 'The program is currently enabled. Commissions are not paid automatically and remain under admin review.') : ($isAr ? 'البرنامج غير مفعّل حاليًا. الإحالات الجديدة ستظل محفوظة، لكن لن تُنشأ عمولة حتى يفعّله الأدمن.' : 'The program is currently disabled. Referrals may be recorded, but no commission is created until the admin enables it.') }}</div>
+  <div class="referral-note {{ $referralEnabled ? '' : 'off' }}">{{ $referralEnabled ? ($isAr ? 'البرنامج مفعّل حاليًا. العمولة تظهر لك بعد استيفاء الشروط، والصرف يتم يدويًا حسب آلية المتجر.' : 'The program is currently enabled. Your commission appears after the conditions are met and is paid manually according to the store process.') : ($isAr ? 'البرنامج غير مفعّل حاليًا. الإحالات الجديدة ستظل محفوظة، لكن لن تُنشأ عمولة حتى يتم تفعيل البرنامج.' : 'The program is currently disabled. Referrals may be recorded, but no commission is created until the program is enabled.') }}</div>
   </div>
 </details>
 
 <div class="referral-earnings-card" dir="{{ $isAr ? 'rtl' : 'ltr' }}">
-  <div><span class="eyebrow">{{ $isAr ? 'عمولتك' : 'Your commission' }}</span><p>{{ $isAr ? 'إجمالي العمولات التي راجعها الأدمن ووافق عليها فقط.' : 'Only commissions reviewed and approved by the admin.' }}</p></div>
+  <div><span class="eyebrow">{{ $isAr ? 'عمولتك' : 'Your commission' }}</span><p>{{ $isAr ? 'إجمالي العمولات المعتمدة التي حصلت عليها فقط.' : 'Only approved commissions earned by you.' }}</p></div>
   <strong class="amount">{{ number_format($earnedCommissionTotal, 2) }} <span class="currency">{{ $isAr ? 'جنيه' : 'EGP' }}</span></strong>
 </div>
 

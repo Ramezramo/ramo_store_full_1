@@ -299,7 +299,8 @@ class ReferralProgramTest extends TestCase
             ->assertSee('700.00')
             ->assertSee('5.00%')
             ->assertSee('إزاي تاخد عمولتك؟')
-            ->assertSee('مراجعة وصرف يدوي')
+            ->assertSee('استلام العمولة')
+            ->assertDontSee('الأدمن')
             ->assertDontSee('>rejected<');
     }
 
