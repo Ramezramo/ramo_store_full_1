@@ -1,22 +1,36 @@
 @extends('web.account.layout')
 
-@php($pageTitle = session('locale') === 'ar' ? 'برنامج الإحالة' : 'Referral Program')
+@php
+  $pageTitle = session('locale') === 'ar' ? 'برنامج الإحالة' : 'Referral Program';
+@endphp
 
 @section('account-content')
-@php($isAr = session('locale') === 'ar')
-@php($referralStatusLabels = [
-  'pending' => $isAr ? 'قيد المراجعة' : 'Pending review',
-  'qualified' => $isAr ? 'مؤهلة' : 'Qualified',
-  'rejected' => $isAr ? 'غير مؤهلة' : 'Not eligible',
-  'expired' => $isAr ? 'منتهية' : 'Expired',
-])
+@php
+  $isAr = session('locale') === 'ar';
+  $referralStatusLabels = [
+    'pending' => $isAr ? 'في انتظار أول طلب' : 'Waiting for first order',
+    'qualified' => $isAr ? 'مؤهلة للمراجعة' : 'Qualified for review',
+    'rejected' => $isAr ? 'غير مؤهلة' : 'Not eligible',
+    'expired' => $isAr ? 'منتهية' : 'Expired',
+  ];
+@endphp
+@php
+  $minimumOrder = (float) ($referralSettings['referral_min_order_amount'] ?? 700);
+  $commissionType = $referralSettings['referral_commission_type'] ?? 'percentage';
+  $commissionValue = (float) ($referralSettings['referral_commission_value'] ?? 5);
+  $exampleCommission = $commissionType === 'flat'
+    ? $commissionValue
+    : round($minimumOrder * $commissionValue / 100, 2);
+  $referralEnabled = (bool) ($referralSettings['referral_enabled'] ?? false);
+@endphp
 <style>
 .referral-user-card{background:linear-gradient(135deg,#fff7ef,#fff);border:1px solid #ffe0c7;border-radius:18px;padding:22px;box-shadow:0 8px 24px rgba(199,102,42,.08)}
 .referral-user-card h1{margin:0 0 7px;font-size:22px;color:#222}.referral-user-card p{margin:0;color:#786f69;line-height:1.6;font-size:13px}
 .referral-link-box{display:flex;gap:8px;margin-top:18px}.referral-link-box input{flex:1;min-width:0;border:1px solid #f0c9aa;border-radius:10px;padding:11px 12px;color:#5b3a29;background:#fff;font-size:12px;direction:ltr}.referral-link-box button{border:0;border-radius:10px;background:#f06a22;color:#fff;padding:0 16px;font-weight:700;cursor:pointer}.referral-code{display:inline-block;margin-top:13px;padding:7px 11px;border-radius:8px;background:#fff0e5;color:#b84f13;font-weight:800;letter-spacing:.08em;direction:ltr}
 .referral-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}.referral-stat{background:#fff;border:1px solid #eee5df;border-radius:13px;padding:14px}.referral-stat strong{display:block;font-size:22px;color:#f06a22}.referral-stat span{display:block;margin-top:4px;color:#817871;font-size:12px}
-.referral-user-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}.referral-user-table th,.referral-user-table td{padding:12px 8px;border-bottom:1px solid #f0ebe7;text-align:start}.referral-user-table th{color:#8b817b;font-size:11px}.referral-status{display:inline-block;padding:4px 8px;border-radius:999px;background:#f4f1ef;color:#6f625b;font-size:11px;font-weight:700}.referral-status.qualified{background:#e9f8ef;color:#167343}.referral-status.rejected{background:#fff0f0;color:#b42318}
-@media(max-width:600px){.referral-user-card{padding:17px}.referral-link-box{display:block}.referral-link-box input{width:100%;box-sizing:border-box}.referral-link-box button{width:100%;height:42px;margin-top:8px}.referral-stats{gap:8px}.referral-stat{padding:11px}.referral-stat strong{font-size:19px}.referral-user-table{font-size:12px}}
+.referral-user-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}.referral-user-table th,.referral-user-table td{padding:12px 8px;border-bottom:1px solid #f0ebe7;text-align:start}.referral-user-table th{color:#8b817b;font-size:11px}.referral-user-table td small{display:block;margin-top:4px;color:#8b817b;font-size:11px;line-height:1.45}.referral-status{display:inline-block;padding:4px 8px;border-radius:999px;background:#f4f1ef;color:#6f625b;font-size:11px;font-weight:700}.referral-status.qualified{background:#e9f8ef;color:#167343}.referral-status.rejected{background:#fff0f0;color:#b42318}
+.referral-rules-card{background:#fff;border:1px solid #eee5df;border-radius:18px;padding:19px;margin:16px 0;box-shadow:0 8px 24px rgba(41,32,26,.04)}.referral-rules-card h2{margin:0 0 7px;font-size:18px;color:#302822}.referral-rules-card .intro{margin:0 0 14px;color:#786f69;font-size:13px;line-height:1.7}.referral-rules-table{width:100%;border-collapse:collapse;font-size:13px}.referral-rules-table td{padding:10px 6px;border-bottom:1px solid #f0ebe7;vertical-align:top}.referral-rules-table tr:last-child td{border-bottom:0}.referral-rules-table td:first-child{width:46%;color:#786f69}.referral-rules-table td:last-child{font-weight:800;color:#bd5317}.referral-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:16px}.referral-step{background:#fff8f1;border:1px solid #ffe0c7;border-radius:13px;padding:12px}.referral-step b{display:flex;align-items:center;justify-content:center;width:25px;height:25px;border-radius:50%;background:#f06a22;color:#fff;font-size:12px;margin-bottom:8px}.referral-step strong{display:block;font-size:12px;color:#3b3029;margin-bottom:4px}.referral-step span{display:block;color:#786f69;font-size:11px;line-height:1.55}.referral-note{margin-top:13px;padding:10px 12px;border-radius:10px;background:#f7f7f7;color:#68615c;font-size:12px;line-height:1.6}.referral-note.off{background:#fff7ed;color:#9a4d12}
+@media(max-width:600px){.referral-user-card{padding:17px}.referral-link-box{display:block}.referral-link-box input{width:100%;box-sizing:border-box}.referral-link-box button{width:100%;height:42px;margin-top:8px}.referral-stats{gap:8px}.referral-stat{padding:11px}.referral-stat strong{font-size:19px}.referral-user-table{font-size:12px}.referral-rules-card{padding:16px}.referral-rules-table td:first-child{width:42%}.referral-steps{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.referral-step{padding:10px}}
 </style>
 
 <div class="referral-user-card" dir="{{ $isAr ? 'rtl' : 'ltr' }}">
@@ -24,6 +38,24 @@
   <p>{{ $isAr ? 'ابعت رابطك لحد من أصحابك. لما يعمل أول طلب مكتمل مستوفي الحد الأدنى، الإحالة تدخل المراجعة والعمولة يحددها الأدمن.' : 'Share your link with a friend. When their first completed order meets the minimum, the referral enters review and the admin-controlled commission is created.' }}</p>
   <div class="referral-link-box"><input id="referral-link" type="text" readonly value="{{ route('register', ['ref' => $user->referral_code]) }}"><button type="button" id="copy-referral-link">{{ $isAr ? 'نسخ الرابط' : 'Copy link' }}</button></div>
   <div class="referral-code">{{ $user->referral_code }}</div>
+</div>
+
+<div class="referral-rules-card" dir="{{ $isAr ? 'rtl' : 'ltr' }}">
+  <h2>{{ $isAr ? 'إزاي تستحق العمولة؟' : 'How do you qualify for commission?' }}</h2>
+  <p class="intro">{{ $isAr ? 'العمولة مرتبطة بأول طلب مكتمل للعميل اللي سجل من رابطك، ومش بتتحسب بمجرد التسجيل.' : 'Commission is tied to the referred customer’s first completed order. Registration alone does not create a commission.' }}</p>
+  <table class="referral-rules-table">
+    <tr><td>{{ $isAr ? 'قيمة أول أوردر مؤهل' : 'Minimum qualifying order' }}</td><td>{{ number_format($minimumOrder, 2) }} {{ $isAr ? 'جنيه أو أكثر بعد الخصم' : 'EGP or more after discounts' }}</td></tr>
+    <tr><td>{{ $isAr ? 'طريقة الحساب' : 'Commission calculation' }}</td><td>{{ $commissionType === 'flat' ? number_format($commissionValue, 2).' '.($isAr ? 'جنيه ثابت' : 'EGP fixed') : number_format($commissionValue, 2).'% '.($isAr ? 'من السعر النهائي' : 'of the final total') }}</td></tr>
+    <tr><td>{{ $isAr ? 'مثال عند الحد الأدنى' : 'Example at the minimum' }}</td><td>{{ number_format($exampleCommission, 2) }} {{ $isAr ? 'جنيه تقريبًا' : 'EGP approximately' }}</td></tr>
+    <tr><td>{{ $isAr ? 'متى يظهر المبلغ؟' : 'When is it shown?' }}</td><td>{{ $isAr ? 'بعد اكتمال أول أوردر، ثم يدخل مراجعة الأدمن' : 'After the first order is completed, then it enters admin review' }}</td></tr>
+  </table>
+  <div class="referral-steps">
+    <div class="referral-step"><b>1</b><strong>{{ $isAr ? 'ابعت الرابط' : 'Share the link' }}</strong><span>{{ $isAr ? 'ابعت رابط الإحالة لصاحبك.' : 'Send your referral link to your friend.' }}</span></div>
+    <div class="referral-step"><b>2</b><strong>{{ $isAr ? 'يسجل من الرابط' : 'They register' }}</strong><span>{{ $isAr ? 'يسجل من نفس الرابط ويتعمل له ربط بالإحالة.' : 'They register through the same link and become attributed to you.' }}</span></div>
+    <div class="referral-step"><b>3</b><strong>{{ $isAr ? 'يعمل أول أوردر' : 'First order' }}</strong><span>{{ $isAr ? 'يعمل أول طلب مكتمل بقيمة نهائية لا تقل عن الحد الأدنى.' : 'They complete their first order at or above the minimum final total.' }}</span></div>
+    <div class="referral-step"><b>4</b><strong>{{ $isAr ? 'مراجعة وصرف يدوي' : 'Review and manual payout' }}</strong><span>{{ $isAr ? 'الأدمن يراجع العمولة ويوافق عليها، والصرف يتم يدويًا حسب آلية المتجر.' : 'Admin reviews and approves it; payout is handled manually by the store.' }}</span></div>
+  </div>
+  <div class="referral-note {{ $referralEnabled ? '' : 'off' }}">{{ $referralEnabled ? ($isAr ? 'البرنامج مفعّل حاليًا. العمولة لا تُصرف تلقائيًا وتظل تحت مراجعة الأدمن.' : 'The program is currently enabled. Commissions are not paid automatically and remain under admin review.') : ($isAr ? 'البرنامج غير مفعّل حاليًا. الإحالات الجديدة ستظل محفوظة، لكن لن تُنشأ عمولة حتى يفعّله الأدمن.' : 'The program is currently disabled. Referrals may be recorded, but no commission is created until the admin enables it.') }}</div>
 </div>
 
 <div class="referral-stats" dir="{{ $isAr ? 'rtl' : 'ltr' }}">
@@ -36,11 +68,13 @@
 <div class="referral-user-card" dir="{{ $isAr ? 'rtl' : 'ltr' }}" style="padding:17px">
   <h2 style="margin:0;font-size:17px">{{ $isAr ? 'الإحالات الأخيرة' : 'Recent referrals' }}</h2>
   <div style="overflow:auto">
-    <table class="referral-user-table"><thead><tr><th>{{ $isAr ? 'المستخدم' : 'Customer' }}</th><th>{{ $isAr ? 'الحالة' : 'Status' }}</th><th>{{ $isAr ? 'العمولة' : 'Commission' }}</th></tr></thead><tbody>
+    <table class="referral-user-table"><thead><tr><th>{{ $isAr ? 'الإحالة' : 'Referral' }}</th><th>{{ $isAr ? 'الحالة' : 'Status' }}</th><th>{{ $isAr ? 'الطلب المؤهل' : 'Qualifying order' }}</th><th>{{ $isAr ? 'العمولة' : 'Commission' }}</th></tr></thead><tbody>
     @forelse($referrals as $referral)
-      @php($statusKey = strtolower((string) $referral->status))
-      <tr><td>{{ $isAr ? 'إحالة مسجلة' : 'Referred customer' }}</td><td><span class="referral-status {{ $statusKey }}">{{ $referralStatusLabels[$statusKey] ?? ($isAr ? 'حالة مسجلة' : 'Recorded') }}</span></td><td>{{ $referral->commission ? number_format((float) $referral->commission->amount, 2).' EGP' : '—' }}</td></tr>
-    @empty<tr><td colspan="3">{{ $isAr ? 'لسه مفيش إحالات.' : 'No referrals yet.' }}</td></tr>@endforelse
+      @php
+        $statusKey = strtolower((string) $referral->status);
+      @endphp
+      <tr><td>{{ $isAr ? 'إحالة مسجلة' : 'Referred customer' }}</td><td><span class="referral-status {{ $statusKey }}">{{ $referralStatusLabels[$statusKey] ?? ($isAr ? 'حالة مسجلة' : 'Recorded') }}</span>@if($statusKey === 'pending')<small>{{ $isAr ? 'في انتظار أول أوردر مكتمل' : 'Waiting for first completed order' }}</small>@endif</td><td>@if($referral->qualifyingOrder)<strong>{{ number_format((float) $referral->qualifyingOrder->final_total, 2) }} {{ $isAr ? 'جنيه' : 'EGP' }}</strong><small>{{ $isAr ? 'السعر النهائي بعد الخصم · '.$referral->qualifyingOrder->status : 'Final total after discount · '.$referral->qualifyingOrder->status }}</small>@else<span>—</span><small>{{ $isAr ? 'لسه مفيش أوردر مكتمل' : 'No completed order yet' }}</small>@endif</td><td>{{ $referral->commission ? number_format((float) $referral->commission->amount, 2).' EGP' : '—' }}</td></tr>
+    @empty<tr><td colspan="4">{{ $isAr ? 'لسه مفيش إحالات.' : 'No referrals yet.' }}</td></tr>@endforelse
     </tbody></table>
   </div>
 </div>

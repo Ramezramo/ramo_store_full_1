@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Referral;
+use App\Services\ReferralSettingsService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -39,14 +40,17 @@ class AccountController extends Controller
     public function referral()
     {
         $user = Auth::user();
-        $referrals = Referral::with(['referred:id,name,email', 'commission'])
+        $referrals = Referral::with(['referred:id,name,email', 'commission', 'qualifyingOrder:id,final_total,status'])
             ->where('referrer_id', $user->id)
             ->latest()
             ->get();
 
+        $referralSettings = app(ReferralSettingsService::class)->get();
+
         return view('web.account.referral', [
             'user' => $user,
             'referrals' => $referrals,
+            'referralSettings' => $referralSettings,
             'qualifiedCount' => $referrals->where('status', 'qualified')->count(),
             'pendingCommissionTotal' => $referrals
                 ->flatMap(fn (Referral $referral) => $referral->commission ? [$referral->commission] : [])

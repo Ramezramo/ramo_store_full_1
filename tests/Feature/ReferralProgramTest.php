@@ -296,6 +296,10 @@ class ReferralProgramTest extends TestCase
             ->get('/account/referral')
             ->assertOk()
             ->assertSee('غير مؤهلة')
+            ->assertSee('700.00')
+            ->assertSee('5.00%')
+            ->assertSee('إزاي تستحق العمولة؟')
+            ->assertSee('مراجعة وصرف يدوي')
             ->assertDontSee('>rejected<');
     }
 
