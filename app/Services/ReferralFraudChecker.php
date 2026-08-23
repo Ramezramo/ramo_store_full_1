@@ -39,21 +39,22 @@ class ReferralFraudChecker
             $reasons[] = 'shipping_address_matches_referrer';
         }
 
+        // An IP match alone can represent a shared home, office, or mobile
+        // carrier. Keep it as a review flag; identity/address matches remain
+        // hard rejects and cannot qualify for a commission.
         $hardRejectReasons = [
-            'registration_ip_matches_referrer',
             'phone_matches_referrer',
             'email_matches_referrer',
             'shipping_address_matches_referrer',
         ];
 
         $hardReject = (bool) array_intersect($reasons, $hardRejectReasons);
+        $reviewReasons = array_values(array_diff($reasons, $hardRejectReasons));
 
         return [
             'hard_reject' => $hardReject,
             'reasons' => $reasons,
-            'review_reason' => in_array('similar_email_requires_review', $reasons, true)
-                ? 'similar_email_requires_review'
-                : null,
+            'review_reason' => $reviewReasons ? implode(',', $reviewReasons) : null,
         ];
     }
 

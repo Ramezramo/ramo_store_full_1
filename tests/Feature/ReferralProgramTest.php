@@ -90,7 +90,8 @@ class ReferralProgramTest extends TestCase
         $this->assertDatabaseHas('referrals', [
             'referrer_id' => $ipReferrer->id,
             'referred_id' => $ipReferred->id,
-            'status' => 'rejected',
+            'status' => 'pending',
+            'rejection_reason' => 'registration_ip_matches_referrer',
         ]);
     }
 
