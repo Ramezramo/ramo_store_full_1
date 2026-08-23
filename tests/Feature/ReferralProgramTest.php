@@ -342,8 +342,8 @@ class ReferralProgramTest extends TestCase
             ->assertSee('عمولتك')
             ->getContent();
 
-        preg_match('/referral-earnings-card.*?<\\/div>\\s*<div class="referral-stats/s', $response, $matches);
-        $earningsCard = $matches[0] ?? '';
+        preg_match('/<div class="referral-earnings-card".*?<strong class="amount">(.*?)<\\/strong>/s', $response, $matches);
+        $earningsCard = $matches[1] ?? '';
         $this->assertStringContainsString('125.00', $earningsCard);
         $this->assertStringNotContainsString('80.00', $earningsCard);
     }
