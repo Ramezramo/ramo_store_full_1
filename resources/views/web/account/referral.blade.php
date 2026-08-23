@@ -4,6 +4,12 @@
 
 @section('account-content')
 @php($isAr = session('locale') === 'ar')
+@php($referralStatusLabels = [
+  'pending' => $isAr ? 'قيد المراجعة' : 'Pending review',
+  'qualified' => $isAr ? 'مؤهلة' : 'Qualified',
+  'rejected' => $isAr ? 'غير مؤهلة' : 'Not eligible',
+  'expired' => $isAr ? 'منتهية' : 'Expired',
+])
 <style>
 .referral-user-card{background:linear-gradient(135deg,#fff7ef,#fff);border:1px solid #ffe0c7;border-radius:18px;padding:22px;box-shadow:0 8px 24px rgba(199,102,42,.08)}
 .referral-user-card h1{margin:0 0 7px;font-size:22px;color:#222}.referral-user-card p{margin:0;color:#786f69;line-height:1.6;font-size:13px}
@@ -32,7 +38,8 @@
   <div style="overflow:auto">
     <table class="referral-user-table"><thead><tr><th>{{ $isAr ? 'المستخدم' : 'Customer' }}</th><th>{{ $isAr ? 'الحالة' : 'Status' }}</th><th>{{ $isAr ? 'العمولة' : 'Commission' }}</th></tr></thead><tbody>
     @forelse($referrals as $referral)
-      <tr><td>{{ $isAr ? 'إحالة مسجلة' : 'Referred customer' }}</td><td><span class="referral-status {{ $referral->status }}">{{ $referral->status }}</span></td><td>{{ $referral->commission ? number_format((float) $referral->commission->amount, 2).' EGP' : '—' }}</td></tr>
+      @php($statusKey = strtolower((string) $referral->status))
+      <tr><td>{{ $isAr ? 'إحالة مسجلة' : 'Referred customer' }}</td><td><span class="referral-status {{ $statusKey }}">{{ $referralStatusLabels[$statusKey] ?? ($isAr ? 'حالة مسجلة' : 'Recorded') }}</span></td><td>{{ $referral->commission ? number_format((float) $referral->commission->amount, 2).' EGP' : '—' }}</td></tr>
     @empty<tr><td colspan="3">{{ $isAr ? 'لسه مفيش إحالات.' : 'No referrals yet.' }}</td></tr>@endforelse
     </tbody></table>
   </div>

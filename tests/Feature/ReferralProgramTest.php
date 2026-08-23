@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Jobs\ClawBackReferralCommission;
 use App\Jobs\ProcessReferralCommission;
+use App\Helpers\AuthConfig;
 use App\Models\Order;
 use App\Models\Referral;
 use App\Models\ReferralCommission;
@@ -19,11 +20,13 @@ class ReferralProgramTest extends TestCase
     private array $userIds = [];
     private array $orderIds = [];
     private ?object $originalSettings = null;
+    private ?object $originalAuthSettings = null;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->originalSettings = DB::table('app_configs')->where('config_key', 'referral_settings')->first();
+        $this->originalAuthSettings = DB::table('app_configs')->where('config_key', 'auth_settings')->first();
     }
 
     protected function tearDown(): void
@@ -46,6 +49,15 @@ class ReferralProgramTest extends TestCase
             DB::table('app_configs')->where('config_key', 'referral_settings')->delete();
         }
         Cache::forget('referral_settings');
+        if ($this->originalAuthSettings) {
+            DB::table('app_configs')->where('config_key', 'auth_settings')->update([
+                'value' => $this->originalAuthSettings->value,
+                'updated_at' => $this->originalAuthSettings->updated_at,
+            ]);
+        } else {
+            DB::table('app_configs')->where('config_key', 'auth_settings')->delete();
+        }
+        Cache::forget('auth_config');
         parent::tearDown();
     }
 
@@ -255,6 +267,35 @@ class ReferralProgramTest extends TestCase
             ->firstOrFail();
         $this->assertSame('rejected', $rejected->status);
         $this->assertStringContainsString('phone_matches_referrer', (string) $rejected->rejection_reason);
+    }
+
+    public function test_referral_register_uses_enabled_otp_entrypoint_and_localizes_status(): void
+    {
+        AuthConfig::save([
+            'phone_otp_login' => true,
+            'email_login' => false,
+            'google_login' => false,
+        ]);
+
+        $referrer = $this->makeUser('referrer-'.uniqid().'@example.test');
+        $this->get('/register?ref='.$referrer->referral_code)
+            ->assertRedirect(route('login', ['ref' => $referrer->referral_code]));
+        app()->instance('request', Request::create('/', 'GET', [], [], [], ['REMOTE_ADDR' => '198.51.100.99']));
+
+        $referred = $this->makeUser('referred-'.uniqid().'@example.test');
+        Referral::create([
+            'referrer_id' => $referrer->id,
+            'referred_id' => $referred->id,
+            'status' => 'rejected',
+            'rejection_reason' => 'registration_ip_matches_referrer',
+        ]);
+
+        $this->actingAs($referrer)
+            ->withSession(['locale' => 'ar'])
+            ->get('/account/referral')
+            ->assertOk()
+            ->assertSee('غير مؤهلة')
+            ->assertDontSee('>rejected<');
     }
 
     public function test_referral_fields_are_not_mass_assignable(): void

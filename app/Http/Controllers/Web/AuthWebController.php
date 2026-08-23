@@ -50,10 +50,27 @@ class AuthWebController extends Controller
         return back()->withErrors(['email' => 'Invalid email or password.'])->withInput();
     }
 
-    public function showRegister()
+    public function showRegister(Request $request)
     {
         if (Auth::check()) return redirect()->route('account.profile');
-        return view('web.auth.register');
+
+        $authConfig = AuthConfig::get();
+        $referralQuery = $request->filled('ref') ? ['ref' => $request->query('ref')] : [];
+        $phoneOtpEnabled = (bool) ($authConfig['phone_otp_login'] ?? false);
+        $emailEnabled = (bool) ($authConfig['email_login'] ?? true);
+        $googleEnabled = (bool) ($authConfig['google_login'] ?? false);
+
+        // The registration link must enter the same customer auth method the
+        // admin configured. OTP verification then continues to complete-profile.
+        if ($phoneOtpEnabled) {
+            return redirect()->route('login', $referralQuery);
+        }
+
+        if (! $phoneOtpEnabled && ! $emailEnabled && $googleEnabled && ($authConfig['auto_register_google'] ?? false)) {
+            return redirect()->route('auth.google', $referralQuery);
+        }
+
+        return view('web.auth.register', compact('authConfig'));
     }
 
     public function register(Request $r)
