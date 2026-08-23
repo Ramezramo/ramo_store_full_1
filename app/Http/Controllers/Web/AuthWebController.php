@@ -57,7 +57,9 @@ class AuthWebController extends Controller
 
         $authConfig = AuthConfig::get();
         $referralInviterName = $this->referralInviterName($request);
-        $referralQuery = $request->filled('ref') ? ['ref' => $request->query('ref')] : [];
+        $referralQuery = $referralInviterName && $request->filled('ref')
+            ? ['ref' => strtoupper(trim((string) $request->query('ref')))]
+            : [];
         $phoneOtpEnabled = (bool) ($authConfig['phone_otp_login'] ?? false);
         $emailEnabled = (bool) ($authConfig['email_login'] ?? true);
         $googleEnabled = (bool) ($authConfig['google_login'] ?? false);
@@ -77,7 +79,7 @@ class AuthWebController extends Controller
 
     private function referralInviterName(Request $request): ?string
     {
-        $code = trim((string) ($request->query('ref') ?: $request->cookie('ref_code')));
+        $code = strtoupper(trim((string) $request->query('ref', '')));
         if ($code === '') {
             return null;
         }

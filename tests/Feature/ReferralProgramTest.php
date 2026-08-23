@@ -309,6 +309,55 @@ class ReferralProgramTest extends TestCase
             ->assertDontSee('>rejected<');
     }
 
+    public function test_referral_invitation_banner_is_one_time_until_the_link_is_reopened(): void
+    {
+        AuthConfig::save([
+            'phone_otp_login' => true,
+            'email_login' => false,
+            'google_login' => false,
+        ]);
+
+        $referrer = $this->makeUser('referrer-'.uniqid().'@example.test');
+        $this->withSession(['locale' => 'ar'])
+            ->get('/login?ref='.$referrer->referral_code)
+            ->assertOk()
+            ->assertSee('تمت دعوتك بواسطة')
+            ->assertSee('window.history.replaceState');
+
+        $this->get('/login')
+            ->assertOk()
+            ->assertDontSee('تمت دعوتك بواسطة');
+
+        $this->get('/register?ref='.$referrer->referral_code)
+            ->assertRedirect(route('login', ['ref' => $referrer->referral_code]));
+        $this->get('/login?ref='.$referrer->referral_code)
+            ->assertOk()
+            ->assertSee('تمت دعوتك بواسطة');
+    }
+
+    public function test_referral_invitation_banner_disappears_after_failed_email_attempt(): void
+    {
+        AuthConfig::save([
+            'phone_otp_login' => false,
+            'email_login' => true,
+            'google_login' => false,
+        ]);
+
+        $referrer = $this->makeUser('referrer-'.uniqid().'@example.test');
+        $this->get('/register?ref='.$referrer->referral_code)
+            ->assertOk()
+            ->assertSee('You were invited by');
+
+        $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
+        $this->post('/register', [])
+            ->assertSessionHasErrors(['first_name', 'last_name', 'email', 'phone', 'password']);
+
+        $this->get('/register')
+            ->assertOk()
+            ->assertDontSee('You were invited by')
+            ->assertDontSee('تمت دعوتك بواسطة');
+    }
+
     public function test_referral_invitation_banner_requires_a_valid_referral_code(): void
     {
         AuthConfig::save([
