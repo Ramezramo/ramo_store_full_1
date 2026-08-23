@@ -207,6 +207,14 @@
       <div class="acc-hub-chevron"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
     </a>
 
+    <a href="{{ route('account.referral') }}" class="acc-hub-item">
+      <div class="acc-hub-item-icon">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9.5 10.5L7.5 14M14.5 10.5l2 3"/></svg>
+      </div>
+      <div class="acc-hub-item-label"><div>{{ $isAr ? 'شارك واربح' : 'Refer & Earn' }}</div><div class="acc-hub-item-sub">{{ $isAr ? 'شارك رابطك مع أصحابك' : 'Share your referral link' }}</div></div>
+      <div class="acc-hub-chevron"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </a>
+
     <a href="{{ route('wishlist') }}" class="acc-hub-item">
       <div class="acc-hub-item-icon">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>

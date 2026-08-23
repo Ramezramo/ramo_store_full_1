@@ -224,7 +224,7 @@ class AdminDashboardController extends Controller
             'reason' => 'nullable|string|max:1000',
         ]);
 
-        $order = DB::table('orders')->where('id', $id)->first(['id', 'timeline']);
+        $order = DB::table('orders')->where('id', $id)->first(['id', 'timeline', 'status']);
         abort_if(!$order, 404);
 
         $reason = $this->sanitizeProductText($data['reason'] ?? '');
@@ -249,6 +249,11 @@ class AdminDashboardController extends Controller
             'date_modified' => $now,
             'updated_at' => $now,
         ]);
+        app(\App\Services\ReferralOrderLifecycle::class)->dispatchForTransition(
+            $id,
+            $order->status,
+            $data['status'],
+        );
 
         return back()->with('success', 'Force override applied and logged.');
     }

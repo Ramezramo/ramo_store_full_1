@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\Referral;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -33,6 +34,25 @@ class AccountController extends Controller
     {
         $user = Auth::user();
         return view('web.account.profile', compact('user'));
+    }
+
+    public function referral()
+    {
+        $user = Auth::user();
+        $referrals = Referral::with(['referred:id,name,email', 'commission'])
+            ->where('referrer_id', $user->id)
+            ->latest()
+            ->get();
+
+        return view('web.account.referral', [
+            'user' => $user,
+            'referrals' => $referrals,
+            'qualifiedCount' => $referrals->where('status', 'qualified')->count(),
+            'pendingCommissionTotal' => $referrals
+                ->flatMap(fn (Referral $referral) => $referral->commission ? [$referral->commission] : [])
+                ->where('status', 'pending')
+                ->sum(fn ($commission) => (float) $commission->amount),
+        ]);
     }
 
     public function updateProfile(Request $request)

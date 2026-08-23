@@ -201,6 +201,10 @@ select option{background:var(--card)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>
       Payment Methods
     </a>
+    <a href="{{ route('admin.referral.index') }}" class="nav-item {{ request()->routeIs('admin.referral*') ? 'active' : '' }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3"/><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9.5 10.5L7.5 14M14.5 10.5l2 3"/></svg>
+      Referral Program
+    </a>
   </nav>
   <div class="sidebar-bottom">
     <div class="sidebar-user">

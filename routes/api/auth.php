@@ -7,9 +7,11 @@ use Illuminate\Support\Facades\Route;
 // Customer Authentication
 Route::prefix('user')->group(function () {
     Route::post('send-otp-number', [AuthController::class, 'sendOtp'])->middleware('throttle:6,1');
-    Route::post('register-with-phone', [AuthController::class, 'registerWithPhone'])->middleware('throttle:3,1');
+    Route::post('register-with-phone', [AuthController::class, 'registerWithPhone'])
+        ->middleware(['throttle:3,1', 'throttle:referral-register']);
 
-    Route::post('register', [AuthController::class, 'register'])->middleware('throttle:3,1');// ✅️
+    Route::post('register', [AuthController::class, 'register'])
+        ->middleware(['throttle:3,1', 'throttle:referral-register']);// ✅️
     Route::post('login', [AuthController::class, 'login'])->middleware('throttle:3,1');// ✅️
     Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:3,1');// ✅️
     Route::get('reset-password-page', [AuthController::class, 'showResetPasswordFormHTML'])

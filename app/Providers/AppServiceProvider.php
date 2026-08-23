@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Http\Controllers\CouponController;
 use App\Http\Controllers\ProductController;
 use App\Http\View\Composers\AdminSidebarComposer;
+use App\Models\User;
+use App\Observers\UserObserver;
 use Illuminate\Http\Request;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
@@ -36,6 +38,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        User::observe(UserObserver::class);
+
         if (config('app.force_https')) {
             URL::forceScheme('https');
         }
@@ -57,6 +61,9 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('login-web', fn (Request $request) => Limit::perMinute(5)
             ->by('login.web.' . $request->ip() . '.' . hash('sha256', strtolower((string) $request->input('email', '')))));
+
+        RateLimiter::for('referral-register', fn (Request $request) => Limit::perHour(5)
+            ->by('referral.register.' . $request->ip() . '.' . hash('sha256', strtolower((string) $request->cookie('ref_code', $request->query('ref', ''))))));
 
         RateLimiter::for('cart-mutation', fn (Request $request) => Limit::perMinute(40)
             ->by('cart.mutation.' . self::customerOrIpKey($request)));

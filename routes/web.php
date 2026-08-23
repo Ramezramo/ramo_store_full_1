@@ -62,7 +62,7 @@ Route::get('/order-success/{id}', [CheckoutController::class, 'success'])->name(
 Route::get('/login', [AuthWebController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthWebController::class, 'login'])->middleware('throttle:login-web');
 Route::get('/register', [AuthWebController::class, 'showRegister'])->name('register');
-Route::post('/register', [AuthWebController::class, 'register']);
+Route::post('/register', [AuthWebController::class, 'register'])->middleware('throttle:referral-register');
 Route::post('/logout', [AuthWebController::class, 'logout'])->name('logout');
 Route::post('/auth/send-otp', [OtpAuthController::class, 'sendOtp'])
     ->middleware(['throttle:otp-send-ip', 'throttle:otp-send-phone'])
@@ -72,7 +72,7 @@ Route::post('/auth/verify-otp', [OtpAuthController::class, 'verifyOtp'])
     ->name('auth.verify-otp');
 Route::get('/auth/otp-verify', fn() => view('web.auth.otp-verify'))->name('auth.otp-verify');
 Route::get('/auth/complete-profile', [OtpAuthController::class, 'showCompleteProfile'])->name('auth.complete-profile');
-Route::post('/auth/complete-profile', [OtpAuthController::class, 'completeProfile'])->name('auth.complete-profile.post');
+Route::post('/auth/complete-profile', [OtpAuthController::class, 'completeProfile'])->middleware('throttle:referral-register')->name('auth.complete-profile.post');
 Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback');
 
@@ -102,6 +102,7 @@ Route::delete('/wishlist/{id}', [WishlistController::class, 'remove'])->name('wi
 Route::middleware('auth')->prefix('account')->group(function () {
     Route::get('/', [AccountController::class, 'hub'])->name('account.hub');
     Route::get('/profile', [AccountController::class, 'profile'])->name('account.profile');
+    Route::get('/referral', [AccountController::class, 'referral'])->name('account.referral');
     Route::post('/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
     Route::get('/orders', [AccountController::class, 'orders'])->name('account.orders');
     Route::get('/orders/{id}', [AccountController::class, 'orderDetail'])->name('account.order');
@@ -162,6 +163,7 @@ Route::get('/admin/login', [AuthWebController::class, 'showAdminLogin'])->name('
 Route::post('/admin/login', [AuthWebController::class, 'adminLogin'])->name('admin.login.post');
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminCategoryBrandController;
+use App\Http\Controllers\Admin\ReferralAdminController;
 Route::prefix('admin')->middleware(['auth', 'admin.auth', \App\Http\Middleware\RefreshAdminSidebarCounts::class])->group(function () {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/users', [AdminDashboardController::class, 'users'])->name('admin.users');
@@ -224,6 +226,14 @@ Route::prefix('admin')->middleware(['auth', 'admin.auth', \App\Http\Middleware\R
     Route::put('/shipping-settings', [ShippingSettingsController::class, 'update'])->name('admin.shipping-settings.update');
     Route::get('/payment-methods', [PaymentMethodsController::class, 'index'])->name('admin.payment-methods');
     Route::put('/payment-methods', [PaymentMethodsController::class, 'update'])->name('admin.payment-methods.update');
+    Route::get('/referral', [ReferralAdminController::class, 'index'])->name('admin.referral.index');
+    Route::put('/referral/settings', [ReferralAdminController::class, 'updateSettings'])->name('admin.referral.settings.update');
+    Route::post('/referral', [ReferralAdminController::class, 'store'])->name('admin.referral.store');
+    Route::patch('/referral/{referral}', [ReferralAdminController::class, 'update'])->name('admin.referral.update');
+    Route::delete('/referral/{referral}', [ReferralAdminController::class, 'destroy'])->name('admin.referral.destroy');
+    Route::patch('/referral/commissions/{commission}/approve', [ReferralAdminController::class, 'approveCommission'])->name('admin.referral.commissions.approve');
+    Route::patch('/referral/commissions/{commission}/reject', [ReferralAdminController::class, 'rejectCommission'])->name('admin.referral.commissions.reject');
+    Route::patch('/referral/commissions/{commission}', [ReferralAdminController::class, 'updateCommission'])->name('admin.referral.commissions.update');
     Route::post('/orders/{id}/payment-review', [PaymentReviewController::class, 'reviewAsAdmin'])->name('admin.orders.payment-review');
     Route::get('/category-brand-requests', [AdminCategoryBrandController::class, 'index'])->name('admin.cbr');
     Route::patch('/category-brand-requests/{id}/approve', [AdminCategoryBrandController::class, 'approve'])->name('admin.cbr.approve');

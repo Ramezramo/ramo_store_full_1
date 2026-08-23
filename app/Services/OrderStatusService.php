@@ -99,7 +99,7 @@ class OrderStatusService
     {
         $order = DB::table('orders')
             ->where('id', $orderId)
-            ->first(['payment_status']);
+            ->first(['payment_status', 'status']);
 
         if (!$order) {
             abort(404);
@@ -124,9 +124,15 @@ class OrderStatusService
         $orderOverride = DB::table('orders')
             ->where('id', $orderId)
             ->value('general_order_status_override');
-        $update['status'] = $orderOverride ?: $computed;
+        $newStatus = $orderOverride ?: $computed;
+        $update['status'] = $newStatus;
 
         DB::table('orders')->where('id', $orderId)->update($update);
+        app(ReferralOrderLifecycle::class)->dispatchForTransition(
+            $orderId,
+            $order->status,
+            $newStatus,
+        );
 
         return $computed;
     }

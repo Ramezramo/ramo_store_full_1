@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\ProductVariation;
 use App\Models\UserNote;
 use App\Services\PricingService;
+use App\Services\ReferralOrderLifecycle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -376,6 +377,12 @@ class OrdersController extends Controller
             $order->tracking_number = $newStatus === 'shipped' ? ($validated['tracking_number'] ?? null) : $order->tracking_number;
             $order->carrier = $newStatus === 'shipped' ? ($validated['carrier'] ?? null) : $order->carrier;
             $order->save();
+
+            app(ReferralOrderLifecycle::class)->dispatchForTransition(
+                (int) $order->id,
+                $oldStatus,
+                $newStatus,
+            );
 
             // === Append to Timeline ===
             $timeline = $order->fresh()->timeline ?? [];
