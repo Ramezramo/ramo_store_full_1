@@ -46,14 +46,17 @@ class AccountController extends Controller
             ->get();
 
         $referralSettings = app(ReferralSettingsService::class)->get();
+        $commissions = $referrals->pluck('commission')->filter();
 
         return view('web.account.referral', [
             'user' => $user,
             'referrals' => $referrals,
             'referralSettings' => $referralSettings,
             'qualifiedCount' => $referrals->where('status', 'qualified')->count(),
-            'pendingCommissionTotal' => $referrals
-                ->flatMap(fn (Referral $referral) => $referral->commission ? [$referral->commission] : [])
+            'earnedCommissionTotal' => $commissions
+                ->whereIn('status', ['approved', 'paid'])
+                ->sum(fn ($commission) => (float) $commission->amount),
+            'pendingCommissionTotal' => $commissions
                 ->where('status', 'pending')
                 ->sum(fn ($commission) => (float) $commission->amount),
         ]);

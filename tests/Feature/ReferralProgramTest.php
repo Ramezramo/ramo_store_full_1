@@ -303,6 +303,50 @@ class ReferralProgramTest extends TestCase
             ->assertDontSee('>rejected<');
     }
 
+    public function test_earnings_card_only_shows_approved_or_paid_commissions(): void
+    {
+        $referrer = $this->makeUser('referrer-'.uniqid().'@example.test');
+        $approvedCustomer = $this->makeUser('approved-'.uniqid().'@example.test');
+        $approvedReferral = Referral::create([
+            'referrer_id' => $referrer->id,
+            'referred_id' => $approvedCustomer->id,
+            'status' => 'qualified',
+        ]);
+        $approvedOrder = $this->makeOrder($approvedCustomer->id, 1000, 'completed');
+        ReferralCommission::create([
+            'referral_id' => $approvedReferral->id,
+            'order_id' => $approvedOrder->id,
+            'amount' => 125,
+            'status' => 'approved',
+        ]);
+
+        $pendingCustomer = $this->makeUser('pending-'.uniqid().'@example.test');
+        $pendingReferral = Referral::create([
+            'referrer_id' => $referrer->id,
+            'referred_id' => $pendingCustomer->id,
+            'status' => 'qualified',
+        ]);
+        $pendingOrder = $this->makeOrder($pendingCustomer->id, 1000, 'completed');
+        ReferralCommission::create([
+            'referral_id' => $pendingReferral->id,
+            'order_id' => $pendingOrder->id,
+            'amount' => 80,
+            'status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($referrer)
+            ->withSession(['locale' => 'ar'])
+            ->get('/account/referral')
+            ->assertOk()
+            ->assertSee('عمولتك')
+            ->getContent();
+
+        preg_match('/referral-earnings-card.*?<\\/div>\\s*<div class="referral-stats/s', $response, $matches);
+        $earningsCard = $matches[0] ?? '';
+        $this->assertStringContainsString('125.00', $earningsCard);
+        $this->assertStringNotContainsString('80.00', $earningsCard);
+    }
+
     public function test_referral_fields_are_not_mass_assignable(): void
     {
         $user = new User;
