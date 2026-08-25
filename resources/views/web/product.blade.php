@@ -2062,7 +2062,7 @@ function deleteReview(btn, id, productId) {
 .pi-cart-row {
   display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; min-width: 0;
 }
-.pi-cart-action { flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.pi-cart-action { flex: 1 1 220px; min-width: 0; height: auto; align-self: flex-start; display: flex; flex-direction: column; gap: 8px; }
 .cart-selection-summary {
   width: 100%; box-sizing: border-box; padding: 11px 13px; border: 1px solid #f3d2ba;
   border-radius: 12px; background: linear-gradient(135deg,#fff9f4,#fff);
@@ -2137,7 +2137,12 @@ function deleteReview(btn, id, productId) {
   line-height: 1.35;
 }
 .product-page .pi-cart-row .pi-atc-btn {
+  flex: 0 0 auto;
+  width: 100%;
+  height: 52px;
   min-height: 52px;
+  max-height: 56px;
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2145,7 +2150,8 @@ function deleteReview(btn, id, productId) {
 }
 @media (max-width: 520px) {
   .product-page .pi-cart-row { gap: 8px; }
-  .product-page .pi-cart-action { flex-basis: 100%; }
+  .product-page .pi-cart-action { flex: 1 1 100%; flex-basis: 100%; width: 100%; align-self: flex-start; }
+  .product-page .pi-cart-row .pi-atc-btn { height: 54px; min-height: 54px; max-height: 54px; }
   .cart-selection-summary { padding: 10px 11px; }
   .cart-selection-summary-head strong { font-size: 12px; }
   .cart-selection-item { font-size: 10px; padding: 5px 7px; }

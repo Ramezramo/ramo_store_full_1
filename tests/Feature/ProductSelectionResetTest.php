@@ -68,6 +68,18 @@ class ProductSelectionResetTest extends TestCase
         $this->assertStringContainsString('changeQty(delta)', $product);
     }
 
+    public function test_add_to_cart_button_keeps_a_compact_mobile_height(): void
+    {
+        $product = file_get_contents(resource_path('views/web/product.blade.php'));
+
+        $this->assertIsString($product);
+        $this->assertStringContainsString('height: 52px;', $product);
+        $this->assertStringContainsString('max-height: 56px;', $product);
+        $this->assertStringContainsString('flex: 0 0 auto;', $product);
+        $this->assertStringContainsString('.product-page .pi-cart-action { flex: 1 1 100%; flex-basis: 100%; width: 100%; align-self: flex-start; }', $product);
+        $this->assertStringContainsString('.product-page .pi-cart-row .pi-atc-btn { height: 54px; min-height: 54px; max-height: 54px; }', $product);
+    }
+
     public function test_color_variation_card_is_clickable_without_interfering_with_quantity_controls(): void
     {
         $product = file_get_contents(resource_path('views/web/product.blade.php'));
