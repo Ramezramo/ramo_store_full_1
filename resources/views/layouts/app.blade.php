@@ -1640,10 +1640,10 @@ function _pcGetSel(pid, source = null) {
 }
 
 function _pcVariationIsSellable(v) {
-  const stockStatus = String(v?.stockStatus || 'instock').toLowerCase();
-  const status = String(v?.status || 'publish').toLowerCase();
+  const stockStatus = String(v?.stockStatus ?? '').toLowerCase().trim();
+  const status = String(v?.status ?? '').toLowerCase().trim();
   return status === 'publish'
-    && !['outofstock', 'out_of_stock', 'out of stock'].includes(stockStatus)
+    && stockStatus === 'instock'
     && Number(v?.stock || 0) > 0;
 }
 
@@ -1793,11 +1793,14 @@ function _pcUpdatePrice(pid, source = null) {
 
   if (match) {
     const displayPrice = match.sale && match.sale < match.price ? match.sale : match.price;
+    const matchAvailable = isSellable(match);
     priceEl.textContent = displayPrice.toFixed(2) + ' EGP';
     priceEl.className   = match.sale && match.sale < match.price ? 'price-main sale' : 'price-main';
     if (origEl) origEl.textContent = match.sale && match.sale < match.price ? match.price.toFixed(2) : '';
-    card.dataset.selVar   = match.id;
-    card.dataset.selPrice = displayPrice;
+    // Never retain an unavailable variation ID: pcAddToCart must not be able
+    // to send an out-of-stock choice even if called outside the button click.
+    card.dataset.selVar   = matchAvailable ? String(match.id) : '';
+    card.dataset.selPrice = matchAvailable ? displayPrice : '';
   } else {
     // Show base / range
     const prices = vars.map(v => v.sale && v.sale < v.price ? v.sale : v.price);
@@ -1858,6 +1861,13 @@ function pcAddToCart(pid, source = null) {
   const baseImg = card.dataset.baseImg || '';
   const curImg  = card.querySelector('.product-card-img img')?.src || baseImg;
   const varId   = card.dataset.selVar   ? parseInt(card.dataset.selVar) : null;
+  const vars    = _pcGetVars(pid, card);
+  const selectedVariation = varId ? vars.find(v => Number(v.id) === varId) : null;
+  if (card.dataset.requiresVariationSelection === '1'
+      && (!selectedVariation || !_pcVariationIsSellable(selectedVariation))) {
+    showToast(STOREFRONT_COPY.unavailable, 'err');
+    return;
+  }
   const price   = card.dataset.selPrice ? parseFloat(card.dataset.selPrice) : parseFloat(card.dataset.basePrice);
   addToCart(pid, name, price, curImg, varId, 1);
 }

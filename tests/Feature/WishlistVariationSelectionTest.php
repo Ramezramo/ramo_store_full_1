@@ -22,6 +22,18 @@ class WishlistVariationSelectionTest extends TestCase
         $this->assertStringContainsString("data-vars='@json(".'$jsVars'.")'", $card);
     }
 
+    public function test_wishlist_variation_selection_rejects_unavailable_stock(): void
+    {
+        $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
+
+        $this->assertIsString($layout);
+        $this->assertStringContainsString("stockStatus === 'instock'", $layout);
+        $this->assertStringContainsString('Number(v?.stock || 0) > 0', $layout);
+        $this->assertStringContainsString("card.dataset.selVar   = matchAvailable ? String(match.id) : '';", $layout);
+        $this->assertStringContainsString("&& (!selectedVariation || !_pcVariationIsSellable(selectedVariation))", $layout);
+        $this->assertStringContainsString("showToast(STOREFRONT_COPY.unavailable, 'err');", $layout);
+    }
+
     public function test_wishlist_add_to_cart_uses_the_selected_variation_id(): void
     {
         $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
@@ -32,7 +44,7 @@ class WishlistVariationSelectionTest extends TestCase
         $this->assertStringContainsString("const varId   = card.dataset.selVar   ? parseInt(card.dataset.selVar) : null;", $layout);
         $this->assertStringContainsString("addToCart(pid, name, price, curImg, varId, 1);", $layout);
         $this->assertStringContainsString("_pcSelectInitialVariation(pid, card);", $layout);
-        $this->assertStringContainsString("card.dataset.selVar   = match.id;", $layout);
+        $this->assertStringContainsString("card.dataset.selVar   = matchAvailable ? String(match.id) : '';", $layout);
         $this->assertStringContainsString('onclick="pcAddToCart({{ $pid }},this)"', $card);
     }
 }
