@@ -194,8 +194,6 @@
         @endif
       </div>
 
-      <div class="var-selected-label" id="product-sel-summary" aria-live="polite" style="margin:4px 0 12px;font-size:13px;color:var(--c-mid)"></div>
-
       {{-- VARIATIONS ENGINE --}}
       @php
         $varData = $variations->map(fn($v) => [
@@ -303,10 +301,16 @@
             {{ $isAr ? 'الحد الأدنى ' . $minimumOrderQty . ' · الحد الأقصى ' . $maximumOrderQty . ' في الطلب' : 'Minimum ' . $minimumOrderQty . ' · Maximum ' . $maximumOrderQty . ' per order' }}
           </div>
         </div>
-        <button class="add-to-cart-btn pi-atc-btn" id="add-to-cart-btn" {{ $quantityIsOrderable ? '' : 'disabled' }}
-                onclick="handleAddToCart({{ $product->id }}, '{{ addslashes($displayProductName) }}', {{ $product->display_price }}, '{{ $product->thumbnail_url }}')">
-          {{ $quantityIsOrderable ? ($isAr ? '🛒 ضيف للسلة' : '🛒 Add to Cart') : ($isAr ? 'مش متوفر' : 'Unavailable') }}
-        </button>
+        <div class="pi-cart-action">
+          <div id="cart-selection-summary" class="cart-selection-summary" aria-live="polite" hidden>
+            <div class="cart-selection-summary-head"><strong id="cart-selection-summary-title"></strong><span id="cart-selection-summary-total"></span></div>
+            <div id="cart-selection-summary-content"></div>
+          </div>
+          <button class="add-to-cart-btn pi-atc-btn" id="add-to-cart-btn" {{ $quantityIsOrderable ? '' : 'disabled' }}
+                  onclick="handleAddToCart({{ $product->id }}, '{{ addslashes($displayProductName) }}', {{ $product->display_price }}, '{{ $product->thumbnail_url }}')">
+            {{ $quantityIsOrderable ? ($isAr ? '🛒 ضيف للسلة' : '🛒 Add to Cart') : ($isAr ? 'مش متوفر' : 'Unavailable') }}
+          </button>
+        </div>
       </div>
 
 
@@ -1471,17 +1475,65 @@ function displayAttributeValue(key, value) {
   return btn?.dataset.attrDisplay || value;
 }
 
-function updateSelectedSummary() {
-  const el = document.getElementById('product-sel-summary');
-  if (!el) return;
-  const parts = [];
+function updateCartSelectionSummary() {
+  const card = document.getElementById('cart-selection-summary');
+  const title = document.getElementById('cart-selection-summary-title');
+  const total = document.getElementById('cart-selection-summary-total');
+  const content = document.getElementById('cart-selection-summary-content');
+  if (!card || !title || !total || !content) return;
+
+  content.replaceChildren();
+  const items = [];
+  let totalQty = 0;
+
   if (COLOR_ATTR_KEY && selectedColorValues.size) {
-    parts.push(`${displayAttributeKey(COLOR_ATTR_KEY)}: ${[...selectedColorValues].map(v => displayAttributeValue(COLOR_ATTR_KEY, v)).join(', ')}`);
+    selectedColorValues.forEach((value) => {
+      const quantity = Math.max(0, Number(colorQuantities[colorQuantityKey(value)] || MIN_ORDER_QTY));
+      if (!quantity) return;
+      totalQty += quantity;
+      items.push({
+        label: displayAttributeValue(COLOR_ATTR_KEY, value),
+        value: PRODUCT_TEXT.isAr ? `${quantity} قطعة` : `${quantity} item${quantity === 1 ? '' : 's'}`,
+      });
+    });
   }
+
   Object.entries(selectedAttrs).forEach(([key, value]) => {
-    parts.push(`${displayAttributeKey(key)}: ${displayAttributeValue(key, value)}`);
+    items.push({
+      label: displayAttributeKey(key),
+      value: displayAttributeValue(key, value),
+    });
   });
-  el.textContent = parts.length ? parts.join(' • ') : '';
+
+  if (!COLOR_ATTR_KEY) {
+    const quantity = Math.max(0, Number.parseInt(document.getElementById('qty')?.value, 10) || MIN_ORDER_QTY);
+    totalQty = quantity;
+    items.push({
+      label: PRODUCT_TEXT.isAr ? 'الكمية' : 'Quantity',
+      value: PRODUCT_TEXT.isAr ? `${quantity} قطعة` : `${quantity} item${quantity === 1 ? '' : 's'}`,
+    });
+  }
+
+  if (!items.length || totalQty <= 0) {
+    card.hidden = true;
+    return;
+  }
+
+  title.textContent = PRODUCT_TEXT.isAr ? 'اللي هيتضاف للسلة' : 'What will be added to cart';
+  total.textContent = PRODUCT_TEXT.isAr ? `الإجمالي: ${totalQty} قطعة` : `Total: ${totalQty} item${totalQty === 1 ? '' : 's'}`;
+  items.forEach(({ label, value }) => {
+    const item = document.createElement('span');
+    item.className = 'cart-selection-item';
+    const labelNode = document.createElement('b');
+    labelNode.textContent = label;
+    item.append(labelNode, document.createTextNode(` × ${value}`));
+    content.appendChild(item);
+  });
+  card.hidden = false;
+}
+
+function updateSelectedSummary() {
+  updateCartSelectionSummary();
 }
 
 function updateHints() {
@@ -1576,6 +1628,7 @@ function updateAddButtonState() {
     const canOrder = currentVariation ? maximumOrderQuantity(currentVariation.stock) >= MIN_ORDER_QTY : maximumOrderQuantity(PRODUCT_STOCK_QTY) >= MIN_ORDER_QTY;
     addBtn.disabled = !canOrder;
   }
+  updateCartSelectionSummary();
 }
 
 function slugify(str) {
@@ -1814,6 +1867,7 @@ function changeQty(delta) {
   const minimum = parseInt(input.min, 10) || MIN_ORDER_QTY;
   const maximum = parseInt(input.max, 10) || minimum;
   input.value = Math.max(minimum, Math.min(maximum, (parseInt(input.value, 10) || minimum) + delta));
+  updateCartSelectionSummary();
 }
 
 // ── Star rating picker ────────────────────────────────────────────────
@@ -2006,8 +2060,21 @@ function deleteReview(btn, id, productId) {
 
 /* Cart row */
 .pi-cart-row {
-  display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; min-width: 0;
+  display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; min-width: 0;
 }
+.pi-cart-action { flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.cart-selection-summary {
+  width: 100%; box-sizing: border-box; padding: 11px 13px; border: 1px solid #f3d2ba;
+  border-radius: 12px; background: linear-gradient(135deg,#fff9f4,#fff);
+  color: #47352b; box-shadow: 0 3px 10px rgba(120,53,15,.05);
+}
+.cart-selection-summary[hidden] { display: none; }
+.cart-selection-summary-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:7px; }
+.cart-selection-summary-head strong { color:#a94816; font-size:13px; }
+.cart-selection-summary-head span { color:#6f625b; font-size:11px; font-weight:700; white-space:nowrap; }
+#cart-selection-summary-content { display:flex; flex-wrap:wrap; gap:5px; }
+.cart-selection-item { display:inline-flex; align-items:center; gap:4px; padding:5px 8px; border-radius:999px; background:#fff0e5; color:#68402d; font-size:11px; line-height:1.25; }
+.cart-selection-item b { color:#a94816; font-weight:850; }
 .pi-atc-btn {
   flex: 1 1 160px; min-width: 0; font-size: 15px; font-weight: 700;
   padding: 14px 20px; border-radius: 12px;
@@ -2078,6 +2145,10 @@ function deleteReview(btn, id, productId) {
 }
 @media (max-width: 520px) {
   .product-page .pi-cart-row { gap: 8px; }
+  .product-page .pi-cart-action { flex-basis: 100%; }
+  .cart-selection-summary { padding: 10px 11px; }
+  .cart-selection-summary-head strong { font-size: 12px; }
+  .cart-selection-item { font-size: 10px; padding: 5px 7px; }
   .product-page .pi-cart-row .qty-input {
     grid-template-columns: 40px 52px 40px;
     width: 132px;

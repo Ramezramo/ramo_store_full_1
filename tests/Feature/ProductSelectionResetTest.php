@@ -53,6 +53,21 @@ class ProductSelectionResetTest extends TestCase
         $this->assertStringContainsString('pi-price-explanation', $product);
     }
 
+    public function test_cart_selection_summary_is_positioned_above_the_add_button_and_tracks_selected_items(): void
+    {
+        $product = file_get_contents(resource_path('views/web/product.blade.php'));
+
+        $this->assertIsString($product);
+        $this->assertStringNotContainsString('id="product-sel-summary"', $product);
+        $this->assertStringContainsString('id="cart-selection-summary"', $product);
+        $this->assertStringContainsString('What will be added to cart', $product);
+        $this->assertStringContainsString('اللي هيتضاف للسلة', $product);
+        $this->assertStringContainsString('function updateCartSelectionSummary()', $product);
+        $this->assertStringContainsString('colorQuantities[colorQuantityKey(value)]', $product);
+        $this->assertStringContainsString('updateCartSelectionSummary();', $product);
+        $this->assertStringContainsString('changeQty(delta)', $product);
+    }
+
     public function test_color_variation_card_is_clickable_without_interfering_with_quantity_controls(): void
     {
         $product = file_get_contents(resource_path('views/web/product.blade.php'));
