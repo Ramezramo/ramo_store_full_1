@@ -40,7 +40,35 @@ class MobileCheckoutShippingOrderTest extends TestCase
             $template,
         );
         $this->assertStringContainsString(
+            'class="ck-location-status" hidden aria-live="polite"',
+            $template,
+        );
+        $this->assertStringContainsString(
+            '.ck-location-status[data-state="error"]',
+            $template,
+        );
+        $this->assertStringContainsString(
+            'المتصفح رفض إذن الموقع.',
+            $template,
+        );
+        $this->assertStringContainsString(
+            'لو مش عايز تسمح بالموقع، اضغط',
+            $template,
+        );
+        $this->assertStringContainsString(
             'ck-location-switch input:checked + .ck-switch-track',
+            $template,
+        );
+        $this->assertStringContainsString(
+            "const setStatus = (msg, state = 'info') => {",
+            $template,
+        );
+        $this->assertStringContainsString(
+            "setStatus(message, 'error');",
+            $template,
+        );
+        $this->assertStringContainsString(
+            "setStatus(checkoutText.accessBlocked, 'error');",
             $template,
         );
         $this->assertStringContainsString(
