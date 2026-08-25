@@ -6,7 +6,7 @@
   $headerIsArabic = $timelineLocale === 'ar';
   $headerHomeLabel = $headerIsArabic ? 'الرئيسية' : 'Home';
   $headerShopLabel = $headerIsArabic ? 'تسوّق' : 'Shop';
-  $headerOffersLabel = $headerIsArabic ? 'العروض' : 'Offers';
+  $headerOffersLabel = $headerIsArabic ? 'العروض والكوبونات' : 'Offers & Coupons';
   $headerTrackOrderLabel = $headerIsArabic ? 'تتبّع طلبك' : 'Track Order';
   $headerSearchPlaceholder = $headerIsArabic ? 'دوّر على منتجات…' : 'Search products…';
   $headerSearchActionLabel = $headerIsArabic ? 'بحث' : 'Search';
@@ -100,7 +100,7 @@ button{cursor:pointer;font-family:inherit}
 .nav-action-icon{width:19px;height:19px;display:block}
 .nav-icon-btn:hover,.nav-icon-btn:focus-visible{background:var(--c-tag);border-color:var(--c-light);color:var(--c-dark);outline:none;transform:translateY(-1px)}
 .nav-icon-btn:focus-visible{box-shadow:0 0 0 3px rgba(232,93,38,.16)}
-.nav-wishlist-icon{stroke-width:1.7}
+.nav-wishlist-icon{stroke-width:1.7}.nav-offers-icon{stroke-width:1.8}
 .nav-badge{position:absolute;top:4px;right:4px;background:var(--c-orange);color:#fff;font-size:9px;font-weight:800;min-width:16px;height:16px;border-radius:50px;display:flex;align-items:center;justify-content:center;padding:0 3px;line-height:1}
 .nav-user-btn{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;font-size:13px;font-weight:600;color:var(--c-mid);background:none;border:none;white-space:nowrap;cursor:pointer;text-decoration:none;transition:all .15s}
 .nav-user-btn:hover{background:var(--c-tag);color:var(--c-dark)}
@@ -1005,6 +1005,11 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
         title="{{ $timelineSwitchTitle }}"
         aria-label="{{ $timelineSwitchTitle }}"
       >{{ $timelineSwitchLabel }}</a>
+
+      {{-- Offers & Coupons --}}
+      <a href="{{ route('offers') }}" class="nav-icon-btn" title="{{ $headerOffersLabel }}" aria-label="{{ $headerOffersLabel }}">
+        <svg class="nav-action-icon nav-offers-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7"/><path d="M2 7h20v5H2z"/><path d="M12 7v14"/><path d="M12 7H8.5a2.5 2.5 0 1 1 2.5-2.5V7Z"/><path d="M12 7h3.5A2.5 2.5 0 1 0 13 4.5V7Z"/></svg>
+      </a>
 
       {{-- Wishlist --}}
       <a href="{{ route('wishlist') }}" class="nav-icon-btn" title="{{ $headerWishlistLabel }}" aria-label="{{ $headerWishlistLabel }}">

@@ -79,5 +79,8 @@ class OffersPageTest extends TestCase
         $this->assertStringContainsString('data-code="{{ strtoupper($coupon->code) }}"', $template);
         $this->assertStringContainsString("route('offers')", $layout);
         $this->assertStringContainsString('$headerOffersLabel', $layout);
+        $this->assertStringContainsString('nav-offers-icon', $layout);
+        $this->assertStringContainsString('aria-label="{{ $headerOffersLabel }}"', $layout);
+        $this->assertStringContainsString('{{-- Wishlist --}}', $layout);
     }
 }
