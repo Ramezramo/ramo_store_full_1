@@ -82,7 +82,7 @@
       @foreach($products as $p)
         @include('web.partials.product-card', [
           'p'            => $p,
-          'cardVariations' => [],
+          'cardVariations' => $cardVariations[$p->id] ?? [],
           'cardOptions'  => ['showWishlist' => false, 'showDetails' => false, 'removeWishlist' => true, 'idPrefix' => 'wish'],
         ])
       @endforeach

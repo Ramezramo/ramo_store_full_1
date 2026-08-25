@@ -16,6 +16,7 @@ class WishlistController extends Controller
     {
         $ids      = $this->getWishlistIds();
         $products = collect();
+        $cardVariations = [];
 
         if (!empty($ids)) {
             $products = DB::table('products_data as p')
@@ -49,9 +50,25 @@ class WishlistController extends Controller
 
                     return $p;
                 });
+
+            $cardVariations = DB::table('product_variations')
+                ->whereIn('product_id', $products->pluck('id')->all())
+                ->orderBy('main_variation', 'desc')
+                ->get()
+                ->map(function ($variation) {
+                    $variation->attributes = is_string($variation->attributes)
+                        ? (json_decode($variation->attributes, true) ?? json_decode(stripslashes($variation->attributes), true) ?? [])
+                        : (array) $variation->attributes;
+                    $variation->images = is_string($variation->images)
+                        ? (json_decode($variation->images, true) ?? json_decode(stripslashes($variation->images), true) ?? [])
+                        : (array) $variation->images;
+                    return $variation;
+                })
+                ->groupBy('product_id')
+                ->toArray();
         }
 
-        return view('web.wishlist', compact('products'));
+        return view('web.wishlist', compact('products', 'cardVariations'));
     }
 
     /**
