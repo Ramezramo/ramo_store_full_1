@@ -45,6 +45,7 @@
     'register', 'forgot-password', 'reset-password', 'auth/*',
   ]);
   $isAccountPage = request()->is(['account', 'account/*']);
+  $isLoginPage = request()->routeIs('login');
 @endphp
 <!DOCTYPE html>
 <html lang="{{ $timelineLocale }}" dir="{{ $headerIsArabic ? 'rtl' : 'ltr' }}">
@@ -615,6 +616,9 @@ button{cursor:pointer;font-family:inherit}
   body.mobile-auth-screen{padding-bottom:0}
   body.mobile-auth-screen #mob-nav{display:none !important}
   body.mobile-auth-screen .auth-card{margin-top:24px;padding:28px 20px}
+  body.mobile-auth-login.auth-input-focused{padding-bottom:0}
+  body.mobile-auth-login.auth-input-focused #mob-nav{display:none !important}
+  body.mobile-auth-login.auth-input-focused .page{padding-bottom:24px}
   footer{display:none}
   .toast{bottom:calc(var(--mobile-nav-height) + 14px + var(--mobile-nav-viewport-offset, 0px));right:14px;left:14px;max-width:none;justify-content:center}
   #mob-nav{
@@ -972,7 +976,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 </script>
 @endif
 </head>
-<body class="{{ trim(($suppressMobileNav ? 'mobile-auth-screen ' : '') . ($isAccountPage ? 'account-page' : '')) }}">
+<body class="{{ trim(($suppressMobileNav ? 'mobile-auth-screen ' : '') . ($isLoginPage ? 'mobile-auth-login ' : '') . ($isAccountPage ? 'account-page' : '')) }}">
 
 <!-- NAV -->
 <nav class="nav{{ $headerIsArabic ? ' nav--rtl' : '' }}" dir="{{ $headerIsArabic ? 'rtl' : 'ltr' }}">

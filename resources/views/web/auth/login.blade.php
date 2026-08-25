@@ -197,6 +197,20 @@ async function sendOtp() {
     btn.textContent = loginCopy.sendOtp;
   }
 }
+
+function syncAuthInputState() {
+  const active = document.activeElement;
+  const focused = window.innerWidth <= 768 && active && active.closest('.auth-page input, .auth-page select, .auth-page textarea');
+  document.body.classList.toggle('auth-input-focused', Boolean(focused));
+  if (focused) {
+    window.setTimeout(() => active.scrollIntoView({ block: 'center', behavior: 'smooth' }), 120);
+  }
+}
+document.addEventListener('focusin', syncAuthInputState);
+document.addEventListener('focusout', () => window.setTimeout(syncAuthInputState, 80));
+window.addEventListener('resize', syncAuthInputState);
+window.visualViewport?.addEventListener('resize', syncAuthInputState);
+syncAuthInputState();
 </script>
 @if(!empty($referralInviterName))
 <script>
