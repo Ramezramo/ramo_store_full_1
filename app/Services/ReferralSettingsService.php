@@ -16,6 +16,7 @@ class ReferralSettingsService
         'referral_commission_type' => 'percentage',
         'referral_commission_value' => 5.00,
         'referral_commission_scope' => 'first_order',
+        'referral_expiry_days' => 90,
     ];
 
     public function get(): array
@@ -68,6 +69,11 @@ class ReferralSettingsService
         return $this->commissionScope() === 'all_orders';
     }
 
+    public function expiryDays(): int
+    {
+        return (int) $this->get()['referral_expiry_days'];
+    }
+
     public function calculateCommission(float $finalTotal): float
     {
         $value = $this->commissionValue();
@@ -118,6 +124,7 @@ class ReferralSettingsService
         $scope = ($settings['referral_commission_scope'] ?? 'first_order') === 'all_orders'
             ? 'all_orders'
             : 'first_order';
+        $expiryDays = (int) ($settings['referral_expiry_days'] ?? 90);
 
         return [
             'referral_enabled' => filter_var($settings['referral_enabled'] ?? false, FILTER_VALIDATE_BOOLEAN),
@@ -125,6 +132,7 @@ class ReferralSettingsService
             'referral_commission_type' => $type,
             'referral_commission_value' => round(max(0, (float) ($settings['referral_commission_value'] ?? 0)), 2),
             'referral_commission_scope' => $scope,
+            'referral_expiry_days' => min(3650, max(1, $expiryDays)),
         ];
     }
 }

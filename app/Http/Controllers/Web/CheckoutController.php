@@ -591,8 +591,10 @@ class CheckoutController extends Controller
                 'last_name'  => $r->last_name,
                 'phone'      => $r->phone,
             ];
-            if ($r->boolean('save_address') && Schema::hasColumn('users', 'shipping')) {
-                $userUpdates['shipping'] = json_encode($shipping);
+            // Store the validated address used by the completed checkout so the
+            // referral fraud check can compare real delivery addresses later.
+            if (Schema::hasColumn('users', 'shipping')) {
+                $userUpdates['shipping'] = json_encode($shipping, JSON_UNESCAPED_UNICODE);
             }
             if ($r->boolean('save_address')) {
                 foreach (['address', 'city', 'state', 'address_note', 'latitude', 'longitude'] as $field) {

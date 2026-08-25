@@ -84,7 +84,7 @@ class ReferralFraudChecker
         return strtolower(strtok($firstLocal, '+')) === strtolower(strtok($secondLocal, '+'));
     }
 
-    private function sameShippingAddress(mixed $first, mixed $second): bool
+    public function sameShippingAddress(mixed $first, mixed $second): bool
     {
         $first = $this->decodeShipping($first);
         $second = $this->decodeShipping($second);

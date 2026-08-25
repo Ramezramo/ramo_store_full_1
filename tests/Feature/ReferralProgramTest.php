@@ -9,9 +9,11 @@ use App\Models\Order;
 use App\Models\Referral;
 use App\Models\ReferralCommission;
 use App\Models\User;
+use App\Services\ReferralOrderLifecycle;
 use App\Services\ReferralSettingsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
@@ -152,6 +154,58 @@ class ReferralProgramTest extends TestCase
         $this->assertSame(1, ReferralCommission::where('referral_id', Referral::where('referred_id', $referred->id)->value('id'))->count());
     }
 
+    public function test_same_shipping_address_is_rechecked_at_commission_time_and_rejects_referral(): void
+    {
+        $settings = app(ReferralSettingsService::class);
+        $settings->save([
+            'referral_enabled' => true,
+            'referral_min_order_amount' => 700,
+            'referral_commission_type' => 'percentage',
+            'referral_commission_value' => 10,
+        ]);
+
+        $sharedShipping = [
+            'first_name' => 'Shared',
+            'last_name' => 'Address',
+            'address_1' => '12 Nile Street',
+            'city' => 'Cairo',
+            'state' => 'Cairo',
+            'country' => 'EG',
+        ];
+        $referrer = $this->makeUser('referrer-'.uniqid().'@example.test', [
+            'shipping' => json_encode($sharedShipping),
+        ]);
+        $referred = $this->makeUser('referred-'.uniqid().'@example.test');
+        $referral = Referral::create([
+            'referrer_id' => $referrer->id,
+            'referred_id' => $referred->id,
+            'status' => 'pending',
+        ]);
+        $order = $this->makeOrder($referred->id, 1000, 'completed');
+        $order->shipping = $sharedShipping;
+        $order->save();
+
+        (new ProcessReferralCommission($order->id))->handle($settings);
+
+        $this->assertDatabaseHas('referrals', [
+            'id' => $referral->id,
+            'status' => 'rejected',
+            'rejection_reason' => 'shipping_address_matches_referrer',
+        ]);
+        $this->assertDatabaseMissing('referral_commissions', ['order_id' => $order->id]);
+    }
+
+    public function test_checkout_shipping_is_persisted_for_future_referral_fraud_checks(): void
+    {
+        $checkout = file_get_contents(app_path('Http/Controllers/Web/CheckoutController.php'));
+        $orders = file_get_contents(app_path('Http/Controllers/OrdersController.php'));
+
+        $this->assertIsString($checkout);
+        $this->assertIsString($orders);
+        $this->assertStringContainsString("\$userUpdates['shipping'] = json_encode(\$shipping, JSON_UNESCAPED_UNICODE);", $checkout);
+        $this->assertStringContainsString("->update(['shipping' => json_encode(\$validatedData['shipping'], JSON_UNESCAPED_UNICODE)])", $orders);
+    }
+
     public function test_all_orders_scope_creates_a_commission_for_each_qualifying_completed_order(): void
     {
         $settings = app(ReferralSettingsService::class);
@@ -208,6 +262,20 @@ class ReferralProgramTest extends TestCase
         $this->assertDatabaseHas('referrals', ['id' => $referral->id, 'status' => 'pending']);
     }
 
+    public function test_terminal_clawback_is_dispatched_after_a_multi_step_cancellation(): void
+    {
+        Bus::fake();
+        $lifecycle = app(ReferralOrderLifecycle::class);
+
+        $lifecycle->dispatchForTransition(98765, 'completed', 'partially_cancelled');
+        $lifecycle->dispatchForTransition(98765, 'partially_cancelled', 'cancelled');
+
+        Bus::assertDispatched(\App\Jobs\ClawBackReferralCommission::class, function ($job) {
+            return $job->orderId === 98765;
+        });
+        Bus::assertNotDispatched(ProcessReferralCommission::class);
+    }
+
     public function test_flat_commission_and_order_refund_clawback_are_safe_and_audited(): void
     {
         $settings = app(ReferralSettingsService::class);
@@ -238,6 +306,31 @@ class ReferralProgramTest extends TestCase
             'clawback_reason' => 'customer_refund',
         ]);
         $this->assertStringContainsString('referral_commission_clawed_back', json_encode($order->fresh()->timeline));
+    }
+
+    public function test_stale_pending_referrals_expire_using_the_configured_window(): void
+    {
+        $settings = app(ReferralSettingsService::class);
+        $settings->save(['referral_expiry_days' => 60]);
+
+        $referrer = $this->makeUser('referrer-'.uniqid().'@example.test');
+        $referred = $this->makeUser('referred-'.uniqid().'@example.test');
+        $referral = Referral::create([
+            'referrer_id' => $referrer->id,
+            'referred_id' => $referred->id,
+            'status' => 'pending',
+        ]);
+        $referral->created_at = now()->subDays(61);
+        $referral->save();
+
+        $this->artisan('referrals:expire-stale')
+            ->assertSuccessful();
+
+        $this->assertDatabaseHas('referrals', [
+            'id' => $referral->id,
+            'status' => 'expired',
+            'rejection_reason' => 'expired_no_qualifying_order',
+        ]);
     }
 
     public function test_program_stays_disabled_by_default_and_settings_support_both_commission_types(): void
@@ -454,6 +547,27 @@ class ReferralProgramTest extends TestCase
         $earningsCard = $matches[1] ?? '';
         $this->assertStringContainsString('125.00', $earningsCard);
         $this->assertStringNotContainsString('80.00', $earningsCard);
+    }
+
+    public function test_account_referral_rows_show_friend_name_and_all_commission_amounts(): void
+    {
+        $referrer = $this->makeUser('referrer-'.uniqid().'@example.test');
+        $referred = $this->makeUser('friend-'.uniqid().'@example.test', ['name' => 'My Invited Friend']);
+        $referral = Referral::create([
+            'referrer_id' => $referrer->id,
+            'referred_id' => $referred->id,
+            'status' => 'qualified',
+        ]);
+        $orderA = $this->makeOrder($referred->id, 1000, 'completed');
+        $orderB = $this->makeOrder($referred->id, 1500, 'completed');
+        ReferralCommission::create(['referral_id' => $referral->id, 'order_id' => $orderA->id, 'amount' => 100, 'status' => 'pending']);
+        ReferralCommission::create(['referral_id' => $referral->id, 'order_id' => $orderB->id, 'amount' => 150, 'status' => 'approved']);
+
+        $this->actingAs($referrer)
+            ->get('/account/referral')
+            ->assertOk()
+            ->assertSee('My Invited Friend')
+            ->assertSee('250.00 EGP');
     }
 
     public function test_referral_fields_are_not_mass_assignable(): void

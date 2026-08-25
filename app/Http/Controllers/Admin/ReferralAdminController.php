@@ -46,6 +46,7 @@ class ReferralAdminController extends Controller
             'referral_commission_type' => ['required', 'in:flat,percentage'],
             'referral_commission_value' => ['required', 'numeric', 'min:0', 'max:100000000'],
             'referral_commission_scope' => ['required', 'in:first_order,all_orders'],
+            'referral_expiry_days' => ['nullable', 'integer', 'min:1', 'max:3650'],
         ]);
 
         if ($validated['referral_commission_type'] === 'percentage' && (float) $validated['referral_commission_value'] > 100) {
@@ -60,6 +61,7 @@ class ReferralAdminController extends Controller
             'referral_commission_type' => $validated['referral_commission_type'],
             'referral_commission_value' => (float) $validated['referral_commission_value'],
             'referral_commission_scope' => $validated['referral_commission_scope'],
+            'referral_expiry_days' => (int) ($validated['referral_expiry_days'] ?? $this->settings->expiryDays()),
         ]);
 
         return back()->with('success', 'Referral settings saved successfully.');

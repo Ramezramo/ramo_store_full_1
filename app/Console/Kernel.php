@@ -14,6 +14,7 @@ class Kernel extends ConsoleKernel
     {
         // Remove idempotency keys older than 24 hours — runs once a day at midnight.
         $schedule->command('idempotency:prune --hours=24')->dailyAt('00:00');
+        $schedule->command('referrals:expire-stale')->dailyAt('00:15');
     }
 
     /**

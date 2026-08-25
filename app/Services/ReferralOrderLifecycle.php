@@ -17,7 +17,7 @@ class ReferralOrderLifecycle
             ProcessReferralCommission::dispatch($orderId)->afterCommit();
         }
 
-        if (in_array($newStatus, ['refunded', 'cancelled'], true) && $oldStatus === 'completed') {
+        if (in_array($newStatus, ['refunded', 'cancelled'], true)) {
             ClawBackReferralCommission::dispatch($orderId)->afterCommit();
         }
     }

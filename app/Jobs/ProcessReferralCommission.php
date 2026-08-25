@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\Referral;
 use App\Models\ReferralCommission;
 use App\Models\User;
+use App\Services\ReferralFraudChecker;
 use App\Services\ReferralSettingsService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -22,8 +23,9 @@ class ProcessReferralCommission implements ShouldQueue
     {
     }
 
-    public function handle(ReferralSettingsService $settings): void
+    public function handle(ReferralSettingsService $settings, ?ReferralFraudChecker $fraudChecker = null): void
     {
+        $fraudChecker ??= app(ReferralFraudChecker::class);
         $order = Order::find($this->orderId);
         if (! $order || $order->status !== 'completed' || ! $settings->isEnabled()) {
             return;
@@ -33,7 +35,7 @@ class ProcessReferralCommission implements ShouldQueue
             return;
         }
 
-        DB::transaction(function () use ($order, $settings): void {
+        DB::transaction(function () use ($order, $settings, $fraudChecker): void {
             $referralQuery = Referral::query()
                 ->where('referred_id', (int) $order->customer_id)
                 ->when(
@@ -60,6 +62,14 @@ class ProcessReferralCommission implements ShouldQueue
             }
 
             $referrer = $referral->referrer;
+            if ($referrer && $fraudChecker->sameShippingAddress($referrer->shipping, $order->shipping)) {
+                $referral->update([
+                    'status' => 'rejected',
+                    'rejection_reason' => 'shipping_address_matches_referrer',
+                ]);
+                return;
+            }
+
             if ($this->couponBelongsToReferrer($order, $referrer)) {
                 $referral->update([
                     'status' => 'rejected',

@@ -916,6 +916,12 @@ class OrdersController extends Controller
                 $order->save();
                 $order->update(['number' => $order->id + 2000]);
 
+                // Keep the customer's last validated delivery address available for
+                // referral fraud checks on future completed orders.
+                DB::table('users')
+                    ->where('id', $userId)
+                    ->update(['shipping' => json_encode($validatedData['shipping'], JSON_UNESCAPED_UNICODE)]);
+
                 // ──────── Seal the idempotency key with the new order ID ────────
                 // Any future request with the same key will get this order replayed to them.
                 DB::table('idempotency_keys')
