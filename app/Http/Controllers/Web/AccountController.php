@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Referral;
+use App\Models\User;
 use App\Services\ReferralSettingsService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
+use App\Support\EgyptianPhoneNumber;
 
 class AccountController extends Controller
 {
@@ -76,7 +78,17 @@ class AccountController extends Controller
             'email'            => $hasPlaceholderEmail
                                     ? 'nullable|email|unique:users,email,'.$user->id
                                     : 'required|email|unique:users,email,'.$user->id,
-            'phone'            => 'nullable|string|max:30',
+            'phone'            => [
+                'nullable',
+                'string',
+                'max:30',
+                'unique:users,phone,'.$user->id,
+                function ($attribute, $value, $fail) {
+                    if ($value !== null && $value !== '' && ! EgyptianPhoneNumber::isValid((string) $value)) {
+                        $fail('Please enter a valid Egyptian mobile number.');
+                    }
+                },
+            ],
             'current_password' => 'nullable|string',
             'new_password'     => ['nullable', 'confirmed', Password::min(8)],
         ]);
@@ -85,11 +97,21 @@ class AccountController extends Controller
             ? $request->email
             : ($hasPlaceholderEmail ? null : $user->email);
 
+        $normalizedPhone = $request->filled('phone')
+            ? EgyptianPhoneNumber::normalize((string) $request->phone)
+            : '';
+        if ($request->filled('phone') && ! $normalizedPhone) {
+            return back()->withErrors(['phone' => $this->localized('Please enter a valid Egyptian mobile number.', 'اكتب رقم موبايل مصري صحيح.')])->withInput();
+        }
+        if ($normalizedPhone && User::query()->where('phone', $normalizedPhone)->whereKeyNot($user->id)->exists()) {
+            return back()->withErrors(['phone' => $this->localized('That phone number is already in use.', 'رقم الموبايل ده مستخدم قبل كده.')])->withInput();
+        }
+
         $data = [
             'first_name' => $request->first_name,
             'last_name'  => $request->last_name ?? '',
             'email'      => $resolvedEmail,
-            'phone'      => $request->phone ?? '',
+            'phone'      => $normalizedPhone ?: '',
             'name'       => trim($request->first_name.' '.($request->last_name ?? '')),
         ];
 

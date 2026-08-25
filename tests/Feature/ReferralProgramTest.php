@@ -63,7 +63,7 @@ class ReferralProgramTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_first_touch_referral_is_captured_and_self_referral_is_rejected(): void
+    public function test_first_touch_referral_is_captured_and_ip_only_matches_remain_pending(): void
     {
         $referrer = $this->makeUser('referrer-'.uniqid().'@example.test', ['phone' => '01000000111']);
         $this->setReferralRequest($referrer->referral_code, '198.51.100.30');
@@ -74,15 +74,6 @@ class ReferralProgramTest extends TestCase
             'referrer_id' => $referrer->id,
             'referred_id' => $referred->id,
             'status' => 'pending',
-        ]);
-
-        $this->setReferralRequest($referrer->referral_code, '198.51.100.31');
-        $selfReferral = $this->makeUser('self-'.uniqid().'@example.test', ['phone' => '01000000111']);
-        $this->assertNull($selfReferral->fresh()->referred_by);
-        $this->assertDatabaseHas('referrals', [
-            'referrer_id' => $referrer->id,
-            'referred_id' => $selfReferral->id,
-            'status' => 'rejected',
         ]);
 
         $this->setReferralRequest('INVALID', '203.0.113.60');
@@ -383,8 +374,9 @@ class ReferralProgramTest extends TestCase
         $this->assertTrue(app(ReferralSettingsService::class)->isEnabled());
         $this->assertSame('all_orders', app(ReferralSettingsService::class)->commissionScope());
 
-        $referrer = $this->makeUser('referrer-'.uniqid().'@example.test', ['phone' => '01000000999']);
-        $referred = $this->makeUser('referred-'.uniqid().'@example.test', ['phone' => '01000000999']);
+        $sharedShipping = json_encode(['address_1' => '1 Main Street', 'city' => 'Cairo']);
+        $referrer = $this->makeUser('referrer-'.uniqid().'@example.test', ['phone' => '01000000999', 'shipping' => $sharedShipping]);
+        $referred = $this->makeUser('referred-'.uniqid().'@example.test', ['phone' => '01000000888', 'shipping' => $sharedShipping]);
         $this->actingAs($admin)->post('/admin/referral', [
             'referrer_id' => $referrer->id,
             'referred_id' => $referred->id,
@@ -394,7 +386,7 @@ class ReferralProgramTest extends TestCase
             ->where('referred_id', $referred->id)
             ->firstOrFail();
         $this->assertSame('rejected', $rejected->status);
-        $this->assertStringContainsString('phone_matches_referrer', (string) $rejected->rejection_reason);
+        $this->assertStringContainsString('shipping_address_matches_referrer', (string) $rejected->rejection_reason);
     }
 
     public function test_referral_register_uses_enabled_otp_entrypoint_and_localizes_status(): void

@@ -9,6 +9,7 @@ use App\Http\Traits\CartTrait;
 use App\Models\OtpVerification;
 use App\Models\User;
 use App\Services\Sms\SmsGateway;
+use App\Support\EgyptianPhoneNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -24,14 +25,7 @@ class OtpAuthController extends Controller
 
     private function normalizePhone(string $phone): string
     {
-        $phone = preg_replace('/\s+/', '', $phone);
-        if (str_starts_with($phone, '0')) {
-            $phone = '+2' . $phone;
-        }
-        if (!str_starts_with($phone, '+')) {
-            $phone = '+' . $phone;
-        }
-        return $phone;
+        return EgyptianPhoneNumber::normalize($phone) ?? '';
     }
 
     private function generateOtp(int $length = 6): string
@@ -52,6 +46,13 @@ class OtpAuthController extends Controller
 
     public function sendOtp(Request $request)
     {
+        if (Auth::check()) {
+            return response()->json([
+                'success' => false,
+                'message' => $this->localized('You are already signed in.', 'إنت مسجل دخول بالفعل.'),
+            ], 409);
+        }
+
         $cfg = AuthConfig::get();
 
         if ($request->input('context') === 'checkout') {
@@ -145,11 +146,21 @@ class OtpAuthController extends Controller
 
     public function verifyOtp(Request $request)
     {
+        if (Auth::check()) {
+            return response()->json([
+                'success' => false,
+                'message' => $this->localized('You are already signed in.', 'إنت مسجل دخول بالفعل.'),
+            ], 409);
+        }
+
         $cfg = AuthConfig::get();
 
         $request->validate(['phone' => 'required|string', 'otp' => 'required|string']);
 
         $phone       = $this->normalizePhone($request->phone);
+        if ($phone === '') {
+            return response()->json(['success' => false, 'message' => $this->localized('Please enter a valid Egyptian mobile number.', 'اكتب رقم موبايل مصري صحيح.')], 422);
+        }
         $maxAttempts = (int) $cfg['max_otp_attempts'];
 
         $record = OtpVerification::where('phone', $phone)->where('verified', false)->latest()->first();

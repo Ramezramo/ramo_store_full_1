@@ -12,10 +12,16 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use App\Support\EgyptianPhoneNumber;
 
 class AuthWebController extends Controller
 {
     use CartTrait;
+
+    private function localized(string $english, string $arabic): string
+    {
+        return session('locale', 'en') === 'ar' ? $arabic : $english;
+    }
 
     public function showLogin(Request $request)
     {
@@ -46,6 +52,19 @@ class AuthWebController extends Controller
             $this->mergeGuestSessionOnLogin($user->id);
 
             return redirect()->intended(route('home'));
+        }
+
+        $otpAccount = User::query()
+            ->where('email', $r->email)
+            ->where('registration_method', 'phone_otp')
+            ->exists();
+        if ($otpAccount) {
+            return back()->withErrors([
+                'email' => $this->localized(
+                    'This account uses phone sign-in. Use the phone OTP option, or set a password from your account profile first.',
+                    'الحساب ده بيسجل دخول برقم الموبايل. استخدم كود OTP، أو اعمل كلمة سر من إعدادات حسابك الأول.'
+                ),
+            ])->withInput();
         }
 
         return back()->withErrors(['email' => 'Invalid email or password.'])->withInput();
@@ -102,16 +121,34 @@ class AuthWebController extends Controller
             'first_name' => 'required|string|max:100',
             'last_name'  => 'required|string|max:100',
             'email'      => 'required|email|unique:users,email|max:255',
-            'phone'      => 'required|string|max:20',
+            'phone'      => [
+                'required',
+                'string',
+                'max:20',
+                'unique:users,phone',
+                function ($attribute, $value, $fail) {
+                    if (! EgyptianPhoneNumber::isValid((string) $value)) {
+                        $fail('Please enter a valid Egyptian mobile number.');
+                    }
+                },
+            ],
             'password'   => 'required|string|min:6|confirmed',
         ]);
+
+        $normalizedPhone = EgyptianPhoneNumber::normalize((string) $r->phone);
+        if (! $normalizedPhone) {
+            return back()->withErrors(['phone' => 'Please enter a valid Egyptian mobile number.'])->withInput();
+        }
+        if (User::query()->where('phone', $normalizedPhone)->exists()) {
+            return back()->withErrors(['phone' => 'That phone number is already in use.'])->withInput();
+        }
 
         $user = new User([
             'name'                => $r->first_name . ' ' . $r->last_name,
             'first_name'          => $r->first_name,
             'last_name'           => $r->last_name,
             'email'               => $r->email,
-            'phone'               => $r->phone,
+            'phone'               => $normalizedPhone,
             'password'            => Hash::make($r->password),
             'nicename'            => strtolower(str_replace(' ', '-', $r->first_name . ' ' . $r->last_name)),
             'firstname'           => $r->first_name,
