@@ -82,5 +82,9 @@ class OffersPageTest extends TestCase
         $this->assertStringContainsString('nav-offers-icon', $layout);
         $this->assertStringContainsString('aria-label="{{ $headerOffersLabel }}"', $layout);
         $this->assertStringContainsString('{{-- Wishlist --}}', $layout);
+        $this->assertStringContainsString('offers-referral-card', $template);
+        $this->assertStringContainsString("route('account.referral')", $template);
+        $this->assertStringContainsString("route('login')", $template);
+        $this->assertStringContainsString('شارك واربح', $template);
     }
 }

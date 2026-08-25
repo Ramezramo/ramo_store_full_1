@@ -22,7 +22,7 @@
   .offers-hero h1{font-size:30px;line-height:1.15;font-weight:900;margin:0 0 9px}
   .offers-hero p{font-size:14px;opacity:.88;margin:0}
   .offers-hero-icon{width:74px;height:74px;border-radius:50%;display:grid;place-items:center;background:#fff;color:#7020cf;font-size:35px;box-shadow:0 8px 16px rgba(0,0,0,.12);flex-shrink:0}
-  .offers-heading{display:flex;justify-content:space-between;align-items:end;gap:12px;margin:0 4px 14px}
+  .offers-referral-card{display:flex;align-items:center;gap:15px;margin:0 4px 24px;padding:16px 18px;border:1px solid #ffd3b1;border-radius:17px;background:linear-gradient(120deg,#fff5eb,#fffaf6);color:#4b2d1d;box-shadow:0 8px 22px rgba(199,102,42,.08);transition:transform .18s ease,box-shadow .18s ease}.offers-referral-card:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(199,102,42,.14)}.offers-referral-icon{width:44px;height:44px;display:grid;place-items:center;flex:0 0 44px;border-radius:13px;background:#f06a22;color:#fff}.offers-referral-icon svg{width:23px;height:23px}.offers-referral-copy{min-width:0;flex:1}.offers-referral-copy strong{display:block;color:#bd5317;font-size:16px;font-weight:900}.offers-referral-copy span{display:block;margin-top:3px;color:#806f65;font-size:12px;line-height:1.5}.offers-referral-arrow{font-size:24px;color:#f06a22;line-height:1;flex:0 0 auto}.offers-heading{display:flex;justify-content:space-between;align-items:end;gap:12px;margin:0 4px 14px}
   .offers-heading h2{font-size:22px;line-height:1.2;font-weight:800}
   .offers-heading p{font-size:13px;color:#777;margin:0}
   .offers-count{color:#7d19d4;font-size:12px;font-weight:800;background:#f2e7ff;padding:7px 11px;border-radius:30px;white-space:nowrap}
@@ -53,7 +53,7 @@
     .offers-page{padding:0 12px 72px}
     .offers-hero{min-height:165px;padding:26px 22px;border-radius:18px}
     .offers-brand{font-size:27px}.offers-hero h1{font-size:24px}.offers-hero p{font-size:12px}.offers-hero-icon{width:59px;height:59px;font-size:28px}
-    .offers-heading{align-items:center}.offers-heading h2{font-size:19px}.offers-heading p{font-size:11px}.offers-count{font-size:11px;padding:6px 8px}
+    .offers-referral-card{margin:0 0 20px;padding:13px 14px;gap:11px}.offers-referral-icon{width:39px;height:39px;flex-basis:39px;border-radius:11px}.offers-referral-icon svg{width:20px;height:20px}.offers-referral-copy strong{font-size:14px}.offers-referral-copy span{font-size:11px}.offers-referral-arrow{font-size:21px}.offers-heading{align-items:center}.offers-heading h2{font-size:19px}.offers-heading p{font-size:11px}.offers-count{font-size:11px;padding:6px 8px}
     .offer-card{grid-template-columns:minmax(0,1fr) 112px;min-height:188px;border-radius:16px}
     .offer-card-content{padding:18px 15px}.offer-card-title{font-size:18px}.offer-card-desc{font-size:12px}.offer-card-value{font-size:20px}.offer-card-meta{font-size:11px}
     .offer-card-art{min-height:188px}.offer-art-circle{width:70px;height:70px;font-size:31px}.offer-card-bottom{gap:7px;margin-top:11px}.offer-code{font-size:13px;padding:7px 9px}.offer-copy{font-size:11px;padding:8px 10px}
@@ -73,6 +73,12 @@
       <div class="offers-hero-icon" aria-hidden="true">🎁</div>
     </div>
   </section>
+
+  <a class="offers-referral-card" href="{{ auth()->check() ? route('account.referral') : route('login') }}">
+    <span class="offers-referral-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="8" r="3"/><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9.5 10.5L7.5 14M14.5 10.5l2 3"/></svg></span>
+    <span class="offers-referral-copy"><strong>{{ $isAr ? 'شارك واربح' : 'Refer & Earn' }}</strong><span>{{ $isAr ? 'شارك رابطك مع أصحابك وخد عمولة عند استيفاء الشروط.' : 'Share your link and earn a commission when the conditions are met.' }}</span></span>
+    <span class="offers-referral-arrow" aria-hidden="true">{{ $isAr ? '‹' : '›' }}</span>
+  </a>
 
   <div class="offers-heading">
     <div>
