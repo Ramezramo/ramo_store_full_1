@@ -64,10 +64,10 @@ class AuthWebController extends Controller
                     'This account uses phone sign-in. Use the phone OTP option, or set a password from your account profile first.',
                     'الحساب ده بيسجل دخول برقم الموبايل. استخدم كود OTP، أو اعمل كلمة سر من إعدادات حسابك الأول.'
                 ),
-            ])->withInput();
+            ])->withInput($r->except('password'));
         }
 
-        return back()->withErrors(['email' => 'Invalid email or password.'])->withInput();
+        return back()->withErrors(['email' => 'Invalid email or password.'])->withInput($r->except('password'));
     }
 
     public function showRegister(Request $request)

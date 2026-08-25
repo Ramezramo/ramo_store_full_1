@@ -62,6 +62,15 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('login-web', fn (Request $request) => Limit::perMinute(5)
             ->by('login.web.' . $request->ip() . '.' . hash('sha256', strtolower((string) $request->input('email', '')))));
 
+        RateLimiter::for('login-account', fn (Request $request) => Limit::perMinute(10)
+            ->by('login.account.' . hash('sha256', strtolower((string) $request->input('email', '')))));
+
+        RateLimiter::for('password-forgot', fn (Request $request) => Limit::perMinute(5)
+            ->by('password.forgot.' . $request->ip() . '.' . hash('sha256', strtolower((string) $request->input('email', '')))));
+
+        RateLimiter::for('password-reset', fn (Request $request) => Limit::perMinute(10)
+            ->by('password.reset.' . $request->ip()));
+
         RateLimiter::for('referral-register', fn (Request $request) => Limit::perHour(5)
             ->by('referral.register.' . $request->ip() . '.' . hash('sha256', strtolower((string) $request->cookie('ref_code', $request->query('ref', ''))))));
 

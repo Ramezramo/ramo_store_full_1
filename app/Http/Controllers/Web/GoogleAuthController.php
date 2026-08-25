@@ -71,6 +71,9 @@ class GoogleAuthController extends Controller
         if (!$profile || empty($profile['email'])) {
             return redirect()->route('login')->withErrors(['email' => 'Failed to retrieve profile from Google.']);
         }
+        if (filter_var($profile['email_verified'] ?? false, FILTER_VALIDATE_BOOLEAN) !== true) {
+            return redirect()->route('login')->withErrors(['email' => 'Google email is not verified.']);
+        }
 
         $googleId = $profile['sub'] ?? null;
         $email    = $profile['email'];

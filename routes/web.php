@@ -60,7 +60,7 @@ Route::post('/checkout/place', [CheckoutController::class, 'place'])->middleware
 Route::get('/order-success/{id}', [CheckoutController::class, 'success'])->name('order.success');
 
 Route::get('/login', [AuthWebController::class, 'showLogin'])->name('login');
-Route::post('/login', [AuthWebController::class, 'login'])->middleware('throttle:login-web');
+Route::post('/login', [AuthWebController::class, 'login'])->middleware(['throttle:login-web', 'throttle:login-account']);
 Route::get('/register', [AuthWebController::class, 'showRegister'])->name('register');
 Route::post('/register', [AuthWebController::class, 'register'])->middleware('throttle:referral-register');
 Route::post('/logout', [AuthWebController::class, 'logout'])->name('logout');
@@ -78,9 +78,9 @@ Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->
 
 use App\Http\Controllers\Web\PasswordResetController;
 Route::get('/forgot-password', [PasswordResetController::class, 'showForgotForm'])->name('password.forgot');
-Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->name('password.forgot.send');
+Route::post('/forgot-password', [PasswordResetController::class, 'sendResetLink'])->middleware('throttle:password-forgot')->name('password.forgot.send');
 Route::get('/reset-password', [PasswordResetController::class, 'showResetForm'])->name('password.reset.form');
-Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])->name('password.reset');
+Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])->middleware('throttle:password-reset')->name('password.reset');
 
 use App\Http\Controllers\Web\GuestOrderController;
 Route::get('/my-order', [GuestOrderController::class, 'index'])->name('guest.order');
