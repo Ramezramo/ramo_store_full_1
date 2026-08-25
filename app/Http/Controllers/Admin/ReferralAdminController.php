@@ -45,6 +45,7 @@ class ReferralAdminController extends Controller
             'referral_min_order_amount' => ['required', 'numeric', 'min:0', 'max:1000000'],
             'referral_commission_type' => ['required', 'in:flat,percentage'],
             'referral_commission_value' => ['required', 'numeric', 'min:0', 'max:100000000'],
+            'referral_commission_scope' => ['required', 'in:first_order,all_orders'],
         ]);
 
         if ($validated['referral_commission_type'] === 'percentage' && (float) $validated['referral_commission_value'] > 100) {
@@ -58,6 +59,7 @@ class ReferralAdminController extends Controller
             'referral_min_order_amount' => (float) $validated['referral_min_order_amount'],
             'referral_commission_type' => $validated['referral_commission_type'],
             'referral_commission_value' => (float) $validated['referral_commission_value'],
+            'referral_commission_scope' => $validated['referral_commission_scope'],
         ]);
 
         return back()->with('success', 'Referral settings saved successfully.');

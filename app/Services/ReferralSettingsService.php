@@ -15,6 +15,7 @@ class ReferralSettingsService
         'referral_min_order_amount' => 700.00,
         'referral_commission_type' => 'percentage',
         'referral_commission_value' => 5.00,
+        'referral_commission_scope' => 'first_order',
     ];
 
     public function get(): array
@@ -55,6 +56,16 @@ class ReferralSettingsService
     public function commissionValue(): float
     {
         return (float) $this->get()['referral_commission_value'];
+    }
+
+    public function commissionScope(): string
+    {
+        return (string) $this->get()['referral_commission_scope'];
+    }
+
+    public function isAllOrders(): bool
+    {
+        return $this->commissionScope() === 'all_orders';
     }
 
     public function calculateCommission(float $finalTotal): float
@@ -104,12 +115,16 @@ class ReferralSettingsService
         $type = ($settings['referral_commission_type'] ?? 'percentage') === 'flat'
             ? 'flat'
             : 'percentage';
+        $scope = ($settings['referral_commission_scope'] ?? 'first_order') === 'all_orders'
+            ? 'all_orders'
+            : 'first_order';
 
         return [
             'referral_enabled' => filter_var($settings['referral_enabled'] ?? false, FILTER_VALIDATE_BOOLEAN),
             'referral_min_order_amount' => round(max(0, (float) ($settings['referral_min_order_amount'] ?? 700)), 2),
             'referral_commission_type' => $type,
             'referral_commission_value' => round(max(0, (float) ($settings['referral_commission_value'] ?? 0)), 2),
+            'referral_commission_scope' => $scope,
         ];
     }
 }

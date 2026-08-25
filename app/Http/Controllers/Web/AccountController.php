@@ -40,13 +40,15 @@ class AccountController extends Controller
     public function referral()
     {
         $user = Auth::user();
-        $referrals = Referral::with(['referred:id,name,email', 'commission', 'qualifyingOrder:id,final_total,status'])
+        $referrals = Referral::with(['referred:id,name,email', 'commission', 'commissions', 'qualifyingOrder:id,final_total,status'])
             ->where('referrer_id', $user->id)
             ->latest()
             ->get();
 
         $referralSettings = app(ReferralSettingsService::class)->get();
-        $commissions = $referrals->pluck('commission')->filter();
+        $commissions = $referrals->flatMap(fn ($referral) => $referral->commissions->isNotEmpty()
+            ? $referral->commissions
+            : collect([$referral->commission])->filter());
 
         return view('web.account.referral', [
             'user' => $user,

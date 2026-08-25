@@ -145,10 +145,41 @@ class ReferralProgramTest extends TestCase
             'status' => 'pending',
         ]);
         $this->assertDatabaseHas('referrals', ['referred_id' => $referred->id, 'status' => 'qualified', 'qualifying_order_id' => $firstOrder->id]);
+        $this->assertSame('first_order', $settings->commissionScope());
 
         $secondOrder = $this->makeOrder($referred->id, 1500, 'completed');
         (new ProcessReferralCommission($secondOrder->id))->handle($settings);
         $this->assertSame(1, ReferralCommission::where('referral_id', Referral::where('referred_id', $referred->id)->value('id'))->count());
+    }
+
+    public function test_all_orders_scope_creates_a_commission_for_each_qualifying_completed_order(): void
+    {
+        $settings = app(ReferralSettingsService::class);
+        $settings->save([
+            'referral_enabled' => true,
+            'referral_min_order_amount' => 700,
+            'referral_commission_type' => 'percentage',
+            'referral_commission_value' => 10,
+            'referral_commission_scope' => 'all_orders',
+        ]);
+
+        $referrer = $this->makeUser('referrer-'.uniqid().'@example.test');
+        $referred = $this->makeUser('referred-'.uniqid().'@example.test');
+        $referral = Referral::create(['referrer_id' => $referrer->id, 'referred_id' => $referred->id, 'status' => 'pending']);
+
+        $firstOrder = $this->makeOrder($referred->id, 1000, 'completed');
+        (new ProcessReferralCommission($firstOrder->id))->handle($settings);
+        $secondOrder = $this->makeOrder($referred->id, 1500, 'completed');
+        (new ProcessReferralCommission($secondOrder->id))->handle($settings);
+        $belowMinimum = $this->makeOrder($referred->id, 699, 'completed');
+        (new ProcessReferralCommission($belowMinimum->id))->handle($settings);
+
+        $this->assertSame('all_orders', $settings->commissionScope());
+        $this->assertSame(2, ReferralCommission::where('referral_id', $referral->id)->count());
+        $this->assertDatabaseHas('referral_commissions', ['order_id' => $firstOrder->id, 'amount' => '100.00']);
+        $this->assertDatabaseHas('referral_commissions', ['order_id' => $secondOrder->id, 'amount' => '150.00']);
+        $this->assertDatabaseMissing('referral_commissions', ['order_id' => $belowMinimum->id]);
+        $this->assertDatabaseHas('referrals', ['id' => $referral->id, 'status' => 'qualified', 'qualifying_order_id' => $firstOrder->id]);
     }
 
     public function test_first_completed_order_below_threshold_cannot_qualify_a_later_order(): void
@@ -219,6 +250,7 @@ class ReferralProgramTest extends TestCase
             'referral_commission_value' => 5,
         ]);
         $this->assertFalse($settings->isEnabled());
+        $this->assertSame('first_order', $settings->commissionScope());
         $this->assertSame(50.0, $settings->calculateCommission(1000));
 
         $settings->save(['referral_commission_type' => 'flat', 'referral_commission_value' => 75]);
@@ -253,8 +285,10 @@ class ReferralProgramTest extends TestCase
             'referral_min_order_amount' => '700',
             'referral_commission_type' => 'flat',
             'referral_commission_value' => '40',
+            'referral_commission_scope' => 'all_orders',
         ])->assertRedirect();
         $this->assertTrue(app(ReferralSettingsService::class)->isEnabled());
+        $this->assertSame('all_orders', app(ReferralSettingsService::class)->commissionScope());
 
         $referrer = $this->makeUser('referrer-'.uniqid().'@example.test', ['phone' => '01000000999']);
         $referred = $this->makeUser('referred-'.uniqid().'@example.test', ['phone' => '01000000999']);

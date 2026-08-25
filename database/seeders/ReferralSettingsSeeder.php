@@ -22,6 +22,7 @@ class ReferralSettingsSeeder extends Seeder
                 'referral_min_order_amount' => 700.00,
                 'referral_commission_type' => 'percentage',
                 'referral_commission_value' => 5.00,
+                'referral_commission_scope' => 'first_order',
             ], JSON_UNESCAPED_UNICODE),
             'label' => 'Referral Program Settings',
             'description' => 'Referral attribution and commission settings',

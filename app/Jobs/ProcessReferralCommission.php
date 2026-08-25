@@ -34,23 +34,29 @@ class ProcessReferralCommission implements ShouldQueue
         }
 
         DB::transaction(function () use ($order, $settings): void {
-            $referral = Referral::query()
+            $referralQuery = Referral::query()
                 ->where('referred_id', (int) $order->customer_id)
-                ->where('status', 'pending')
-                ->lockForUpdate()
-                ->first();
+                ->when(
+                    $settings->isAllOrders(),
+                    fn ($query) => $query->whereIn('status', ['pending', 'qualified']),
+                    fn ($query) => $query->where('status', 'pending'),
+                )
+                ->lockForUpdate();
+            $referral = $referralQuery->first();
 
             if (! $referral) {
                 return;
             }
 
-            $priorCompleted = Order::query()
-                ->where('customer_id', (int) $order->customer_id)
-                ->where('status', 'completed')
-                ->where('id', '!=', $order->id)
-                ->exists();
-            if ($priorCompleted) {
-                return;
+            if (! $settings->isAllOrders()) {
+                $priorCompleted = Order::query()
+                    ->where('customer_id', (int) $order->customer_id)
+                    ->where('status', 'completed')
+                    ->where('id', '!=', $order->id)
+                    ->exists();
+                if ($priorCompleted) {
+                    return;
+                }
             }
 
             $referrer = $referral->referrer;
@@ -82,10 +88,11 @@ class ProcessReferralCommission implements ShouldQueue
                 return;
             }
 
-            $referral->update([
-                'status' => 'qualified',
-                'qualifying_order_id' => $order->id,
-            ]);
+            $referralUpdate = ['status' => 'qualified'];
+            if (! $referral->qualifying_order_id) {
+                $referralUpdate['qualifying_order_id'] = $order->id;
+            }
+            $referral->update($referralUpdate);
 
             $freshOrder = $order->fresh();
             $timeline = is_array($freshOrder?->timeline) ? $freshOrder->timeline : [];

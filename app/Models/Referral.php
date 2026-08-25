@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Referral extends Model
@@ -43,5 +44,10 @@ class Referral extends Model
     public function commission(): HasOne
     {
         return $this->hasOne(ReferralCommission::class);
+    }
+
+    public function commissions(): HasMany
+    {
+        return $this->hasMany(ReferralCommission::class);
     }
 }

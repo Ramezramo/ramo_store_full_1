@@ -22,6 +22,8 @@
     ? $commissionValue
     : round($minimumOrder * $commissionValue / 100, 2);
   $referralEnabled = (bool) ($referralSettings['referral_enabled'] ?? false);
+  $commissionScope = $referralSettings['referral_commission_scope'] ?? 'first_order';
+  $allOrders = $commissionScope === 'all_orders';
 @endphp
 <style>
 .referral-user-card{background:linear-gradient(135deg,#fff7ef,#fff);border:1px solid #ffe0c7;border-radius:18px;padding:22px;box-shadow:0 8px 24px rgba(199,102,42,.08)}
@@ -41,7 +43,7 @@
 
 <div class="referral-user-card" dir="{{ $isAr ? 'rtl' : 'ltr' }}">
   <h1>{{ $isAr ? 'شارك واربح' : 'Share and earn' }}</h1>
-  <p>{{ $isAr ? 'ابعت رابطك لحد من أصحابك. لما يعمل أول طلب مكتمل مستوفي الحد الأدنى، الإحالة تتأهل والعمولة تظهر لك حسب الشروط الموضحة.' : 'Share your link with a friend. When their first completed order meets the minimum, the referral qualifies and your commission is calculated according to the rules shown below.' }}</p>
+  <p>{{ $isAr ? ($allOrders ? 'ابعت رابطك لحد من أصحابك. كل طلب مكتمل يستوفي الحد الأدنى ممكن يحسب لك عمولة حسب الشروط الموضحة.' : 'ابعت رابطك لحد من أصحابك. لما يعمل أول طلب مكتمل مستوفي الحد الأدنى، الإحالة تتأهل والعمولة تظهر لك حسب الشروط الموضحة.') : ($allOrders ? 'Share your link with a friend. Every qualifying completed order can earn you a commission according to the rules below.' : 'Share your link with a friend. When their first completed order meets the minimum, the referral qualifies and your commission is calculated according to the rules shown below.') }}</p>
   <div class="referral-link-box"><input id="referral-link" type="text" readonly value="{{ route('register', ['ref' => $user->referral_code]) }}"><button type="button" id="copy-referral-link">{{ $isAr ? 'نسخ الرابط' : 'Copy link' }}</button></div>
   <div class="referral-code">{{ $user->referral_code }}</div>
 </div>
@@ -49,17 +51,17 @@
 <details class="referral-rules-card" dir="{{ $isAr ? 'rtl' : 'ltr' }}">
   <summary><span><strong>{{ $isAr ? 'إزاي تاخد عمولتك؟' : 'How do you get your commission?' }}</strong><small>{{ $isAr ? 'اعرف قيمة الأوردر المطلوبة وخطوات استحقاق العمولة' : 'See the required order value and the steps to qualify' }}</small></span><span class="referral-chevron" aria-hidden="true">⌄</span></summary>
   <div class="referral-rules-content">
-  <p class="intro">{{ $isAr ? 'العمولة مرتبطة بأول طلب مكتمل للعميل اللي سجل من رابطك، ومش بتتحسب بمجرد التسجيل.' : 'Commission is tied to the referred customer’s first completed order. Registration alone does not create a commission.' }}</p>
+  <p class="intro">{{ $isAr ? ($allOrders ? 'العمولة ممكن تتحسب مع كل طلب مكتمل للعميل اللي سجل من رابطك ويستوفي الحد الأدنى، ومش بتتحسب بمجرد التسجيل.' : 'العمولة مرتبطة بأول طلب مكتمل للعميل اللي سجل من رابطك، ومش بتتحسب بمجرد التسجيل.') : ($allOrders ? 'A commission may be calculated for every completed order by the referred customer that meets the minimum. Registration alone does not create a commission.' : 'Commission is tied to the referred customer’s first completed order. Registration alone does not create a commission.') }}</p>
   <table class="referral-rules-table">
-    <tr><td>{{ $isAr ? 'قيمة أول أوردر مؤهل' : 'Minimum qualifying order' }}</td><td>{{ number_format($minimumOrder, 2) }} {{ $isAr ? 'جنيه أو أكثر بعد الخصم' : 'EGP or more after discounts' }}</td></tr>
+    <tr><td>{{ $isAr ? ($allOrders ? 'قيمة كل أوردر مؤهل' : 'قيمة أول أوردر مؤهل') : 'Minimum qualifying order' }}</td><td>{{ number_format($minimumOrder, 2) }} {{ $isAr ? 'جنيه أو أكثر بعد الخصم' : 'EGP or more after discounts' }}</td></tr>
     <tr><td>{{ $isAr ? 'طريقة الحساب' : 'Commission calculation' }}</td><td>{{ $commissionType === 'flat' ? number_format($commissionValue, 2).' '.($isAr ? 'جنيه ثابت' : 'EGP fixed') : number_format($commissionValue, 2).'% '.($isAr ? 'من السعر النهائي' : 'of the final total') }}</td></tr>
     <tr><td>{{ $isAr ? 'انت كدا عمولتك' : 'Your commission would be' }}</td><td>{{ number_format($exampleCommission, 2) }} {{ $isAr ? 'جنيه تقريبًا' : 'EGP approximately' }}</td></tr>
-    <tr><td>{{ $isAr ? 'متى يظهر المبلغ؟' : 'When is it shown?' }}</td><td>{{ $isAr ? 'بعد اكتمال أول أوردر واستيفاء الشروط' : 'After the first order is completed and the conditions are met' }}</td></tr>
+    <tr><td>{{ $isAr ? 'متى يظهر المبلغ؟' : 'When is it shown?' }}</td><td>{{ $isAr ? ($allOrders ? 'بعد اكتمال كل أوردر مستوفي للشروط' : 'بعد اكتمال أول أوردر واستيفاء الشروط') : ($allOrders ? 'After each qualifying order is completed' : 'After the first order is completed and the conditions are met') }}</td></tr>
   </table>
   <div class="referral-steps">
     <div class="referral-step"><b>1</b><strong>{{ $isAr ? 'ابعت الرابط' : 'Share the link' }}</strong><span>{{ $isAr ? 'ابعت رابط الإحالة لصاحبك.' : 'Send your referral link to your friend.' }}</span></div>
     <div class="referral-step"><b>2</b><strong>{{ $isAr ? 'يسجل من الرابط' : 'They register' }}</strong><span>{{ $isAr ? 'يسجل من نفس الرابط ويتعمل له ربط بالإحالة.' : 'They register through the same link and become attributed to you.' }}</span></div>
-    <div class="referral-step"><b>3</b><strong>{{ $isAr ? 'يعمل أول أوردر' : 'First order' }}</strong><span>{{ $isAr ? 'يعمل أول طلب مكتمل بقيمة نهائية لا تقل عن الحد الأدنى.' : 'They complete their first order at or above the minimum final total.' }}</span></div>
+    <div class="referral-step"><b>3</b><strong>{{ $isAr ? ($allOrders ? 'يعمل أوردر مؤهل' : 'يعمل أول أوردر') : ($allOrders ? 'Qualifying orders' : 'First order') }}</strong><span>{{ $isAr ? ($allOrders ? 'كل طلب مكتمل بقيمة نهائية لا تقل عن الحد الأدنى ممكن يحسب عمولة.' : 'يعمل أول طلب مكتمل بقيمة نهائية لا تقل عن الحد الأدنى.') : ($allOrders ? 'Each completed order at or above the minimum final total can earn a commission.' : 'They complete their first order at or above the minimum final total.') }}</span></div>
     <div class="referral-step"><b>4</b><strong>{{ $isAr ? 'استلام العمولة' : 'Receive your commission' }}</strong><span>{{ $isAr ? 'بعد استيفاء الشروط تظهر العمولة، ويتم صرفها يدويًا حسب آلية المتجر.' : 'Once the conditions are met, the commission appears and is paid manually according to the store process.' }}</span></div>
   </div>
   <div class="referral-note {{ $referralEnabled ? '' : 'off' }}">{{ $referralEnabled ? ($isAr ? 'البرنامج مفعّل حاليًا. العمولة تظهر لك بعد استيفاء الشروط، والصرف يتم يدويًا حسب آلية المتجر.' : 'The program is currently enabled. Your commission appears after the conditions are met and is paid manually according to the store process.') : ($isAr ? 'البرنامج غير مفعّل حاليًا. الإحالات الجديدة ستظل محفوظة، لكن لن تُنشأ عمولة حتى يتم تفعيل البرنامج.' : 'The program is currently disabled. Referrals may be recorded, but no commission is created until the program is enabled.') }}</div>
