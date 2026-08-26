@@ -965,12 +965,23 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 @if (session('locale_source') === 'fallback_pending')
 <style id="ramo-locale-pending-style">
   html.locale-pending body{visibility:hidden}
-  html.locale-pending::after{content:'RamoStore';position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:#fff;color:#111;font:800 18px/1.2 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase}
+  html.locale-pending::after{content:'Loading RamoStore';position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:#fff;color:#111;font:800 18px/1.2 Inter,sans-serif;letter-spacing:.04em;text-align:center;padding:24px}
+html.locale-pending.locale-pending-ar::after{content:'جاري تجهيز Ramo Store بالعربي';font-family:Arial,Tahoma,sans-serif;letter-spacing:0;direction:rtl}
 </style>
 <script>
   (function(){
+    const browserLanguages = Array.isArray(navigator.languages) && navigator.languages.length
+      ? navigator.languages
+      : [navigator.language || ''];
+    const browserLanguage = String(browserLanguages[0] || '').trim().toLowerCase();
+    window.ramoBrowserLocale = /^ar(?:[-_][a-z]{2,8})?(?:;|$)/i.test(browserLanguage) ? 'ar' : null;
     document.documentElement.classList.add('locale-pending');
-    window.revealRamoLocalePage = function(){ document.documentElement.classList.remove('locale-pending'); };
+    if (window.ramoBrowserLocale === 'ar') {
+      document.documentElement.classList.add('locale-pending-ar');
+    }
+    window.revealRamoLocalePage = function(){
+      document.documentElement.classList.remove('locale-pending', 'locale-pending-ar');
+    };
     window.setTimeout(window.revealRamoLocalePage, 5000);
   })();
 </script>
@@ -1980,6 +1991,37 @@ refreshWishlistState();
     // Storage can be unavailable in private browsing; continue without it.
   }
 
+  const finishLocaleResolution = (result) => {
+    if (result?.updated === true) {
+      try { window.sessionStorage.setItem(attemptKey, 'completed'); } catch (error) {}
+      window.location.replace(window.location.href);
+      return;
+    }
+
+    clearAttempt();
+    if (typeof window.revealRamoLocalePage === 'function') window.revealRamoLocalePage();
+  };
+
+  if (window.ramoBrowserLocale === 'ar') {
+    fetch(@json(route('language.auto-locale')), {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': CSRF_TOKEN
+      },
+      body: JSON.stringify({locale: 'ar'})
+    })
+      .then((response) => response && response.ok ? response.json() : null)
+      .then(finishLocaleResolution)
+      .catch(() => {
+        clearAttempt();
+        if (typeof window.revealRamoLocalePage === 'function') window.revealRamoLocalePage();
+      });
+    return;
+  }
+
   const providers = [
     {
       url: 'https://api.country.is/',
@@ -2039,16 +2081,7 @@ refreshWishlistState();
       });
     })
     .then((response) => response && response.ok ? response.json() : null)
-    .then((result) => {
-      if (result?.updated === true) {
-        try { window.sessionStorage.setItem(attemptKey, 'completed'); } catch (error) {}
-        window.location.replace(window.location.href);
-        return;
-      }
-
-      clearAttempt();
-      if (typeof window.revealRamoLocalePage === 'function') window.revealRamoLocalePage();
-    })
+    .then(finishLocaleResolution)
     .catch(() => {
       clearAttempt();
       if (typeof window.revealRamoLocalePage === 'function') window.revealRamoLocalePage();

@@ -27,8 +27,9 @@ class SetInitialLocaleFromCountry
     {
         if (! $request->session()->has('locale')) {
             $country = $this->countryCode($request);
-            $request->session()->put('locale', self::localeForCountry($country));
-            $request->session()->put('locale_source', $country === null ? 'fallback_pending' : 'trusted_edge');
+            $browserLocale = $country === null ? self::localeForLanguage($request->header('Accept-Language')) : null;
+            $request->session()->put('locale', $country !== null ? self::localeForCountry($country) : ($browserLocale ?? 'en'));
+            $request->session()->put('locale_source', $country !== null ? 'trusted_edge' : ($browserLocale !== null ? 'browser_language' : 'fallback_pending'));
         } elseif (! $request->session()->has('locale_source')) {
             // Sessions created before locale sources were tracked may have received
             // the English fallback only because the preview edge omitted country headers.
@@ -42,6 +43,12 @@ class SetInitialLocaleFromCountry
     public static function localeForCountry(?string $country): string
     {
         return in_array(strtoupper((string) $country), self::ARAB_COUNTRIES, true) ? 'ar' : 'en';
+    }
+
+    public static function localeForLanguage(?string $acceptLanguage): ?string
+    {
+        $firstLanguage = strtolower(trim(explode(',', (string) $acceptLanguage, 2)[0]));
+        return preg_match('/^ar(?:[-_][a-z]{2,8})?(?:;|$)/i', $firstLanguage) ? 'ar' : null;
     }
 
     private function countryCode(Request $request): ?string

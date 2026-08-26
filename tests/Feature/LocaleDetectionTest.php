@@ -24,6 +24,16 @@ class LocaleDetectionTest extends TestCase
             ->assertSessionHas('locale_source', 'trusted_edge');
     }
 
+    public function test_first_visit_with_an_arabic_browser_language_uses_arabic_before_render(): void
+    {
+        $this->withHeader('Accept-Language', 'ar-EG,ar;q=0.9,en;q=0.8')
+            ->get('/')
+            ->assertOk()
+            ->assertSessionHas('locale', 'ar')
+            ->assertSessionHas('locale_source', 'browser_language')
+            ->assertSee('<html lang="ar" dir="rtl">', false);
+    }
+
     public function test_first_visit_from_a_non_arab_country_uses_english(): void
     {
         $this->withHeader('CF-IPCountry', 'GB')
@@ -49,6 +59,26 @@ class LocaleDetectionTest extends TestCase
             ->assertJson(['updated' => true])
             ->assertSessionHas('locale', 'ar')
             ->assertSessionHas('locale_source', 'client_ip');
+    }
+
+    public function test_pending_client_language_lookup_switches_to_arabic(): void
+    {
+        $this->withSession(['locale' => 'en', 'locale_source' => 'fallback_pending'])
+            ->postJson(route('language.auto-locale'), ['locale' => 'ar'])
+            ->assertOk()
+            ->assertJson(['updated' => true])
+            ->assertSessionHas('locale', 'ar')
+            ->assertSessionHas('locale_source', 'client_language');
+    }
+
+    public function test_client_language_lookup_cannot_overwrite_a_manual_locale_choice(): void
+    {
+        $this->withSession(['locale' => 'en', 'locale_source' => 'manual'])
+            ->postJson(route('language.auto-locale'), ['locale' => 'ar'])
+            ->assertOk()
+            ->assertJson(['updated' => false])
+            ->assertSessionHas('locale', 'en')
+            ->assertSessionHas('locale_source', 'manual');
     }
 
     public function test_client_country_lookup_preserves_english_for_non_arab_countries(): void
@@ -99,6 +129,9 @@ class LocaleDetectionTest extends TestCase
             ->assertSee('window.sessionStorage.removeItem(attemptKey)', false)
             ->assertSee('html.locale-pending body{visibility:hidden}', false)
             ->assertSee("document.documentElement.classList.add('locale-pending')", false)
+            ->assertSee('navigator.languages', false)
+            ->assertSee('auto-locale', false)
+            ->assertSee('جاري تجهيز Ramo Store بالعربي', false)
             ->assertSee('window.revealRamoLocalePage', false);
     }
 }

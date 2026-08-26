@@ -40,6 +40,9 @@ Route::get('/language/{lang}', [WebController::class, 'setLocale'])->where('lang
 Route::post('/language/auto-country', [WebController::class, 'setLocaleFromClientCountry'])
     ->middleware('throttle:20,1')
     ->name('language.auto-country');
+Route::post('/language/auto-locale', [WebController::class, 'setLocaleFromClientLanguage'])
+    ->middleware('throttle:20,1')
+    ->name('language.auto-locale');
 Route::get('/shop', [WebController::class, 'shop'])->name('shop');
 Route::get('/offers', [WebController::class, 'offers'])->name('offers');
 Route::get('/product/{id}', [WebController::class, 'product'])->name('product');
