@@ -69,6 +69,17 @@ class LocaleDetectionTest extends TestCase
             ->assertDontSee('/language/auto-locale', false);
     }
 
+    public function test_an_old_automatic_english_session_is_repaired_by_an_arab_country_header(): void
+    {
+        $this->withSession(['locale' => 'en', 'locale_source' => 'fallback_pending'])
+            ->withHeader('CF-IPCountry', 'EG')
+            ->get('/')
+            ->assertOk()
+            ->assertSessionHas('locale', 'ar')
+            ->assertSessionHas('locale_source', 'trusted_edge')
+            ->assertSee('<html lang="ar" dir="rtl">', false);
+    }
+
     public function test_a_manual_locale_choice_is_not_overwritten_by_country_detection(): void
     {
         $this->withSession(['locale' => 'en', 'locale_source' => 'manual'])

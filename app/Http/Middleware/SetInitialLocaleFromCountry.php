@@ -27,24 +27,44 @@ class SetInitialLocaleFromCountry
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->session()->has('locale')) {
-            $country = $this->countryCode($request);
-            $source = $country !== null ? 'trusted_edge' : null;
+        $source = (string) $request->session()->get('locale_source', '');
+        $hasLocale = $request->session()->has('locale');
+        $legacyOrManual = $source === '' || in_array($source, ['manual', 'legacy_session'], true);
+        $oldClientSource = in_array($source, ['fallback_pending', 'browser_language', 'client_ip', 'client_language'], true);
 
-            if ($country === null) {
-                $country = $this->countryCodeFromServerIp($request->ip());
-                $source = $country !== null ? 'server_ip' : 'server_default';
+        // Automatic locale results are resolved on the server. This repairs old
+        // sessions created by the removed browser splash flow. If a server lookup
+        // has no usable IP result, preserve an already-selected session locale
+        // rather than unexpectedly forcing it back to English.
+        if (! $hasLocale || $oldClientSource) {
+            $this->storeServerLocale($request);
+        } elseif ($source === 'server_default') {
+            // Retry a previously failed server lookup, but only replace the value
+            // when a real country is found.
+            $country = $this->countryCode($request) ?? $this->countryCodeFromServerIp($request->ip());
+            if ($country !== null) {
+                $request->session()->put('locale', self::localeForCountry($country));
+                $request->session()->put('locale_source', $this->countryCode($request) !== null ? 'trusted_edge' : 'server_ip');
             }
-
-            $request->session()->put('locale', self::localeForCountry($country));
-            $request->session()->put('locale_source', $source);
-        } elseif (! $request->session()->has('locale_source')) {
-            // Legacy sessions already have a locale. Preserve it and mark it as
-            // server-resolved instead of reopening a client-side locale flow.
+        } elseif ($legacyOrManual && ! $request->session()->has('locale_source')) {
             $request->session()->put('locale_source', 'legacy_session');
         }
 
         return $next($request);
+    }
+
+    private function storeServerLocale(Request $request): void
+    {
+        $country = $this->countryCode($request);
+        $source = $country !== null ? 'trusted_edge' : null;
+
+        if ($country === null) {
+            $country = $this->countryCodeFromServerIp($request->ip());
+            $source = $country !== null ? 'server_ip' : 'server_default';
+        }
+
+        $request->session()->put('locale', self::localeForCountry($country));
+        $request->session()->put('locale_source', $source);
     }
 
     public static function localeForCountry(?string $country): string
@@ -61,7 +81,7 @@ class SetInitialLocaleFromCountry
 
         $cacheKey = 'server_locale_country.'.hash('sha256', $ip);
 
-        return Cache::remember($cacheKey, now()->addDay(), function () use ($ip): ?string {
+        $country = Cache::remember($cacheKey, now()->addDay(), function () use ($ip): string {
             try {
                 $response = Http::acceptJson()
                     ->connectTimeout(1)
@@ -69,15 +89,17 @@ class SetInitialLocaleFromCountry
                     ->get('https://ipwho.is/'.rawurlencode($ip));
 
                 if (! $response->successful() || $response->json('success') === false) {
-                    return null;
+                    return '__none__';
                 }
 
                 $country = strtoupper(trim((string) $response->json('country_code')));
-                return preg_match('/^[A-Z]{2}$/', $country) ? $country : null;
+                return preg_match('/^[A-Z]{2}$/', $country) ? $country : '__none__';
             } catch (\Throwable) {
-                return null;
+                return '__none__';
             }
         });
+
+        return $country === '__none__' ? null : $country;
     }
 
     private function countryCode(Request $request): ?string
