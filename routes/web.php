@@ -37,12 +37,6 @@ Route::get('/returns-policy', [PolicyPageController::class, 'show'])->defaults('
 Route::get('/contact', [PolicyPageController::class, 'show'])->defaults('page', 'contact')->name('policy.contact');
 Route::get('/payment-info', [PolicyPageController::class, 'show'])->defaults('page', 'payment-info')->name('policy.payment');
 Route::get('/language/{lang}', [WebController::class, 'setLocale'])->where('lang', '[A-Za-z-]+')->name('language.switch');
-Route::post('/language/auto-country', [WebController::class, 'setLocaleFromClientCountry'])
-    ->middleware('throttle:20,1')
-    ->name('language.auto-country');
-Route::post('/language/auto-locale', [WebController::class, 'setLocaleFromClientLanguage'])
-    ->middleware('throttle:20,1')
-    ->name('language.auto-locale');
 Route::get('/shop', [WebController::class, 'shop'])->name('shop');
 Route::get('/offers', [WebController::class, 'offers'])->name('offers');
 Route::get('/product/{id}', [WebController::class, 'product'])->name('product');

@@ -4,6 +4,8 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Symfony\Component\HttpFoundation\Response;
 
 class SetInitialLocaleFromCountry
@@ -27,14 +29,19 @@ class SetInitialLocaleFromCountry
     {
         if (! $request->session()->has('locale')) {
             $country = $this->countryCode($request);
-            $browserLocale = $country === null ? self::localeForLanguage($request->header('Accept-Language')) : null;
-            $request->session()->put('locale', $country !== null ? self::localeForCountry($country) : ($browserLocale ?? 'en'));
-            $request->session()->put('locale_source', $country !== null ? 'trusted_edge' : ($browserLocale !== null ? 'browser_language' : 'fallback_pending'));
+            $source = $country !== null ? 'trusted_edge' : null;
+
+            if ($country === null) {
+                $country = $this->countryCodeFromServerIp($request->ip());
+                $source = $country !== null ? 'server_ip' : 'server_default';
+            }
+
+            $request->session()->put('locale', self::localeForCountry($country));
+            $request->session()->put('locale_source', $source);
         } elseif (! $request->session()->has('locale_source')) {
-            // Sessions created before locale sources were tracked may have received
-            // the English fallback only because the preview edge omitted country headers.
-            // Permit one client-side country check; future manual choices are explicit.
-            $request->session()->put('locale_source', 'fallback_pending');
+            // Legacy sessions already have a locale. Preserve it and mark it as
+            // server-resolved instead of reopening a client-side locale flow.
+            $request->session()->put('locale_source', 'legacy_session');
         }
 
         return $next($request);
@@ -45,10 +52,32 @@ class SetInitialLocaleFromCountry
         return in_array(strtoupper((string) $country), self::ARAB_COUNTRIES, true) ? 'ar' : 'en';
     }
 
-    public static function localeForLanguage(?string $acceptLanguage): ?string
+    private function countryCodeFromServerIp(?string $ip): ?string
     {
-        $firstLanguage = strtolower(trim(explode(',', (string) $acceptLanguage, 2)[0]));
-        return preg_match('/^ar(?:[-_][a-z]{2,8})?(?:;|$)/i', $firstLanguage) ? 'ar' : null;
+        $ip = trim((string) $ip);
+        if ($ip === '' || filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+            return null;
+        }
+
+        $cacheKey = 'server_locale_country.'.hash('sha256', $ip);
+
+        return Cache::remember($cacheKey, now()->addDay(), function () use ($ip): ?string {
+            try {
+                $response = Http::acceptJson()
+                    ->connectTimeout(1)
+                    ->timeout(2)
+                    ->get('https://ipwho.is/'.rawurlencode($ip));
+
+                if (! $response->successful() || $response->json('success') === false) {
+                    return null;
+                }
+
+                $country = strtoupper(trim((string) $response->json('country_code')));
+                return preg_match('/^[A-Z]{2}$/', $country) ? $country : null;
+            } catch (\Throwable) {
+                return null;
+            }
+        });
     }
 
     private function countryCode(Request $request): ?string

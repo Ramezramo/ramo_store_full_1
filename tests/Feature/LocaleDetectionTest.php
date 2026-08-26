@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class LocaleDetectionTest extends TestCase
@@ -10,8 +12,6 @@ class LocaleDetectionTest extends TestCase
     {
         parent::setUp();
 
-        // The browser integration sends the CSRF token. These feature tests
-        // isolate the locale-transition behavior behind that web protection.
         $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
     }
 
@@ -21,16 +21,7 @@ class LocaleDetectionTest extends TestCase
             ->get('/')
             ->assertOk()
             ->assertSessionHas('locale', 'ar')
-            ->assertSessionHas('locale_source', 'trusted_edge');
-    }
-
-    public function test_first_visit_with_an_arabic_browser_language_uses_arabic_before_render(): void
-    {
-        $this->withHeader('Accept-Language', 'ar-EG,ar;q=0.9,en;q=0.8')
-            ->get('/')
-            ->assertOk()
-            ->assertSessionHas('locale', 'ar')
-            ->assertSessionHas('locale_source', 'browser_language')
+            ->assertSessionHas('locale_source', 'trusted_edge')
             ->assertSee('<html lang="ar" dir="rtl">', false);
     }
 
@@ -40,55 +31,42 @@ class LocaleDetectionTest extends TestCase
             ->get('/')
             ->assertOk()
             ->assertSessionHas('locale', 'en')
-            ->assertSessionHas('locale_source', 'trusted_edge');
+            ->assertSessionHas('locale_source', 'trusted_edge')
+            ->assertSee('<html lang="en" dir="ltr">', false);
     }
 
-    public function test_missing_edge_country_header_marks_the_session_for_a_client_country_lookup(): void
+    public function test_public_server_ip_is_resolved_before_the_first_html_render(): void
+    {
+        Cache::forget('server_locale_country.'.hash('sha256', '198.51.100.20'));
+        Http::fake([
+            'https://ipwho.is/198.51.100.20' => Http::response([
+                'success' => true,
+                'country_code' => 'EG',
+            ]),
+        ]);
+
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.20'])
+            ->get('/')
+            ->assertOk()
+            ->assertSessionHas('locale', 'ar')
+            ->assertSessionHas('locale_source', 'server_ip')
+            ->assertSee('<html lang="ar" dir="rtl">', false)
+            ->assertDontSee('locale-pending', false)
+            ->assertDontSee('Loading RamoStore', false);
+    }
+
+    public function test_missing_or_private_server_ip_uses_english_without_a_client_locale_flow(): void
     {
         $this->get('/')
             ->assertOk()
             ->assertSessionHas('locale', 'en')
-            ->assertSessionHas('locale_source', 'fallback_pending');
-    }
-
-    public function test_pending_client_country_lookup_switches_egypt_to_arabic(): void
-    {
-        $this->withSession(['locale' => 'en', 'locale_source' => 'fallback_pending'])
-            ->postJson(route('language.auto-country'), ['country' => 'EG'])
-            ->assertOk()
-            ->assertJson(['updated' => true])
-            ->assertSessionHas('locale', 'ar')
-            ->assertSessionHas('locale_source', 'client_ip');
-    }
-
-    public function test_pending_client_language_lookup_switches_to_arabic(): void
-    {
-        $this->withSession(['locale' => 'en', 'locale_source' => 'fallback_pending'])
-            ->postJson(route('language.auto-locale'), ['locale' => 'ar'])
-            ->assertOk()
-            ->assertJson(['updated' => true])
-            ->assertSessionHas('locale', 'ar')
-            ->assertSessionHas('locale_source', 'client_language');
-    }
-
-    public function test_client_language_lookup_cannot_overwrite_a_manual_locale_choice(): void
-    {
-        $this->withSession(['locale' => 'en', 'locale_source' => 'manual'])
-            ->postJson(route('language.auto-locale'), ['locale' => 'ar'])
-            ->assertOk()
-            ->assertJson(['updated' => false])
-            ->assertSessionHas('locale', 'en')
-            ->assertSessionHas('locale_source', 'manual');
-    }
-
-    public function test_client_country_lookup_preserves_english_for_non_arab_countries(): void
-    {
-        $this->withSession(['locale' => 'en', 'locale_source' => 'fallback_pending'])
-            ->postJson(route('language.auto-country'), ['country' => 'GB'])
-            ->assertOk()
-            ->assertJson(['updated' => false])
-            ->assertSessionHas('locale', 'en')
-            ->assertSessionHas('locale_source', 'client_ip');
+            ->assertSessionHas('locale_source', 'server_default')
+            ->assertSee('<html lang="en" dir="ltr">', false)
+            ->assertDontSee('locale-pending', false)
+            ->assertDontSee('api.country.is', false)
+            ->assertDontSee('ipwho.is', false)
+            ->assertDontSee('/language/auto-country', false)
+            ->assertDontSee('/language/auto-locale', false);
     }
 
     public function test_a_manual_locale_choice_is_not_overwritten_by_country_detection(): void
@@ -101,37 +79,9 @@ class LocaleDetectionTest extends TestCase
             ->assertSessionHas('locale_source', 'manual');
     }
 
-    public function test_client_country_lookup_cannot_overwrite_a_manual_locale_choice(): void
+    public function test_client_locale_endpoints_are_not_exposed_anymore(): void
     {
-        $this->withSession(['locale' => 'en', 'locale_source' => 'manual'])
-            ->postJson(route('language.auto-country'), ['country' => 'EG'])
-            ->assertOk()
-            ->assertJson(['updated' => false])
-            ->assertSessionHas('locale', 'en')
-            ->assertSessionHas('locale_source', 'manual');
-    }
-
-    public function test_client_country_lookup_rejects_an_invalid_country_code(): void
-    {
-        $this->withSession(['locale' => 'en', 'locale_source' => 'fallback_pending'])
-            ->postJson(route('language.auto-country'), ['country' => 'EG; DROP TABLE users'])
-            ->assertUnprocessable()
-            ->assertSessionHas('locale', 'en')
-            ->assertSessionHas('locale_source', 'fallback_pending');
-    }
-
-    public function test_first_visit_fallback_uses_a_backup_provider_and_retries_after_lookup_failure(): void
-    {
-        $this->get('/')
-            ->assertOk()
-            ->assertSee('https://api.country.is/', false)
-            ->assertSee('https://ipwho.is/', false)
-            ->assertSee('window.sessionStorage.removeItem(attemptKey)', false)
-            ->assertSee('html.locale-pending body{visibility:hidden}', false)
-            ->assertSee("document.documentElement.classList.add('locale-pending')", false)
-            ->assertSee('navigator.languages', false)
-            ->assertSee('auto-locale', false)
-            ->assertSee('جاري تجهيز Ramo Store بالعربي', false)
-            ->assertSee('window.revealRamoLocalePage', false);
+        $this->postJson('/language/auto-country', ['country' => 'EG'])->assertStatus(405);
+        $this->postJson('/language/auto-locale', ['locale' => 'ar'])->assertStatus(405);
     }
 }

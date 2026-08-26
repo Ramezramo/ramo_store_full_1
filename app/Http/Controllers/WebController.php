@@ -32,53 +32,6 @@ class WebController extends Controller
         return redirect()->to($redirect);
     }
 
-    /**
-     * Store a country-derived locale only while the initial request was unable
-     * to receive a trusted country header from the hosting edge. The browser
-     * sends only a two-letter country code; its IP address never reaches the
-     * application through this endpoint.
-     */
-    public function setLocaleFromClientCountry(Request $request)
-    {
-        $validated = $request->validate([
-            'country' => ['required', 'string', 'regex:/^[A-Za-z]{2}$/'],
-        ]);
-
-        if ($request->session()->get('locale_source') !== 'fallback_pending') {
-            return response()->json(['updated' => false]);
-        }
-
-        $locale = SetInitialLocaleFromCountry::localeForCountry($validated['country']);
-        $updated = $request->session()->get('locale') !== $locale;
-
-        $request->session()->put('locale', $locale);
-        $request->session()->put('locale_source', 'client_ip');
-
-        return response()->json(['updated' => $updated]);
-    }
-
-    /**
-     * Resolve a browser language before the first visible render when the edge
-     * did not provide a country. This is a preference signal, never a country
-     * claim, and it cannot overwrite a manual locale choice.
-     */
-    public function setLocaleFromClientLanguage(Request $request)
-    {
-        $validated = $request->validate([
-            'locale' => ['required', 'string', 'in:ar,en'],
-        ]);
-
-        if ($request->session()->get('locale_source') !== 'fallback_pending') {
-            return response()->json(['updated' => false]);
-        }
-
-        $updated = $request->session()->get('locale') !== $validated['locale'];
-        $request->session()->put('locale', $validated['locale']);
-        $request->session()->put('locale_source', 'client_language');
-
-        return response()->json(['updated' => $updated]);
-    }
-
     public function home()
     {
         // ── Load horizon_layout timeline config ──────────────────
