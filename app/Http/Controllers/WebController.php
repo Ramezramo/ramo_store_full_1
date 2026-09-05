@@ -386,7 +386,7 @@ class WebController extends Controller
                 ->where('p.status', 'publish')
                 ->where('p.acceptance_status', 'approved')
                 ->where('pv.regular_price', '>', 0)
-                ->selectRaw('MIN(pv.price::numeric) as min_price, MAX(pv.price::numeric) as max_price')
+                ->selectRaw('MIN(CAST(pv.price AS DECIMAL)) as min_price, MAX(CAST(pv.price AS DECIMAL)) as max_price')
                 ->first();
 
             $rangeMin = max(0, (float) ($priceRange->min_price ?? 0));
@@ -460,10 +460,10 @@ class WebController extends Controller
         // The selected card price is MIN(pv.price), so filter the grouped query
         // with HAVING rather than a row-level variation predicate.
         if ($minPrice !== null) {
-            $query->havingRaw('MIN(pv.price::numeric) >= ?', [$minPrice]);
+            $query->havingRaw('MIN(CAST(pv.price AS DECIMAL)) >= ?', [$minPrice]);
         }
         if ($maxPrice !== null) {
-            $query->havingRaw('MIN(pv.price::numeric) <= ?', [$maxPrice]);
+            $query->havingRaw('MIN(CAST(pv.price AS DECIMAL)) <= ?', [$maxPrice]);
         }
 
         if ($request->sort === 'price_asc')  $query->orderBy('price', 'asc');

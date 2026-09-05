@@ -28,7 +28,7 @@ class SearchController extends Controller
             ->where('p.status', 'publish')
             ->where('p.acceptance_status', 'approved')
             ->where('pv.regular_price', '>', 0)
-            ->selectRaw('MIN(pv.price::numeric) as min_price, MAX(pv.price::numeric) as max_price')
+            ->selectRaw('MIN(CAST(pv.price AS DECIMAL)) as min_price, MAX(CAST(pv.price AS DECIMAL)) as max_price')
             ->first();
 
         // Base query. Discovery surfaces must never leak a draft, rejected, or
@@ -38,9 +38,9 @@ class SearchController extends Controller
                 'p.id', 'p.name', 'p.slug', 'p.images', 'p.translations',
                 'p.description', 'p.stock_quantity', 'p.unit',
                 'p.minimum_order_qty', 'p.max_orders_per_person', 'p.sold_individually',
-                DB::raw('MIN(pv.price::numeric) as price'),
-                DB::raw('MIN(pv.regular_price::numeric) as regular_price'),
-                DB::raw('MIN(pv.sale_price::numeric) as sale_price'),
+                DB::raw('MIN(CAST(pv.price AS DECIMAL)) as price'),
+                DB::raw('MIN(CAST(pv.regular_price AS DECIMAL)) as regular_price'),
+                DB::raw('MIN(CAST(pv.sale_price AS DECIMAL)) as sale_price'),
                 DB::raw('MAX(p.discount_percentage) as discount_percentage')
             )
             ->join('product_variations as pv', 'pv.product_id', '=', 'p.id')
@@ -98,16 +98,16 @@ class SearchController extends Controller
 
         // Price filter via HAVING (after GROUP BY)
         if ($minPrice !== null) {
-            $query->havingRaw('MIN(pv.price::numeric) >= ?', [$minPrice]);
+            $query->havingRaw('MIN(CAST(pv.price AS DECIMAL)) >= ?', [$minPrice]);
         }
         if ($maxPrice !== null) {
-            $query->havingRaw('MIN(pv.price::numeric) <= ?', [$maxPrice]);
+            $query->havingRaw('MIN(CAST(pv.price AS DECIMAL)) <= ?', [$maxPrice]);
         }
 
         // Sort
         switch ($sort) {
-            case 'price_asc':  $query->orderByRaw('MIN(pv.price::numeric) ASC');  break;
-            case 'price_desc': $query->orderByRaw('MIN(pv.price::numeric) DESC'); break;
+            case 'price_asc':  $query->orderByRaw('MIN(CAST(pv.price AS DECIMAL)) ASC');  break;
+            case 'price_desc': $query->orderByRaw('MIN(CAST(pv.price AS DECIMAL)) DESC'); break;
             case 'newest':     $query->orderBy('p.id', 'desc');                   break;
             case 'name_asc':   $query->orderBy('p.name', 'asc');                  break;
             case 'name_desc':  $query->orderBy('p.name', 'desc');                 break;
