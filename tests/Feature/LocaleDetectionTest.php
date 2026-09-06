@@ -65,6 +65,25 @@ class LocaleDetectionTest extends TestCase
             ->assertDontSee('Loading RamoStore', false);
     }
 
+    public function test_trusted_forwarded_egyptian_ip_is_used_before_the_first_html_render(): void
+    {
+        Cache::forget('server_locale_country.'.hash('sha256', '41.32.0.1'));
+        Http::fake([
+            'https://ipwho.is/41.32.0.1' => Http::response([
+                'success' => true,
+                'country_code' => 'EG',
+            ]),
+        ]);
+
+        $this->withHeader('X-Forwarded-For', '41.32.0.1')
+            ->withHeader('Accept-Language', 'en-US,en;q=0.9')
+            ->get('/')
+            ->assertOk()
+            ->assertSessionHas('locale', 'ar')
+            ->assertSessionHas('locale_source', 'server_ip')
+            ->assertSee('<html lang="ar" dir="rtl">', false);
+    }
+
     public function test_missing_or_private_server_ip_uses_english_without_a_client_locale_flow(): void
     {
         $this->get('/')

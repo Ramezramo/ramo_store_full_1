@@ -1,9 +1,9 @@
 <?php
 
-$proxies = array_values(array_filter(array_map(
-    'trim',
-    explode(',', (string) env('TRUSTED_PROXIES', ''))
-)));
+$rawProxies = trim((string) env('TRUSTED_PROXIES', ''));
+$proxies = in_array($rawProxies, ['*', '**'], true)
+    ? $rawProxies
+    : array_values(array_filter(array_map('trim', explode(',', $rawProxies))));
 
 return [
     /*

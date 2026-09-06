@@ -41,7 +41,7 @@ class SetInitialLocaleFromCountry
         } elseif ($source === 'server_default') {
             // Retry a previously failed server lookup, but only replace the value
             // when a real country is found.
-            $country = $this->countryCode($request) ?? $this->countryCodeFromServerIp($request->ip());
+            $country = $this->countryCode($request) ?? $this->countryCodeFromServerIp($this->serverClientIp($request));
             if ($country !== null) {
                 $request->session()->put('locale', self::localeForCountry($country));
                 $request->session()->put('locale_source', $this->countryCode($request) !== null ? 'trusted_edge' : 'server_ip');
@@ -62,7 +62,7 @@ class SetInitialLocaleFromCountry
         $source = $country !== null ? 'trusted_edge' : null;
 
         if ($country === null) {
-            $country = $this->countryCodeFromServerIp($request->ip());
+            $country = $this->countryCodeFromServerIp($this->serverClientIp($request));
             $source = $country !== null ? 'server_ip' : 'server_default';
         }
 
@@ -110,6 +110,28 @@ class SetInitialLocaleFromCountry
         });
 
         return $country === '__none__' ? null : $country;
+    }
+
+    private function serverClientIp(Request $request): ?string
+    {
+        $ip = $request->ip();
+
+        // The preview proxy is explicitly configured with TRUSTED_PROXIES=*.
+        // Read its forwarded client IP only in that opt-in environment; production
+        // must provide explicit proxy CIDRs so Laravel validates the chain.
+        $trustedProxies = config('trustedproxy.proxies');
+        $previewProxyEnabled = $trustedProxies === '*'
+            || trim((string) env('TRUSTED_PROXIES', '')) === '*';
+
+        if ($previewProxyEnabled) {
+            $forwarded = trim((string) $request->header('X-Forwarded-For'));
+            $candidate = trim((string) explode(',', $forwarded, 2)[0]);
+            if (filter_var($candidate, FILTER_VALIDATE_IP) !== false) {
+                return $candidate;
+            }
+        }
+
+        return $ip;
     }
 
     private function localeFromAcceptLanguage(Request $request): ?string
