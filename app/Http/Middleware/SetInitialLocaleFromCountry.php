@@ -45,6 +45,9 @@ class SetInitialLocaleFromCountry
             if ($country !== null) {
                 $request->session()->put('locale', self::localeForCountry($country));
                 $request->session()->put('locale_source', $this->countryCode($request) !== null ? 'trusted_edge' : 'server_ip');
+            } elseif (($language = $this->localeFromAcceptLanguage($request)) !== null) {
+                $request->session()->put('locale', $language);
+                $request->session()->put('locale_source', 'accept_language');
             }
         } elseif ($legacyOrManual && ! $request->session()->has('locale_source')) {
             $request->session()->put('locale_source', 'legacy_session');
@@ -63,8 +66,15 @@ class SetInitialLocaleFromCountry
             $source = $country !== null ? 'server_ip' : 'server_default';
         }
 
-        $request->session()->put('locale', self::localeForCountry($country));
-        $request->session()->put('locale_source', $source);
+        if ($country !== null) {
+            $request->session()->put('locale', self::localeForCountry($country));
+            $request->session()->put('locale_source', $source);
+            return;
+        }
+
+        $language = $this->localeFromAcceptLanguage($request);
+        $request->session()->put('locale', $language ?? 'en');
+        $request->session()->put('locale_source', $language !== null ? 'accept_language' : 'server_default');
     }
 
     public static function localeForCountry(?string $country): string
@@ -100,6 +110,22 @@ class SetInitialLocaleFromCountry
         });
 
         return $country === '__none__' ? null : $country;
+    }
+
+    private function localeFromAcceptLanguage(Request $request): ?string
+    {
+        foreach (explode(',', strtolower((string) $request->header('Accept-Language'))) as $candidate) {
+            $language = trim((string) explode(';', $candidate, 2)[0]);
+
+            if (str_starts_with($language, 'ar')) {
+                return 'ar';
+            }
+            if (str_starts_with($language, 'en')) {
+                return 'en';
+            }
+        }
+
+        return null;
     }
 
     private function countryCode(Request $request): ?string

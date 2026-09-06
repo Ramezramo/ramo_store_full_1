@@ -25,6 +25,16 @@ class LocaleDetectionTest extends TestCase
             ->assertSee('<html lang="ar" dir="rtl">', false);
     }
 
+    public function test_arabic_accept_language_is_used_before_first_html_when_country_header_is_missing(): void
+    {
+        $this->withHeader('Accept-Language', 'ar-EG,ar;q=0.9,en;q=0.8')
+            ->get('/')
+            ->assertOk()
+            ->assertSessionHas('locale', 'ar')
+            ->assertSessionHas('locale_source', 'accept_language')
+            ->assertSee('<html lang="ar" dir="rtl">', false);
+    }
+
     public function test_first_visit_from_a_non_arab_country_uses_english(): void
     {
         $this->withHeader('CF-IPCountry', 'GB')
@@ -60,7 +70,7 @@ class LocaleDetectionTest extends TestCase
         $this->get('/')
             ->assertOk()
             ->assertSessionHas('locale', 'en')
-            ->assertSessionHas('locale_source', 'server_default')
+            ->assertSessionHas('locale_source', 'accept_language')
             ->assertSee('<html lang="en" dir="ltr">', false)
             ->assertDontSee('locale-pending', false)
             ->assertDontSee('api.country.is', false)
