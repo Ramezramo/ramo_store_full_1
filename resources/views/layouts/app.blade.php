@@ -1666,9 +1666,29 @@ function _pcSelectInitialVariation(pid, source = null) {
   }
 }
 
+function _pcUpdateColors(pid, source = null) {
+  const card = _pcGetCard(pid, source);
+  if (!card) return;
+  const vars = _pcGetVars(pid, card);
+  const hasColorAttrs = vars.some(v => v.attrs?.['Color']);
+  if (!hasColorAttrs) return;
+
+  card.querySelectorAll('.pc-swatch').forEach(btn => {
+    const color = btn.dataset.color || '';
+    const exists = vars.some(v => v.attrs?.['Color'] === color);
+    const available = vars.some(v => v.attrs?.['Color'] === color && _pcVariationIsSellable(v));
+    btn.classList.toggle('unavail', exists && !available);
+    btn.setAttribute('aria-disabled', available ? 'false' : 'true');
+  });
+}
+
 function pcPickColor(pid, colorVal, btn) {
   const card = _pcGetCard(pid, btn);
   if (!card) return;
+  if (btn.classList.contains('unavail')) {
+    showToast(STOREFRONT_COPY.unavailable, 'err');
+    return;
+  }
   // Toggle off if same
   if (card.dataset.selColor === colorVal) {
     card.dataset.selColor = '';
@@ -1684,6 +1704,7 @@ function pcPickColor(pid, colorVal, btn) {
     if (imgEl && btn.dataset.img) { imgEl.src = btn.dataset.img; }
     else if (imgEl) { imgEl.src = card.dataset.baseImg; }
   }
+  _pcUpdateColors(pid, card);
   _pcUpdateSizes(pid, card);
   _pcUpdatePrice(pid, card);
   _pcUpdateSummary(pid, card);
@@ -1692,6 +1713,17 @@ function pcPickColor(pid, colorVal, btn) {
 function pcPickSize(pid, sizeVal, btn) {
   const card = _pcGetCard(pid, btn);
   if (!card) return;
+  if (btn.classList.contains('unavail')) {
+    showToast(STOREFRONT_COPY.unavailable, 'err');
+    return;
+  }
+  const vars = _pcGetVars(pid, card);
+  const color = card.dataset.selColor || '';
+  const matching = vars.filter(v => v.attrs?.['Size'] === sizeVal && (!color || v.attrs?.['Color'] === color));
+  if (matching.length && !matching.some(_pcVariationIsSellable)) {
+    showToast(STOREFRONT_COPY.unavailable, 'err');
+    return;
+  }
   if (card.dataset.selSize === sizeVal) {
     card.dataset.selSize = '';
     btn.classList.remove('selected');
@@ -1711,7 +1743,15 @@ function _pcUpdateSizes(pid, source = null) {
   const color  = card.dataset.selColor;
   const hasColorAttrs = vars.some(v => v.attrs?.['Color']);
   const sizeEl = card.querySelector('.pc-sizes');
-  if (!sizeEl || (hasColorAttrs && !color)) return;
+  if (!sizeEl) return;
+  if (hasColorAttrs && !color) {
+    sizeEl.querySelectorAll('.pc-size').forEach(btn => {
+      btn.style.display = 'none';
+      btn.classList.remove('selected', 'unavail');
+    });
+    card.dataset.selSize = '';
+    return;
+  }
   // Show only sizes that exist for the selected color, or for the product when
   // size is the only visible variation dimension.
   sizeEl.querySelectorAll('.pc-size').forEach(btn => {
@@ -1726,8 +1766,9 @@ function _pcUpdateSizes(pid, source = null) {
   // Deselect size if it is not present for the selected color anymore.
   const selSize = card.dataset.selSize;
   if (selSize) {
-    const stillVisible = vars.some(v => v.attrs?.['Size'] === selSize && (!color || v.attrs?.['Color'] === color));
-    if (!stillVisible) {
+    const matching = vars.filter(v => v.attrs?.['Size'] === selSize && (!color || v.attrs?.['Color'] === color));
+    const stillSellable = matching.some(_pcVariationIsSellable);
+    if (!matching.length || !stillSellable) {
       card.dataset.selSize = '';
       card.querySelectorAll('.pc-size').forEach(b => b.classList.remove('selected'));
     }
@@ -1829,6 +1870,7 @@ function _pcInitializeVariations() {
   document.querySelectorAll('.product-card[data-vars]').forEach(card => {
     const pid = card.dataset.pid;
     _pcSelectInitialVariation(pid, card);
+    _pcUpdateColors(pid, card);
     _pcUpdateSizes(pid, card);
     _pcUpdatePrice(pid, card);
     _pcUpdateSummary(pid, card);
