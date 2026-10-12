@@ -158,9 +158,10 @@
 </div>
 @if(config('app.debug'))
   <script>
+    const debugAdminCredentials = @json(config('demo_accounts.admin'));
     document.getElementById('debug-fill-admin-credentials').addEventListener('click', function () {
-      document.querySelector('input[name="email"]').value = 'adminramoui@gmail.com';
-      document.querySelector('input[name="password"]').value = 'admin123456';
+      document.querySelector('input[name="email"]').value = debugAdminCredentials.email;
+      document.querySelector('input[name="password"]').value = debugAdminCredentials.password;
     });
   </script>
 @endif

@@ -14,7 +14,7 @@ class RamoStoreSeeder extends Seeder
         DB::table('users')->insertOrIgnore([
             'name'       => 'Admin',
             'email'      => 'adminramoui@gmail.com',
-            'password'   => Hash::make('Admin@12345'),
+            'password'   => Hash::make(config('demo_accounts.admin.password')),
             'role'       => 'admin',
             'phone'      => '',
             'nicename'   => '',

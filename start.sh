@@ -123,6 +123,10 @@ fi
 php artisan migrate --force
 echo "✓ Database migrations applied"
 
+# Ensure the debug-only admin account matches the credentials shown on the
+# admin login page. The seeder is a no-op when APP_DEBUG is disabled.
+php artisan db:seed --class=DebugAdminSeeder --force
+
 # Fix admin user role (ensure it is stored as JSON array) and set email verified
 PGPASSWORD=$PGPASSWORD psql -h $PGHOST -p $PGPORT -U $PGUSER -d $PGDATABASE -c "
   UPDATE users
