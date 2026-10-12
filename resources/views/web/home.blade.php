@@ -588,7 +588,46 @@
         $cardOptions = ['idPrefix' => 'tl-all-products-'.$si];
       @endphp
       <style>
-        #tl-sec-{{ $si }} .all-products-grid { grid-template-columns:repeat(auto-fill,minmax(190px,1fr));margin-bottom:28px }
+        #tl-sec-{{ $si }} .all-products-grid {
+          display:grid;
+          width:100%;
+          min-width:0;
+          grid-template-columns:repeat(5,minmax(0,1fr));
+          gap:24px 20px;
+          align-items:stretch;
+          margin-bottom:32px;
+        }
+        #tl-sec-{{ $si }} .all-products-grid > .product-card {
+          width:100%;
+          min-width:0;
+          height:100%;
+          border-radius:14px;
+        }
+        #tl-sec-{{ $si }} .all-products-grid .product-card-body {
+          min-width:0;
+          flex:1 1 auto;
+          padding:14px 12px 12px;
+          gap:7px;
+        }
+        #tl-sec-{{ $si }} .all-products-grid .product-card-name {
+          min-height:2.8em;
+          margin:0;
+        }
+        #tl-sec-{{ $si }} .all-products-grid .pc-actions {
+          display:flex;
+          flex-direction:column;
+          gap:8px;
+          margin-top:auto;
+        }
+        #tl-sec-{{ $si }} .all-products-grid .card-add-btn,
+        #tl-sec-{{ $si }} .all-products-grid .card-details-btn {
+          min-height:42px;
+          margin-top:0;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          box-sizing:border-box;
+        }
         #tl-sec-{{ $si }} .all-products-infinite { display:flex;flex-direction:column;align-items:center;gap:10px;margin:8px 0 44px;min-height:24px }
         #tl-sec-{{ $si }} .all-products-infinite-status { margin:0;color:#777;font-size:13px;text-align:center }
         #tl-sec-{{ $si }} .all-products-load-more { padding:10px 20px;border:1px solid #e8e5df;border-radius:999px;background:#fff;color:#242424;font:inherit;font-size:13px;font-weight:600;cursor:pointer }
@@ -596,8 +635,23 @@
         #tl-sec-{{ $si }} .all-products-load-more:disabled { opacity:.6;cursor:wait }
         #tl-sec-{{ $si }} .all-products-infinite [hidden] { display:none !important }
         #tl-sec-{{ $si }} .all-products-sentinel { width:100%;height:1px }
+        @media(min-width:1440px) {
+          #tl-sec-{{ $si }} .all-products-grid { grid-template-columns:repeat(6,minmax(0,1fr));gap:28px 22px }
+        }
+        @media(max-width:1199px) {
+          #tl-sec-{{ $si }} .all-products-grid { grid-template-columns:repeat(4,minmax(0,1fr));gap:22px 16px }
+        }
+        @media(max-width:899px) {
+          #tl-sec-{{ $si }} .all-products-grid { grid-template-columns:repeat(3,minmax(0,1fr));gap:20px 14px }
+        }
         @media(max-width:600px) {
-          #tl-sec-{{ $si }} .all-products-grid { grid-template-columns:repeat(2,minmax(0,1fr));gap:12px }
+          #tl-sec-{{ $si }} .all-products-grid { grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 12px;margin-bottom:24px }
+          #tl-sec-{{ $si }} .all-products-grid .product-card-body { padding:10px 9px 11px }
+          #tl-sec-{{ $si }} .all-products-grid .card-add-btn,
+          #tl-sec-{{ $si }} .all-products-grid .card-details-btn { min-height:40px }
+        }
+        @media(max-width:359px) {
+          #tl-sec-{{ $si }} .all-products-grid { grid-template-columns:minmax(0,1fr);gap:16px }
         }
       </style>
       <div class="sec-head" style="align-items:center;margin-bottom:18px">
