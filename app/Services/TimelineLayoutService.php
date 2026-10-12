@@ -38,9 +38,9 @@ final class TimelineLayoutService
             $pinnedSection['headerText'] = $isArabic ? 'منتجات قد تعجبك' : 'Products you may like';
         }
 
-        $perPage = $pinnedSection['productsPerPage'] ?? 16;
-        $perPage = is_numeric($perPage) ? (int) $perPage : 16;
-        $pinnedSection['productsPerPage'] = max(4, min(48, $perPage));
+        $perPage = $pinnedSection['productsPerPage'] ?? 5;
+        $perPage = is_numeric($perPage) ? (int) $perPage : 5;
+        $pinnedSection['productsPerPage'] = max(5, min(48, $perPage));
 
         unset($pinnedSection['hidden']);
 

@@ -59,7 +59,7 @@ class WebController extends Controller
             $layout = $section['layout'] ?? '';
 
             if ($layout === TimelineLayoutService::ALL_PRODUCTS_LAYOUT) {
-                $perPage = (int) ($section['productsPerPage'] ?? 16);
+                $perPage = (int) ($section['productsPerPage'] ?? 5);
                 $page = $this->baseProductQuery()
                     ->orderByDesc('p.id')
                     ->paginate($perPage, ['*'], 'all_products_page')
@@ -316,7 +316,7 @@ class WebController extends Controller
         $sections = $this->homeTimelineSections($lang);
         $sectionIndex = array_key_last($sections);
         $section = $sectionIndex === null ? [] : $sections[$sectionIndex];
-        $perPage = (int) ($section['productsPerPage'] ?? 16);
+        $perPage = (int) ($section['productsPerPage'] ?? 5);
         $flashSale = FlashSaleService::getActive($lang);
 
         $page = $this->baseProductQuery()

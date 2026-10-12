@@ -232,7 +232,7 @@ function ensureAllProductsLast() {
   const pinned = validSections.find(section => section.layout === 'allProducts') || {
     layout: 'allProducts',
     headerText: LANG === 'ar' ? 'منتجات قد تعجبك' : 'Products you may like',
-    productsPerPage: 16
+    productsPerPage: 5
   };
   const rest = validSections.filter(section => section.layout !== 'allProducts');
   const title = typeof pinned.headerText === 'string' ? pinned.headerText.trim() : '';
@@ -241,7 +241,7 @@ function ensureAllProductsLast() {
     pinned.headerText = LANG === 'ar' ? 'منتجات قد تعجبك' : 'Products you may like';
   }
   const perPage = Number.parseInt(pinned.productsPerPage, 10);
-  pinned.productsPerPage = Number.isFinite(perPage) ? Math.max(4, Math.min(48, perPage)) : 16;
+  pinned.productsPerPage = Number.isFinite(perPage) ? Math.max(5, Math.min(48, perPage)) : 5;
   delete pinned.hidden;
   sections.splice(0, sections.length, ...rest, pinned);
 }
@@ -400,12 +400,12 @@ function buildEditor(sec, idx) {
   }
 
   else if (type === 'allProducts') {
-    const perPage = Number(sec.productsPerPage) || 16;
+    const perPage = Number(sec.productsPerPage) || 5;
     html = `
     <div class="form-grid">
       <div class="form-group"><label>Section Title</label><input type="text" value="${escAttr(sec.headerText||'Products you may like')}" maxlength="120" style="width:100%" onchange="updateField(${idx},'headerText',this.value)"></div>
       <div class="form-group"><label>Products per page</label><select onchange="updateField(${idx},'productsPerPage',parseInt(this.value))">
-        ${[8,12,16,24,36,48].map(count => `<option value="${count}" ${perPage===count?'selected':''}>${count} products</option>`).join('')}
+        ${[5,8,12,16,24,36,48].map(count => `<option value="${count}" ${perPage===count?'selected':''}>${count} products</option>`).join('')}
       </select></div>
     </div>
     <div style="font-size:12px;color:var(--muted)">Shows published, approved products and loads more automatically as shoppers scroll. This widget is required and locked below all other sections.</div>`;
@@ -1071,7 +1071,7 @@ const DEFAULTS = {
   newsletter:        { layout:'newsletter', headline:'Stay in the Loop', subtext:'Get the latest deals and new arrivals delivered to your inbox.', btnText:'Subscribe', placeholder:'Your email address', bgColor:'#f0ede8' },
   trending:          { layout:'trending', headerText:'Trending Now', count:10, algo:'sold7d', refreshInterval:24, showRankBadge:true, showSoldToday:false, autoScroll:false },
   arrivals:          { layout:'arrivals', headerText:'New Arrivals', count:8, speed:'normal', tag:'Just Arrived', pauseOnHover:true, showCategoryChip:false, loopInfinitely:true },
-  allProducts:       { layout:'allProducts', headerText:'Products you may like', productsPerPage:16 },
+  allProducts:       { layout:'allProducts', headerText:'Products you may like', productsPerPage:5 },
   brandLogos:        { layout:'brandLogos', headerText:'Shop by Brand', brands:'', size:'medium', clickableFilter:true, showNameBelowLogo:true, grayscaleUntilHover:false },
   reviewsCarousel:   { layout:'reviewsCarousel', headerText:'Customer Reviews', count:6, minStars:4, interval:4, showReviewerPhoto:false, showProductReviewed:true, allowManualNavigation:true },
   activity:          { layout:'activity', messageTemplate:'{n} people shopped with us recently', minCount:1, window:'24h', randomizeSlightly:true, showOnProductPage:false },

@@ -45,4 +45,17 @@ class TimelineLayoutServiceTest extends TestCase
         self::assertSame('Products you may like', $english[0]['headerText']);
         self::assertSame('منتجات قد تعجبك', $arabic[0]['headerText']);
     }
+
+    public function test_products_per_page_defaults_to_five_and_clamps_lower_values(): void
+    {
+        $default = TimelineLayoutService::ensureAllProductsLast([
+            ['layout' => 'bannerImage'],
+        ], 'en');
+        $belowMinimum = TimelineLayoutService::ensureAllProductsLast([
+            ['layout' => 'allProducts', 'productsPerPage' => 4],
+        ], 'en');
+
+        self::assertSame(5, $default[1]['productsPerPage']);
+        self::assertSame(5, $belowMinimum[0]['productsPerPage']);
+    }
 }
