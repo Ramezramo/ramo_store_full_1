@@ -17,7 +17,7 @@ class TimelineLayoutServiceTest extends TestCase
         ], 'ar');
 
         self::assertSame(['bannerImage', 'divider', 'allProducts'], array_column($sections, 'layout'));
-        self::assertSame('كل المنتجات', $sections[2]['headerText']);
+        self::assertSame('منتجات قد تعجبك', $sections[2]['headerText']);
         self::assertSame(48, $sections[2]['productsPerPage']);
         self::assertArrayNotHasKey('hidden', $sections[2]);
     }
@@ -31,5 +31,18 @@ class TimelineLayoutServiceTest extends TestCase
 
         self::assertSame('Shop Everything', $sections[1]['headerText']);
         self::assertSame(24, $sections[1]['productsPerPage']);
+    }
+
+    public function test_default_title_is_localized_for_both_storefront_languages(): void
+    {
+        $english = TimelineLayoutService::ensureAllProductsLast([
+            ['layout' => 'allProducts', 'headerText' => 'All Products'],
+        ], 'en');
+        $arabic = TimelineLayoutService::ensureAllProductsLast([
+            ['layout' => 'allProducts', 'headerText' => 'Products you may like'],
+        ], 'ar');
+
+        self::assertSame('Products you may like', $english[0]['headerText']);
+        self::assertSame('منتجات قد تعجبك', $arabic[0]['headerText']);
     }
 }

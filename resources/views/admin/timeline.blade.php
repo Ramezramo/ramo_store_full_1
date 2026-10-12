@@ -180,7 +180,7 @@
       <div class="wp-group-label">Products</div>
       <div class="wp-btn" onmouseenter="showPreview('trending')" onclick="addSection('trending')"><span class="wp-ico">🔥</span><span class="wp-name">Trending Now</span></div>
       <div class="wp-btn" onmouseenter="showPreview('arrivals')" onclick="addSection('arrivals')"><span class="wp-ico">✨</span><span class="wp-name">New Arrivals</span></div>
-      <div class="wp-btn" onmouseenter="showPreview('allProducts')" onclick="addSection('allProducts')"><span class="wp-ico">🛍️</span><span class="wp-name">All Products (Pinned)</span></div>
+      <div class="wp-btn" onmouseenter="showPreview('allProducts')" onclick="addSection('allProducts')"><span class="wp-ico">🛍️</span><span class="wp-name">Products You May Like (Pinned)</span></div>
       <div class="wp-btn" onmouseenter="showPreview('brandLogos')" onclick="addSection('brandLogos')"><span class="wp-ico">🏷️</span><span class="wp-name">Brand Logos Row</span></div>
 
       <div class="wp-group-label">Full-width</div>
@@ -231,13 +231,14 @@ function ensureAllProductsLast() {
   const validSections = sections.filter(section => section && typeof section === 'object' && !Array.isArray(section));
   const pinned = validSections.find(section => section.layout === 'allProducts') || {
     layout: 'allProducts',
-    headerText: LANG === 'ar' ? 'كل المنتجات' : 'All Products',
+    headerText: LANG === 'ar' ? 'منتجات قد تعجبك' : 'Products you may like',
     productsPerPage: 16
   };
   const rest = validSections.filter(section => section.layout !== 'allProducts');
   const title = typeof pinned.headerText === 'string' ? pinned.headerText.trim() : '';
-  if (!title || (LANG === 'ar' && title.toLowerCase() === 'all products')) {
-    pinned.headerText = LANG === 'ar' ? 'كل المنتجات' : 'All Products';
+  const defaultTitles = ['all products', 'products you may like', 'كل المنتجات', 'منتجات قد تعجبك'];
+  if (!title || defaultTitles.includes(title.toLowerCase())) {
+    pinned.headerText = LANG === 'ar' ? 'منتجات قد تعجبك' : 'Products you may like';
   }
   const perPage = Number.parseInt(pinned.productsPerPage, 10);
   pinned.productsPerPage = Number.isFinite(perPage) ? Math.max(4, Math.min(48, perPage)) : 16;
@@ -281,7 +282,7 @@ const TYPE_META = {
   coupons:          { icon:'🎟️', label:'Coupons Strip',        color:'#f59e0b' },
   trending:         { icon:'🔥', label:'Trending Now',         color:'#ef4444' },
   arrivals:         { icon:'✨', label:'New Arrivals Ticker',  color:'#8b5cf6' },
-  allProducts:      { icon:'🛍️', label:'All Products · Pinned at Bottom', color:'#e85d26' },
+  allProducts:      { icon:'🛍️', label:'Products You May Like · Pinned at Bottom', color:'#e85d26' },
   brandLogos:       { icon:'🏷️', label:'Brand Logos Row',      color:'#0ea5e9' },
   reviewsCarousel:  { icon:'🌟', label:'Reviews Carousel',     color:'#f59e0b' },
   activity:         { icon:'🔴', label:'Live Activity Banner', color:'#ef4444' },
@@ -402,12 +403,12 @@ function buildEditor(sec, idx) {
     const perPage = Number(sec.productsPerPage) || 16;
     html = `
     <div class="form-grid">
-      <div class="form-group"><label>Section Title</label><input type="text" value="${escAttr(sec.headerText||'All Products')}" maxlength="120" style="width:100%" onchange="updateField(${idx},'headerText',this.value)"></div>
+      <div class="form-group"><label>Section Title</label><input type="text" value="${escAttr(sec.headerText||'Products you may like')}" maxlength="120" style="width:100%" onchange="updateField(${idx},'headerText',this.value)"></div>
       <div class="form-group"><label>Products per page</label><select onchange="updateField(${idx},'productsPerPage',parseInt(this.value))">
         ${[8,12,16,24,36,48].map(count => `<option value="${count}" ${perPage===count?'selected':''}>${count} products</option>`).join('')}
       </select></div>
     </div>
-    <div style="font-size:12px;color:var(--muted)">Shows every published and approved product, with page controls. This widget is required and locked below all other sections.</div>`;
+    <div style="font-size:12px;color:var(--muted)">Shows published, approved products and loads more automatically as shoppers scroll. This widget is required and locked below all other sections.</div>`;
   }
 
   else if (type === 'topVendors') {
@@ -1070,7 +1071,7 @@ const DEFAULTS = {
   newsletter:        { layout:'newsletter', headline:'Stay in the Loop', subtext:'Get the latest deals and new arrivals delivered to your inbox.', btnText:'Subscribe', placeholder:'Your email address', bgColor:'#f0ede8' },
   trending:          { layout:'trending', headerText:'Trending Now', count:10, algo:'sold7d', refreshInterval:24, showRankBadge:true, showSoldToday:false, autoScroll:false },
   arrivals:          { layout:'arrivals', headerText:'New Arrivals', count:8, speed:'normal', tag:'Just Arrived', pauseOnHover:true, showCategoryChip:false, loopInfinitely:true },
-  allProducts:       { layout:'allProducts', headerText:'All Products', productsPerPage:16 },
+  allProducts:       { layout:'allProducts', headerText:'Products you may like', productsPerPage:16 },
   brandLogos:        { layout:'brandLogos', headerText:'Shop by Brand', brands:'', size:'medium', clickableFilter:true, showNameBelowLogo:true, grayscaleUntilHover:false },
   reviewsCarousel:   { layout:'reviewsCarousel', headerText:'Customer Reviews', count:6, minStars:4, interval:4, showReviewerPhoto:false, showProductReviewed:true, allowManualNavigation:true },
   activity:          { layout:'activity', messageTemplate:'{n} people shopped with us recently', minCount:1, window:'24h', randomizeSlightly:true, showOnProductPage:false },
@@ -1112,7 +1113,7 @@ const WIDGET_INFO = {
   complete:         { title:'Complete the Look', desc:'A nudge widget encouraging customers to explore complementary products. Links to the shop with a configurable strategy.', tags:['Cross-sell','Strategy options','CTA button'] },
   trending:         { title:'Trending Now Strip', desc:'Horizontal scroll of your best-selling products sorted by total sales. Numbered rank badges (#1, #2…) highlight top sellers.', tags:['DB-powered','Rank badges','Sold count'] },
   arrivals:         { title:'New Arrivals Ticker', desc:'Auto-scrolling horizontal ticker of your newest products sorted by listing date. Pauses on hover.', tags:['Auto-scroll','DB-powered','Infinite loop'] },
-  allProducts:      { title:'All Products · Pinned at Bottom', desc:'Shows every published and approved product in a paginated grid. This required section always stays below every other timeline widget.', tags:['All products','Page navigation','Locked at bottom'] },
+  allProducts:      { title:'Products You May Like · Pinned at Bottom', desc:'Shows published and approved products, automatically loading more as shoppers scroll. This required section stays below every other timeline widget.', tags:['Infinite scroll','All products','Locked at bottom'] },
   brandLogos:       { title:'Brand Logos Row', desc:'Grid of branded logo chips. Enter brand names manually or leave blank to auto-load all brands from your database.', tags:['Clickable filter','Custom brands','Logo initials'] },
   announcement:     { title:'Announcement Bar', desc:'Full-width scrolling ticker above the page header. Perfect for free shipping thresholds, sales, or news. Dismissable.', tags:['Full-width','Scrolling text','Above header','Dismissable'] },
   flash:            { title:'Flash Sale Timer', desc:'Urgency countdown bar in fire-red at the top of the page. Shows hours, minutes and seconds counting down from a set duration.', tags:['Countdown timer','Full-width','Auto-dismiss option'] },
@@ -1128,7 +1129,7 @@ const WIDGET_MOCKUPS = {
 
   twoColumn: `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">${Array(4).fill(0).map((_,i)=>`<div style="border-radius:7px;overflow:hidden;border:1px solid #eee"><div style="height:70px;background:${['#fdf0e8','#e8f0fd','#e8fdf0','#fde8fd'][i]};display:flex;align-items:center;justify-content:center;font-size:22px">🛍️</div><div style="padding:6px"><div style="height:7px;background:#eee;border-radius:4px;margin-bottom:4px"></div><div style="height:9px;background:#e85d26;border-radius:4px;width:60%"></div></div></div>`).join('')}</div>`,
 
-  allProducts: `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">${Array(3).fill(0).map((_,i)=>`<div style="border:1px solid #eee;border-radius:7px;overflow:hidden"><div style="height:58px;background:${['#fdf0e8','#e8f0fd','#e8fdf0'][i]};display:flex;align-items:center;justify-content:center;font-size:20px">🛍️</div><div style="padding:5px"><div style="height:6px;background:#eee;border-radius:4px;margin-bottom:4px"></div><div style="height:7px;background:#e85d26;border-radius:4px;width:55%"></div></div></div>`).join('')}</div><div style="display:flex;justify-content:center;gap:5px;margin-top:10px"><span style="padding:3px 8px;border-radius:5px;background:#e85d26;color:#fff;font-size:9px">1</span><span style="padding:3px 8px;border:1px solid #ddd;border-radius:5px;font-size:9px">2</span><span style="padding:3px 8px;border:1px solid #ddd;border-radius:5px;font-size:9px">›</span></div>`,
+  allProducts: `<div style="font-size:12px;font-weight:700;margin-bottom:8px">Products you may like</div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">${Array(3).fill(0).map((_,i)=>`<div style="border:1px solid #eee;border-radius:7px;overflow:hidden"><div style="height:58px;background:${['#fdf0e8','#e8f0fd','#e8fdf0'][i]};display:flex;align-items:center;justify-content:center;font-size:20px">🛍️</div><div style="padding:5px"><div style="height:6px;background:#eee;border-radius:4px;margin-bottom:4px"></div><div style="height:7px;background:#e85d26;border-radius:4px;width:55%"></div></div></div>`).join('')}</div><div style="text-align:center;margin-top:9px;color:#888;font-size:9px">↓ Keep scrolling for more</div>`,
 
   saleImages: `<div style="display:flex;gap:8px;overflow:hidden">${Array(4).fill(0).map((_,i)=>`<div style="flex-shrink:0;width:100px;border-radius:8px;overflow:hidden;border:1px solid #eee"><div style="height:80px;background:${['#fdf0e8','#e8f0fd','#e8fdf0','#fde8f0'][i]};display:flex;align-items:center;justify-content:center;font-size:24px">🛍️</div><div style="padding:5px"><div style="height:6px;background:#eee;border-radius:3px;margin-bottom:3px"></div><div style="height:8px;background:#e85d26;border-radius:3px;width:55%"></div></div></div>`).join('')}<div style="flex-shrink:0;width:24px;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:18px">›</div></div>`,
 

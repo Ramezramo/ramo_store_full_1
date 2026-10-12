@@ -36,20 +36,8 @@ class WebController extends Controller
     public function home()
     {
         // ── Load horizon_layout timeline config ──────────────────
-        $lang = session('locale', 'en');
-        $configRow = DB::table('app_configs')
-            ->where('config_key', 'horizon_layout')
-            ->where('lang', $lang)
-            ->first();
-
-        if (! $configRow) {
-            $configRow = DB::table('app_configs')
-                ->where('config_key', 'horizon_layout')
-                ->first();
-        }
-
-        $sections = $configRow ? (json_decode($configRow->value, true) ?? []) : [];
-        $sections = TimelineLayoutService::ensureAllProductsLast($sections, (string) $lang);
+        $lang = (string) session('locale', 'en');
+        $sections = $this->homeTimelineSections($lang);
         $flashSale = FlashSaleService::getActive($lang);
 
         // ── Pre-load product data for each section ────────────────
@@ -305,24 +293,7 @@ class WebController extends Controller
 
         // ── Bulk-load variations for all section products ─────────
         $allProductIds = collect($sectionProducts)->flatten(1)->pluck('id')->unique()->values()->toArray();
-        $sectionVariations = [];
-        if (!empty($allProductIds)) {
-            $sectionVariations = DB::table('product_variations')
-                ->whereIn('product_id', $allProductIds)
-                ->orderBy('main_variation', 'desc')
-                ->get()
-                ->map(function ($v) {
-                    $v->attributes = is_string($v->attributes)
-                        ? (json_decode($v->attributes, true) ?? json_decode(stripslashes($v->attributes), true) ?? [])
-                        : (array) $v->attributes;
-                    $v->images = is_string($v->images)
-                        ? (json_decode($v->images, true) ?? json_decode(stripslashes($v->images), true) ?? [])
-                        : (array) $v->images;
-                    return $v;
-                })
-                ->groupBy('product_id')
-                ->toArray();
-        }
+        $sectionVariations = $this->loadProductVariations($allProductIds);
 
         // ── Load categories for category-strip sections ───────────
         $allCategories = DB::table('categories2')->orderBy('name')->get(['id', 'name', 'slug'])->keyBy('id');
@@ -337,6 +308,40 @@ class WebController extends Controller
             'sectionTrending', 'sectionArrivals', 'sectionActivity', 'sectionReviewsCarousel',
             'sectionCategoryCards', 'sectionFeaturedProduct', 'sectionFeaturedVariations'
         ));
+    }
+
+    public function homeProducts(Request $request)
+    {
+        $lang = (string) $request->session()->get('locale', 'en');
+        $sections = $this->homeTimelineSections($lang);
+        $sectionIndex = array_key_last($sections);
+        $section = $sectionIndex === null ? [] : $sections[$sectionIndex];
+        $perPage = (int) ($section['productsPerPage'] ?? 16);
+        $flashSale = FlashSaleService::getActive($lang);
+
+        $page = $this->baseProductQuery()
+            ->orderByDesc('p.id')
+            ->paginate($perPage, ['*'], 'all_products_page')
+            ->through(fn ($p) => $this->localizeTimelineProductText($this->parseProduct($p, $flashSale), $lang));
+
+        $productIds = $page->getCollection()->pluck('id')->unique()->values()->toArray();
+        $variations = $this->loadProductVariations($productIds);
+        $cardOptions = ['idPrefix' => 'tl-all-products-'.($sectionIndex ?? 0)];
+        $html = '';
+
+        foreach ($page->getCollection() as $product) {
+            $html .= view('web.partials.product-card', [
+                'p' => $product,
+                'cardVariations' => $variations[$product->id] ?? [],
+                'cardOptions' => $cardOptions,
+            ])->render();
+        }
+
+        return response()->json([
+            'html' => $html,
+            'hasMore' => $page->hasMorePages(),
+            'nextPage' => $page->hasMorePages() ? $page->currentPage() + 1 : null,
+        ]);
     }
 
     public function offers()
@@ -705,6 +710,51 @@ class WebController extends Controller
         $products    = $rawProducts->through(fn($p) => $this->localizeTimelineProductText($this->parseProduct($p, $flashSale), $locale));
 
         return view('web.vendor', compact('vendor', 'products'));
+    }
+
+    private function homeTimelineSections(string $lang): array
+    {
+        $configRow = DB::table('app_configs')
+            ->where('config_key', 'horizon_layout')
+            ->where('lang', $lang)
+            ->first();
+
+        if (! $configRow) {
+            $configRow = DB::table('app_configs')
+                ->where('config_key', 'horizon_layout')
+                ->first();
+        }
+
+        $sections = $configRow ? json_decode($configRow->value, true) : [];
+
+        return TimelineLayoutService::ensureAllProductsLast(
+            is_array($sections) ? $sections : [],
+            $lang
+        );
+    }
+
+    private function loadProductVariations(array $productIds): array
+    {
+        if (empty($productIds)) {
+            return [];
+        }
+
+        return DB::table('product_variations')
+            ->whereIn('product_id', $productIds)
+            ->orderBy('main_variation', 'desc')
+            ->get()
+            ->map(function ($variation) {
+                $variation->attributes = is_string($variation->attributes)
+                    ? (json_decode($variation->attributes, true) ?? json_decode(stripslashes($variation->attributes), true) ?? [])
+                    : (array) $variation->attributes;
+                $variation->images = is_string($variation->images)
+                    ? (json_decode($variation->images, true) ?? json_decode(stripslashes($variation->images), true) ?? [])
+                    : (array) $variation->images;
+
+                return $variation;
+            })
+            ->groupBy('product_id')
+            ->toArray();
     }
 
     private function baseProductQuery()

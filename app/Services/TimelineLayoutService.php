@@ -30,9 +30,12 @@ final class TimelineLayoutService
         $storedTitle = $pinnedSection['headerText'] ?? '';
         $storedTitle = is_scalar($storedTitle) ? trim((string) $storedTitle) : '';
         $isArabic = strtolower($lang) === 'ar';
+        $isDefaultTitle = $storedTitle === ''
+            || in_array($storedTitle, ['كل المنتجات', 'منتجات قد تعجبك'], true)
+            || in_array(strtolower($storedTitle), ['all products', 'products you may like'], true);
 
-        if ($storedTitle === '' || ($isArabic && strcasecmp($storedTitle, 'All Products') === 0)) {
-            $pinnedSection['headerText'] = $isArabic ? 'كل المنتجات' : 'All Products';
+        if ($isDefaultTitle) {
+            $pinnedSection['headerText'] = $isArabic ? 'منتجات قد تعجبك' : 'Products you may like';
         }
 
         $perPage = $pinnedSection['productsPerPage'] ?? 16;

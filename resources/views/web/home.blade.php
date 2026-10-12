@@ -584,31 +584,24 @@
       @php
         $products = $sectionProducts[$si] ?? collect();
         $paginator = $sectionProductPaginators[$si] ?? null;
-        $title = $sec['headerText'] ?? ($timelineRtl ? 'كل المنتجات' : 'All Products');
+        $title = $sec['headerText'] ?? ($timelineRtl ? 'منتجات قد تعجبك' : 'Products you may like');
         $cardOptions = ['idPrefix' => 'tl-all-products-'.$si];
-        $pageStart = $paginator ? max(1, $paginator->currentPage() - 2) : 1;
-        $pageEnd = $paginator ? min($paginator->lastPage(), $paginator->currentPage() + 2) : 1;
-        $pageLinks = ($paginator && $paginator->lastPage() > 1)
-          ? $paginator->getUrlRange($pageStart, $pageEnd)
-          : [];
       @endphp
       <style>
         #tl-sec-{{ $si }} .all-products-grid { grid-template-columns:repeat(auto-fill,minmax(190px,1fr));margin-bottom:28px }
-        #tl-sec-{{ $si }} .all-products-pagination { display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:7px;margin:8px 0 44px }
-        #tl-sec-{{ $si }} .all-products-page { display:inline-flex;align-items:center;justify-content:center;min-width:38px;height:38px;padding:0 11px;border:1px solid #e8e5df;border-radius:9px;background:#fff;color:#242424;text-decoration:none;font-size:13px;font-weight:600 }
-        #tl-sec-{{ $si }} .all-products-page:hover { border-color:#e85d26;color:#e85d26 }
-        #tl-sec-{{ $si }} .all-products-page.is-current { border-color:#e85d26;background:#e85d26;color:#fff }
-        #tl-sec-{{ $si }} .all-products-page.is-disabled { color:#aaa;background:#f7f7f7;cursor:not-allowed }
-        #tl-sec-{{ $si }} .all-products-page-status { margin:0 5px;color:#777;font-size:13px }
+        #tl-sec-{{ $si }} .all-products-infinite { display:flex;flex-direction:column;align-items:center;gap:10px;margin:8px 0 44px;min-height:24px }
+        #tl-sec-{{ $si }} .all-products-infinite-status { margin:0;color:#777;font-size:13px;text-align:center }
+        #tl-sec-{{ $si }} .all-products-load-more { padding:10px 20px;border:1px solid #e8e5df;border-radius:999px;background:#fff;color:#242424;font:inherit;font-size:13px;font-weight:600;cursor:pointer }
+        #tl-sec-{{ $si }} .all-products-load-more:hover:not(:disabled) { border-color:#e85d26;color:#e85d26 }
+        #tl-sec-{{ $si }} .all-products-load-more:disabled { opacity:.6;cursor:wait }
+        #tl-sec-{{ $si }} .all-products-infinite [hidden] { display:none !important }
+        #tl-sec-{{ $si }} .all-products-sentinel { width:100%;height:1px }
         @media(max-width:600px) {
           #tl-sec-{{ $si }} .all-products-grid { grid-template-columns:repeat(2,minmax(0,1fr));gap:12px }
         }
       </style>
       <div class="sec-head" style="align-items:center;margin-bottom:18px">
         <h2 class="sec-title" style="margin:0">{{ $title }}</h2>
-        @if($paginator)
-          <span style="color:#777;font-size:13px">{{ number_format($paginator->total()) }} {{ $timelineRtl ? 'منتج' : 'products' }}</span>
-        @endif
       </div>
       @if($products->isNotEmpty())
         <div class="product-grid all-products-grid" id="all-products-grid-{{ $si }}">
@@ -625,35 +618,119 @@
           {{ $timelineRtl ? 'لا توجد منتجات حالياً' : 'No products are available right now.' }}
         </div>
       @endif
-      @if($paginator && $paginator->lastPage() > 1)
-        <nav class="all-products-pagination" aria-label="{{ $timelineRtl ? 'صفحات المنتجات' : 'Product pages' }}">
-          @if($paginator->onFirstPage())
-            <span class="all-products-page is-disabled" aria-disabled="true">{{ $timelineRtl ? 'السابق' : 'Previous' }}</span>
-          @else
-            <a class="all-products-page" href="{{ $paginator->previousPageUrl() }}" rel="prev">{{ $timelineRtl ? 'السابق' : 'Previous' }}</a>
-          @endif
-          @if($pageStart > 1)
-            <a class="all-products-page" href="{{ $paginator->url(1) }}">1</a>
-            @if($pageStart > 2)<span class="all-products-page-status" aria-hidden="true">…</span>@endif
-          @endif
-          @foreach($pageLinks as $pageNumber => $pageUrl)
-            @if($pageNumber === $paginator->currentPage())
-              <span class="all-products-page is-current" aria-current="page">{{ $pageNumber }}</span>
-            @else
-              <a class="all-products-page" href="{{ $pageUrl }}">{{ $pageNumber }}</a>
+      @if($paginator && $paginator->hasMorePages())
+        <div
+          class="all-products-infinite"
+          id="all-products-infinite-{{ $si }}"
+          data-all-products-loader
+          data-url="{{ route('home.products', [], false) }}"
+          data-next-page="{{ $paginator->currentPage() + 1 }}"
+          data-loading-label="{{ $timelineRtl ? 'جارٍ تحميل المزيد من المنتجات...' : 'Loading more products…' }}"
+          data-scroll-label="{{ $timelineRtl ? 'تابع التمرير لاكتشاف المزيد' : 'Keep scrolling to discover more' }}"
+          data-end-label="{{ $timelineRtl ? 'لقد شاهدت كل المنتجات.' : 'You’ve seen them all.' }}"
+          data-error-label="{{ $timelineRtl ? 'تعذر تحميل المزيد الآن.' : 'Couldn’t load more right now.' }}"
+          data-retry-label="{{ $timelineRtl ? 'إعادة المحاولة' : 'Try again' }}"
+          data-load-label="{{ $timelineRtl ? 'تحميل المزيد من المنتجات' : 'Load more products' }}"
+          aria-busy="false"
+        >
+          <p class="all-products-infinite-status" data-infinite-status role="status" aria-live="polite">{{ $timelineRtl ? 'تابع التمرير لاكتشاف المزيد' : 'Keep scrolling to discover more' }}</p>
+          <button class="all-products-load-more" type="button" data-infinite-button aria-controls="all-products-grid-{{ $si }}" hidden>{{ $timelineRtl ? 'تحميل المزيد من المنتجات' : 'Load more products' }}</button>
+          <div class="all-products-sentinel" data-infinite-sentinel aria-hidden="true"></div>
+        </div>
+        <noscript>
+          <nav class="all-products-pagination" aria-label="{{ $timelineRtl ? 'المزيد من المنتجات' : 'More products' }}">
+            @if(!$paginator->onFirstPage())
+              <a href="{{ $paginator->previousPageUrl() }}" rel="prev">{{ $timelineRtl ? 'السابق' : 'Previous' }}</a>
             @endif
-          @endforeach
-          @if($pageEnd < $paginator->lastPage())
-            @if($pageEnd < $paginator->lastPage() - 1)<span class="all-products-page-status" aria-hidden="true">…</span>@endif
-            <a class="all-products-page" href="{{ $paginator->url($paginator->lastPage()) }}">{{ $paginator->lastPage() }}</a>
-          @endif
-          <span class="all-products-page-status">{{ $timelineRtl ? 'صفحة' : 'Page' }} {{ $paginator->currentPage() }} {{ $timelineRtl ? 'من' : 'of' }} {{ $paginator->lastPage() }}</span>
-          @if($paginator->hasMorePages())
-            <a class="all-products-page" href="{{ $paginator->nextPageUrl() }}" rel="next">{{ $timelineRtl ? 'التالي' : 'Next' }}</a>
-          @else
-            <span class="all-products-page is-disabled" aria-disabled="true">{{ $timelineRtl ? 'التالي' : 'Next' }}</span>
-          @endif
-        </nav>
+            <a href="{{ $paginator->nextPageUrl() }}" rel="next">{{ $timelineRtl ? 'عرض المزيد من المنتجات' : 'View more products' }}</a>
+          </nav>
+        </noscript>
+        <script>
+        document.addEventListener('DOMContentLoaded', function () {
+          const loader = document.getElementById('all-products-infinite-{{ $si }}');
+          if (!loader) return;
+
+          const grid = document.getElementById('all-products-grid-{{ $si }}');
+          const sentinel = loader.querySelector('[data-infinite-sentinel]');
+          const status = loader.querySelector('[data-infinite-status]');
+          const button = loader.querySelector('[data-infinite-button]');
+          if (!grid || !sentinel || !status || !button) return;
+
+          let nextPage = Number(loader.dataset.nextPage) || 2;
+          let loading = false;
+          let hasMore = true;
+          let observer = null;
+          const supportsObserver = 'IntersectionObserver' in window;
+
+          async function loadNextPage() {
+            if (loading || !hasMore) return;
+            loading = true;
+            loader.setAttribute('aria-busy', 'true');
+            status.textContent = loader.dataset.loadingLabel;
+            button.disabled = true;
+
+            const url = new URL(loader.dataset.url, window.location.href);
+            url.searchParams.set('all_products_page', String(nextPage));
+
+            try {
+              const response = await fetch(url.toString(), {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+              });
+              if (!response.ok) throw new Error('Product page request failed');
+
+              const data = await response.json();
+              if (typeof data.html !== 'string') throw new Error('Invalid product page response');
+
+              const template = document.createElement('template');
+              template.innerHTML = data.html.trim();
+              template.content.querySelectorAll('style').forEach(style => style.remove());
+              const appendedCards = template.content.querySelectorAll('.product-card').length;
+              if (data.hasMore && appendedCards === 0) throw new Error('The next page contained no products');
+
+              grid.append(template.content);
+              if (typeof window._pcInitializeVariations === 'function') {
+                window._pcInitializeVariations(grid);
+              }
+              if (typeof window.refreshWishlistState === 'function') {
+                window.refreshWishlistState();
+              }
+
+              hasMore = Boolean(data.hasMore);
+              nextPage = Number(data.nextPage) || nextPage + 1;
+              status.textContent = hasMore ? loader.dataset.scrollLabel : loader.dataset.endLabel;
+              button.textContent = loader.dataset.loadLabel;
+              button.hidden = supportsObserver || !hasMore;
+
+              if (hasMore) {
+                observer?.observe(sentinel);
+              } else {
+                observer?.disconnect();
+                sentinel.hidden = true;
+                button.hidden = true;
+              }
+            } catch (error) {
+              status.textContent = loader.dataset.errorLabel;
+              button.textContent = loader.dataset.retryLabel;
+              button.hidden = false;
+              observer?.unobserve(sentinel);
+            } finally {
+              loading = false;
+              loader.setAttribute('aria-busy', 'false');
+              button.disabled = false;
+            }
+          }
+
+          button.addEventListener('click', loadNextPage);
+          if (supportsObserver) {
+            observer = new IntersectionObserver(entries => {
+              if (entries.some(entry => entry.isIntersecting)) loadNextPage();
+            }, { rootMargin: '200px 0px' });
+            observer.observe(sentinel);
+          } else {
+            button.hidden = false;
+          }
+        }, { once: true });
+        </script>
       @endif
 
     {{-- SALE IMAGES — Horizontal scroll of products --}}

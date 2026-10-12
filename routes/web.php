@@ -29,6 +29,7 @@ use App\Http\Controllers\Admin\ImageGalleryController;
 
 Route::get('/health', HealthController::class)->name('health');
 Route::get('/', [WebController::class, 'home'])->name('home');
+Route::get('/home/products', [WebController::class, 'homeProducts'])->name('home.products');
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 Route::get('/privacy', [PolicyPageController::class, 'show'])->defaults('page', 'privacy')->name('policy.privacy');
 Route::get('/terms', [PolicyPageController::class, 'show'])->defaults('page', 'terms')->name('policy.terms');

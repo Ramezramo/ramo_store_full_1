@@ -1874,8 +1874,8 @@ function _pcUpdateSummary(pid, source = null) {
   el.textContent = parts.join(' • ');
 }
 
-function _pcInitializeVariations() {
-  document.querySelectorAll('.product-card[data-vars]').forEach(card => {
+function _pcInitializeVariations(root = document) {
+  root.querySelectorAll('.product-card[data-vars]').forEach(card => {
     const pid = card.dataset.pid;
     _pcSelectInitialVariation(pid, card);
     _pcUpdateColors(pid, card);
