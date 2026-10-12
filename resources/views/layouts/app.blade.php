@@ -757,6 +757,14 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
   .cart-row-price{text-align:left;padding-top:12px;margin-left:96px}
   .cart-price{width:auto;font-size:13px}
 }
+@media(min-width:769px) and (max-width:1100px){
+  .nav-inner{gap:12px}
+  .nav-links{display:none}
+  .nav-hamburger{display:flex}
+  .nav-search{flex:1 1 280px;min-width:180px;max-width:480px}
+  .nav-mobile-menu{top:72px}
+  .nav-mobile-panel{max-height:calc(100vh - 72px)}
+}
 @media(max-width:768px){
   .nav{background:rgba(255,255,255,.97);border-bottom-color:#e8e5df;box-shadow:0 4px 18px rgba(17,17,17,.055)}
   /* Keep the customer account header visible while the account list scrolls. */
