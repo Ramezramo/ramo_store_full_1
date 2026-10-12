@@ -1,17 +1,20 @@
-# Ramo Store — Laravel 10 multi-vendor e-commerce platform
+# Ramo Store — Laravel 12 multi-vendor e-commerce platform
 
 ## Run & Operate
 - **Start:** `bash start.sh` (writes `.env`, runs migrations, builds assets, serves on port 5000)
 - **Build assets:** `npm run build`
+- **Install dependencies:** `composer install --no-interaction --prefer-dist` and `npm ci --no-audit`
+- **Preview:** use Run / the `Start application` workflow; Laravel listens on `0.0.0.0:5000`.
+- On first start, the included SQL export is restored only into an empty database. Import errors stop startup; populated databases are not replaced.
 - **Migrate:** `php artisan migrate --force`
 - **Clear cache:** `php artisan config:clear && php artisan cache:clear`
 - **Required env vars:** `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`, `REPLIT_DEV_DOMAIN` (all auto-provided by Replit)
 
 ## Stack
-- PHP 8.2, Laravel 10, Laravel Sanctum
+- PHP 8.2, Laravel 12, Laravel Sanctum
 - PostgreSQL (Replit Helium DB)
 - Blade templates + Vite 5 (CSS/JS bundling)
-- Node 20 / npm for frontend deps
+- Node 20 / npm for frontend dependencies and builds
 
 ## Where things live
 - `start.sh` — bootstrap script (env, DB import, asset build, serve)

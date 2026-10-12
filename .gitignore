@@ -74,3 +74,4 @@ Thumbs.db
 .env
 .env.backup
 .env.local
+.app_key

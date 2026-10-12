@@ -1,5 +1,18 @@
 #!/bin/bash
-set -e
+set -euo pipefail
+
+for name in PGHOST PGPORT PGDATABASE PGUSER PGPASSWORD REPLIT_DEV_DOMAIN; do
+    if [ -z "${!name:-}" ]; then
+        echo "Missing required environment variable: $name" >&2
+        exit 1
+    fi
+done
+
+mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache/data storage/app/public bootstrap/cache
+
+if [ ! -f vendor/autoload.php ]; then
+    composer install --no-interaction --prefer-dist
+fi
 
 # Load or generate a persistent APP_KEY
 APP_KEY_FILE=".app_key"
@@ -75,10 +88,10 @@ php artisan config:clear || true
 php artisan cache:clear || true
 echo "✓ Cache cleared"
 
-# Install npm deps if missing
+# Install frontend deps if missing
 if [ ! -d "node_modules" ]; then
-    echo "Installing npm dependencies..."
-    npm install
+    echo "Installing frontend dependencies..."
+    npm ci --no-audit
 fi
 
 # Build frontend assets
@@ -86,18 +99,18 @@ npm run build
 echo "✓ Vite assets built"
 
 # Import database if tables don't exist
-TABLE_COUNT=$(PGPASSWORD=$PGPASSWORD psql -h $PGHOST -p $PGPORT -U $PGUSER -d $PGDATABASE -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';" 2>/dev/null | tr -d ' ')
+TABLE_COUNT=$(psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -At -v ON_ERROR_STOP=1 -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE';")
 echo "Existing tables: $TABLE_COUNT"
 
-if [ "${TABLE_COUNT:-0}" -lt "5" ] 2>/dev/null; then
+if [ "$TABLE_COUNT" -eq 0 ]; then
     echo "Importing database..."
     SQL_FILE="project_last_database_exported_1.sql"
     if [ -f "$SQL_FILE" ]; then
-        grep -v '\\restrict' "$SQL_FILE" | PGPASSWORD=$PGPASSWORD psql -h $PGHOST -p $PGPORT -U $PGUSER -d $PGDATABASE 2>&1 | grep -E "(ERROR|FATAL)" || true
+        sed '/^\\restrict /d; /^\\unrestrict /d' "$SQL_FILE" | psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -v ON_ERROR_STOP=1 --single-transaction
         echo "✓ Database imported from $SQL_FILE"
     else
         echo "No SQL file found, running migrations instead..."
-        php artisan migrate --force || true
+        php artisan migrate --force
         echo "✓ Migrations run"
     fi
 else
