@@ -7,10 +7,10 @@ $proxies = in_array($rawProxies, ['*', '**'], true)
 
 return [
     /*
-     * Comma-separated IP addresses or CIDR ranges for the only reverse proxies
-     * that may supply X-Forwarded-* headers. Keep this empty on direct local
-     * development. Production must use the published CIDRs of its CDN / load
-     * balancer and must block direct public access to the origin.
+     * Comma-separated IP addresses or CIDR ranges for reverse proxies that may
+     * supply X-Forwarded-* headers. Replit places one ingress proxy in front of
+     * this app, so REMOTE_ADDR trusts only that immediate peer by default.
+     * Other deployments should set their ingress CIDRs explicitly.
      */
-    'proxies' => $proxies === [] ? null : $proxies,
+    'proxies' => $proxies === [] ? 'REMOTE_ADDR' : $proxies,
 ];
