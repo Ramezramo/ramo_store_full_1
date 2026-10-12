@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Constants\AppConstants;
 use App\Http\Middleware\SetInitialLocaleFromCountry;
 use App\Services\FlashSaleService;
+use App\Services\TimelineLayoutService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -47,11 +48,13 @@ class WebController extends Controller
                 ->first();
         }
 
-        $sections  = $configRow ? (json_decode($configRow->value, true) ?? []) : [];
+        $sections = $configRow ? (json_decode($configRow->value, true) ?? []) : [];
+        $sections = TimelineLayoutService::ensureAllProductsLast($sections, (string) $lang);
         $flashSale = FlashSaleService::getActive($lang);
 
         // ── Pre-load product data for each section ────────────────
         $sectionProducts        = [];
+        $sectionProductPaginators = [];
         $sectionVendors         = [];
         $sectionTestimonials    = [];
         $sectionStats           = [];
@@ -66,6 +69,18 @@ class WebController extends Controller
 
         foreach ($sections as $i => $section) {
             $layout = $section['layout'] ?? '';
+
+            if ($layout === TimelineLayoutService::ALL_PRODUCTS_LAYOUT) {
+                $perPage = (int) ($section['productsPerPage'] ?? 16);
+                $page = $this->baseProductQuery()
+                    ->orderByDesc('p.id')
+                    ->paginate($perPage, ['*'], 'all_products_page')
+                    ->withQueryString()
+                    ->through(fn ($p) => $this->localizeTimelineProductText($this->parseProduct($p, $flashSale), $lang));
+
+                $sectionProductPaginators[$i] = $page;
+                $sectionProducts[$i] = $page->getCollection();
+            }
 
             if (in_array($layout, ['twoColumn', 'saleImages', 'seupermarketstars'])) {
                 $catId = $section['category'] ?? null;
@@ -316,7 +331,7 @@ class WebController extends Controller
         $brands = DB::table('brands')->orderBy('name')->get();
 
         return view('web.home', compact(
-            'sections', 'sectionProducts', 'sectionVariations',
+            'sections', 'sectionProducts', 'sectionProductPaginators', 'sectionVariations',
             'sectionVendors', 'allCategories', 'brands',
             'sectionTestimonials', 'sectionStats', 'sectionCoupons',
             'sectionTrending', 'sectionArrivals', 'sectionActivity', 'sectionReviewsCarousel',

@@ -579,6 +579,83 @@
       </div>
       @endif
 
+    {{-- ALL PRODUCTS — required final, paginated timeline section --}}
+    @elseif($layout === 'allProducts')
+      @php
+        $products = $sectionProducts[$si] ?? collect();
+        $paginator = $sectionProductPaginators[$si] ?? null;
+        $title = $sec['headerText'] ?? ($timelineRtl ? 'كل المنتجات' : 'All Products');
+        $cardOptions = ['idPrefix' => 'tl-all-products-'.$si];
+        $pageStart = $paginator ? max(1, $paginator->currentPage() - 2) : 1;
+        $pageEnd = $paginator ? min($paginator->lastPage(), $paginator->currentPage() + 2) : 1;
+        $pageLinks = ($paginator && $paginator->lastPage() > 1)
+          ? $paginator->getUrlRange($pageStart, $pageEnd)
+          : [];
+      @endphp
+      <style>
+        #tl-sec-{{ $si }} .all-products-grid { grid-template-columns:repeat(auto-fill,minmax(190px,1fr));margin-bottom:28px }
+        #tl-sec-{{ $si }} .all-products-pagination { display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:7px;margin:8px 0 44px }
+        #tl-sec-{{ $si }} .all-products-page { display:inline-flex;align-items:center;justify-content:center;min-width:38px;height:38px;padding:0 11px;border:1px solid #e8e5df;border-radius:9px;background:#fff;color:#242424;text-decoration:none;font-size:13px;font-weight:600 }
+        #tl-sec-{{ $si }} .all-products-page:hover { border-color:#e85d26;color:#e85d26 }
+        #tl-sec-{{ $si }} .all-products-page.is-current { border-color:#e85d26;background:#e85d26;color:#fff }
+        #tl-sec-{{ $si }} .all-products-page.is-disabled { color:#aaa;background:#f7f7f7;cursor:not-allowed }
+        #tl-sec-{{ $si }} .all-products-page-status { margin:0 5px;color:#777;font-size:13px }
+        @media(max-width:600px) {
+          #tl-sec-{{ $si }} .all-products-grid { grid-template-columns:repeat(2,minmax(0,1fr));gap:12px }
+        }
+      </style>
+      <div class="sec-head" style="align-items:center;margin-bottom:18px">
+        <h2 class="sec-title" style="margin:0">{{ $title }}</h2>
+        @if($paginator)
+          <span style="color:#777;font-size:13px">{{ number_format($paginator->total()) }} {{ $timelineRtl ? 'منتج' : 'products' }}</span>
+        @endif
+      </div>
+      @if($products->isNotEmpty())
+        <div class="product-grid all-products-grid" id="all-products-grid-{{ $si }}">
+          @foreach($products as $p)
+            @include('web.partials.product-card', [
+              'p' => $p,
+              'cardVariations' => $sectionVariations[$p->id] ?? [],
+              'cardOptions' => $cardOptions,
+            ])
+          @endforeach
+        </div>
+      @else
+        <div style="padding:28px 16px;margin-bottom:28px;text-align:center;color:#777;background:#faf9f7;border:1px solid #eee;border-radius:12px">
+          {{ $timelineRtl ? 'لا توجد منتجات حالياً' : 'No products are available right now.' }}
+        </div>
+      @endif
+      @if($paginator && $paginator->lastPage() > 1)
+        <nav class="all-products-pagination" aria-label="{{ $timelineRtl ? 'صفحات المنتجات' : 'Product pages' }}">
+          @if($paginator->onFirstPage())
+            <span class="all-products-page is-disabled" aria-disabled="true">{{ $timelineRtl ? 'السابق' : 'Previous' }}</span>
+          @else
+            <a class="all-products-page" href="{{ $paginator->previousPageUrl() }}" rel="prev">{{ $timelineRtl ? 'السابق' : 'Previous' }}</a>
+          @endif
+          @if($pageStart > 1)
+            <a class="all-products-page" href="{{ $paginator->url(1) }}">1</a>
+            @if($pageStart > 2)<span class="all-products-page-status" aria-hidden="true">…</span>@endif
+          @endif
+          @foreach($pageLinks as $pageNumber => $pageUrl)
+            @if($pageNumber === $paginator->currentPage())
+              <span class="all-products-page is-current" aria-current="page">{{ $pageNumber }}</span>
+            @else
+              <a class="all-products-page" href="{{ $pageUrl }}">{{ $pageNumber }}</a>
+            @endif
+          @endforeach
+          @if($pageEnd < $paginator->lastPage())
+            @if($pageEnd < $paginator->lastPage() - 1)<span class="all-products-page-status" aria-hidden="true">…</span>@endif
+            <a class="all-products-page" href="{{ $paginator->url($paginator->lastPage()) }}">{{ $paginator->lastPage() }}</a>
+          @endif
+          <span class="all-products-page-status">{{ $timelineRtl ? 'صفحة' : 'Page' }} {{ $paginator->currentPage() }} {{ $timelineRtl ? 'من' : 'of' }} {{ $paginator->lastPage() }}</span>
+          @if($paginator->hasMorePages())
+            <a class="all-products-page" href="{{ $paginator->nextPageUrl() }}" rel="next">{{ $timelineRtl ? 'التالي' : 'Next' }}</a>
+          @else
+            <span class="all-products-page is-disabled" aria-disabled="true">{{ $timelineRtl ? 'التالي' : 'Next' }}</span>
+          @endif
+        </nav>
+      @endif
+
     {{-- SALE IMAGES — Horizontal scroll of products --}}
     @elseif($layout === 'saleImages')
       @php

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\TimelineLayoutService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -20,7 +21,7 @@ class AdminTimelineController extends Controller
     public function index(Request $request)
     {
         $lang = $request->input('lang', 'en');
-        $sections = $this->getLayout($lang);
+        $sections = TimelineLayoutService::ensureAllProductsLast($this->getLayout($lang), (string) $lang);
 
         $categories = DB::table('categories2')->orderBy('name')->get(['id', 'name']);
         $langs = DB::table('app_configs')
@@ -64,6 +65,7 @@ class AdminTimelineController extends Controller
             ->pluck('lang')->filter()->unique()->values();
         if ($langs->isEmpty()) $langs = collect(['en']);
         if (!$langs->contains($lang)) $lang = $langs->first();
+        $sections = TimelineLayoutService::ensureAllProductsLast($sections, (string) $lang);
         return view('admin.live_preview', compact('sections', 'categories', 'lang', 'langs'));
     }
 
@@ -81,6 +83,12 @@ class AdminTimelineController extends Controller
         $decoded = json_decode($payload, true);
         if (!is_array($decoded)) {
             return response()->json(['error' => 'Invalid JSON array'], 422);
+        }
+
+        $decoded = TimelineLayoutService::ensureAllProductsLast($decoded, (string) $lang);
+        $payload = json_encode($decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if (! is_string($payload)) {
+            return response()->json(['error' => 'Timeline could not be encoded'], 422);
         }
 
         $exists = DB::table('app_configs')

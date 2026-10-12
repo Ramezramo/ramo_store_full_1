@@ -11,6 +11,9 @@
 .tl-section-list { display:flex;flex-direction:column;gap:10px;min-height:40px }
 .tl-card { background:var(--bg-card);border:1px solid rgba(255,255,255,.08);border-radius:10px;overflow:hidden;transition:box-shadow .15s }
 .tl-card.sortable-ghost { opacity:.4 }
+.tl-card-pinned { border-color:rgba(232,93,38,.45); }
+.tl-pinned-lock { font-size:16px;flex-shrink:0;padding:0 4px; }
+.tl-pinned-label { color:#f0a17f;background:rgba(232,93,38,.12);border:1px solid rgba(232,93,38,.25);border-radius:20px;padding:4px 9px;font-size:11px;font-weight:700;white-space:nowrap; }
 .tl-card-header { display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;user-select:none }
 .tl-drag-handle { color:var(--muted);cursor:grab;font-size:18px;flex-shrink:0;padding:0 4px }
 .tl-drag-handle:active { cursor:grabbing }
@@ -177,6 +180,7 @@
       <div class="wp-group-label">Products</div>
       <div class="wp-btn" onmouseenter="showPreview('trending')" onclick="addSection('trending')"><span class="wp-ico">🔥</span><span class="wp-name">Trending Now</span></div>
       <div class="wp-btn" onmouseenter="showPreview('arrivals')" onclick="addSection('arrivals')"><span class="wp-ico">✨</span><span class="wp-name">New Arrivals</span></div>
+      <div class="wp-btn" onmouseenter="showPreview('allProducts')" onclick="addSection('allProducts')"><span class="wp-ico">🛍️</span><span class="wp-name">All Products (Pinned)</span></div>
       <div class="wp-btn" onmouseenter="showPreview('brandLogos')" onclick="addSection('brandLogos')"><span class="wp-ico">🏷️</span><span class="wp-name">Brand Logos Row</span></div>
 
       <div class="wp-group-label">Full-width</div>
@@ -223,6 +227,24 @@ const COPY_SOURCE_LAYOUTS = @json($copyLayouts);
 // Initial sections from PHP
 let sections = @json($sections);
 
+function ensureAllProductsLast() {
+  const validSections = sections.filter(section => section && typeof section === 'object' && !Array.isArray(section));
+  const pinned = validSections.find(section => section.layout === 'allProducts') || {
+    layout: 'allProducts',
+    headerText: LANG === 'ar' ? 'كل المنتجات' : 'All Products',
+    productsPerPage: 16
+  };
+  const rest = validSections.filter(section => section.layout !== 'allProducts');
+  const title = typeof pinned.headerText === 'string' ? pinned.headerText.trim() : '';
+  if (!title || (LANG === 'ar' && title.toLowerCase() === 'all products')) {
+    pinned.headerText = LANG === 'ar' ? 'كل المنتجات' : 'All Products';
+  }
+  const perPage = Number.parseInt(pinned.productsPerPage, 10);
+  pinned.productsPerPage = Number.isFinite(perPage) ? Math.max(4, Math.min(48, perPage)) : 16;
+  delete pinned.hidden;
+  sections.splice(0, sections.length, ...rest, pinned);
+}
+
 function copyTimelineFromLanguage() {
   const sourceLang = document.getElementById('copySourceLang')?.value;
   const sourceSections = COPY_SOURCE_LAYOUTS[sourceLang];
@@ -259,6 +281,7 @@ const TYPE_META = {
   coupons:          { icon:'🎟️', label:'Coupons Strip',        color:'#f59e0b' },
   trending:         { icon:'🔥', label:'Trending Now',         color:'#ef4444' },
   arrivals:         { icon:'✨', label:'New Arrivals Ticker',  color:'#8b5cf6' },
+  allProducts:      { icon:'🛍️', label:'All Products · Pinned at Bottom', color:'#e85d26' },
   brandLogos:       { icon:'🏷️', label:'Brand Logos Row',      color:'#0ea5e9' },
   reviewsCarousel:  { icon:'🌟', label:'Reviews Carousel',     color:'#f59e0b' },
   activity:         { icon:'🔴', label:'Live Activity Banner', color:'#ef4444' },
@@ -292,19 +315,21 @@ function buildCard(sec, idx) {
   const meta = TYPE_META[type] || { icon:'❓', label: type, color:'#6b7280' };
   const name = sec.name || sec.headerText || meta.label;
   const hidden = sec.hidden === true;
+  const pinned = type === 'allProducts';
 
   return `
-  <div class="tl-card" data-idx="${idx}" style="${hidden ? 'opacity:.45;border-style:dashed' : ''}">
+  <div class="tl-card ${pinned ? 'tl-card-pinned' : ''}" data-idx="${idx}" style="${hidden ? 'opacity:.45;border-style:dashed' : ''}">
     <div class="tl-card-header" onclick="toggleBody(${idx})">
-      <span class="tl-drag-handle">⠿</span>
+      <span class="${pinned ? 'tl-pinned-lock' : 'tl-drag-handle'}">${pinned ? '🔒' : '⠿'}</span>
       <span style="font-size:18px">${hidden ? '🚫' : meta.icon}</span>
       <div style="flex:1;min-width:0">
         <div class="tl-section-name" style="${hidden ? 'text-decoration:line-through;color:var(--muted)' : ''}">${escHtml(name)}</div>
         <div class="tl-section-desc" style="color:${hidden ? 'var(--muted)' : meta.color}">${hidden ? 'Hidden — not shown on homepage' : meta.label}</div>
       </div>
       <div class="tl-card-actions" onclick="event.stopPropagation()">
+        ${pinned ? '<span class="tl-pinned-label">🔒 Always last</span>' : `
         <button class="btn btn-sm" style="background:${hidden ? 'rgba(34,197,94,.15)' : 'rgba(255,255,255,.07)'};border:1px solid ${hidden ? 'rgba(34,197,94,.3)' : 'rgba(255,255,255,.12)'};color:${hidden ? '#22c55e' : 'var(--muted)'}" onclick="toggleHidden(${idx})" title="${hidden ? 'Show widget' : 'Hide widget'}">${hidden ? '👁 Show' : '👁 Hide'}</button>
-        <button class="btn btn-danger btn-sm" onclick="removeSection(${idx})">Remove</button>
+        <button class="btn btn-danger btn-sm" onclick="removeSection(${idx})">Remove</button>`}
       </div>
       <span style="color:var(--muted);font-size:12px;margin-left:4px">▼</span>
     </div>
@@ -371,6 +396,18 @@ function buildEditor(sec, idx) {
       <div class="form-group"><label>Category</label><select onchange="updateField(${idx},'category',parseInt(this.value))"><option value="">All Products</option>${catOptions(sec.category)}</select></div>
       <div class="form-group"><label>Max Items</label><input type="number" value="${sec.maxItemsToShow||8}" min="1" max="20" onchange="updateField(${idx},'maxItemsToShow',parseInt(this.value))" style="width:100%"></div>
     </div>`;
+  }
+
+  else if (type === 'allProducts') {
+    const perPage = Number(sec.productsPerPage) || 16;
+    html = `
+    <div class="form-grid">
+      <div class="form-group"><label>Section Title</label><input type="text" value="${escAttr(sec.headerText||'All Products')}" maxlength="120" style="width:100%" onchange="updateField(${idx},'headerText',this.value)"></div>
+      <div class="form-group"><label>Products per page</label><select onchange="updateField(${idx},'productsPerPage',parseInt(this.value))">
+        ${[8,12,16,24,36,48].map(count => `<option value="${count}" ${perPage===count?'selected':''}>${count} products</option>`).join('')}
+      </select></div>
+    </div>
+    <div style="font-size:12px;color:var(--muted)">Shows every published and approved product, with page controls. This widget is required and locked below all other sections.</div>`;
   }
 
   else if (type === 'topVendors') {
@@ -872,6 +909,7 @@ function moveFlexBannerItem(idx, ii, direction) {
 
 // ── RENDER ALL ─────────────────────────────────────────────────────
 function renderAll() {
+  ensureAllProductsLast();
   const list = document.getElementById('sectionList');
   list.innerHTML = sections.map((s, i) => buildCard(s, i)).join('');
   initSortable();
@@ -882,6 +920,13 @@ function initSortable() {
     handle: '.tl-drag-handle',
     animation: 150,
     ghostClass: 'sortable-ghost',
+    filter: '.tl-card-pinned',
+    preventOnFilter: false,
+    onMove(evt) {
+      if (evt.dragged.classList.contains('tl-card-pinned')) return false;
+      if (evt.related?.classList.contains('tl-card-pinned') && evt.willInsertAfter) return false;
+      return true;
+    },
     onEnd(evt) {
       const moved = sections.splice(evt.oldIndex, 1)[0];
       sections.splice(evt.newIndex, 0, moved);
@@ -897,6 +942,7 @@ function toggleBody(idx) {
 }
 
 function removeSection(idx) {
+  if (sections[idx]?.layout === 'allProducts') return;
   if (!confirm('Remove this section?')) return;
   sections.splice(idx, 1);
   renderAll();
@@ -907,6 +953,7 @@ function updateField(idx, key, value) {
 }
 
 function toggleHidden(idx) {
+  if (sections[idx]?.layout === 'allProducts') return;
   sections[idx].hidden = !sections[idx].hidden;
   renderAll();
   setTimeout(() => { const b = document.getElementById('body-'+idx); if(b) b.classList.add('open'); }, 50);
@@ -1023,6 +1070,7 @@ const DEFAULTS = {
   newsletter:        { layout:'newsletter', headline:'Stay in the Loop', subtext:'Get the latest deals and new arrivals delivered to your inbox.', btnText:'Subscribe', placeholder:'Your email address', bgColor:'#f0ede8' },
   trending:          { layout:'trending', headerText:'Trending Now', count:10, algo:'sold7d', refreshInterval:24, showRankBadge:true, showSoldToday:false, autoScroll:false },
   arrivals:          { layout:'arrivals', headerText:'New Arrivals', count:8, speed:'normal', tag:'Just Arrived', pauseOnHover:true, showCategoryChip:false, loopInfinitely:true },
+  allProducts:       { layout:'allProducts', headerText:'All Products', productsPerPage:16 },
   brandLogos:        { layout:'brandLogos', headerText:'Shop by Brand', brands:'', size:'medium', clickableFilter:true, showNameBelowLogo:true, grayscaleUntilHover:false },
   reviewsCarousel:   { layout:'reviewsCarousel', headerText:'Customer Reviews', count:6, minStars:4, interval:4, showReviewerPhoto:false, showProductReviewed:true, allowManualNavigation:true },
   activity:          { layout:'activity', messageTemplate:'{n} people shopped with us recently', minCount:1, window:'24h', randomizeSlightly:true, showOnProductPage:false },
@@ -1064,6 +1112,7 @@ const WIDGET_INFO = {
   complete:         { title:'Complete the Look', desc:'A nudge widget encouraging customers to explore complementary products. Links to the shop with a configurable strategy.', tags:['Cross-sell','Strategy options','CTA button'] },
   trending:         { title:'Trending Now Strip', desc:'Horizontal scroll of your best-selling products sorted by total sales. Numbered rank badges (#1, #2…) highlight top sellers.', tags:['DB-powered','Rank badges','Sold count'] },
   arrivals:         { title:'New Arrivals Ticker', desc:'Auto-scrolling horizontal ticker of your newest products sorted by listing date. Pauses on hover.', tags:['Auto-scroll','DB-powered','Infinite loop'] },
+  allProducts:      { title:'All Products · Pinned at Bottom', desc:'Shows every published and approved product in a paginated grid. This required section always stays below every other timeline widget.', tags:['All products','Page navigation','Locked at bottom'] },
   brandLogos:       { title:'Brand Logos Row', desc:'Grid of branded logo chips. Enter brand names manually or leave blank to auto-load all brands from your database.', tags:['Clickable filter','Custom brands','Logo initials'] },
   announcement:     { title:'Announcement Bar', desc:'Full-width scrolling ticker above the page header. Perfect for free shipping thresholds, sales, or news. Dismissable.', tags:['Full-width','Scrolling text','Above header','Dismissable'] },
   flash:            { title:'Flash Sale Timer', desc:'Urgency countdown bar in fire-red at the top of the page. Shows hours, minutes and seconds counting down from a set duration.', tags:['Countdown timer','Full-width','Auto-dismiss option'] },
@@ -1078,6 +1127,8 @@ const WIDGET_MOCKUPS = {
   category: `<div style="display:flex;gap:10px;flex-wrap:wrap">${['👗 Clothes','👟 Shoes','👜 Bags','📱 Phones','💄 Beauty'].map(c=>`<div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div style="width:44px;height:44px;border-radius:50%;background:#f0ede8;border:2px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:18px">${c.split(' ')[0]}</div><span style="font-size:10px;color:#333;font-weight:600">${c.split(' ')[1]}</span></div>`).join('')}</div>`,
 
   twoColumn: `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">${Array(4).fill(0).map((_,i)=>`<div style="border-radius:7px;overflow:hidden;border:1px solid #eee"><div style="height:70px;background:${['#fdf0e8','#e8f0fd','#e8fdf0','#fde8fd'][i]};display:flex;align-items:center;justify-content:center;font-size:22px">🛍️</div><div style="padding:6px"><div style="height:7px;background:#eee;border-radius:4px;margin-bottom:4px"></div><div style="height:9px;background:#e85d26;border-radius:4px;width:60%"></div></div></div>`).join('')}</div>`,
+
+  allProducts: `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">${Array(3).fill(0).map((_,i)=>`<div style="border:1px solid #eee;border-radius:7px;overflow:hidden"><div style="height:58px;background:${['#fdf0e8','#e8f0fd','#e8fdf0'][i]};display:flex;align-items:center;justify-content:center;font-size:20px">🛍️</div><div style="padding:5px"><div style="height:6px;background:#eee;border-radius:4px;margin-bottom:4px"></div><div style="height:7px;background:#e85d26;border-radius:4px;width:55%"></div></div></div>`).join('')}</div><div style="display:flex;justify-content:center;gap:5px;margin-top:10px"><span style="padding:3px 8px;border-radius:5px;background:#e85d26;color:#fff;font-size:9px">1</span><span style="padding:3px 8px;border:1px solid #ddd;border-radius:5px;font-size:9px">2</span><span style="padding:3px 8px;border:1px solid #ddd;border-radius:5px;font-size:9px">›</span></div>`,
 
   saleImages: `<div style="display:flex;gap:8px;overflow:hidden">${Array(4).fill(0).map((_,i)=>`<div style="flex-shrink:0;width:100px;border-radius:8px;overflow:hidden;border:1px solid #eee"><div style="height:80px;background:${['#fdf0e8','#e8f0fd','#e8fdf0','#fde8f0'][i]};display:flex;align-items:center;justify-content:center;font-size:24px">🛍️</div><div style="padding:5px"><div style="height:6px;background:#eee;border-radius:3px;margin-bottom:3px"></div><div style="height:8px;background:#e85d26;border-radius:3px;width:55%"></div></div></div>`).join('')}<div style="flex-shrink:0;width:24px;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:18px">›</div></div>`,
 
@@ -1153,19 +1204,34 @@ function showPreview(type) {
 
   const bottom = document.getElementById('wpPreviewBottom');
   bottom.style.display = 'flex';
-  document.getElementById('wpAddBtn').onclick = () => addSection(type);
+  const addButton = document.getElementById('wpAddBtn');
+  addButton.textContent = type === 'allProducts' && sections.some(section => section.layout === 'allProducts')
+    ? 'Open Pinned Widget'
+    : 'Add This Widget';
+  addButton.onclick = () => addSection(type);
 }
 
 function addSection(type) {
-  sections.push({ ...(DEFAULTS[type] || { layout: type }) });
+  if (type === 'allProducts' && sections.some(section => section.layout === 'allProducts')) {
+    const pinnedIndex = sections.findIndex(section => section.layout === 'allProducts');
+    document.getElementById('typePicker').style.display = 'none';
+    currentPreviewType = null;
+    setTimeout(() => {
+      const body = document.getElementById('body-' + pinnedIndex);
+      if (body) body.classList.add('open');
+    }, 50);
+    return;
+  }
+
+  const addedSection = { ...(DEFAULTS[type] || { layout: type }) };
+  const pinnedIndex = sections.findIndex(section => section.layout === 'allProducts');
+  if (pinnedIndex >= 0) sections.splice(pinnedIndex, 0, addedSection);
+  else sections.push(addedSection);
+  const addedIndex = sections.indexOf(addedSection);
   document.getElementById('typePicker').style.display = 'none';
   currentPreviewType = null;
   renderAll();
-  // auto-open the last card
-  setTimeout(() => {
-    const bodies = document.querySelectorAll('.tl-body');
-    if (bodies.length) bodies[bodies.length-1].classList.add('open');
-  }, 50);
+  setTimeout(() => document.getElementById('body-' + addedIndex)?.classList.add('open'), 50);
 }
 
 document.getElementById('addSectionBtn').addEventListener('click', () => {
@@ -1177,6 +1243,7 @@ document.getElementById('addSectionBtn').addEventListener('click', () => {
 
 // ── SAVE ───────────────────────────────────────────────────────────
 async function saveTimeline() {
+  ensureAllProductsLast();
   const btn = document.getElementById('saveBtn');
   const status = document.getElementById('saveStatus');
   btn.disabled = true;
