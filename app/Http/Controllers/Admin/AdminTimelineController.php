@@ -25,11 +25,19 @@ class AdminTimelineController extends Controller
         $categories = DB::table('categories2')->orderBy('name')->get(['id', 'name']);
         $langs = DB::table('app_configs')
             ->where('config_key', 'horizon_layout')
+            ->whereNotNull('lang')
+            ->orderBy('lang')
             ->pluck('lang')
             ->filter()
+            ->unique()
             ->values();
 
-        return view('admin.timeline', compact('sections', 'lang', 'categories', 'langs'));
+        $copyLayouts = $langs
+            ->reject(fn ($availableLang) => strcasecmp((string) $availableLang, $lang) === 0)
+            ->mapWithKeys(fn ($sourceLang) => [$sourceLang => $this->getLayout($sourceLang)])
+            ->all();
+
+        return view('admin.timeline', compact('sections', 'lang', 'categories', 'langs', 'copyLayouts'));
     }
 
     public function searchProducts(Request $request)

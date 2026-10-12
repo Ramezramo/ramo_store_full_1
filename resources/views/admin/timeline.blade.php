@@ -34,6 +34,18 @@
 .tl-type-btn:hover,.tl-type-btn.wp-active { border-color:var(--accent);background:rgba(232,93,38,.12) }
 .tl-type-btn .icon { font-size:22px;margin-bottom:6px }
 .tl-type-btn .lbl { font-size:12px;font-weight:600;color:var(--muted) }
+.tl-copy-panel { display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;padding:14px 16px;margin-bottom:16px;background:var(--bg-card);border:1px solid rgba(232,93,38,.25);border-radius:10px }
+.tl-copy-title { font-size:13px;font-weight:700 }
+.tl-copy-hint { margin-top:4px;font-size:12px;color:var(--muted);line-height:1.5 }
+.tl-copy-controls { display:flex;align-items:center;flex-wrap:wrap;gap:8px }
+.tl-copy-controls label { font-size:12px;color:var(--muted) }
+.tl-copy-controls select { min-width:150px;padding:8px 10px;border:1px solid rgba(255,255,255,.16);border-radius:7px;background:var(--bg-sidebar);color:#fff;font-size:13px }
+.tl-copy-status { flex:1 0 100%;min-height:0;font-size:12px;color:var(--green) }
+@media(max-width:640px) {
+  .tl-copy-panel { align-items:stretch }
+  .tl-copy-controls { width:100% }
+  .tl-copy-controls select { flex:1;min-width:120px }
+}
 
 /* ── WIDGET PICKER PANEL ── */
 .wp-panel { display:flex;gap:0;margin-top:8px;background:var(--bg-card);border:1px solid rgba(255,255,255,.1);border-radius:12px;overflow:hidden;min-height:480px }
@@ -77,6 +89,32 @@
   </a>
   @endforeach
   <span style="margin-left:4px;font-size:12px;color:var(--muted);align-self:center">Editing <strong>{{ strtoupper($lang) }}</strong> layout</span>
+</div>
+
+@php($timelineLanguageNames = ['en' => 'English', 'ar' => 'Arabic', 'de' => 'German'])
+<div class="tl-copy-panel">
+  <div>
+    <div class="tl-copy-title">Copy timeline from another language</div>
+    <div class="tl-copy-hint">Copies into the {{ strtoupper($lang) }} draft only. Review it, then save to apply the changes.</div>
+  </div>
+  @if(count($copyLayouts))
+  <div class="tl-copy-controls">
+    <label for="copySourceLang">Copy from</label>
+    <select id="copySourceLang">
+      @foreach(array_keys($copyLayouts) as $sourceLang)
+      <option value="{{ $sourceLang }}">
+        {{ $timelineLanguageNames[strtolower($sourceLang)] ?? strtoupper($sourceLang) }} ({{ strtoupper($sourceLang) }})
+      </option>
+      @endforeach
+    </select>
+    <button type="button" class="btn btn-ghost btn-sm" onclick="copyTimelineFromLanguage()">
+      Copy into {{ strtoupper($lang) }}
+    </button>
+  </div>
+  @else
+  <span class="tl-copy-hint">No other language timeline is configured yet.</span>
+  @endif
+  <div id="copyStatus" class="tl-copy-status" role="status" aria-live="polite"></div>
 </div>
 
 <div class="card" style="margin-bottom:16px">
@@ -180,9 +218,32 @@ const CATEGORIES = @json($categories);
 const LANG = '{{ $lang }}';
 const SAVE_URL = '{{ route('admin.timeline.save') }}';
 const CSRF = '{{ csrf_token() }}';
+const COPY_SOURCE_LAYOUTS = @json($copyLayouts);
 
 // Initial sections from PHP
 let sections = @json($sections);
+
+function copyTimelineFromLanguage() {
+  const sourceLang = document.getElementById('copySourceLang')?.value;
+  const sourceSections = COPY_SOURCE_LAYOUTS[sourceLang];
+  const status = document.getElementById('copyStatus');
+
+  if (!Array.isArray(sourceSections)) {
+    status.textContent = 'That language does not have a valid timeline configuration.';
+    status.style.color = 'var(--red)';
+    return;
+  }
+
+  const confirmed = window.confirm(
+    `Replace the current ${LANG.toUpperCase()} draft with the ${sourceLang.toUpperCase()} timeline? Unsaved edits in this draft will be replaced.`
+  );
+  if (!confirmed) return;
+
+  sections = JSON.parse(JSON.stringify(sourceSections));
+  renderAll();
+  status.textContent = `Copied ${sourceLang.toUpperCase()} into the ${LANG.toUpperCase()} draft. Click Save Timeline to apply it.`;
+  status.style.color = 'var(--green)';
+}
 
 // ── TYPE META ──────────────────────────────────────────────────────
 const TYPE_META = {
