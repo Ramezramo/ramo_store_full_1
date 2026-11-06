@@ -147,6 +147,8 @@ class ProductController extends Controller
             // Option B: Per-size pricing → regular_price is NOT required
             'variations.*.price_map' => 'required_without:variations.*.regular_price|nullable|array',
             'variations.*.price_map.*' => 'numeric|min:0.01|max:999999',
+            'variations.*.model_number_map' => 'nullable|array',
+            'variations.*.model_number_map.*' => 'nullable|string|max:120',
 
         ], [
             'whatsapp_number.regex' => 'Please enter a valid Egyptian WhatsApp number (e.g. 01012345678)',
@@ -421,6 +423,7 @@ class ProductController extends Controller
                         ProductVariation::create([
                             'product_id' => $product->id,
                             'attributes' => ['Color' => $color, 'Size' => $size],
+                            'model_number' => trim((string) ($var['model_number_map'][$size] ?? '')) ?: null,
                             'regular_price' => $regularPriceForSize,      // e.g. 399.99 or 409.99
                             'sale_price' => $salePriceForSize,       // e.g. 266.79 or 273.46
                             'main_variation' => $mainVar,
@@ -435,6 +438,7 @@ class ProductController extends Controller
             }
 
             DB::commit();
+            app(\App\Services\ShopPriceRangeService::class)->refreshGlobal();
 
             return $this->successResponse(
                 data: $product->load(['categories', 'variations']),
@@ -640,6 +644,8 @@ class ProductController extends Controller
             'variations.*.sale_price' => 'nullable|numeric|min:0.01|max:999999|lte:variations.*.regular_price', // ✅️
             'variations.*.price_map' => 'nullable|array', // ✅️
             'variations.*.price_map.*' => 'numeric|min:0.01|max:999999', // ✅️
+            'variations.*.model_number_map' => 'nullable|array',
+            'variations.*.model_number_map.*' => 'nullable|string|max:120',
 
             // Variation images (optional on update)
             'variationImages' => 'nullable|array', // ✅️
@@ -990,6 +996,7 @@ class ProductController extends Controller
                         ProductVariation::create([
                             'product_id' => $product->id,
                             'attributes' => ['Color' => $color, 'Size' => $size],
+                            'model_number' => trim((string) ($var['model_number_map'][$size] ?? '')) ?: null,
                             'regular_price' => round((float) $sizeRegularPrice, 2),
                             'sale_price' => round((float) $finalSalePrice, 2),
                             'price' => round((float) $finalDisplayPrice, 2), // the price shown to customer
@@ -1001,6 +1008,7 @@ class ProductController extends Controller
                 }
             }
             DB::commit();
+            app(\App\Services\ShopPriceRangeService::class)->refreshGlobal();
 
             return $this->successResponse(
                 data: $product->load(['categories', 'variations']),
@@ -1160,6 +1168,7 @@ class ProductController extends Controller
 
             // If you're using SoftDeletes, it will soft-delete. Otherwise, hard delete.
             $product->delete();
+            app(\App\Services\ShopPriceRangeService::class)->refreshGlobal();
 
             // Log the action (very useful for auditing)
             Log::info('Product deleted successfully', [
@@ -1292,6 +1301,7 @@ class ProductController extends Controller
             $updatedVariation = $variation->fresh();
 
             DB::commit();
+            app(\App\Services\ShopPriceRangeService::class)->refreshGlobal();
 
             // Delete old images only if new ones were uploaded
             if ($request->hasFile('variationImages')) {

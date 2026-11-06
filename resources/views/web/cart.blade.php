@@ -322,9 +322,10 @@
                       {{ $cartRtl ? 'المنتج غير متوفر' : 'Out of stock' }}
                     </div>
                   @endif
-                  @if(!empty($item['attrs']) || !empty($item['sku']))
+                  @if(!empty($item['attrs']) || !empty($item['sku']) || !empty($item['model_number']))
                     <div class="cart-item-variants" aria-label="{{ $cartRtl ? 'الاختيارات المحددة' : 'Selected options' }}">
                       @if(!empty($item['sku']))<span class="cart-item-variant"><strong>{{ $cartRtl ? 'كود المنتج' : 'SKU' }}</strong> {{ $item['sku'] }}</span>@endif
+                      @if(!empty($item['model_number']))<span class="cart-item-variant"><strong>{{ $cartRtl ? 'رقم الموديل' : 'Model number' }}</strong> {{ $item['model_number'] }}</span>@endif
                       @foreach($item['attrs'] ?? [] as $k => $v)
                         @php
                           $attributeLabel = $cartRtl ? (['color' => 'اللون', 'size' => 'المقاس'][strtolower($k)] ?? $k) : ucfirst($k);

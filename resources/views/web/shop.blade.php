@@ -34,8 +34,14 @@
 ══════════════════════════════════════════════ */
 #infinite-product-grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)) !important;
-  gap: 15px !important;
+  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)) !important;
+  gap: 18px !important;
+  align-items: stretch !important;
+}
+@media (max-width: 1100px) {
+  #infinite-product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(205px, 100%), 1fr)) !important;
+  }
 }
 @media (max-width: 600px) {
   #infinite-product-grid {
@@ -280,20 +286,6 @@
   #infinite-product-grid.shop-mobile-layout-grid .pc-coupon-bar { display: none !important; }
 }
 
-/* Keep variation controls visibly separated from the product text inside each card. */
-#infinite-product-grid .product-card-body > .pc-swatches,
-#infinite-product-grid .product-card-body > .pc-sizes {
-  margin-top: 9px !important;
-  margin-bottom: 0 !important;
-}
-#infinite-product-grid .pc-selected {
-  min-height: 15px !important;
-  font-size: 11px !important;
-  line-height: 1.35 !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-}
 #infinite-product-grid .pc-swatch,
 #infinite-product-grid .pc-size {
   -webkit-tap-highlight-color: transparent;
@@ -442,17 +434,28 @@
 .active-cat-strip a:hover { opacity: 1; }
 
 /* ── Price range widget ────────────────────────────────────── */
-.shop-price-form { padding: 2px 0 4px; }
-.shop-price-range-labels { display:flex; justify-content:space-between; gap:8px; color:var(--c-mid); font-size:10px; margin-bottom:8px; }
-.shop-price-sliders { position:relative; height:25px; margin:0 2px 7px; }
-.shop-price-sliders input[type="range"] { position:absolute; inset:4px 0 0; width:100%; height:6px; margin:0; appearance:none; -webkit-appearance:none; background:var(--c-light); border-radius:10px; pointer-events:none; }
-.shop-price-sliders input[type="range"]::-webkit-slider-thumb { appearance:none; -webkit-appearance:none; width:19px; height:19px; border-radius:50%; background:var(--c-orange); border:3px solid #fff; box-shadow:0 0 0 1px var(--c-orange); cursor:pointer; pointer-events:auto; }
-.shop-price-sliders input[type="range"]::-moz-range-thumb { width:14px; height:14px; border-radius:50%; background:var(--c-orange); border:3px solid #fff; box-shadow:0 0 0 1px var(--c-orange); cursor:pointer; pointer-events:auto; }
-.shop-price-inputs { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-.shop-price-inputs label { display:flex; flex-direction:column; gap:3px; color:var(--c-mid); font-size:10px; }
-.shop-price-inputs input { width:100%; padding:7px 8px; border:1.5px solid var(--c-light); border-radius:8px; background:var(--c-bg); color:var(--c-dark); font:inherit; font-size:12px; outline:0; }
-.shop-price-inputs input:focus { border-color:var(--c-orange); }
-.shop-price-submit { width:100%; margin-top:10px; padding:8px 10px; border:0; border-radius:8px; background:var(--c-dark); color:#fff; font:inherit; font-size:12px; font-weight:700; cursor:pointer; }
+.shop-page #widget-price .widget-header{padding:8px 2px;background:transparent}
+.shop-page #widget-price .widget-header:hover{padding-left:6px;padding-right:6px;background:#f7f7f7}
+.shop-price-form{padding:2px 2px 6px}
+.shop-price-range-labels{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 2px 8px;color:#686868;font-size:11px;font-weight:650;font-variant-numeric:tabular-nums}
+.shop-price-sliders{position:relative;height:28px;margin:0 9px 8px}
+.shop-price-track{position:absolute;top:11px;left:0;right:0;height:5px;border-radius:99px;background:#e9e9e9}
+.shop-price-track-fill{position:absolute;top:0;height:100%;left:var(--range-start,0%);right:calc(100% - var(--range-end,100%));border-radius:99px;background:var(--c-orange)}
+.shop-price-sliders input[type="range"]{position:absolute;inset:0;width:100%;height:28px;margin:0;appearance:none;-webkit-appearance:none;background:transparent;pointer-events:none}
+.shop-price-sliders input[type="range"]::-webkit-slider-runnable-track{height:28px;background:transparent}
+.shop-price-sliders input[type="range"]::-moz-range-track{height:28px;background:transparent}
+.shop-price-sliders input[type="range"]::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:18px;height:18px;margin-top:5px;border-radius:50%;background:#fff;border:2px solid var(--c-orange);box-shadow:0 1px 4px rgba(0,0,0,.16);cursor:grab;pointer-events:auto}
+.shop-price-sliders input[type="range"]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid var(--c-orange);box-shadow:0 1px 4px rgba(0,0,0,.16);cursor:grab;pointer-events:auto}
+.shop-price-sliders #shop-min-range{z-index:2}
+.shop-price-sliders #shop-max-range{z-index:1}
+.shop-price-inputs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.shop-price-inputs label{display:flex;min-width:0;flex-direction:column;gap:5px;color:#6d6d6d;font-size:10px;font-weight:700}
+.shop-price-input-shell{display:flex;align-items:center;gap:6px;min-width:0;padding:0 10px;border:1px solid #dedede;border-radius:10px;background:#fff;transition:border-color .15s,box-shadow .15s}
+.shop-price-input-shell:focus-within{border-color:var(--c-orange);box-shadow:0 0 0 3px rgba(238,91,34,.1)}
+.shop-price-input-shell input{width:100%;min-width:0;padding:9px 0;border:0;background:transparent;color:#191919;font:inherit;font-size:13px;font-weight:650;outline:0}
+.shop-price-input-shell span{flex:0 0 auto;color:#888;font-size:9px;font-weight:750}
+.shop-price-context{margin:9px 2px 0;color:#8a8a8a;font-size:10px;line-height:1.4}
+.shop-price-submit{display:none}
 .shop-price-submit:active,.shop-filter-apply:active { transform:scale(.98); }
 
 /* ── Mobile filter alert / bottom sheet ─────────────────────── */
@@ -469,6 +472,56 @@
   margin-bottom: 16px; cursor: pointer; transition: all .15s;
 }
 .shop-filter-toggle:hover { background: var(--c-tag); }
+
+/* Airbnb-inspired product filters: a compact chip rail and a centered modal. */
+.shop-layout{grid-template-columns:minmax(0,1fr)!important;gap:0!important}
+.shop-filter-toggle{display:inline-flex;align-items:center;gap:8px;margin:0;padding:10px 16px;border:1px solid #d7d7d7;border-radius:999px;background:#fff;font-size:13px;font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.shop-filter-toggle:hover{background:#f7f7f7;border-color:#999}
+.shop-filter-alert{display:none;position:fixed;inset:0;z-index:10050}
+.shop-filter-alert.open{display:block}
+.shop-filter-backdrop{display:block;position:absolute;inset:0;width:100%;height:100%;padding:0;border:0;background:rgba(0,0,0,.38);backdrop-filter:blur(2px)}
+.shop-filter-panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(680px,calc(100vw - 32px));max-height:min(82vh,760px);display:flex;flex-direction:column;overflow:hidden;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:24px;box-shadow:0 24px 80px rgba(0,0,0,.24)}
+.shop-filter-panel-header{display:flex;align-items:center;justify-content:space-between;gap:14px;flex:0 0 auto;padding:18px 24px;border-bottom:1px solid #eee}
+.shop-filter-kicker{display:block;color:var(--c-orange);font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+.shop-filter-panel-header h2{margin:2px 0 0;font-size:20px;line-height:1.25}
+.shop-filter-close{display:flex;align-items:center;justify-content:center;flex:0 0 auto;width:38px;height:38px;border:1px solid #e5e5e5;border-radius:50%;background:#fff;color:#222}
+.shop-filter-panel-scroll{display:block;min-height:0;flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;padding:8px 24px 18px}
+.shop-filter-panel-scroll .sidebar{position:static;width:100%;max-height:none;overflow:visible;padding:0;border:0;border-radius:0;background:#fff;box-shadow:none}
+.shop-filter-panel-scroll .widget-header{min-height:48px;box-sizing:border-box}
+.shop-filter-panel-scroll .widget-divider{margin:14px 0}
+.shop-legacy-category-filters{display:none}
+.shop-category-search{display:flex;align-items:center;gap:9px;margin:8px 0 16px;padding:0 14px;height:44px;border:1px solid #ddd;border-radius:12px;color:#777}
+.shop-category-search:focus-within{border-color:#222;box-shadow:0 0 0 1px #222}
+.shop-category-search input{width:100%;border:0;outline:0;background:transparent;font:inherit;font-size:13px;color:#222}
+.shop-category-bubbles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr));align-items:start;gap:10px 14px}
+.shop-category-family{display:flex;flex-direction:column;gap:8px}
+.shop-category-parent-row{display:flex;align-items:center;gap:8px}
+.shop-category-expand{display:flex;align-items:center;justify-content:center;flex:0 0 36px;width:36px;height:36px;border:1px solid #e1e1e1;border-radius:50%;background:#fff;color:#444;transition:transform .16s,background .16s}
+.shop-category-expand:hover{background:#f6f6f6;border-color:#aaa}
+.shop-category-family.expanded .shop-category-expand{transform:rotate(180deg)}
+.shop-category-family:not(.expanded):not(.search-expanded) .shop-child-bubbles{display:none}
+.shop-category-family[hidden],.shop-category-bubble[hidden]{display:none!important}
+.shop-category-bubble{display:inline-flex;align-items:center;justify-content:flex-start;gap:9px;min-height:40px;width:max-content;max-width:100%;padding:0 14px;border:1px solid #ddd;border-radius:999px;background:#fff;color:#292929;font-size:12px;font-weight:650;cursor:pointer;transition:background .15s,border-color .15s,box-shadow .15s}
+.shop-category-bubble:hover{border-color:#777}
+.shop-category-bubble.selected{border-color:#222;background:#222;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.shop-category-bubble input{position:absolute;opacity:0;pointer-events:none}
+.shop-category-bubble small{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#f1f1f1;color:#555;font-size:10px;font-weight:700}
+.shop-category-bubble.selected small{background:rgba(255,255,255,.18);color:#fff}
+.shop-child-bubbles{display:flex;flex-wrap:wrap;gap:8px;padding:0 0 0 20px}
+.shop-category-bubble--child{min-height:34px;padding:0 12px;border-color:#e6e6e6;background:#fafafa;font-size:11px;font-weight:550}
+.shop-child-bubbles{display:flex;flex-wrap:wrap;gap:7px;padding:0 0 0 8px}
+@media(max-width:430px){.shop-category-bubbles{grid-template-columns:minmax(0,1fr);gap:8px}}
+.search-match-child .shop-category-bubble[data-bubble-label]{opacity:.7}
+.shop-category-chips{margin-top:14px}
+.shop-filter-panel-actions{display:flex;align-items:center;gap:18px;flex:0 0 auto;padding:14px 24px;border-top:1px solid #eee;background:#fff}
+.shop-filter-apply{flex:0 0 auto;min-height:46px;padding:0 24px;border:0;border-radius:10px;background:#171717;color:#fff;font:inherit;font-size:13px;font-weight:800;cursor:pointer}
+.shop-filter-clear{margin-left:auto;color:#555;font-size:13px;font-weight:700;text-decoration:underline}
+.shop-category-chips{display:flex;align-items:center;flex-wrap:wrap;gap:9px;overflow:visible;margin:0 0 20px;padding:3px 1px 8px}
+.shop-category-chip{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-height:38px;padding:0 16px;border:1px solid #dedede;border-radius:999px;background:#fff;color:#333;font-size:12px;font-weight:600;white-space:nowrap;transition:border-color .15s,background .15s}
+.shop-category-chip:hover{border-color:#222;background:#fafafa}
+.shop-category-chip.active{border-color:#222;background:#222;color:#fff}
+.shop-toolbar{margin-bottom:16px}
+body.shop-filter-open{overflow:hidden}
 
 @media (max-width: 860px) {
   .shop-layout { grid-template-columns: minmax(0, 1fr); }
@@ -798,9 +851,10 @@
 
   <div class="shop-mobile-search">
     <form method="GET" action="{{ route('shop') }}">
-      @foreach(request()->except('search', 'page') as $key => $value)
+      @foreach(request()->except(['search', 'page', 'category', 'categories']) as $key => $value)
         <input type="hidden" name="{{ $key }}" value="{{ $value }}">
       @endforeach
+      @foreach($selectedCategoryIds ?? [] as $selectedCategoryId)<input type="hidden" name="categories[]" value="{{ $selectedCategoryId }}">@endforeach
       <input type="search" name="search" value="{{ request('search') }}" placeholder="{{ $shopRtl ? $shopCopy['search'] : 'Search products…' }}" aria-label="{{ $shopRtl ? $shopCopy['search'] : 'Search products' }}">
       <button type="submit" aria-label="{{ $shopRtl ? 'دوّر' : 'Search' }}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="17" height="17"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16" y2="16"/></svg>
@@ -812,6 +866,26 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
     {{ $shopRtl ? $shopCopy['filters'] : 'Filters & Categories' }}
   </button>
+
+  <nav class="shop-category-chips" aria-label="{{ $shopRtl ? 'تصفّح التصنيفات' : 'Browse product categories' }}">
+    @php $allShopCategories = $parentCats->merge($childCats->flatten())->keyBy('id'); @endphp
+    <a class="shop-category-chip {{ empty($selectedCategoryIds) ? 'active' : '' }}" href="{{ route('shop', array_filter(request()->except(['category','categories','page']))) }}">{{ $shopRtl ? $shopCopy['allProducts'] : 'All products' }}</a>
+    @foreach($selectedCategoryIds ?? [] as $selectedChipId)
+      @php $selectedChipCategory = $allShopCategories->get($selectedChipId); $remainingSelected = array_values(array_filter($selectedCategoryIds, fn($id) => (int)$id !== (int)$selectedChipId)); @endphp
+      @if($selectedChipCategory)
+        <a class="shop-category-chip active" href="{{ route('shop', array_merge(request()->except(['category','categories','page']), $remainingSelected ? ['categories' => $remainingSelected] : [])) }}">{{ \App\Support\StorefrontLabels::category($selectedChipCategory->name, $shopRtl) }} <span aria-hidden="true">×</span></a>
+      @endif
+    @endforeach
+    @php $remainingChipSlots = max(0, 5 - count($selectedCategoryIds ?? [])); @endphp
+    @foreach($parentCats->take(10) as $chipCategory)
+      @if(!in_array((int)$chipCategory->id, $selectedCategoryIds ?? [], true))
+        @if($remainingChipSlots > 0)
+          @php $nextSelected = array_values(array_unique(array_merge($selectedCategoryIds ?? [], [(int)$chipCategory->id]))); $remainingChipSlots--; @endphp
+          <a class="shop-category-chip" href="{{ route('shop', array_merge(request()->except(['category','categories','page']), ['categories' => $nextSelected])) }}">{{ \App\Support\StorefrontLabels::category($chipCategory->name, $shopRtl) }}</a>
+        @endif
+      @endif
+    @endforeach
+  </nav>
 
   <div class="shop-layout">
 
@@ -831,6 +905,53 @@
         <div class="shop-filter-panel-scroll">
     <aside class="sidebar" id="shop-sidebar">
 
+      {{-- ── Widget: Price Range ──────────────────────────────── --}}
+      @php
+        $shopPriceMinBound = max(0, (float) ($priceRange->min_price ?? 0));
+        $shopPriceMaxBound = max($shopPriceMinBound, (float) ($priceRange->max_price ?? $shopPriceMinBound));
+        $shopPriceMinValue = $minPrice ?? $shopPriceMinBound;
+        $shopPriceMaxValue = $maxPrice ?? $shopPriceMaxBound;
+      @endphp
+      <div class="widget" id="widget-price">
+        <div class="widget-header" onclick="toggleWidget('widget-price')" title="{{ $shopRtl ? 'اضغط عشان تقفل القسم' : 'Click to collapse' }}">
+          <span class="widget-header-left">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
+            {{ $shopRtl ? 'نطاق السعر' : 'Price range' }}
+          </span>
+          <span class="widget-fold-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="9" height="9"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </div>
+        <div class="widget-body">
+          <form method="GET" action="{{ route('shop') }}" id="shop-price-form" class="shop-price-form" onsubmit="event.preventDefault(); applyShopPriceFilter();">
+            @foreach(request()->except(['min_price', 'max_price', 'page', 'category', 'categories']) as $k => $v)
+              <input type="hidden" name="{{ $k }}" value="{{ $v }}">
+            @endforeach
+            @foreach($selectedCategoryIds ?? [] as $selectedCategoryId)<input type="hidden" name="categories[]" value="{{ $selectedCategoryId }}">@endforeach
+            <div class="shop-price-range-labels">
+              <span>{{ number_format($shopPriceMinBound, 2) }} EGP</span>
+              <span>{{ number_format($shopPriceMaxBound, 2) }} EGP</span>
+            </div>
+            <div class="shop-price-sliders" aria-label="{{ $shopRtl ? 'اختار أقل وأعلى سعر' : 'Choose minimum and maximum price' }}">
+              <div class="shop-price-track" aria-hidden="true"><span class="shop-price-track-fill"></span></div>
+              <input type="range" id="shop-min-range" min="{{ $shopPriceMinBound }}" max="{{ $shopPriceMaxBound }}" step="0.01" value="{{ $shopPriceMinValue }}" aria-label="{{ $shopRtl ? 'أقل سعر' : 'Minimum price' }}">
+              <input type="range" id="shop-max-range" min="{{ $shopPriceMinBound }}" max="{{ $shopPriceMaxBound }}" step="0.01" value="{{ $shopPriceMaxValue }}" aria-label="{{ $shopRtl ? 'أعلى سعر' : 'Maximum price' }}">
+            </div>
+            <div class="shop-price-inputs">
+              <label>
+                <span>{{ $shopRtl ? 'من' : 'From' }}</span>
+                <div class="shop-price-input-shell"><input type="number" id="shop-min-price" name="min_price" min="{{ $shopPriceMinBound }}" max="{{ $shopPriceMaxBound }}" step="0.01" value="{{ $minPrice !== null ? $minPrice : '' }}" placeholder="{{ number_format($shopPriceMinBound, 2) }}"><span>EGP</span></div>
+              </label>
+              <label>
+                <span>{{ $shopRtl ? 'لحد' : 'To' }}</span>
+                <div class="shop-price-input-shell"><input type="number" id="shop-max-price" name="max_price" min="{{ $shopPriceMinBound }}" max="{{ $shopPriceMaxBound }}" step="0.01" value="{{ $maxPrice !== null ? $maxPrice : '' }}" placeholder="{{ number_format($shopPriceMaxBound, 2) }}"><span>EGP</span></div>
+              </label>
+            </div>
+            <p class="shop-price-context">{{ !empty($selectedCategoryIds) ? ($shopRtl ? 'نطاق السعر متاح ضمن التصنيفات المختارة' : 'Price range for the selected categories') : ($shopRtl ? 'نطاق السعر لكل المنتجات المتاحة' : 'Price range across available products') }}</p>
+          </form>
+        </div>
+      </div>
+
+      <hr class="widget-divider">
+
       {{-- ── Widget: Categories ───────────────────────────────── --}}
       <div class="widget" id="widget-categories">
 
@@ -845,6 +966,35 @@
         </div>
 
         <div class="widget-body">
+          <label class="shop-category-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="shop-category-search" type="search" placeholder="{{ $shopRtl ? 'دوّر على قسم…' : 'Search categories…' }}" oninput="filterCategoryBubbles(this.value)"></label>
+          <div class="shop-category-bubbles" id="shop-category-bubbles">
+            @foreach($parentCats as $parent)
+              @php $parentSelected = in_array((int)$parent->id, $selectedCategoryIds ?? [], true); @endphp
+              <div class="shop-category-family {{ $parentSelected ? 'expanded' : '' }}" data-category-search="{{ strtolower($parent->name) }}">
+                <div class="shop-category-parent-row">
+                  <label class="shop-category-bubble {{ $parentSelected ? 'selected' : '' }}" data-bubble-label>
+                    <input type="checkbox" class="shop-category-check" value="{{ $parent->id }}" {{ $parentSelected ? 'checked' : '' }} onchange="toggleCategoryFamily(this)">
+                    <span>{{ \App\Support\StorefrontLabels::category($parent->name, $shopRtl) }}</span>
+                  </label>
+                  @if(isset($childCats[$parent->id]) && $childCats[$parent->id]->isNotEmpty())
+                    <button type="button" class="shop-category-expand" aria-expanded="{{ $parentSelected ? 'true' : 'false' }}" aria-label="{{ $shopRtl ? 'عرض التصنيفات الفرعية' : 'Show subcategories' }}" onclick="toggleCategoryChildren(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><polyline points="6 9 12 15 18 9"/></svg></button>
+                  @endif
+                </div>
+                @if(isset($childCats[$parent->id]) && $childCats[$parent->id]->isNotEmpty())
+                  <div class="shop-child-bubbles">
+                    @foreach($childCats[$parent->id] as $child)
+                      @php $childSelected = in_array((int)$child->id, $selectedCategoryIds ?? [], true); @endphp
+                      <label class="shop-category-bubble shop-category-bubble--child {{ $childSelected ? 'selected' : '' }}" data-child-label data-category-search="{{ strtolower($parent->name.' '.$child->name) }}">
+                        <input type="checkbox" class="shop-category-check" value="{{ $child->id }}" data-parent="{{ $parent->id }}" {{ $childSelected ? 'checked' : '' }} onchange="syncCategoryBubble(this)">
+                        <span>{{ \App\Support\StorefrontLabels::category($child->name, $shopRtl) }}</span>
+                      </label>
+                    @endforeach
+                  </div>
+                @endif
+              </div>
+            @endforeach
+          </div>
+          <div class="shop-legacy-category-filters">
           {{-- All Products --}}
           <a href="{{ route('shop', array_filter(request()->except('category','page'))) }}"
              class="cat-all-pill {{ !$activeCategoryId ? 'active' : '' }}">
@@ -913,6 +1063,7 @@
               @endif
             </div>
           @endforeach
+          </div>
         </div>{{-- /widget-body --}}
       </div>{{-- /widget-categories --}}
 
@@ -951,51 +1102,6 @@
 
       <hr class="widget-divider">
 
-      {{-- ── Widget: Price Range ──────────────────────────────── --}}
-      @php
-        $shopPriceMinBound = max(0, (float) ($priceRange->min_price ?? 0));
-        $shopPriceMaxBound = max($shopPriceMinBound, (float) ($priceRange->max_price ?? $shopPriceMinBound));
-        $shopPriceMinValue = $minPrice ?? $shopPriceMinBound;
-        $shopPriceMaxValue = $maxPrice ?? $shopPriceMaxBound;
-      @endphp
-      <div class="widget" id="widget-price">
-        <div class="widget-header" onclick="toggleWidget('widget-price')" title="{{ $shopRtl ? 'اضغط عشان تقفل القسم' : 'Click to collapse' }}">
-          <span class="widget-header-left">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
-            {{ $shopRtl ? 'نطاق السعر' : 'Price range' }}
-          </span>
-          <span class="widget-fold-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="9" height="9"><polyline points="6 9 12 15 18 9"/></svg></span>
-        </div>
-        <div class="widget-body">
-          <form method="GET" action="{{ route('shop') }}" id="shop-price-form" class="shop-price-form">
-            @foreach(request()->except(['min_price', 'max_price', 'page']) as $k => $v)
-              <input type="hidden" name="{{ $k }}" value="{{ $v }}">
-            @endforeach
-            <div class="shop-price-range-labels">
-              <span>{{ number_format($shopPriceMinBound, 2) }} EGP</span>
-              <span>{{ number_format($shopPriceMaxBound, 2) }} EGP</span>
-            </div>
-            <div class="shop-price-sliders" aria-label="{{ $shopRtl ? 'اختار أقل وأعلى سعر' : 'Choose minimum and maximum price' }}">
-              <input type="range" id="shop-min-range" min="{{ $shopPriceMinBound }}" max="{{ $shopPriceMaxBound }}" step="0.01" value="{{ $shopPriceMinValue }}" aria-label="{{ $shopRtl ? 'أقل سعر' : 'Minimum price' }}">
-              <input type="range" id="shop-max-range" min="{{ $shopPriceMinBound }}" max="{{ $shopPriceMaxBound }}" step="0.01" value="{{ $shopPriceMaxValue }}" aria-label="{{ $shopRtl ? 'أعلى سعر' : 'Maximum price' }}">
-            </div>
-            <div class="shop-price-inputs">
-              <label>
-                <span>{{ $shopRtl ? 'من' : 'From' }}</span>
-                <input type="number" id="shop-min-price" name="min_price" min="{{ $shopPriceMinBound }}" max="{{ $shopPriceMaxBound }}" step="0.01" value="{{ $minPrice !== null ? $minPrice : '' }}" placeholder="{{ number_format($shopPriceMinBound, 2) }}">
-              </label>
-              <label>
-                <span>{{ $shopRtl ? 'لحد' : 'To' }}</span>
-                <input type="number" id="shop-max-price" name="max_price" min="{{ $shopPriceMinBound }}" max="{{ $shopPriceMaxBound }}" step="0.01" value="{{ $maxPrice !== null ? $maxPrice : '' }}" placeholder="{{ number_format($shopPriceMaxBound, 2) }}">
-              </label>
-            </div>
-            <button type="submit" class="shop-price-submit">{{ $shopRtl ? 'طبّق نطاق السعر' : 'Apply price range' }}</button>
-          </form>
-        </div>
-      </div>
-
-      <hr class="widget-divider">
-
       {{-- ── Widget: Sort By ──────────────────────────────────── --}}
       <div class="widget" id="widget-sort">
 
@@ -1011,9 +1117,10 @@
 
         <div class="widget-body">
           <form method="GET" action="{{ route('shop') }}" id="sort-form" style="padding-bottom:4px">
-            @foreach(request()->except('sort','page') as $k => $v)
+            @foreach(request()->except(['sort','page','category','categories']) as $k => $v)
               <input type="hidden" name="{{ $k }}" value="{{ $v }}">
             @endforeach
+            @foreach($selectedCategoryIds ?? [] as $selectedCategoryId)<input type="hidden" name="categories[]" value="{{ $selectedCategoryId }}">@endforeach
             <select class="sort-select" name="sort" onchange="document.getElementById('sort-form').submit()">
               <option value=""          {{ !request('sort') ? 'selected' : '' }}>{{ $shopRtl ? $shopCopy['latest'] : 'Latest' }}</option>
               <option value="price_asc" {{ request('sort')==='price_asc'  ? 'selected' : '' }}>{{ $shopRtl ? $shopCopy['lowHigh'] : 'Price: Low → High' }}</option>
@@ -1079,7 +1186,7 @@
         </div>
       </div>
 
-      <div class="product-grid shop-mobile-layout-{{ $shopMobileLayout }}" id="infinite-product-grid" aria-live="polite">
+      <div class="product-grid product-grid--showcase shop-mobile-layout-{{ $shopMobileLayout }}" id="infinite-product-grid" aria-live="polite">
         <div id="product-loading-state" style="grid-column:1/-1;text-align:center;padding:48px 20px;color:var(--c-mid)">
           <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px">
             <svg style="animation:spin .8s linear infinite" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
@@ -1197,6 +1304,44 @@ function closeShopFilter() {
   shopFilterPreviousFocus = null;
 }
 
+function syncCategoryBubble(input) {
+  const label = input.closest('.shop-category-bubble');
+  if (label) label.classList.toggle('selected', input.checked);
+}
+function toggleCategoryFamily(input) {
+  syncCategoryBubble(input);
+  const family = input.closest('.shop-category-family');
+  family?.querySelectorAll('.shop-child-bubbles input').forEach(child => {
+    child.checked = input.checked;
+    syncCategoryBubble(child);
+  });
+}
+function filterCategoryBubbles(value) {
+  const query = String(value || '').trim().toLocaleLowerCase();
+  document.querySelectorAll('.shop-category-family').forEach(family => {
+    const parentMatch = (family.dataset.categorySearch || '').toLocaleLowerCase().includes(query);
+    const childLabels = [...family.querySelectorAll('[data-child-label]')];
+    let childMatch = false;
+    childLabels.forEach(label => {
+      const match = !query || (label.dataset.categorySearch || '').toLocaleLowerCase().includes(query);
+      label.hidden = !parentMatch && !match;
+      childMatch ||= match;
+    });
+    family.hidden = Boolean(query) && !parentMatch && !childMatch;
+    if (query && childMatch) family.classList.add('expanded');
+    else if (!query) family.classList.remove('search-expanded');
+    family.classList.toggle('search-expanded', Boolean(query && childMatch));
+    if (query && !parentMatch && childMatch) family.classList.add('search-match-child');
+    else family.classList.remove('search-match-child');
+  });
+}
+function toggleCategoryChildren(button) {
+  const family = button.closest('.shop-category-family');
+  if (!family) return;
+  const expanded = family.classList.toggle('expanded');
+  button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+}
+
 document.addEventListener('keydown', function (event) {
   if (event.key === 'Escape' && document.getElementById('shop-filter-alert')?.classList.contains('open')) {
     event.preventDefault();
@@ -1214,6 +1359,15 @@ document.addEventListener('keydown', function (event) {
   if (!minRange || !maxRange || !minInput || !maxInput || !form) return;
 
   const formatPrice = value => Number(value).toFixed(2).replace(/\.00$/, '');
+  const syncRangeTrack = function () {
+    const low = Number(minRange.min);
+    const high = Number(maxRange.max);
+    const span = high - low || 1;
+    const start = Math.max(0, Math.min(100, ((Number(minRange.value) - low) / span) * 100));
+    const end = Math.max(start, Math.min(100, ((Number(maxRange.value) - low) / span) * 100));
+    form.querySelector('.shop-price-sliders')?.style.setProperty('--range-start', start + '%');
+    form.querySelector('.shop-price-sliders')?.style.setProperty('--range-end', end + '%');
+  };
   const syncFromSliders = function () {
     let min = Number(minRange.value);
     let max = Number(maxRange.value);
@@ -1225,6 +1379,7 @@ document.addEventListener('keydown', function (event) {
     }
     minInput.value = formatPrice(min);
     maxInput.value = formatPrice(max);
+    syncRangeTrack();
   };
   const syncFromInputs = function () {
     let min = minInput.value === '' ? null : Number(minInput.value);
@@ -1233,20 +1388,28 @@ document.addEventListener('keydown', function (event) {
     if (max !== null && Number.isFinite(max)) max = Math.min(Number(maxRange.max), Math.max(Number(maxRange.min), max));
     if (min !== null) minRange.value = min;
     if (max !== null) maxRange.value = max;
+    if (min !== null) minInput.value = formatPrice(min);
+    if (max !== null) maxInput.value = formatPrice(max);
     if (min !== null && max !== null && min > max) {
       max = min;
       maxRange.value = max;
       maxInput.value = formatPrice(max);
     }
+    syncRangeTrack();
   };
   minRange.addEventListener('input', syncFromSliders);
   maxRange.addEventListener('input', syncFromSliders);
   minInput.addEventListener('change', syncFromInputs);
   maxInput.addEventListener('change', syncFromInputs);
+  syncRangeTrack();
   window.applyShopPriceFilter = function () {
     if (minInput.value !== '' || maxInput.value !== '') syncFromInputs();
-    if (form.requestSubmit) form.requestSubmit();
-    else form.submit();
+    const url = new URL(form.action, window.location.origin);
+    new FormData(form).forEach((value, key) => { if (value !== '') url.searchParams.set(key, value); });
+    url.searchParams.delete('category');
+    url.searchParams.delete('categories[]');
+    document.querySelectorAll('#shop-category-bubbles .shop-category-check:checked').forEach(input => url.searchParams.append('categories[]', input.value));
+    window.location.assign(url.toString());
   };
 })();
 

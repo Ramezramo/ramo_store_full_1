@@ -1355,6 +1355,7 @@ function addColorRow(colorData) {
   const isFirst = document.getElementById('color-rows').children.length === 0;
   const sizes        = colorData.sizes || [];
   const priceMap        = colorData.price_map || {};
+  const modelNumberMap  = colorData.model_number_map || {};
   const salePriceMap    = colorData.sale_price_map || {};
   const stockMap        = colorData.stock || {};
   const stockStatusMap  = colorData.stock_status_map || {};
@@ -1549,6 +1550,7 @@ function refreshSizePricingTable(idx) {
     <table class="price-map-table">
       <thead><tr>
         <th>Size</th>
+        <th>Model Number</th>
         <th>Regular Price (EGP) <span style="color:var(--red)">*</span></th>
         <th>Sale Price (EGP) <span style="font-weight:400;font-size:10px;color:var(--mid)">optional — overrides % discount</span></th>
         <th>Stock Qty</th>
@@ -1563,6 +1565,9 @@ function refreshSizePricingTable(idx) {
     const st = status || 'publish';
     html += `<tr>
       <td><strong>${escHtml(size)}</strong></td>
+      <td><input type="text" name="colors[${idx}][model_number_map][${escHtml(size)}]"
+                 value="${escHtml(String(modelNumberMap[size] || ''))}" maxlength="120" placeholder="Optional"
+                 class="vs-input" style="border:none;padding:2px 4px;width:130px"></td>
       <td><input type="number" name="colors[${idx}][price_map][${escHtml(size)}]"
                  value="${escHtml(String(price || ''))}" step="0.01" min="0" placeholder="0.00"
                  data-role="regular" data-size="${escHtml(size)}"

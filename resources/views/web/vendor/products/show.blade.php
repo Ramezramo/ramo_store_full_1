@@ -470,24 +470,25 @@
     $color = $attrs['Color'] ?? 'Default';
     $size  = $attrs['Size'] ?? (implode(' / ', array_filter($attrs, fn($k) => strtolower($k) !== 'color', ARRAY_FILTER_USE_KEY)) ?: 'Default');
     if (!isset($colorGroups[$color])) $colorGroups[$color] = [];
-    $colorGroups[$color][] = ['size' => $size, 'price' => $dv->price, 'reg' => $dv->regular_price, 'sale' => $dv->sale_price, 'stock' => $dv->stock_quantity, 'main' => $dv->main_variation, 'stock_status' => $dv->stock_status ?? 'instock', 'status' => $dv->status ?? 'publish'];
+    $colorGroups[$color][] = ['size' => $size, 'price' => $dv->price, 'reg' => $dv->regular_price, 'sale' => $dv->sale_price, 'stock' => $dv->stock_quantity, 'main' => $dv->main_variation, 'stock_status' => $dv->stock_status ?? 'instock', 'status' => $dv->status ?? 'publish', 'model_number' => $dv->model_number ?? ''];
   }
   $editColorRows4 = [];
   foreach ($colorGroups as $colorName => $rows) {
     $sizes = array_column($rows, 'size');
-    $priceMap = []; $stockMap = []; $salePriceMap4 = []; $stockStatusMap4 = []; $statusMap4 = [];
+    $priceMap = []; $stockMap = []; $salePriceMap4 = []; $stockStatusMap4 = []; $statusMap4 = []; $modelNumberMap4 = [];
     foreach ($rows as $r) {
       $priceMap[$r['size']]        = $r['reg'];
       $stockMap[$r['size']]        = $r['stock'];
       $stockStatusMap4[$r['size']] = $r['stock_status'];
       $statusMap4[$r['size']]      = $r['status'];
+      $modelNumberMap4[$r['size']] = $r['model_number'];
       $dvSale4 = (float)($r['sale'] ?? 0);
       $dvReg4  = (float)($r['reg']  ?? 0);
       if ($dvSale4 > 0 && $dvReg4 > 0 && $dvSale4 < $dvReg4) {
         $salePriceMap4[$r['size']] = $dvSale4;
       }
     }
-    $editColorRows4[] = ['name' => $colorName, 'sizes' => $sizes, 'price_map' => $priceMap, 'sale_price_map' => $salePriceMap4, 'stock' => $stockMap, 'stock_status_map' => $stockStatusMap4, 'status_map' => $statusMap4, 'sale_price' => '', 'images' => []];
+    $editColorRows4[] = ['name' => $colorName, 'sizes' => $sizes, 'price_map' => $priceMap, 'sale_price_map' => $salePriceMap4, 'stock' => $stockMap, 'stock_status_map' => $stockStatusMap4, 'status_map' => $statusMap4, 'model_number_map' => $modelNumberMap4, 'sale_price' => '', 'images' => []];
   }
 @endphp
 <div class="dc" id="dc-variations">
@@ -514,7 +515,7 @@
         <table class="var-table">
           <thead>
             <tr>
-              <th>Color</th><th>Size / Option</th>
+              <th>Color</th><th>Size / Option</th><th>Model Number</th>
               <th>Regular</th><th>Sale / Price</th><th>Stock</th>
               <th>Stock Status</th><th>Availability</th>
             </tr>
@@ -534,6 +535,7 @@
                   @if($dv->main_variation)<span class="main-chip">main</span>@endif
                 </td>
                 <td>{{ $dvSize }}</td>
+                <td>{{ $dv->model_number ?: '—' }}</td>
                 <td>{{ number_format($dv->regular_price,2) }}</td>
                 <td style="{{ $dv->sale_price && $dv->sale_price < $dv->regular_price ? 'color:var(--red);font-weight:600' : '' }}">
                   {{ $dv->sale_price ? number_format($dv->sale_price,2) : number_format($dv->price,2) }}
@@ -1390,6 +1392,7 @@ function addColorRowShow(colorData) {
   const stockMap       = colorData?.stock || {};
   const stockStatusMap = colorData?.stock_status_map || {};
   const statusMap      = colorData?.status_map || {};
+  const modelNumberMap = colorData?.model_number_map || {};
   const salePriceVal   = colorData?.sale_price || '';
   const isFirst      = document.getElementById('color-rows-show').children.length === 0;
 
@@ -1431,7 +1434,7 @@ function addColorRowShow(colorData) {
     <div id="csprice-${idx}"></div>`;
 
   document.getElementById('color-rows-show').appendChild(row);
-  sizes.forEach(s => addSizeShow(idx, s, priceMap[s] || '', salePriceMap[s] || '', stockMap[s] || 0, stockStatusMap[s] || 'instock', statusMap[s] || 'publish'));
+  sizes.forEach(s => addSizeShow(idx, s, priceMap[s] || '', salePriceMap[s] || '', stockMap[s] || 0, stockStatusMap[s] || 'instock', statusMap[s] || 'publish', modelNumberMap[s] || ''));
 }
 
 function handleSizeInputShow(e, idx) {
@@ -1442,11 +1445,11 @@ function handleSizeInputShow(e, idx) {
   }
 }
 const showSizeData = {};
-function addSizeShow(idx, size, price, salePrice, stock, stockStatus, status) {
+function addSizeShow(idx, size, price, salePrice, stock, stockStatus, status, modelNumber) {
   if (!size) return;
   if (!showSizeData[idx]) showSizeData[idx] = {};
   if (showSizeData[idx][size]) return;
-  showSizeData[idx][size] = { price: price||'', salePrice: salePrice||'', stock: stock||0, stockStatus: stockStatus||'instock', status: status||'publish' };
+  showSizeData[idx][size] = { price: price||'', salePrice: salePrice||'', stock: stock||0, stockStatus: stockStatus||'instock', status: status||'publish', modelNumber: modelNumber||'' };
 
   const wrap  = document.getElementById('csstags-' + idx);
   const input = document.getElementById('cssize-' + idx);
@@ -1480,6 +1483,7 @@ function refreshPriceTableShow(idx) {
     <table class="price-table">
       <thead><tr>
         <th>Size</th>
+        <th>Model Number</th>
         <th>Regular Price (EGP)</th>
         <th>Sale Price (EGP) <span style="font-weight:400;font-size:10px;color:var(--mid)">optional</span></th>
         <th>Stock Qty</th>
@@ -1494,11 +1498,13 @@ function refreshPriceTableShow(idx) {
     const ss = d.stockStatus || 'instock';
     const st = d.status || 'publish';
     const safeSize = showEscHtml(s);
+    const safeModelNumber = showEscHtml(d.modelNumber || '');
     const safePrice = showEscHtml(d.price || '');
     const safeSalePrice = showEscHtml(d.salePrice || '');
     const safeStock = showEscHtml(d.stock || 0);
     html += `<tr>
       <td><strong>${safeSize}</strong><input type="hidden" name="colors[${idx}][sizes][]" value="${safeSize}"></td>
+      <td><input type="text" name="colors[${idx}][model_number_map][${safeSize}]" value="${safeModelNumber}" maxlength="120" placeholder="Optional" class="price-table" style="width:130px"></td>
       <td><input type="number" name="colors[${idx}][price_map][${safeSize}]"
                  value="${safePrice}" step="0.01" min="0" placeholder="0.00"
                  data-role="regular" data-size="${safeSize}"

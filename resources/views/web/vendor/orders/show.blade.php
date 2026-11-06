@@ -163,6 +163,7 @@
             </div>
             <div class="item-info">
               <div class="item-name">{{ $item['name'] }}</div>
+              @if(!empty($item['model_number']))<div class="item-attr">Model number: {{ $item['model_number'] }}</div>@endif
               @if(!empty($item['attributes']))
                 <div class="item-attr">
                   @foreach($item['attributes'] as $k => $v)

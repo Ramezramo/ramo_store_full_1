@@ -155,7 +155,7 @@ class WebController extends Controller
                         DB::raw('MIN(pv.sale_price) as sale_price'),
                         DB::raw('MAX(p.discount_percentage) as discount_percentage')
                     )
-                    ->addSelect(DB::raw("(SELECT string_agg(pc_sub.category_id::text, ',') FROM product_category pc_sub WHERE pc_sub.product_id = p.id) as product_cat_ids"))
+                    ->addSelect($this->productCategoryIdsSelect())
                     ->groupBy('p.id','p.name','p.slug','p.images','p.total_sales','p.translations',
                               'p.description','p.stock_quantity','p.unit','p.vendor_id')
                     ->orderBy($orderCol === 'avg_rating' ? DB::raw('MIN(pv.price)') : DB::raw('p.total_sales'), 'desc')
@@ -177,7 +177,7 @@ class WebController extends Controller
                         DB::raw('MIN(pv.sale_price) as sale_price'),
                         DB::raw('MAX(p.discount_percentage) as discount_percentage')
                     )
-                    ->addSelect(DB::raw("(SELECT string_agg(pc_sub.category_id::text, ',') FROM product_category pc_sub WHERE pc_sub.product_id = p.id) as product_cat_ids"))
+                    ->addSelect($this->productCategoryIdsSelect())
                     ->groupBy('p.id','p.name','p.slug','p.images','p.date_created','p.translations',
                               'p.description','p.stock_quantity','p.unit','p.vendor_id')
                     ->orderBy('p.date_created', 'desc')
@@ -398,29 +398,6 @@ class WebController extends Controller
         }
 
         $priceRange = null;
-        if (! $isProductRequest) {
-            // Keep the range aligned with the Search page: only published,
-            // approved products with a positive regular price are sellable.
-            $priceRange = DB::table('product_variations as pv')
-                ->join('products_data as p', 'p.id', '=', 'pv.product_id')
-                ->where('p.status', 'publish')
-                ->where('p.acceptance_status', 'approved')
-                ->where('pv.regular_price', '>', 0)
-                ->selectRaw('MIN(CAST(pv.price AS DECIMAL)) as min_price, MAX(CAST(pv.price AS DECIMAL)) as max_price')
-                ->first();
-
-            $rangeMin = max(0, (float) ($priceRange->min_price ?? 0));
-            $rangeMax = max($rangeMin, (float) ($priceRange->max_price ?? $rangeMin));
-            if ($minPrice !== null) {
-                $minPrice = min($rangeMax, max(0, $minPrice));
-            }
-            if ($maxPrice !== null) {
-                $maxPrice = min($rangeMax, max(0, $maxPrice));
-            }
-            if ($minPrice !== null && $maxPrice !== null && $minPrice > $maxPrice) {
-                [$minPrice, $maxPrice] = [$maxPrice, $minPrice];
-            }
-        }
 
         $query = $this->baseProductQuery();
 
@@ -430,26 +407,99 @@ class WebController extends Controller
         $parentCats = $allCats->filter(fn($c) => $c->parent == 0 || $c->parent === null)->values();
         $childCats  = $allCats->filter(fn($c) => $c->parent > 0)->groupBy('parent');
 
-        // Product counts per category
+        // Direct counts for child-category badges. Parent badges below are
+        // computed over the same parent + child ID set used by the filter.
         $catCounts = DB::table('product_category as pc')
             ->join('products_data as p', 'p.id', '=', 'pc.product_id')
             ->where('p.status', 'publish')
             ->where('p.acceptance_status', 'approved')
-            ->select('pc.category_id', DB::raw('count(*) as cnt'))
+            ->select('pc.category_id', DB::raw('count(distinct pc.product_id) as cnt'))
             ->groupBy('pc.category_id')
             ->pluck('cnt', 'category_id');
 
+        foreach ($parentCats as $parentCategory) {
+            $categoryIds = [(int) $parentCategory->id];
+            foreach ($childCats[$parentCategory->id] ?? [] as $childCategory) {
+                $categoryIds[] = (int) $childCategory->id;
+            }
+            $catCounts[$parentCategory->id] = DB::table('product_category as pc')
+                ->join('products_data as p', 'p.id', '=', 'pc.product_id')
+                ->whereIn('pc.category_id', $categoryIds)
+                ->where('p.status', 'publish')
+                ->where('p.acceptance_status', 'approved')
+                ->distinct('pc.product_id')
+                ->count('pc.product_id');
+        }
+
         // Collect all child IDs for a given category ID (including itself)
-        $activeCategoryId = $request->filled('category') ? (int) $request->category : null;
+        $requestedCategories = $request->input('categories', []);
+        if (! is_array($requestedCategories)) {
+            $requestedCategories = [$requestedCategories];
+        }
+        if ($request->filled('category')) {
+            $requestedCategories[] = $request->input('category');
+        }
+        $selectedCategoryIds = collect($requestedCategories)
+            ->map(fn ($id) => filter_var($id, FILTER_VALIDATE_INT))
+            ->filter(fn ($id) => $id !== false && $id > 0)
+            ->unique()->values()->all();
+        $activeCategoryId = $selectedCategoryIds[0] ?? null;
         $filterCategoryIds = [];
 
-        if ($activeCategoryId) {
-            $filterCategoryIds[] = $activeCategoryId;
-            // If this is a parent, also include its children
-            if (isset($childCats[$activeCategoryId])) {
-                foreach ($childCats[$activeCategoryId] as $child) {
-                    $filterCategoryIds[] = $child->id;
+        foreach ($selectedCategoryIds as $selectedCategoryId) {
+            $filterCategoryIds[] = $selectedCategoryId;
+            if (isset($childCats[$selectedCategoryId])) {
+                foreach ($childCats[$selectedCategoryId] as $child) {
+                    $filterCategoryIds[] = (int) $child->id;
                 }
+            }
+        }
+        $filterCategoryIds = array_values(array_unique($filterCategoryIds));
+
+        if (! $isProductRequest) {
+            // Each category's range is precomputed when the catalog changes.
+            // For multi-select, combine cached ranges for the same category
+            // union used by the product query; no variation aggregation runs here.
+            if ($filterCategoryIds) {
+                $categoryScopes = array_map(fn ($id) => 'category:'.(int) $id, $filterCategoryIds);
+                $categoryRanges = DB::table('storefront_price_ranges')
+                    ->whereIn('scope', $categoryScopes)
+                    ->get(['min_price', 'max_price']);
+
+                if ($categoryRanges->isNotEmpty()) {
+                    $priceRange = (object) [
+                        'min_price' => $categoryRanges->min('min_price'),
+                        'max_price' => $categoryRanges->max('max_price'),
+                    ];
+                }
+            }
+
+            $priceRange ??= DB::table('storefront_price_ranges')
+                ->where('scope', 'global')
+                ->first();
+
+            $rangeMin = max(0, (float) ($priceRange->min_price ?? 0));
+            $rangeMax = max($rangeMin, (float) ($priceRange->max_price ?? $rangeMin));
+
+            // A price selection from the previous category can sit entirely
+            // outside the newly selected category's available range. Clearing
+            // that stale interval restores the new category's full slider range
+            // instead of pinning both handles to one endpoint.
+            $rangeHasNoOverlap = ($minPrice !== null && $minPrice > $rangeMax)
+                || ($maxPrice !== null && $maxPrice < $rangeMin);
+            if ($rangeHasNoOverlap) {
+                $minPrice = null;
+                $maxPrice = null;
+            }
+
+            if ($minPrice !== null) {
+                $minPrice = min($rangeMax, max($rangeMin, $minPrice));
+            }
+            if ($maxPrice !== null) {
+                $maxPrice = min($rangeMax, max($rangeMin, $maxPrice));
+            }
+            if ($minPrice !== null && $maxPrice !== null && $minPrice > $maxPrice) {
+                [$minPrice, $maxPrice] = [$maxPrice, $minPrice];
             }
         }
 
@@ -573,7 +623,7 @@ class WebController extends Controller
         return response()
             ->view('web.shop', compact(
                 'products', 'parentCats', 'childCats',
-                'activeCategoryId', 'activeParentId', 'catCounts',
+                'activeCategoryId', 'selectedCategoryIds', 'activeParentId', 'catCounts',
                 'activeBrandName', 'allBrands', 'shopMobileLayout',
                 'priceRange', 'minPrice', 'maxPrice'
             ))
@@ -769,7 +819,7 @@ class WebController extends Controller
                 DB::raw('MIN(pv.regular_price) as regular_price'),
                 DB::raw('MIN(pv.sale_price) as sale_price'),
                 DB::raw('MAX(p.discount_percentage) as discount_percentage'),
-                DB::raw("(SELECT string_agg(pc_sub.category_id::text, ',') FROM product_category pc_sub WHERE pc_sub.product_id = p.id) as product_cat_ids")
+                $this->productCategoryIdsSelect()
             )
             ->join('product_variations as pv', 'pv.product_id', '=', 'p.id')
             ->where('p.status', 'publish')
@@ -780,6 +830,15 @@ class WebController extends Controller
                 'p.minimum_order_qty', 'p.max_orders_per_person', 'p.sold_individually',
                 'p.vendor_id'
             );
+    }
+
+    private function productCategoryIdsSelect()
+    {
+        $aggregate = DB::connection()->getDriverName() === 'sqlite'
+            ? "group_concat(pc_sub.category_id, ',')"
+            : "string_agg(pc_sub.category_id::text, ',')";
+
+        return DB::raw("(SELECT {$aggregate} FROM product_category pc_sub WHERE pc_sub.product_id = p.id) as product_cat_ids");
     }
 
     /**

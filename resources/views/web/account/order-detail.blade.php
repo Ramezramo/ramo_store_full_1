@@ -289,6 +289,7 @@
           <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f3f4f6">
             <div style="flex:1">
               <a href="{{ route('product', $item['product_id']) }}" style="font-weight:600;font-size:13px;color:#111827;text-decoration:none;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px">{{ $item['name'] }}</a>
+              @if(!empty($item['model_number']))<div style="font-size:11px;color:#6b7280;margin-top:2px">{{ $isAr ? 'رقم الموديل' : 'Model number' }}: <strong>{{ $item['model_number'] }}</strong></div>@endif
               @if(!empty($item['attributes']))
                 <div style="font-size:11px;color:#6b7280;margin-top:2px">
                   @foreach($item['attributes'] as $k => $v){{ $k }}: {{ $v }} @endforeach
@@ -370,6 +371,7 @@
     <div class="order-item-row">
       <div class="order-item-info">
         <a href="{{ route('product', $item['product_id']) }}" class="order-item-name">{{ $item['name'] }}</a>
+        @if(!empty($item['model_number']))<span class="order-item-attr">{{ $isAr ? 'رقم الموديل' : 'Model number' }}: {{ $item['model_number'] }}</span>@endif
         @if(!empty($item['attributes']))
           <span class="order-item-attr">@foreach($item['attributes'] as $k => $v){{ $k }}: {{ $v }} @endforeach</span>
         @endif

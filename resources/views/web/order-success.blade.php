@@ -161,6 +161,7 @@
           @endif
           <div class="order-item-info">
             <span class="order-item-name">{{ $item['name'] }}</span>
+            @if(!empty($item['model_number']))<span class="order-item-attr">{{ $isAr ? 'رقم الموديل' : 'Model number' }}: {{ $item['model_number'] }}</span>@endif
             @if(!empty($item['attributes']))<span class="order-item-attr">@foreach($item['attributes'] as $k=>$v) {{ $k }}: {{ $v }} @endforeach</span>@endif
           </div>
           <span class="order-item-qty">× {{ $item['quantity'] }}</span>
@@ -181,6 +182,7 @@
           @endif
           <div class="order-item-info">
             <span class="order-item-name">{{ $item['name'] }}</span>
+            @if(!empty($item['model_number']))<span class="order-item-attr">{{ $isAr ? 'رقم الموديل' : 'Model number' }}: {{ $item['model_number'] }}</span>@endif
             @if(!empty($item['attributes']))<span class="order-item-attr">@foreach($item['attributes'] as $k=>$v) {{ $k }}: {{ $v }} @endforeach</span>@endif
           </div>
           <span class="order-item-qty">× {{ $item['quantity'] }}</span>

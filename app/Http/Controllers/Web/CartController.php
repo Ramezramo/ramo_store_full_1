@@ -149,13 +149,13 @@ class CartController extends Controller
 
         $variations = DB::table('product_variations')
             ->whereIn('id', $variationIds)
-            ->get(['id', 'product_id', 'regular_price', 'price', 'stock_quantity', 'stock_status', 'status'])
+            ->get(['id', 'product_id', 'regular_price', 'price', 'stock_quantity', 'stock_status', 'status', 'model_number'])
             ->keyBy('id');
 
         $mainVariations = DB::table('product_variations')
             ->whereIn('product_id', $productIds)
             ->where('main_variation', true)
-            ->get(['id', 'product_id', 'regular_price', 'price', 'stock_quantity', 'stock_status', 'status'])
+            ->get(['id', 'product_id', 'regular_price', 'price', 'stock_quantity', 'stock_status', 'status', 'model_number'])
             ->keyBy('product_id');
 
         foreach ($cart as $rowId => &$item) {
@@ -185,6 +185,7 @@ class CartController extends Controller
             }
             $item['regular_price'] = $reg > $eff ? $reg : null;
             $item['sku']           = $product->sku ?? null;
+            $item['model_number']  = $varRow->model_number ?? null;
 
             $liveStock = max(0, (int) ($varRow->stock_quantity ?? 0));
             [$minimumQuantity, $maximumQuantity] = $this->quantityBounds($product, $liveStock);
@@ -227,7 +228,7 @@ class CartController extends Controller
         }
 
         return $query->first([
-            'id', 'attributes', 'regular_price', 'sale_price', 'price',
+            'id', 'attributes', 'regular_price', 'sale_price', 'price', 'model_number',
             'stock_quantity', 'stock_status', 'status',
         ]);
     }
@@ -281,6 +282,7 @@ class CartController extends Controller
                 'variation_id' => $resolvedVariationId,
                 'name' => $this->localizedCartProductName($product),
                 'sku' => $product->sku ?? null,
+                'model_number' => $variation->model_number ?? null,
                 'price' => $price,
                 'regular_price' => $regularPrice > $price ? $regularPrice : null,
                 'qty' => $newQuantity,

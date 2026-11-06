@@ -438,14 +438,14 @@
     $color = $attrs['Color'] ?? 'Default';
     $size  = $attrs['Size'] ?? (implode(' / ', array_filter($attrs, fn($k) => strtolower($k) !== 'color', ARRAY_FILTER_USE_KEY)) ?: 'Default');
     if (!isset($colorGroups2[$color])) $colorGroups2[$color] = [];
-    $colorGroups2[$color][] = ['size' => $size, 'price' => $dv->price, 'reg' => $dv->regular_price, 'sale' => $dv->sale_price, 'stock' => $dv->stock_quantity, 'main' => $dv->main_variation];
+    $colorGroups2[$color][] = ['size' => $size, 'price' => $dv->price, 'reg' => $dv->regular_price, 'sale' => $dv->sale_price, 'stock' => $dv->stock_quantity, 'main' => $dv->main_variation, 'model_number' => $dv->model_number ?? ''];
   }
   $adminEditColorRows = [];
   foreach ($colorGroups2 as $colorName => $rows) {
     $sizes = array_column($rows, 'size');
-    $priceMap = []; $stockMap = [];
-    foreach ($rows as $r) { $priceMap[$r['size']] = $r['reg']; $stockMap[$r['size']] = $r['stock']; }
-    $adminEditColorRows[] = ['name' => $colorName, 'sizes' => $sizes, 'price_map' => $priceMap, 'stock' => $stockMap, 'sale_price' => ''];
+    $priceMap = []; $stockMap = []; $modelNumberMap = [];
+    foreach ($rows as $r) { $priceMap[$r['size']] = $r['reg']; $stockMap[$r['size']] = $r['stock']; $modelNumberMap[$r['size']] = $r['model_number']; }
+    $adminEditColorRows[] = ['name' => $colorName, 'sizes' => $sizes, 'price_map' => $priceMap, 'stock' => $stockMap, 'model_number_map' => $modelNumberMap, 'sale_price' => ''];
   }
 @endphp
 <div class="dc" id="dc-variations">
@@ -467,7 +467,7 @@
       @else
         <table class="var-table">
           <thead>
-            <tr><th>Color</th><th>Size / Option</th><th>Regular</th><th>Sale / Price</th><th>Stock</th></tr>
+            <tr><th>Color</th><th>Size / Option</th><th>Model Number</th><th>Regular</th><th>Sale / Price</th><th>Stock</th></tr>
           </thead>
           <tbody>
             @foreach($dbVariations as $dv)
@@ -479,6 +479,7 @@
               <tr>
                 <td>{{ $dvColor }}@if($dv->main_variation)<span class="main-chip">main</span>@endif</td>
                 <td>{{ $dvSize }}</td>
+                <td>{{ $dv->model_number ?: '—' }}</td>
                 <td>{{ number_format($dv->regular_price,2) }}</td>
                 <td style="{{ $dv->sale_price && $dv->sale_price < $dv->regular_price ? 'color:var(--red);font-weight:600' : '' }}">
                   {{ $dv->sale_price ? number_format($dv->sale_price,2) : number_format($dv->price,2) }}
@@ -1168,6 +1169,7 @@ function adminAddColorRow(colorData) {
   const sizes    = colorData.sizes || [];
   const priceMap = colorData.price_map || {};
   const stockMap = colorData.stock || {};
+  const modelNumberMap = colorData.model_number_map || {};
   const isFirst  = document.getElementById('admin-color-rows').children.length === 0;
 
   const row = document.createElement('div');
@@ -1199,7 +1201,7 @@ function adminAddColorRow(colorData) {
     <div id="acsprice-${idx}"></div>`;
 
   document.getElementById('admin-color-rows').appendChild(row);
-  sizes.forEach(s => adminAddSize(idx, s, priceMap[s] || '', stockMap[s] || 0));
+  sizes.forEach(s => adminAddSize(idx, s, priceMap[s] || '', stockMap[s] || 0, modelNumberMap[s] || ''));
 }
 
 function adminHandleSizeInput(e, idx) {
@@ -1210,11 +1212,11 @@ function adminHandleSizeInput(e, idx) {
   }
 }
 
-function adminAddSize(idx, size, price, stock) {
+function adminAddSize(idx, size, price, stock, modelNumber) {
   if (!size) return;
   if (!adminSizeData[idx]) adminSizeData[idx] = {};
   if (adminSizeData[idx][size]) return;
-  adminSizeData[idx][size] = { price: price||'', stock: stock||0 };
+  adminSizeData[idx][size] = { price: price||'', stock: stock||0, modelNumber: modelNumber||'' };
 
   const wrap = document.getElementById('acstags-' + idx);
   const input = document.getElementById('acssize-' + idx);
@@ -1246,16 +1248,18 @@ function adminRefreshPriceTable(idx) {
   if (!container) return;
   const tags = document.querySelectorAll('#acstags-' + idx + ' .size-tag');
   if (tags.length === 0) { container.innerHTML = ''; return; }
-  let html = `<label class="if-label" style="margin-top:10px">Per-Size Pricing & Stock</label>
-    <table class="price-table"><thead><tr><th>Size</th><th>Regular Price (EGP)</th><th>Stock Qty</th></tr></thead><tbody>`;
+  let html = `<label class="if-label" style="margin-top:10px">Per-Size Pricing, Stock & Model Number</label>
+    <table class="price-table"><thead><tr><th>Size</th><th>Model Number</th><th>Regular Price (EGP)</th><th>Stock Qty</th></tr></thead><tbody>`;
   tags.forEach(tag => {
     const s = tag.dataset.size;
     const d = (adminSizeData[idx]||{})[s] || {};
     const safeSize = adminEscHtml(s);
     const safePrice = adminEscHtml(d.price || '');
+    const safeModelNumber = adminEscHtml(d.modelNumber || '');
     const safeStock = adminEscHtml(d.stock || 0);
     html += `<tr>
       <td><strong>${safeSize}</strong><input type="hidden" name="colors[${idx}][sizes][]" value="${safeSize}"></td>
+      <td><input type="text" name="colors[${idx}][model_number_map][${safeSize}]" value="${safeModelNumber}" maxlength="120" placeholder="Optional" style="width:130px;padding:3px 7px;border:1px solid var(--light);border-radius:6px;font-size:12px"></td>
       <td><input type="number" name="colors[${idx}][price_map][${safeSize}]" value="${safePrice}" step="0.01" min="0" placeholder="0.00" style="width:100px;padding:3px 7px;border:1px solid var(--light);border-radius:6px;font-size:12px"></td>
       <td><input type="number" name="colors[${idx}][stock][${safeSize}]" value="${safeStock}" min="0" placeholder="0" style="width:80px;padding:3px 7px;border:1px solid var(--light);border-radius:6px;font-size:12px"></td>
     </tr>`;

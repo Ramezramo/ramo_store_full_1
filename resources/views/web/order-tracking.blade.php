@@ -210,6 +210,7 @@
             </div>
             <div class="or-item-info">
               <div class="or-item-name">{{ $item['name'] }}</div>
+              @if(!empty($item['model_number']))<div class="or-item-attrs">{{ $isAr ? 'رقم الموديل' : 'Model number' }}: <strong>{{ $item['model_number'] }}</strong></div>@endif
               @if(!empty($item['attributes']))
                 <div class="or-item-attrs">
                   @foreach((array)$item['attributes'] as $attr => $val)

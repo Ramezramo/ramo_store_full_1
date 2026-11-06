@@ -187,6 +187,8 @@ class VendorProductController extends Controller
             ];
         }
 
+        app(\App\Services\ShopPriceRangeService::class)->refreshGlobal();
+
         return response()->json(['success' => true, 'updated' => $updated, 'prices' => $prices]);
     }
 
@@ -312,6 +314,8 @@ class VendorProductController extends Controller
                 'updated_at'     => $now,
             ]));
         }
+
+        app(\App\Services\ShopPriceRangeService::class)->refreshGlobal();
 
         return redirect()->route('vendor.products')
             ->with('success', 'Product "' . $request->input('name') . '" added. Pending admin approval.');
@@ -763,6 +767,8 @@ class VendorProductController extends Controller
             ]));
         }
 
+        app(\App\Services\ShopPriceRangeService::class)->refreshGlobal();
+
         return redirect()->route('vendor.products')
             ->with('success', 'Product updated successfully.');
     }
@@ -779,6 +785,7 @@ class VendorProductController extends Controller
         DB::table('product_variations')->where('product_id', $id)->delete();
         DB::table('product_category')->where('product_id', $id)->delete();
         DB::table('products_data')->where('id', $id)->delete();
+        app(\App\Services\ShopPriceRangeService::class)->refreshGlobal();
 
         return back()->with('success', 'Product deleted.');
     }
@@ -860,6 +867,8 @@ class VendorProductController extends Controller
             $base['colors.*.stock.*']                = 'integer|min:0';
             $base['colors.*.price_map']              = 'nullable|array';
             $base['colors.*.price_map.*']            = 'nullable|numeric|min:0';
+            $base['colors.*.model_number_map']        = 'nullable|array';
+            $base['colors.*.model_number_map.*']      = 'nullable|string|max:120';
             $base['colors.*.sale_price_map']         = 'nullable|array';
             $base['colors.*.sale_price_map.*']       = 'nullable|numeric|min:0';
             $base['colors.*.regular_price']          = 'nullable|numeric|min:0';
@@ -937,6 +946,7 @@ class VendorProductController extends Controller
             }
 
             $priceMap          = (array) ($colorData['price_map'] ?? []);
+            $modelNumberMap    = (array) ($colorData['model_number_map'] ?? []);
             $salePriceMapInput = (array) ($colorData['sale_price_map'] ?? []);
             $sizesRaw          = array_filter(array_map(fn ($size) => $this->sanitizeProductText($size), (array) ($colorData['sizes'] ?? [])));
             // Fall back to price_map keys if no sizes were submitted.
@@ -989,6 +999,7 @@ class VendorProductController extends Controller
                 $rows[] = [
                     '_color'         => $optionName,
                     'attributes'     => json_encode($attributes),
+                    'model_number'   => trim((string) ($modelNumberMap[$size] ?? '')) ?: null,
                     'price'          => $price,
                     'regular_price'  => $regularPriceForSize,
                     'sale_price'     => $salePriceForSize,

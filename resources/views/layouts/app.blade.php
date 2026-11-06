@@ -79,7 +79,7 @@ img{max-width:100%;display:block}
 button{cursor:pointer;font-family:inherit}
 
 /* ── NAV ── */
-.nav{background:rgba(255,255,255,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--c-light);position:sticky;top:0;z-index:100}
+.nav{background:rgba(255,255,255,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--c-light);position:sticky;top:0;z-index:500}
 .nav-inner{max-width:var(--page-max);margin:auto;padding:0 24px;height:72px;display:flex;align-items:center;gap:20px}
 .nav-logo{font-size:19px;font-weight:700;letter-spacing:.3px;color:var(--c-dark);white-space:nowrap;flex-shrink:0;text-transform:uppercase}
 .nav-logo span{color:var(--c-orange)}
@@ -193,6 +193,46 @@ button{cursor:pointer;font-family:inherit}
 .pc-coupon-code{background:rgba(255,255,255,.2);border-radius:4px;padding:1px 5px;letter-spacing:.03em}
 .pc-coupon-right{background:#5b21b6;color:#fff;padding:8px 10px;display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0}
 
+/* Shared product-card component. Page layouts control only columns/width; every
+   product-card partial inherits its internal spacing and controls from here. */
+.product-grid--showcase{align-items:stretch}
+.product-card--shared{width:100%;min-width:0;min-height:0;height:100%;overflow:hidden;border:1px solid #e9e6e2;border-radius:14px;background:#fff;box-shadow:0 3px 12px rgba(25,25,25,.045);transition:transform .18s ease,box-shadow .18s ease}
+.product-card--shared:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(25,25,25,.1)}
+.product-card--shared .product-card-img{flex:none;width:100%;height:auto;aspect-ratio:1/1.08;background:#f6f3ef}
+.product-card--shared .product-card-body{flex:1 1 auto;min-width:0;padding:12px;gap:7px}
+.product-card--shared .product-card-name{min-height:40px;margin:0;font-size:14px;font-weight:600;line-height:1.4}
+.product-card--shared .pc-swatches,.product-card--shared .pc-sizes{min-height:24px;margin:0;gap:6px;align-items:center}
+.product-card--shared .pc-swatches + .pc-selected + .pc-sizes{margin-top:0}
+.product-card--shared .pc-swatches:empty,.product-card--shared .pc-sizes:empty{display:none}
+.product-card--shared .pc-swatch{width:20px;height:20px}
+.product-card--shared .pc-size{min-height:25px;padding:4px 9px;font-size:10px}
+.product-card--shared .pc-size.selected{border-color:#d6d6d6;background:#fff;color:var(--c-dark);box-shadow:0 0 0 2px #fff,0 0 0 4px var(--c-dark);font-weight:800}
+.product-card--shared .pc-selected{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.product-card--shared .product-card-price{min-height:24px;margin:0;padding:0;gap:7px;align-items:baseline}
+.product-card--shared .price-main{font-size:15px;font-weight:800}
+.product-card--shared .price-old{font-size:12px}
+.product-card--shared .pc-actions{display:flex;flex-direction:column;gap:7px;margin:2px 0 0}
+.product-card--shared .card-add-btn,.product-card--shared .card-details-btn{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:100%;min-height:40px;margin:0;border-radius:9px}
+.product-card--shared .card-details-btn{border:1px solid #e5e5e5;background:#fff}
+.product-card--shared .product-card-img .placeholder,.product-card--shared .product-card-img .pc-img-fallback{background:linear-gradient(145deg,#f8f5f1,#eee9e3)!important;color:#b8aaa0!important;flex-direction:column;gap:8px;font-size:0!important}
+.product-card--shared .product-card-img .placeholder::before,.product-card--shared .product-card-img .pc-img-fallback::before{content:"";width:38px;height:30px;border:1px solid #d4c9bf;border-radius:6px;background:linear-gradient(145deg,#fdfbf9,#ece5de);box-shadow:0 2px 5px rgba(70,50,35,.08)}
+.product-card--shared .product-card-img .placeholder::after,.product-card--shared .product-card-img .pc-img-fallback::after{content:"NO PHOTO";margin-top:8px;color:#a99b90;font-size:9px;font-weight:700;letter-spacing:.12em}
+@media(max-width:600px){
+  .product-card--shared .product-card-img{aspect-ratio:1/1}
+  .product-card--shared .product-card-body{padding:9px 8px 10px;gap:5px}
+  .product-card--shared .product-card-name{min-height:31px;font-size:12px;font-weight:700;line-height:1.3}
+  .product-card--shared .pc-swatches,.product-card--shared .pc-sizes{min-height:19px;gap:4px}
+  .product-card--shared .pc-swatch{width:15px;height:15px;border:2px solid #fff;box-shadow:0 0 0 1px #d6d6d6}
+  .product-card--shared .pc-size{min-width:22px;min-height:0;padding:3px 5px;font-size:9px;line-height:1}
+  .product-card--shared .product-card-price{min-height:21px;gap:4px;line-height:1}
+  .product-card--shared .price-main{font-size:14px}
+  .product-card--shared .price-old{font-size:9px}
+  .product-card--shared .pc-actions{margin-top:2px}
+  .product-card--shared .card-add-btn,.product-card--shared .card-details-btn{min-height:34px;padding:7px 4px;font-size:10px}
+  .product-card--shared .wish-btn{top:7px;right:7px;width:26px;height:26px;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.94);font-size:14px}
+  .product-card--shared .pc-coupon-bar{display:none}
+}
+
 /* ── SHOP LAYOUT ── */
 .shop-layout{display:grid;grid-template-columns:220px 1fr;gap:28px;align-items:start}
 .sidebar{background:var(--c-white);border-radius:var(--radius-lg);padding:24px;border:1.5px solid var(--c-light);position:sticky;top:84px}
@@ -223,10 +263,10 @@ button{cursor:pointer;font-family:inherit}
 .gallery-thumbs{display:flex;flex-direction:column;gap:8px;flex-shrink:0;width:74px;max-height:520px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--c-light) transparent}
 .gallery-thumbs::-webkit-scrollbar{width:3px}.gallery-thumbs::-webkit-scrollbar-thumb{background:var(--c-light);border-radius:4px}
 .gallery-main{flex:1;min-width:0;aspect-ratio:1;background:var(--c-white);border-radius:var(--radius-lg);overflow:hidden;border:1.5px solid var(--c-light)}
-.gallery-main img{width:100%;height:100%;object-fit:contain;background:#fff}
+.gallery-main img{width:100%;height:100%;object-fit:cover;background:#fff}
 .gallery-thumb{width:70px;height:70px;border-radius:8px;overflow:hidden;border:2px solid transparent;cursor:pointer;background:var(--c-white);flex-shrink:0}
 .gallery-thumb:hover,.gallery-thumb.active{border-color:var(--c-dark)}
-.gallery-thumb img{width:100%;height:100%;object-fit:contain;background:#fff;filter:blur(1.5px) brightness(.82);transition:filter .2s}
+.gallery-thumb img{width:100%;height:100%;object-fit:cover;background:#fff;filter:blur(1.5px) brightness(.82);transition:filter .2s}
 .gallery-thumb:hover img,.gallery-thumb.active img{filter:none}
 .product-info{padding:8px 0;min-width:0}
 .product-info h1{font-size:26px;font-weight:800;letter-spacing:-.4px;margin-bottom:14px;line-height:1.25}
@@ -1635,18 +1675,28 @@ function _pcGetSel(pid, source = null) {
 }
 
 function _pcVariationIsSellable(v) {
-  const stockStatus = String(v?.stockStatus ?? '').toLowerCase().trim();
+  const stockStatus = String(v?.stockStatus ?? '').toLowerCase().replace(/[\s_-]+/g, '');
   const status = String(v?.status ?? '').toLowerCase().trim();
   return status === 'publish'
-    && stockStatus === 'instock'
+    && ['instock', 'available'].includes(stockStatus)
     && Number(v?.stock || 0) > 0;
 }
 
 function _pcSelectInitialVariation(pid, source = null) {
   const card = _pcGetCard(pid, source);
-  if (!card || card.dataset.selColor || card.dataset.selSize || card.dataset.selVar) return;
+  if (!card || (card.dataset.selColor && card.dataset.selSize && card.dataset.selVar)) return;
 
-  const firstAvailable = _pcGetVars(pid, card).find(_pcVariationIsSellable);
+  const vars = _pcGetVars(pid, card);
+  const currentColor = card.dataset.selColor || '';
+  const currentSize = card.dataset.selSize || '';
+  // Complete partially initialized cards using an in-stock variant that
+  // respects any choice already present (for example, a color without size).
+  const firstAvailable = vars.find(v => {
+    if (!_pcVariationIsSellable(v)) return false;
+    const attrs = v.attrs || {};
+    return (!currentColor || attrs['Color'] === currentColor)
+      && (!currentSize || attrs['Size'] === currentSize);
+  }) || vars.find(_pcVariationIsSellable);
   if (!firstAvailable) return;
 
   const attrs = firstAvailable.attrs || {};
@@ -1687,6 +1737,7 @@ function _pcUpdateColors(pid, source = null) {
     const available = vars.some(v => v.attrs?.['Color'] === color && _pcVariationIsSellable(v));
     btn.classList.toggle('unavail', exists && !available);
     btn.setAttribute('aria-disabled', available ? 'false' : 'true');
+    btn.setAttribute('aria-pressed', card.dataset.selColor === color ? 'true' : 'false');
   });
 }
 
@@ -1712,6 +1763,7 @@ function pcPickColor(pid, colorVal, btn) {
     if (imgEl && btn.dataset.img) { imgEl.src = btn.dataset.img; }
     else if (imgEl) { imgEl.src = card.dataset.baseImg; }
   }
+  card.querySelectorAll('.pc-swatch').forEach(b => b.setAttribute('aria-pressed', card.dataset.selColor === b.dataset.color ? 'true' : 'false'));
   _pcUpdateColors(pid, card);
   _pcUpdateSizes(pid, card);
   _pcUpdatePrice(pid, card);
@@ -1875,7 +1927,10 @@ function _pcUpdateSummary(pid, source = null) {
 }
 
 function _pcInitializeVariations(root = document) {
-  root.querySelectorAll('.product-card[data-vars]').forEach(card => {
+  // DOMContentLoaded passes an Event object to listeners. Normalize that call
+  // as well as direct page/fragment calls to one queryable component root.
+  const scope = root && typeof root.querySelectorAll === 'function' ? root : document;
+  scope.querySelectorAll('.product-card[data-vars]').forEach(card => {
     const pid = card.dataset.pid;
     _pcSelectInitialVariation(pid, card);
     _pcUpdateColors(pid, card);

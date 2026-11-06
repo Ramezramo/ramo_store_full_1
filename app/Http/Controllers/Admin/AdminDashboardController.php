@@ -449,6 +449,7 @@ class AdminDashboardController extends Controller
             'status'            => 'publish',
             'updated_at'        => now(),
         ]);
+        app(\App\Services\ShopPriceRangeService::class)->refreshGlobal();
         return back()->with('success', 'Product approved and published.');
     }
 
@@ -459,6 +460,7 @@ class AdminDashboardController extends Controller
             'status'            => 'draft',
             'updated_at'        => now(),
         ]);
+        app(\App\Services\ShopPriceRangeService::class)->refreshGlobal();
         return back()->with('success', 'Product rejected and hidden from store.');
     }
 
@@ -467,6 +469,7 @@ class AdminDashboardController extends Controller
         DB::table('products_data')->where('id', $id)->delete();
         DB::table('product_variations')->where('product_id', $id)->delete();
         DB::table('product_category')->where('product_id', $id)->delete();
+        app(\App\Services\ShopPriceRangeService::class)->refreshGlobal();
         return back()->with('success', 'Product deleted.');
     }
 
@@ -481,6 +484,7 @@ class AdminDashboardController extends Controller
         }
 
         DB::table('products_data')->where('id', $id)->update(['status' => $status, 'updated_at' => now()]);
+        app(\App\Services\ShopPriceRangeService::class)->refreshGlobal();
         return back()->with('success', 'Product status updated.');
     }
 
@@ -516,6 +520,7 @@ class AdminDashboardController extends Controller
                     'status'            => 'publish',
                     'updated_at'        => $now,
                 ]);
+                app(\App\Services\ShopPriceRangeService::class)->refreshGlobal();
             }
 
             if ($blocked) {
@@ -531,6 +536,7 @@ class AdminDashboardController extends Controller
                 'status'            => 'draft',
                 'updated_at'        => $now,
             ]);
+            app(\App\Services\ShopPriceRangeService::class)->refreshGlobal();
             return back()->with('success', count($ids).' product(s) rejected.');
         }
 
@@ -538,6 +544,7 @@ class AdminDashboardController extends Controller
         DB::table('product_variations')->whereIn('product_id', $ids)->delete();
         DB::table('product_category')->whereIn('product_id', $ids)->delete();
         DB::table('products_data')->whereIn('id', $ids)->delete();
+        app(\App\Services\ShopPriceRangeService::class)->refreshGlobal();
         return back()->with('success', count($ids).' product(s) deleted.');
     }
 
@@ -731,12 +738,13 @@ class AdminDashboardController extends Controller
                         if (!$colorName) continue;
                         $sizes    = array_filter(array_map(fn ($size) => $this->sanitizeProductText($size), (array)($colorData['sizes'] ?? [])));
                         $priceMap = (array)($colorData['price_map'] ?? []);
+                    $modelNumberMap = (array)($colorData['model_number_map'] ?? []);
                         $stockMap = (array)($colorData['stock'] ?? []);
                         foreach ($sizes as $size) {
                             $reg   = isset($priceMap[$size]) && $priceMap[$size] !== '' ? (float)$priceMap[$size] : 0;
                             $stock = isset($stockMap[$size]) ? (int)$stockMap[$size] : 0;
                             $totalStock += $stock;
-                            $rows[] = ['_color' => $colorName, 'attributes' => json_encode(['Color' => $colorName, 'Size' => $size]), 'price' => $reg, 'regular_price' => $reg, 'sale_price' => $reg, 'stock_quantity' => $stock];
+                            $rows[] = ['_color' => $colorName, 'attributes' => json_encode(['Color' => $colorName, 'Size' => $size]), 'model_number' => trim(mb_substr($this->sanitizeProductText($modelNumberMap[$size] ?? ''), 0, 120)) ?: null, 'price' => $reg, 'regular_price' => $reg, 'sale_price' => $reg, 'stock_quantity' => $stock];
                         }
                     }
                 }
@@ -897,6 +905,10 @@ class AdminDashboardController extends Controller
                     }
                 }
                 break;
+        }
+
+        if (in_array($section, ['basic', 'pricing', 'variations', 'categories'], true)) {
+            app(\App\Services\ShopPriceRangeService::class)->refreshGlobal();
         }
 
         return redirect()->route('admin.products.show', $id)

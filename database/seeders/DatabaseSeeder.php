@@ -12,5 +12,6 @@ class DatabaseSeeder extends Seeder
         $this->call(FreeShippingCouponsSeeder::class);
         $this->call(GameChangerCouponSeeder::class);
         $this->call(ReferralSettingsSeeder::class);
+        $this->call(DemoCatalogSeeder::class);
     }
 }
