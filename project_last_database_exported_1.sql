@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict DHdWQwMqwybigpRaZO7yGk1difuE9nmiF466RkEzkNTEH58IMhpGhoDkBOn6l3P
+\restrict cS8ZqWVC2R5knxOdNy6USg76IMkDzJ14CXlHyx9KV5PoAHw7tMsOcFhJvjPDfSy
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4
@@ -24,6 +24,39 @@ SET row_security = off;
 --
 
 COMMENT ON SCHEMA public IS '';
+
+
+--
+-- Name: record_order_notification(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.record_order_notification() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    IF NEW.customer_id IS NULL OR NEW.customer_id <= 0 THEN
+        RETURN NEW;
+    END IF;
+
+    IF TG_OP = 'INSERT' THEN
+        INSERT INTO order_notifications (customer_id, order_id, event)
+        VALUES (NEW.customer_id, NEW.id, 'placed');
+        RETURN NEW;
+    END IF;
+
+    IF NEW.status IS DISTINCT FROM OLD.status AND NULLIF(NEW.status, '') IS NOT NULL THEN
+        INSERT INTO order_notifications (customer_id, order_id, event, status)
+        VALUES (NEW.customer_id, NEW.id, 'order_status', NEW.status);
+    END IF;
+
+    IF NEW.payment_status IS DISTINCT FROM OLD.payment_status AND NULLIF(NEW.payment_status, '') IS NOT NULL THEN
+        INSERT INTO order_notifications (customer_id, order_id, event, status)
+        VALUES (NEW.customer_id, NEW.id, 'payment_status', NEW.payment_status);
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
 
 
 SET default_tablespace = '';
@@ -898,6 +931,40 @@ CREATE SEQUENCE public.order_messages_id_seq
 --
 
 ALTER SEQUENCE public.order_messages_id_seq OWNED BY public.order_messages.id;
+
+
+--
+-- Name: order_notifications; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.order_notifications (
+    id bigint NOT NULL,
+    customer_id bigint NOT NULL,
+    order_id bigint NOT NULL,
+    event character varying(24) NOT NULL,
+    status character varying(200),
+    read_at timestamp(0) without time zone,
+    created_at timestamp(0) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+--
+-- Name: order_notifications_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.order_notifications_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: order_notifications_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.order_notifications_id_seq OWNED BY public.order_notifications.id;
 
 
 --
@@ -2184,6 +2251,13 @@ ALTER TABLE ONLY public.order_messages ALTER COLUMN id SET DEFAULT nextval('publ
 
 
 --
+-- Name: order_notifications id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_notifications ALTER COLUMN id SET DEFAULT nextval('public.order_notifications_id_seq'::regclass);
+
+
+--
 -- Name: order_sub_orders id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -2359,10 +2433,10 @@ COPY public.app_config (id, config_json, created_at, updated_at) FROM stdin;
 
 COPY public.app_configs (id, config_key, config_group, lang, value, label, description, is_public, sort_order, updated_at) FROM stdin;
 98	manual_payment_methods	payment	\N	{"cod_enabled":true,"cod_data":"Pay when your order arrives","vodafone_cash_enabled":true,"vodafone_cash_data":"Send to 01xxxxxxxxx","bank_transfer_enabled":true,"bank_transfer_data":"Transfer to our bank account","fawry_enabled":true,"fawry_data":"Pay at any Fawry outlet","credit_card_enabled":true,"credit_card_data":"Visa \\/ Mastercard","wallet_enabled":false,"wallet_number":"","instapay_enabled":false,"instapay_number":"","instapay_link":""}	Manual Payment Methods	Wallet and InstaPay transfer instructions for website orders	f	0	2026-10-12 21:23:06
-97	shipping_settings	shipping	\N	{"free_shipping_enabled":true,"free_shipping_threshold":1000,"standard_shipping_fee":0,"cod_fee":40}	Shipping Settings	Free shipping threshold and standard shipping fee	f	0	2026-10-12 21:23:14
 161	auth_settings	auth	\N	{"email_login":false,"google_login":false,"phone_otp_login":true,"guest_checkout":false,"auto_register_google":true,"auto_register_otp":true,"require_name_on_register":true,"require_email_on_register":false,"require_email_verification":false,"otp_length":6,"otp_expiry_minutes":5,"max_otp_attempts":3,"resend_cooldown_seconds":60,"max_resends_per_hour":3,"max_login_attempts":5,"lockout_duration_minutes":15,"session_expiry_hours":24}	Auth Settings	Login methods and security configuration	f	0	2026-11-06 10:53:21
 95	horizon_layout	layout	en	[{"layout":"announcement","message":"Explore tech, home, style, sport and more at Ramo Store.","speed":"static","barColor":"dark","dismissableByUser":true,"showOnAllPages":true,"showOnlyToGuests":false},{"layout":"promoBlock","headline":"More categories. More ways to shop.","subtext":"Build a PC, refresh your home, upgrade your phone or find something new for everyday life.","btnText":"Explore all products","btnLink":"/shop","bgColor":"#151515","textColor":"#ffffff","btnColor":"#e85d26","align":"left","image":"/storage/products/demo-catalog/pc.jpg"},{"layout":"category","type":"icon","wrap":false,"size":1,"radius":50,"items":[{"category":843,"label":"PC Parts","image":"/storage/products/demo-catalog/gpu.jpg","colors":["#2d3748","#111827"]},{"category":844,"label":"Computers","image":"/storage/products/demo-catalog/laptop.jpg","colors":["#475569","#0f172a"]},{"category":845,"label":"Gaming","image":"/storage/products/demo-catalog/keyboard.jpg","colors":["#6d28d9","#312e81"]},{"category":846,"label":"Phones","image":"/storage/products/demo-catalog/phone.jpg","colors":["#2563eb","#0f766e"]},{"category":847,"label":"Audio & Cameras","image":"/storage/products/demo-catalog/camera.jpg","colors":["#334155","#111827"]},{"category":848,"label":"Home & Kitchen","image":"/storage/products/demo-catalog/coffee.jpg","colors":["#92400e","#78350f"]},{"category":850,"label":"Sports","image":"/storage/products/demo-catalog/dumbbells.jpg","colors":["#166534","#14532d"]},{"category":851,"label":"Beauty","image":"/storage/products/demo-catalog/perfume.jpg","colors":["#be185d","#831843"]}]},{"layout":"saleImages","headerText":"Build & Upgrade Your PC","maxItemsToShow":8,"category":843},{"layout":"saleImages","headerText":"Gaming Setup Essentials","maxItemsToShow":8,"category":845},{"layout":"saleImages","headerText":"Home & Kitchen Picks","maxItemsToShow":8,"category":848},{"layout":"trending","headerText":"Trending Across Ramo","count":10,"algo":"sold7d","refreshInterval":24,"showRankBadge":true,"showSoldToday":true,"autoScroll":false},{"layout":"arrivals","headerText":"New Across Every Category","count":8,"speed":"normal","tag":"Just Added","pauseOnHover":true,"showCategoryChip":true,"loopInfinitely":true},{"layout":"allProducts","headerText":"Explore All Products","productsPerPage":12}]	Homepage Timeline	\N	t	0	2026-11-06 12:06:38
 96	horizon_layout	layout	ar	[{"layout":"announcement","message":"اكتشف التكنولوجيا والمنزل والأزياء والرياضة والمزيد في رامو ستور.","speed":"static","barColor":"dark","dismissableByUser":true,"showOnAllPages":true,"showOnlyToGuests":false},{"layout":"promoBlock","headline":"فئات أكثر وخيارات أكثر","subtext":"كوّن جهازك، جدّد منزلك، طوّر هاتفك أو اكتشف شيئًا جديدًا لحياتك اليومية.","btnText":"استكشف كل المنتجات","btnLink":"/shop","bgColor":"#151515","textColor":"#ffffff","btnColor":"#e85d26","align":"right","image":"/storage/products/demo-catalog/pc.jpg"},{"layout":"category","type":"icon","wrap":false,"size":1,"radius":50,"items":[{"category":843,"label":"قطع الكمبيوتر","image":"/storage/products/demo-catalog/gpu.jpg","colors":["#2d3748","#111827"]},{"category":844,"label":"الكمبيوتر","image":"/storage/products/demo-catalog/laptop.jpg","colors":["#475569","#0f172a"]},{"category":845,"label":"الألعاب","image":"/storage/products/demo-catalog/keyboard.jpg","colors":["#6d28d9","#312e81"]},{"category":846,"label":"الهواتف","image":"/storage/products/demo-catalog/phone.jpg","colors":["#2563eb","#0f766e"]},{"category":847,"label":"الصوت والكاميرات","image":"/storage/products/demo-catalog/camera.jpg","colors":["#334155","#111827"]},{"category":848,"label":"المنزل والمطبخ","image":"/storage/products/demo-catalog/coffee.jpg","colors":["#92400e","#78350f"]},{"category":850,"label":"الرياضة","image":"/storage/products/demo-catalog/dumbbells.jpg","colors":["#166534","#14532d"]},{"category":851,"label":"الجمال","image":"/storage/products/demo-catalog/perfume.jpg","colors":["#be185d","#831843"]}]},{"layout":"saleImages","headerText":"ابنِ وطوّر جهازك","maxItemsToShow":8,"category":843},{"layout":"saleImages","headerText":"أساسيات الألعاب","maxItemsToShow":8,"category":845},{"layout":"saleImages","headerText":"مختارات المنزل والمطبخ","maxItemsToShow":8,"category":848},{"layout":"trending","headerText":"الأكثر رواجًا في رامو","count":10,"algo":"sold7d","refreshInterval":24,"showRankBadge":true,"showSoldToday":true,"autoScroll":false},{"layout":"arrivals","headerText":"جديد كل الفئات","count":8,"speed":"normal","tag":"وصل حديثًا","pauseOnHover":true,"showCategoryChip":true,"loopInfinitely":true},{"layout":"allProducts","headerText":"استكشف كل المنتجات","productsPerPage":12}]	Homepage Timeline	\N	t	0	2026-11-06 12:07:22
+97	shipping_settings	shipping	\N	{"free_shipping_enabled":true,"free_shipping_threshold":1000,"standard_shipping_fee":40,"cod_fee":40}	Shipping Settings	Free shipping threshold and standard shipping fee	f	0	2026-11-07 06:15:18
 \.
 
 
@@ -2401,10 +2475,6 @@ COPY public.cart_items (id, user_id, product_id, variation_id, qty, created_at, 
 686	2897	1542	1544	1	2026-11-06 11:43:11	2026-11-06 11:43:11
 687	2897	1	3	1	2026-11-06 11:43:11	2026-11-06 11:43:11
 688	2897	21	81	2	2026-11-06 11:43:11	2026-11-06 11:43:11
-709	2800	1657	1957	3	2026-11-06 15:11:02	2026-11-06 15:11:02
-710	2800	1657	1959	3	2026-11-06 15:11:02	2026-11-06 15:11:02
-711	2800	1620	1822	1	2026-11-06 15:11:02	2026-11-06 15:11:02
-712	2800	1620	1820	9	2026-11-06 15:11:02	2026-11-06 15:11:02
 \.
 
 
@@ -2502,6 +2572,9 @@ COPY public.getposttest (id, title, content, created_at, updated_at) FROM stdin;
 --
 
 COPY public.idempotency_keys (id, key, user_id, order_id, created_at) FROM stdin;
+184	c7b8eb40-ab48-4651-b9ea-71c9ec2b23d4	2800	1200	2026-11-07 06:16:48
+185	c7e6cac4-4a14-4b5a-94e2-a11e74835d53	2898	1201	2026-11-08 20:51:06
+186	f8e19c2f-c5a4-4179-94f8-00204c91a3e4	2898	1205	2026-11-08 22:08:45
 \.
 
 
@@ -2587,6 +2660,7 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 27	2026_08_26_000001_normalize_and_unique_user_phones	10
 28	2026_11_06_000001_create_storefront_price_ranges_table	11
 29	2026_11_06_000002_add_model_number_to_product_variations	12
+30	2026_11_08_000001_create_order_notifications	13
 \.
 
 
@@ -2595,6 +2669,18 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 --
 
 COPY public.order_messages (id, order_id, customer_id, vendor_id, sender_type, message, is_vendor_response, created_at, updated_at, sub_order_id) FROM stdin;
+4	1200	2800	\N	customer	Hi there	f	2026-11-07 06:20:59	2026-11-07 06:20:59	215
+\.
+
+
+--
+-- Data for Name: order_notifications; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.order_notifications (id, customer_id, order_id, event, status, read_at, created_at) FROM stdin;
+1	2800	1200	placed	\N	2026-11-08 22:58:14	2026-11-07 06:16:48
+2	2898	1201	placed	\N	2026-11-08 22:58:14	2026-11-08 20:51:06
+9	2898	1205	placed	\N	2026-11-08 22:33:54	2026-11-09 00:08:45
 \.
 
 
@@ -2603,6 +2689,9 @@ COPY public.order_messages (id, order_id, customer_id, vendor_id, sender_type, m
 --
 
 COPY public.order_sub_orders (id, parent_order_id, vendor_id, customer_id, status, line_items, subtotal, discount_total, total, tracking_number, tracking_carrier, timeline, notes, created_at, updated_at, vendor_status) FROM stdin;
+215	1200	\N	2800	pending	[{"product_id":1669,"variation_id":2001,"name":"Family Strategy Board Game","sku":"DEMO-FAMILY-STRATEGY-BOARD-GAME","model_number":null,"quantity":1,"price":711.55,"subtotal":711.55,"attributes":{"Size":"Classic"}}]	711.55	0.00	711.55	\N	\N	[]	\N	2026-11-07 06:16:48	2026-11-07 06:16:48	pending
+216	1201	\N	2898	pending	[{"product_id":1637,"variation_id":1875,"name":"Nova 5G Smartphone","sku":"DEMO-NOVA-5G-SMARTPHONE","model_number":null,"quantity":10,"price":20459.07,"subtotal":204590.7,"attributes":{"Color":"Black","Size":"128GB"}},{"product_id":1637,"variation_id":1877,"name":"Nova 5G Smartphone","sku":"DEMO-NOVA-5G-SMARTPHONE","model_number":null,"quantity":7,"price":21891.2,"subtotal":153238.4,"attributes":{"Color":"Blue","Size":"128GB"}},{"product_id":1637,"variation_id":1876,"name":"Nova 5G Smartphone","sku":"DEMO-NOVA-5G-SMARTPHONE","model_number":null,"quantity":10,"price":21175.14,"subtotal":211751.4,"attributes":{"Color":"Black","Size":"256GB"}},{"product_id":1637,"variation_id":1878,"name":"Nova 5G Smartphone","sku":"DEMO-NOVA-5G-SMARTPHONE","model_number":null,"quantity":10,"price":22607.28,"subtotal":226072.8,"attributes":{"Color":"Blue","Size":"256GB"}},{"product_id":1669,"variation_id":2001,"name":"Family Strategy Board Game","sku":"DEMO-FAMILY-STRATEGY-BOARD-GAME","model_number":null,"quantity":10,"price":711.55,"subtotal":7115.5,"attributes":{"Size":"Classic"}},{"product_id":1669,"variation_id":2002,"name":"Family Strategy Board Game","sku":"DEMO-FAMILY-STRATEGY-BOARD-GAME","model_number":null,"quantity":5,"price":736.46,"subtotal":3682.3,"attributes":{"Size":"Deluxe"}}]	806451.10	0.00	806451.10	\N	\N	[]	\N	2026-11-08 20:51:06	2026-11-08 20:51:06	pending
+217	1205	\N	2898	pending	[{"product_id":1669,"variation_id":2001,"name":"Family Strategy Board Game","sku":"DEMO-FAMILY-STRATEGY-BOARD-GAME","model_number":null,"quantity":1,"price":711.55,"subtotal":711.55,"attributes":{"Size":"Classic"}}]	711.55	0.00	711.55	\N	\N	[]	\N	2026-11-08 22:08:45	2026-11-08 22:08:45	pending
 \.
 
 
@@ -2611,6 +2700,9 @@ COPY public.order_sub_orders (id, parent_order_id, vendor_id, customer_id, statu
 --
 
 COPY public.orders (id, parent_id, parent_vendors_ids, parent_vendors_data, status, currency, version, prices_include_tax, date_created, date_modified, discount_total, discount_tax, shipping_total, shipping_tax, cart_tax, coupon_code, final_total, original_total, coupon_applied, total_tax, customer_id, order_key, billing, shipping, payment_method, payment_method_title, transaction_id, customer_ip_address, customer_user_agent, created_via, customer_note, date_completed, date_paid, cart_hash, meta_data, line_items, tax_lines, shipping_lines, fee_lines, coupon_lines, refunds, payment_url, is_editable, needs_payment, needs_processing, bacs_info, currency_symbol, _links, date_created_gmt, date_modified_gmt, date_completed_gmt, date_paid_gmt, set_paid, number, timeline, updated_at, created_at, payment_status, payment_receipt_path, payment_receipt_name, payment_receipt_uploaded_at, payment_reviewed_at, payment_reviewed_by, payment_rejection_reason, general_order_status, general_order_status_override, general_order_status_override_reason, general_order_status_override_by, general_order_status_override_at) FROM stdin;
+1200	0	\N	\N	pending	EGP	\N	f	2026-11-07 06:16:48	2026-11-07 06:16:48	0.00	0.00	40.00	0.00	0.00	\N	791.55	712	0	0.00	2800	wc_mCYOBBC5HqXWQ9sgaX39	{"first_name":"Ramez","last_name":"Asaad","email":"adminramoui@gmail.com","phone":"01002722375","address_1":"Kufur \\/ Matay \\/ Minya \\/ egypt","address_2":null,"city":"Al Minya","state":"Minya","country":"EG","latitude":"28.445469","longitude":"30.805815000000003"}	{"first_name":"Ramez","last_name":"Asaad","email":"adminramoui@gmail.com","phone":"01002722375","address_1":"Kufur \\/ Matay \\/ Minya \\/ egypt","address_2":null,"city":"Al Minya","state":"Minya","country":"EG","latitude":"28.445469","longitude":"30.805815000000003"}	cod	Cash on Delivery	\N	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36	website		\N	\N	216be560ff1a6ed1afbefdf06d376a94	\N	[{"product_id":1669,"variation_id":2001,"name":"Family Strategy Board Game","sku":"DEMO-FAMILY-STRATEGY-BOARD-GAME","model_number":null,"quantity":1,"price":711.55,"subtotal":711.55,"attributes":{"Size":"Classic"}}]	\N	\N	[{"code":"cod_fee","name":"Cash on Delivery fee","total":"40.00"}]	\N	\N		t	f	t	\N	ج.م	\N	2026-11-07 06:16:48	2026-11-07 06:16:48			t	1200	[]	2026-11-07 06:16:48	2026-11-07 06:16:48	confirmed	\N	\N	\N	\N	\N	\N	pending	\N	\N	\N	\N
+1201	0	\N	\N	pending	EGP	\N	f	2026-11-08 20:51:06	2026-11-08 20:51:06	0.00	0.00	0.00	0.00	0.00	\N	806491.10	806451	0	0.00	2898	wc_Q5M97y3PhRX4LaBKR1j2	{"first_name":"Ramez","last_name":"Malak Farouk Asaad","email":"ramzmlak40@gmail.com","phone":"+201002722375","address_1":"Kufur \\/ Matay \\/ Minya \\/ egypt","address_2":null,"city":"Al Minya","state":"Asyut","country":"EG","latitude":null,"longitude":null}	{"first_name":"Ramez","last_name":"Malak Farouk Asaad","email":"ramzmlak40@gmail.com","phone":"+201002722375","address_1":"Kufur \\/ Matay \\/ Minya \\/ egypt","address_2":null,"city":"Al Minya","state":"Asyut","country":"EG","latitude":null,"longitude":null}	cod	Cash on Delivery	\N	192.168.1.8	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Mobile Safari/537.36	website		\N	\N	68f95b8c81f9f0c850caf246026482e1	\N	[{"product_id":1637,"variation_id":1875,"name":"Nova 5G Smartphone","sku":"DEMO-NOVA-5G-SMARTPHONE","model_number":null,"quantity":10,"price":20459.07,"subtotal":204590.7,"attributes":{"Color":"Black","Size":"128GB"}},{"product_id":1637,"variation_id":1877,"name":"Nova 5G Smartphone","sku":"DEMO-NOVA-5G-SMARTPHONE","model_number":null,"quantity":7,"price":21891.2,"subtotal":153238.4,"attributes":{"Color":"Blue","Size":"128GB"}},{"product_id":1637,"variation_id":1876,"name":"Nova 5G Smartphone","sku":"DEMO-NOVA-5G-SMARTPHONE","model_number":null,"quantity":10,"price":21175.14,"subtotal":211751.4,"attributes":{"Color":"Black","Size":"256GB"}},{"product_id":1637,"variation_id":1878,"name":"Nova 5G Smartphone","sku":"DEMO-NOVA-5G-SMARTPHONE","model_number":null,"quantity":10,"price":22607.28,"subtotal":226072.8,"attributes":{"Color":"Blue","Size":"256GB"}},{"product_id":1669,"variation_id":2001,"name":"Family Strategy Board Game","sku":"DEMO-FAMILY-STRATEGY-BOARD-GAME","model_number":null,"quantity":10,"price":711.55,"subtotal":7115.5,"attributes":{"Size":"Classic"}},{"product_id":1669,"variation_id":2002,"name":"Family Strategy Board Game","sku":"DEMO-FAMILY-STRATEGY-BOARD-GAME","model_number":null,"quantity":5,"price":736.46,"subtotal":3682.3,"attributes":{"Size":"Deluxe"}}]	\N	\N	[{"code":"cod_fee","name":"Cash on Delivery fee","total":"40.00"}]	\N	\N		t	f	t	\N	ج.م	\N	2026-11-08 20:51:06	2026-11-08 20:51:06			t	1201	[]	2026-11-08 20:51:06	2026-11-08 20:51:06	confirmed	\N	\N	\N	\N	\N	\N	pending	\N	\N	\N	\N
+1205	0	\N	\N	pending	EGP	\N	f	2026-11-08 22:08:45	2026-11-08 22:08:45	0.00	0.00	40.00	0.00	0.00	\N	791.55	712	0	0.00	2898	wc_5DVRd3Fs2q3dfG5lzSlp	{"first_name":"Ramez","last_name":"Malak Farouk Asaad","email":"ramzmlak40@gmail.com","phone":"+201002722375","address_1":"61681","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.444981594821346","longitude":"30.805189464736035"}	{"first_name":"Ramez","last_name":"Malak Farouk Asaad","email":"ramzmlak40@gmail.com","phone":"+201002722375","address_1":"61681","address_2":null,"city":"Al Kufur","state":"Minya","country":"EG","latitude":"28.444981594821346","longitude":"30.805189464736035"}	cod	Cash on Delivery	\N	192.168.137.196	Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Mobile Safari/537.36	website		\N	\N	216be560ff1a6ed1afbefdf06d376a94	\N	[{"product_id":1669,"variation_id":2001,"name":"Family Strategy Board Game","sku":"DEMO-FAMILY-STRATEGY-BOARD-GAME","model_number":null,"quantity":1,"price":711.55,"subtotal":711.55,"attributes":{"Size":"Classic"}}]	\N	\N	[{"code":"cod_fee","name":"Cash on Delivery fee","total":"40.00"}]	\N	\N		t	f	t	\N	ج.م	\N	2026-11-08 22:08:45	2026-11-08 22:08:45			t	1205	[]	2026-11-08 22:08:45	2026-11-08 22:08:45	confirmed	\N	\N	\N	\N	\N	\N	pending	\N	\N	\N	\N
 \.
 
 
@@ -2620,6 +2712,10 @@ COPY public.orders (id, parent_id, parent_vendors_ids, parent_vendors_data, stat
 
 COPY public.otp_verifications (id, phone, otp_code, expires_at, attempts, resend_count, resend_window_start, verified, created_at, updated_at) FROM stdin;
 331	+201211313312	844005	2026-11-06 10:58:46	0	0	\N	t	2026-11-06 10:53:46	2026-11-06 10:53:58
+332	+201000055568	485338	2026-11-08 20:16:39	0	0	\N	f	2026-11-08 20:11:39	2026-11-08 20:11:39
+333	+201002722375	656466	2026-11-08 20:28:55	0	0	\N	t	2026-11-08 20:23:55	2026-11-08 20:24:07
+334	+201002722375	470072	2026-11-08 22:11:50	0	0	\N	t	2026-11-08 22:06:50	2026-11-08 22:07:00
+335	+201002722375	866568	2026-11-08 22:38:41	0	0	\N	t	2026-11-08 22:33:41	2026-11-08 22:33:48
 \.
 
 
@@ -2922,10 +3018,6 @@ COPY public.product_variations (id, product_id, main_variation, attributes, pric
 1872	1636	t	{"Color":"Black","Size":"Standard"}	1699.00	1699.00	1563.08	18	["products/demo-catalog/controller.jpg"]	2026-11-06 12:12:53	2026-11-06 12:12:53	instock	publish	\N
 1873	1636	f	{"Color":"Blue","Size":"Standard"}	1758.47	1758.47	1617.79	25	["products/demo-catalog/controller.jpg"]	2026-11-06 12:12:53	2026-11-06 12:12:53	instock	publish	\N
 1874	1636	f	{"Color":"White","Size":"Standard"}	1817.93	1817.93	1672.50	32	["products/demo-catalog/controller.jpg"]	2026-11-06 12:12:53	2026-11-06 12:12:53	instock	publish	\N
-1875	1637	t	{"Color":"Black","Size":"128GB"}	21999.00	21999.00	20459.07	29	["products/demo-catalog/phone.jpg"]	2026-11-06 12:12:53	2026-11-06 12:12:53	instock	publish	\N
-1876	1637	f	{"Color":"Black","Size":"256GB"}	22768.97	22768.97	21175.14	36	["products/demo-catalog/phone.jpg"]	2026-11-06 12:12:53	2026-11-06 12:12:53	instock	publish	\N
-1877	1637	f	{"Color":"Blue","Size":"128GB"}	23538.93	23538.93	21891.20	8	["products/demo-catalog/phone.jpg"]	2026-11-06 12:12:53	2026-11-06 12:12:53	instock	publish	\N
-1878	1637	f	{"Color":"Blue","Size":"256GB"}	24308.90	24308.90	22607.28	15	["products/demo-catalog/phone.jpg"]	2026-11-06 12:12:53	2026-11-06 12:12:53	instock	publish	\N
 1879	1638	t	{"Color":"Black","Size":"64GB"}	10999.00	10999.00	\N	40	["products/demo-catalog/phone.jpg"]	2026-11-06 12:12:53	2026-11-06 12:12:53	instock	publish	\N
 1880	1638	f	{"Color":"Black","Size":"128GB"}	11383.97	11383.97	\N	12	["products/demo-catalog/phone.jpg"]	2026-11-06 12:12:53	2026-11-06 12:12:53	instock	publish	\N
 1881	1638	f	{"Color":"Mint","Size":"64GB"}	11768.93	11768.93	\N	19	["products/demo-catalog/phone.jpg"]	2026-11-06 12:12:53	2026-11-06 12:12:53	instock	publish	\N
@@ -3048,8 +3140,12 @@ COPY public.product_variations (id, product_id, main_variation, attributes, pric
 1998	1668	f	{"Color":"Red","Size":"1:18"}	1447.97	1447.97	\N	27	["products/demo-catalog/toycar.jpg"]	2026-11-06 12:12:53	2026-11-06 12:12:53	instock	publish	\N
 1999	1668	f	{"Color":"Blue","Size":"1:24"}	1496.93	1496.93	\N	34	["products/demo-catalog/toycar.jpg"]	2026-11-06 12:12:53	2026-11-06 12:12:53	instock	publish	\N
 2000	1668	f	{"Color":"Blue","Size":"1:18"}	1545.90	1545.90	\N	6	["products/demo-catalog/toycar.jpg"]	2026-11-06 12:12:53	2026-11-06 12:12:53	instock	publish	\N
-2001	1669	t	{"Size":"Classic"}	749.00	749.00	711.55	31	["products/demo-catalog/boardgame.jpg"]	2026-11-06 12:12:53	2026-11-06 12:12:53	instock	publish	\N
-2002	1669	f	{"Size":"Deluxe"}	775.22	775.22	736.46	38	["products/demo-catalog/boardgame.jpg"]	2026-11-06 12:12:53	2026-11-06 12:12:53	instock	publish	\N
+2001	1669	t	{"Size":"Classic"}	749.00	749.00	711.55	19	["products/demo-catalog/boardgame.jpg"]	2026-11-06 12:12:53	2026-11-06 12:12:53	instock	publish	\N
+1875	1637	t	{"Color":"Black","Size":"128GB"}	21999.00	21999.00	20459.07	19	["products/demo-catalog/phone.jpg"]	2026-11-06 12:12:53	2026-11-06 12:12:53	instock	publish	\N
+1877	1637	f	{"Color":"Blue","Size":"128GB"}	23538.93	23538.93	21891.20	1	["products/demo-catalog/phone.jpg"]	2026-11-06 12:12:53	2026-11-06 12:12:53	instock	publish	\N
+1876	1637	f	{"Color":"Black","Size":"256GB"}	22768.97	22768.97	21175.14	26	["products/demo-catalog/phone.jpg"]	2026-11-06 12:12:53	2026-11-06 12:12:53	instock	publish	\N
+1878	1637	f	{"Color":"Blue","Size":"256GB"}	24308.90	24308.90	22607.28	5	["products/demo-catalog/phone.jpg"]	2026-11-06 12:12:53	2026-11-06 12:12:53	instock	publish	\N
+2002	1669	f	{"Size":"Deluxe"}	775.22	775.22	736.46	33	["products/demo-catalog/boardgame.jpg"]	2026-11-06 12:12:53	2026-11-06 12:12:53	instock	publish	\N
 \.
 
 
@@ -3065,6 +3161,7 @@ COPY public.products_data (id, name, slug, search_text, permalink, date_created,
 2	Mini Crossbody Bag	mini-crossbody-bag	mini crossbody bag compact crossbody bag with adjustable strap. fits your phone, keys, and essentials.		2025-12-18 17:10:14		2025-12-18 17:10:14		variable	publish	f		Compact crossbody bag with adjustable strap. Fits your phone, keys, and essentials.	15	Compact crossbody bag with adjustable strap. Fits your phone, keys, and essentials.	\N	\N	\N	\N	\N	t	t	98	f	f	[]	0	0	\N		t	95		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":23}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1548036328-c9fa89d128fa?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	12	[{"name": "حقيبة كروس بودي صغيرة", "locale": "ar", "description": "حقيبة كروس بودي مدمجة بحزام قابل للتعديل. تتسع لهاتفك ومفاتيحك والأساسيات."}]	approved			both
 3	Quilted Chain Shoulder Bag	quilted-chain-shoulder-bag	quilted chain shoulder bag elegant quilted bag with gold-tone chain strap. a timeless piece for any outfit.		2025-08-16 17:10:14		2025-08-16 17:10:14		variable	publish	f		Elegant quilted bag with gold-tone chain strap. A timeless piece for any outfit.	0	Elegant quilted bag with gold-tone chain strap. A timeless piece for any outfit.	\N	\N	\N	\N	\N	f	t	67	f	f	[]	0	0	\N		t	25		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":23}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1591561954555-607968c989ab?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	12	[{"name": "حقيبة كتف مبطنة بسلسلة", "locale": "ar", "description": "حقيبة مبطنة أنيقة بحزام سلسلة بلون ذهبي. قطعة خالدة تناسب أي إطلالة."}]	approved			both
 10	Polo Shirt	polo-shirt	polo shirt classic piqué polo shirt with ribbed collar and cuffs. available in vibrant colors.		2024-06-03 17:10:14		2024-06-03 17:10:14		variable	publish	f		Classic piqué polo shirt with ribbed collar and cuffs. Available in vibrant colors.	15	Classic piqué polo shirt with ribbed collar and cuffs. Available in vibrant colors.	\N	\N	\N	\N	\N	t	t	201	f	f	[]	0	0	\N		t	160		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":19}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1586363104862-3a5e2ab60d99?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	10	[{"name": "قميص بولو", "locale": "ar", "description": "قميص بولو بيكيه كلاسيكي بياقة وأساور مضلعة. متوفر بألوان زاهية."}]	approved			both
+1643	Portable Bluetooth Speaker	demo-portable-bluetooth-speaker	portable bluetooth speaker water-resistant portable speaker with rich sound and strong battery life. audio & cameras		2026-11-06 07:00:53		2026-11-06 12:12:53		variable	publish	f	visible	Water-resistant portable speaker with rich sound and strong battery life.	0	Water-resistant portable speaker with rich sound and strong battery life.	DEMO-PORTABLE-BLUETOOTH-SPEAKER	\N	\N	\N	\N	f	t	448	f	f	[]	0	0	\N		t	150		f	f	0	f	[]	t	t		0	t		0	[]	[]	0		[{"id":847,"name":"Audio & Cameras"}]	["demo catalog","Audio & Cameras"]	{"thumbnail":"products/demo-catalog/speaker.jpg","other_images":["products/demo-catalog/speaker.jpg"],"natural_images":[]}	["Color","Size"]	[]	[]	[]	0	[]	[]	instock	t	t		\N	f	[]	f	[]	en	2199		2583.83	2026-11-06 11:57:06	2026-11-06 12:12:53	1	10	physical	\N		approved	piece		both
 4	Canvas Backpack	canvas-backpack	canvas backpack durable canvas backpack with laptop sleeve and multiple pockets. perfect for work or travel.		2025-07-21 17:10:14		2025-07-21 17:10:14		variable	publish	f		Durable canvas backpack with laptop sleeve and multiple pockets. Perfect for work or travel.	20	Durable canvas backpack with laptop sleeve and multiple pockets. Perfect for work or travel.	\N	\N	\N	\N	\N	t	t	210	f	f	[]	0	0	\N		t	160		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":23}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1553062407-98eeb64c6a62?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	12	[{"name": "حقيبة ظهر من الكانفاس", "locale": "ar", "description": "حقيبة ظهر متينة من الكانفاس مع جراب للابتوب والعديد من الجيوب. مثالية للعمل أو السفر."}]	approved			both
 5	Slim Fit Blue Denim Jeans	slim-fit-blue-denim-jeans	slim fit blue denim jeans classic slim-fit jeans in mid-wash blue denim. stretch fabric for all-day comfort.		2025-01-29 17:10:14		2025-01-29 17:10:14		variable	publish	f		Classic slim-fit jeans in mid-wash blue denim. Stretch fabric for all-day comfort.	0	Classic slim-fit jeans in mid-wash blue denim. Stretch fabric for all-day comfort.	\N	\N	\N	\N	\N	f	t	325	f	f	[]	0	0	\N		t	130		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":29}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1542272454315-4c01d7abdf4a?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	17	[{"name": "جينز دنيم أزرق بقصة ضيقة", "locale": "ar", "description": "جينز بقصة ضيقة كلاسيكية بلون أزرق متوسط الغسيل. قماش مرن لراحة طوال اليوم."}]	approved			both
 6	Black Skinny Jeans	black-skinny-jeans	black skinny jeans sleek black skinny jeans with a high-rise waist. a wardrobe essential for every season.		2024-12-05 17:10:14		2024-12-05 17:10:14		variable	publish	f		Sleek black skinny jeans with a high-rise waist. A wardrobe essential for every season.	10	Sleek black skinny jeans with a high-rise waist. A wardrobe essential for every season.	\N	\N	\N	\N	\N	t	t	280	f	f	[]	0	0	\N		t	145		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":29}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1541099649105-f69ad21f3246?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	17	[{"name": "جينز سكيني أسود", "locale": "ar", "description": "جينز سكيني أسود بخصر مرتفع. قطعة أساسية لخزانة الملابس في كل موسم."}]	approved			both
@@ -3072,6 +3169,7 @@ COPY public.products_data (id, name, slug, search_text, permalink, date_created,
 8	Classic White Oxford Shirt	classic-white-oxford-shirt	classic white oxford shirt crisp white oxford shirt crafted from 100% cotton. timeless style suitable for work or weekend.		2024-09-12 17:10:14		2024-09-12 17:10:14		variable	publish	f		Crisp white Oxford shirt crafted from 100% cotton. Timeless style suitable for work or weekend.	0	Crisp white Oxford shirt crafted from 100% cotton. Timeless style suitable for work or weekend.	\N	\N	\N	\N	\N	f	t	175	f	f	[]	0	0	\N		t	165		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":19}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1598033129183-c4f50c736f10?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	10	[{"name": "قميص أوكسفورد أبيض كلاسيكي", "locale": "ar", "description": "قميص أوكسفورد أبيض ناصع مصنوع من 100% قطن. طراز كلاسيكي مناسب للعمل أو لعطلة نهاية الأسبوع."}]	approved			both
 9	Linen Casual Shirt	linen-casual-shirt	linen casual shirt breathable linen shirt perfect for warm weather. relaxed fit with a button-down collar.		2024-06-06 17:10:14		2024-06-06 17:10:14		variable	publish	f		Breathable linen shirt perfect for warm weather. Relaxed fit with a button-down collar.	0	Breathable linen shirt perfect for warm weather. Relaxed fit with a button-down collar.	\N	\N	\N	\N	\N	f	t	134	f	f	[]	0	0	\N		t	105		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":19}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1607962837359-5e7e89f86776?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	10	[{"name": "قميص كتان كاجوال", "locale": "ar", "description": "قميص من الكتان قابل للتنفس مثالي للطقس الحار. قصة مريحة مع ياقة بأزرار."}]	approved			both
 11	Women's Tailored Blazer	womens-tailored-blazer	women's tailored blazer sharp tailored blazer with a modern slim fit. perfect for the office or a night out.		2024-02-14 17:10:14		2024-02-14 17:10:14		variable	publish	f		Sharp tailored blazer with a modern slim fit. Perfect for the office or a night out.	0	Sharp tailored blazer with a modern slim fit. Perfect for the office or a night out.	\N	\N	\N	\N	\N	f	t	88	f	f	[]	0	0	\N		t	67		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":25}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1594938298603-c8148c4dae35?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	16	[{"name": "بليزر نسائي مفصل بقصة ضيقة عصرية", "locale": "ar", "description": "بليزر مُفصّل بقصة عصرية ضيقة. مثالي للمكتب أو لأمسية خارجية."}]	approved			both
+1652	Nordic Lounge Chair	demo-nordic-lounge-chair	nordic lounge chair comfortable lounge chair with a clean scandinavian silhouette. furniture & decor		2026-11-06 05:03:53		2026-11-06 12:12:53		variable	publish	f	visible	Comfortable lounge chair with a clean Scandinavian silhouette.	0	Comfortable lounge chair with a clean Scandinavian silhouette.	DEMO-NORDIC-LOUNGE-CHAIR	\N	\N	\N	\N	f	t	321	f	f	[]	0	0	\N		t	78		f	f	0	f	[]	t	t		0	t		0	[]	[]	0		[{"id":849,"name":"Furniture & Decor"}]	["demo catalog","Furniture & Decor"]	{"thumbnail":"products/demo-catalog/chair.jpg","other_images":["products/demo-catalog/chair.jpg"],"natural_images":[]}	["Color","Size"]	[]	[]	[]	0	[]	[]	instock	t	t		\N	f	[]	f	[]	en	5999		6418.93	2026-11-06 11:57:06	2026-11-06 12:12:53	1	10	physical	\N		approved	piece		both
 12	Men's Double-Breasted Blazer	mens-double-breasted-blazer	men's double-breasted blazer sophisticated double-breasted blazer in premium wool blend. a statement piece for any wardrobe.		2023-12-10 17:10:14		2023-12-10 17:10:14		variable	publish	f		Sophisticated double-breasted blazer in premium wool blend. A statement piece for any wardrobe.	20	Sophisticated double-breasted blazer in premium wool blend. A statement piece for any wardrobe.	\N	\N	\N	\N	\N	t	t	55	f	f	[]	0	0	\N		t	39		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":25}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1507003211169-0a1dd7228f2d?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	16	[{"name": "بليزر رجالي مزدوج الصدر", "locale": "ar", "description": "بليزر رجالي أنيق مزدوج الصدر من مزيج صوف فاخر. قطعة مميزة لأي خزانة ملابس."}]	approved			both
 13	Men's Classic Sneakers	mens-classic-sneakers	men's classic sneakers iconic low-top leather sneakers with cushioned sole. goes with anything, from jeans to chinos.		2023-11-07 17:10:14		2023-11-07 17:10:14		variable	publish	f		Iconic low-top leather sneakers with cushioned sole. Goes with anything, from jeans to chinos.	0	Iconic low-top leather sneakers with cushioned sole. Goes with anything, from jeans to chinos.	\N	\N	\N	\N	\N	f	t	412	f	f	[]	0	0	\N		t	125		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":28}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1542291026-7eec264c27ff?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	13	[{"name": "سنيكرز كلاسيكي رجالي", "locale": "ar", "description": "سنيكرز جلدية منخفضة الكاحل أيقونية بنعل مبطّن. ينسق مع أي شيء، من الجينز إلى الشينو."}]	approved			both
 14	Women's Ankle Boots	womens-ankle-boots	women's ankle boots sleek leather ankle boots with a block heel. versatile enough for day or night wear.		2023-11-06 17:10:14		2023-11-06 17:10:14		variable	publish	f		Sleek leather ankle boots with a block heel. Versatile enough for day or night wear.	10	Sleek leather ankle boots with a block heel. Versatile enough for day or night wear.	\N	\N	\N	\N	\N	t	t	167	f	f	[]	0	0	\N		t	65		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":28}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1543163521-1bf539c55dd2?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	13	[{"name": "بوت كاحل نسائي", "locale": "ar", "description": "بوت كاحل جلدي أنيق بكعب بلوك. متعدد الاستخدامات لارتداء نهاراً أو ليلاً."}]	approved			both
@@ -3079,6 +3177,7 @@ COPY public.products_data (id, name, slug, search_text, permalink, date_created,
 16	Graphic Print T-Shirt	graphic-print-tshirt	graphic print t-shirt bold graphic tee printed on 100% organic cotton. express your style with attitude.		2023-06-18 17:10:14		2023-06-18 17:10:14		variable	publish	f		Bold graphic tee printed on 100% organic cotton. Express your style with attitude.	0	Bold graphic tee printed on 100% organic cotton. Express your style with attitude.	\N	\N	\N	\N	\N	f	t	398	f	f	[]	0	0	\N		t	330		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":21}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1521572163474-6864f9cf17ab?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	14	[{"name": "تيشيرت بطبعة جرافيك", "locale": "ar", "description": "تيشيرت بطبعة جريئة مطبوع على قطن عضوي 100%. عبّر عن أسلوبك بثقة."}]	approved			both
 17	Oversized Hoodie	oversized-hoodie	oversized hoodie super-soft heavyweight fleece hoodie with a relaxed oversized fit. cozy all day long.		2023-03-09 17:10:14		2023-03-09 17:10:14		variable	publish	f		Super-soft heavyweight fleece hoodie with a relaxed oversized fit. Cozy all day long.	30	Super-soft heavyweight fleece hoodie with a relaxed oversized fit. Cozy all day long.	\N	\N	\N	\N	\N	t	t	244	f	f	[]	0	0	\N		t	190		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":21}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1556821840-3a63f15732ce?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	14	[{"name": "هودي واسع من فليس ثقيل", "locale": "ar", "description": "هودي من فليس ثقيل ناعم جداً بقصة واسعة ومريحة. دافئ ومريح طوال اليوم."}]	approved			both
 18	Striped Long-Sleeve Tee	striped-long-sleeve-tee	striped long-sleeve tee classic breton stripes on a breathable long-sleeve tee. a french-inspired everyday essential.		2022-10-24 17:10:14		2022-10-24 17:10:14		variable	publish	f		Classic Breton stripes on a breathable long-sleeve tee. A French-inspired everyday essential.	0	Classic Breton stripes on a breathable long-sleeve tee. A French-inspired everyday essential.	\N	\N	\N	\N	\N	f	t	156	f	f	[]	0	0	\N		t	155		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":21}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1581655353564-df123a1eb820?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	14	[{"name": "تيشيرت مخطط بأكمام طويلة", "locale": "ar", "description": "خطوط بريتون الكلاسيكية على تيشيرت بأكمام طويلة قابل للتنفس. قطعة يومية مستوحاة من الأناقة الفرنسية."}]	approved			both
+1661	Velvet Eau de Parfum	demo-velvet-eau-de-parfum	velvet eau de parfum warm modern fragrance with floral, amber and soft woody notes. beauty & personal care		2026-11-06 03:06:53		2026-11-06 12:12:53		variable	publish	t	visible	Warm modern fragrance with floral, amber and soft woody notes.	10	Warm modern fragrance with floral, amber and soft woody notes.	DEMO-VELVET-EAU-DE-PARFUM	\N	\N	\N	\N	t	t	194	f	f	[]	0	0	\N		t	33		f	f	0	f	[]	t	t		0	t		0	[]	[]	0		[{"id":851,"name":"Beauty & Personal Care"}]	["demo catalog","Beauty & Personal Care"]	{"thumbnail":"products/demo-catalog/perfume.jpg","other_images":["products/demo-catalog/perfume.jpg"],"natural_images":[]}	["Size"]	[]	[]	[]	0	[]	[]	instock	t	t		\N	f	[]	f	[]	en	2199		2275.97	2026-11-06 11:57:06	2026-11-06 12:12:53	1	10	physical	\N		approved	piece		both
 19	Slim-Fit Chino Trousers	slim-fit-chino-trousers	slim-fit chino trousers smart-casual chinos in stretch cotton twill. office-ready yet weekend-worthy.		2022-10-07 17:10:14		2022-10-07 17:10:14		variable	publish	f		Smart-casual chinos in stretch cotton twill. Office-ready yet weekend-worthy.	0	Smart-casual chinos in stretch cotton twill. Office-ready yet weekend-worthy.	\N	\N	\N	\N	\N	f	t	188	f	f	[]	0	0	\N		t	180		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":30}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1552902865-b72c031ac5ea?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	17	[{"name": "بنطال تشينو بقصة ضيقة", "locale": "ar", "description": "تشينو ذكي كاجوال من تويل قطني مرن. جاهز للمكتب وفي عطلة نهاية الأسبوع."}]	approved			both
 20	Floral Wrap Dress	floral-wrap-dress	floral wrap dress feminine wrap dress in a vibrant floral print. v-neckline and adjustable tie waist for a flattering fit.		2022-08-23 17:10:14		2022-08-23 17:10:14		variable	publish	f		Feminine wrap dress in a vibrant floral print. V-neckline and adjustable tie waist for a flattering fit.	0	Feminine wrap dress in a vibrant floral print. V-neckline and adjustable tie waist for a flattering fit.	\N	\N	\N	\N	\N	f	t	223	f	f	[]	0	0	\N		t	120		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":26}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1595777457583-95e059d581b8?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	16	[{"name": "فستان ملفوف بنقشة زهور", "locale": "ar", "description": "فستان ملفوف أنثوي بنقشة زهور زاهية. ياقة على شكل V وحزام قابل للتعديل عند الخصر لمقاس ملائم وجذاب."}]	approved			both
 21	Midi Slip Dress	midi-slip-dress	midi slip dress satin midi slip dress with thin adjustable straps. effortlessly elegant for any occasion.		2022-05-22 17:10:14		2022-05-22 17:10:14		variable	publish	f		Satin midi slip dress with thin adjustable straps. Effortlessly elegant for any occasion.	20	Satin midi slip dress with thin adjustable straps. Effortlessly elegant for any occasion.	\N	\N	\N	\N	\N	t	t	145	f	f	[]	0	0	\N		t	103		f	f	0	f	[]	f	f		0	t		0	[]	[]	0		[{"id":26}]	[]	{"thumbnail":"https:\\/\\/images.unsplash.com\\/photo-1614170153058-7a8e04b58f76?w=600&h=700&fit=crop","other_images":[],"natural_images":[]}	[]	[]	[]	[]	0	[]	[]		f	f		\N	f	[]	f	[]	["en", "ar"]	0		0	2026-05-06 17:10:15	2026-08-13 08:10:56	0	0	physical	16	[{"name": "فستان سليب ميدي", "locale": "ar", "description": "فستان ساتان ميدي بحمالات رفيعة قابلة للتعديل. أنيق بسهولة لأي مناسبة."}]	approved			both
@@ -3133,9 +3232,6 @@ COPY public.products_data (id, name, slug, search_text, permalink, date_created,
 1624	Swift NVMe SSD	demo-swift-nvme-ssd	swift nvme ssd fast nvme solid-state drive for quick boot, game and application loading. computer components		2026-11-06 11:07:53		2026-11-06 12:12:53		variable	publish	f	visible	Fast NVMe solid-state drive for quick boot, game and application loading.	12	Fast NVMe solid-state drive for quick boot, game and application loading.	DEMO-SWIFT-NVME-SSD	\N	\N	\N	\N	t	t	205	f	f	[]	0	0	\N		t	99		f	f	0	f	[]	t	t		0	t		0	[]	[]	0		[{"id":843,"name":"Computer Components"}]	["demo catalog","Computer Components"]	{"thumbnail":"products/demo-catalog/pc.jpg","other_images":["products/demo-catalog/pc.jpg"],"natural_images":[]}	["Size"]	[]	[]	[]	0	[]	[]	instock	t	t		\N	f	[]	f	[]	en	2499		2673.93	2026-11-06 11:57:06	2026-11-06 12:12:53	1	10	physical	\N		approved	piece		both
 1625	Frost RGB CPU Cooler	demo-frost-rgb-cpu-cooler	frost rgb cpu cooler quiet tower cooler with addressable lighting and broad socket support. computer components		2026-11-06 10:54:53		2026-11-06 12:12:53		variable	publish	f	visible	Quiet tower cooler with addressable lighting and broad socket support.	0	Quiet tower cooler with addressable lighting and broad socket support.	DEMO-FROST-RGB-CPU-COOLER	\N	\N	\N	\N	f	t	242	f	f	[]	0	0	\N		t	85		f	f	0	f	[]	t	t		0	t		0	[]	[]	0		[{"id":843,"name":"Computer Components"}]	["demo catalog","Computer Components"]	{"thumbnail":"products/demo-catalog/pc.jpg","other_images":["products/demo-catalog/pc.jpg"],"natural_images":[]}	["Color","Size"]	[]	[]	[]	0	[]	[]	instock	t	t		\N	f	[]	f	[]	en	2199		2429.9	2026-11-06 11:57:06	2026-11-06 12:12:53	1	10	physical	\N		approved	piece		both
 1634	Surround Gaming Headset	demo-surround-gaming-headset	surround gaming headset comfortable over-ear headset with clear voice chat and spatial sound. gaming accessories		2026-11-06 08:57:53		2026-11-06 12:12:53		variable	publish	f	visible	Comfortable over-ear headset with clear voice chat and spatial sound.	10	Comfortable over-ear headset with clear voice chat and spatial sound.	DEMO-SURROUND-GAMING-HEADSET	\N	\N	\N	\N	t	t	115	f	f	[]	0	0	\N		t	96		f	f	0	f	[]	t	t		0	t		0	[]	[]	0		[{"id":845,"name":"Gaming Accessories"}]	["demo catalog","Gaming Accessories"]	{"thumbnail":"products/demo-catalog/headset.jpg","other_images":["products/demo-catalog/headset.jpg"],"natural_images":[]}	["Color","Size"]	[]	[]	[]	0	[]	[]	instock	t	t		\N	f	[]	f	[]	en	1899		2098.4	2026-11-06 11:57:06	2026-11-06 12:12:53	1	10	physical	\N		approved	piece		both
-1643	Portable Bluetooth Speaker	demo-portable-bluetooth-speaker	portable bluetooth speaker water-resistant portable speaker with rich sound and strong battery life. audio & cameras		2026-11-06 07:00:53		2026-11-06 12:12:53		variable	publish	f	visible	Water-resistant portable speaker with rich sound and strong battery life.	0	Water-resistant portable speaker with rich sound and strong battery life.	DEMO-PORTABLE-BLUETOOTH-SPEAKER	\N	\N	\N	\N	f	t	448	f	f	[]	0	0	\N		t	150		f	f	0	f	[]	t	t		0	t		0	[]	[]	0		[{"id":847,"name":"Audio & Cameras"}]	["demo catalog","Audio & Cameras"]	{"thumbnail":"products/demo-catalog/speaker.jpg","other_images":["products/demo-catalog/speaker.jpg"],"natural_images":[]}	["Color","Size"]	[]	[]	[]	0	[]	[]	instock	t	t		\N	f	[]	f	[]	en	2199		2583.83	2026-11-06 11:57:06	2026-11-06 12:12:53	1	10	physical	\N		approved	piece		both
-1652	Nordic Lounge Chair	demo-nordic-lounge-chair	nordic lounge chair comfortable lounge chair with a clean scandinavian silhouette. furniture & decor		2026-11-06 05:03:53		2026-11-06 12:12:53		variable	publish	f	visible	Comfortable lounge chair with a clean Scandinavian silhouette.	0	Comfortable lounge chair with a clean Scandinavian silhouette.	DEMO-NORDIC-LOUNGE-CHAIR	\N	\N	\N	\N	f	t	321	f	f	[]	0	0	\N		t	78		f	f	0	f	[]	t	t		0	t		0	[]	[]	0		[{"id":849,"name":"Furniture & Decor"}]	["demo catalog","Furniture & Decor"]	{"thumbnail":"products/demo-catalog/chair.jpg","other_images":["products/demo-catalog/chair.jpg"],"natural_images":[]}	["Color","Size"]	[]	[]	[]	0	[]	[]	instock	t	t		\N	f	[]	f	[]	en	5999		6418.93	2026-11-06 11:57:06	2026-11-06 12:12:53	1	10	physical	\N		approved	piece		both
-1661	Velvet Eau de Parfum	demo-velvet-eau-de-parfum	velvet eau de parfum warm modern fragrance with floral, amber and soft woody notes. beauty & personal care		2026-11-06 03:06:53		2026-11-06 12:12:53		variable	publish	t	visible	Warm modern fragrance with floral, amber and soft woody notes.	10	Warm modern fragrance with floral, amber and soft woody notes.	DEMO-VELVET-EAU-DE-PARFUM	\N	\N	\N	\N	t	t	194	f	f	[]	0	0	\N		t	33		f	f	0	f	[]	t	t		0	t		0	[]	[]	0		[{"id":851,"name":"Beauty & Personal Care"}]	["demo catalog","Beauty & Personal Care"]	{"thumbnail":"products/demo-catalog/perfume.jpg","other_images":["products/demo-catalog/perfume.jpg"],"natural_images":[]}	["Size"]	[]	[]	[]	0	[]	[]	instock	t	t		\N	f	[]	f	[]	en	2199		2275.97	2026-11-06 11:57:06	2026-11-06 12:12:53	1	10	physical	\N		approved	piece		both
 \.
 
 
@@ -3258,9 +3354,10 @@ COPY public.user_notes (id, user_id, date_created, note, customer_note, created_
 
 COPY public.users (id, name, email, email_verified_at, password, remember_token, created_at, updated_at, user_login, username, user_nicename, display_name, first_name, last_name, url, avatar, phone, role, nicename, registered, firstname, lastname, description, capabilities, shipping, registration_method, is_phone_verified, is_blocked, provider, provider_id, referral_code, referred_by, referral_lock_ip) FROM stdin;
 2702	Ramo Demo Admin	admin@ramostore.test	2026-10-12 20:06:42	$2y$12$Vpb73nOx8wwQOGZ/wurogO6xvmWAL4U8Itn8nM0kOXdV8xOTjkS82	\N	2026-10-12 20:06:42	2026-10-12 20:06:42	\N	\N	\N	\N	Ramo Demo	Admin	\N	\N		admin	ramo-demo-admin	2026-10-12 20:06:42	Ramo Demo	Admin		{"admin":true}	[]	email_password	f	f	\N	\N	W7JYG2RG	\N	127.0.0.1
-2703	Demo Customer	customer@ramostore.test	2026-10-12 20:06:42	$2y$12$BF7cFKdmddF9Oobcw9NpjexyNI0.RIrCmyHkDmSshTYwuE2qWvLKq	\N	2026-10-12 20:06:42	2026-10-12 20:06:42	\N	\N	\N	\N	Demo	Customer	\N	\N	+20100000002	normal_user	demo-customer	2026-10-12 20:06:42	Demo	Customer		{"customer":true}	[]	email_password	f	f	\N	\N	RMICVYP5	\N	127.0.0.1
-2800	Admin	adminramoui@gmail.com	2026-10-12 20:43:03	$2y$12$bEMw5rB4ugNTJOF1iAr7reqS0LVT9LO2Sg30LGf6tFhtKfQTAcWhW	\N	2026-10-12 20:43:03	2026-10-12 20:43:03	\N	\N	\N	\N	\N	\N	\N	\N		["admin"]								\N	f	f	\N	\N	\N	\N	\N
 2897	Ramez Malak	\N	\N	$2y$12$frRClgnX4Mm20dPuSCjSj.EbcQPQu1d0dcE39gUuqUZ3VA89dst6i	\N	2026-11-06 10:54:30	2026-11-06 10:54:30	\N	\N	\N	\N	Ramez	Malak	\N	\N	+201211313312	["customer"]	ramez-malak-3312	2026-11-06 10:54:30	Ramez	Malak		{"customer":true}	[]	phone_otp	t	f	\N	\N	GMBVBXZI	\N	127.0.0.1
+2703	Demo Customer	customer@ramostore.test	2026-10-12 20:06:42	$2y$12$BF7cFKdmddF9Oobcw9NpjexyNI0.RIrCmyHkDmSshTYwuE2qWvLKq	\N	2026-10-12 20:06:42	2026-11-07 06:09:45	\N	\N	\N	\N	Demo	Customer	\N	\N	+20100000002	customer	demo-customer	2026-10-12 20:06:42	Demo	Customer		{"customer":true}	[]	email_password	f	f	\N	\N	RMICVYP5	\N	127.0.0.1
+2800	Admin	adminramoui@gmail.com	2026-10-12 20:43:03	$2y$12$bEMw5rB4ugNTJOF1iAr7reqS0LVT9LO2Sg30LGf6tFhtKfQTAcWhW	\N	2026-10-12 20:43:03	2026-11-07 06:16:48	\N	\N	\N	\N	Ramez	Asaad	\N	\N	01002722375	["admin"]							{"first_name":"Ramez","last_name":"Asaad","address":"Kufur \\/ Matay \\/ Minya \\/ egypt","address_note":null,"city":"Al Minya","state":"Minya","email":"adminramoui@gmail.com","phone":"01002722375","latitude":"28.445469","longitude":"30.805815000000003"}	\N	f	f	\N	\N	\N	\N	\N
+2898	Ramez Malak Farouk Asaad	ramzmlak40@gmail.com	\N	$2y$12$XA6HO0leKlLxazL/wjwg7e4IPoxLSHsDAPL/JcBAyw555abU3Z/.6	\N	2026-11-08 20:24:18	2026-11-08 22:08:45	\N	\N	\N	\N	Ramez	Malak Farouk Asaad	\N	\N	+201002722375	["customer"]	ramez-malak-farouk-asaad-2375	2026-11-08 20:24:18	Ramez	Malak Farouk Asaad		{"customer":true}	{"first_name":"Ramez","last_name":"Malak Farouk Asaad","address":"61681","address_note":null,"city":"Al Kufur","state":"Minya","email":"ramzmlak40@gmail.com","phone":"+201002722375","latitude":"28.444981594821346","longitude":"30.805189464736035"}	phone_otp	t	f	\N	\N	PXJYSLJV	\N	192.168.1.8
 \.
 
 
@@ -3307,7 +3404,7 @@ SELECT pg_catalog.setval('public.app_config_id_seq', 1, false);
 -- Name: app_configs_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.app_configs_id_seq', 161, true);
+SELECT pg_catalog.setval('public.app_configs_id_seq', 162, true);
 
 
 --
@@ -3335,14 +3432,14 @@ SELECT pg_catalog.setval('public.brands_id_seq', 6, true);
 -- Name: cart_items_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.cart_items_id_seq', 712, true);
+SELECT pg_catalog.setval('public.cart_items_id_seq', 784, true);
 
 
 --
 -- Name: categories2_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.categories2_id_seq', 852, true);
+SELECT pg_catalog.setval('public.categories2_id_seq', 853, true);
 
 
 --
@@ -3398,7 +3495,7 @@ SELECT pg_catalog.setval('public.getposttest_id_seq', 1, false);
 -- Name: idempotency_keys_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.idempotency_keys_id_seq', 183, true);
+SELECT pg_catalog.setval('public.idempotency_keys_id_seq', 189, true);
 
 
 --
@@ -3447,35 +3544,42 @@ SELECT pg_catalog.setval('public.links_logs_two_id_seq', 1, false);
 -- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.migrations_id_seq', 29, true);
+SELECT pg_catalog.setval('public.migrations_id_seq', 30, true);
 
 
 --
 -- Name: order_messages_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.order_messages_id_seq', 3, true);
+SELECT pg_catalog.setval('public.order_messages_id_seq', 4, true);
+
+
+--
+-- Name: order_notifications_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.order_notifications_id_seq', 9, true);
 
 
 --
 -- Name: order_sub_orders_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.order_sub_orders_id_seq', 214, true);
+SELECT pg_catalog.setval('public.order_sub_orders_id_seq', 217, true);
 
 
 --
 -- Name: orders_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.orders_id_seq', 1199, true);
+SELECT pg_catalog.setval('public.orders_id_seq', 1205, true);
 
 
 --
 -- Name: otp_verifications_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.otp_verifications_id_seq', 331, true);
+SELECT pg_catalog.setval('public.otp_verifications_id_seq', 335, true);
 
 
 --
@@ -3503,14 +3607,14 @@ SELECT pg_catalog.setval('public.product_reviews_id_seq', 162, true);
 -- Name: product_variations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.product_variations_id_seq', 2002, true);
+SELECT pg_catalog.setval('public.product_variations_id_seq', 2018, true);
 
 
 --
 -- Name: products_data_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.products_data_id_seq', 1669, true);
+SELECT pg_catalog.setval('public.products_data_id_seq', 1682, true);
 
 
 --
@@ -3587,7 +3691,7 @@ SELECT pg_catalog.setval('public.user_notes_id_seq', 114, true);
 -- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.users_id_seq', 2897, true);
+SELECT pg_catalog.setval('public.users_id_seq', 2903, true);
 
 
 --
@@ -3833,6 +3937,14 @@ ALTER TABLE ONLY public.migrations
 
 ALTER TABLE ONLY public.order_messages
     ADD CONSTRAINT order_messages_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: order_notifications order_notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_notifications
+    ADD CONSTRAINT order_notifications_pkey PRIMARY KEY (id);
 
 
 --
@@ -4119,6 +4231,20 @@ CREATE INDEX image_gallery_images_created_at_index ON public.image_gallery_image
 
 
 --
+-- Name: order_notifications_customer_id_created_at_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX order_notifications_customer_id_created_at_id_index ON public.order_notifications USING btree (customer_id, created_at, id);
+
+
+--
+-- Name: order_notifications_customer_id_read_at_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX order_notifications_customer_id_read_at_index ON public.order_notifications USING btree (customer_id, read_at);
+
+
+--
 -- Name: order_sub_orders_parent_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4259,11 +4385,26 @@ CREATE INDEX wishlists_user_product_idx ON public.wishlists USING btree (user_id
 
 
 --
+-- Name: orders order_notifications_on_change; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER order_notifications_on_change AFTER INSERT OR UPDATE OF status, payment_status ON public.orders FOR EACH ROW EXECUTE FUNCTION public.record_order_notification();
+
+
+--
 -- Name: image_gallery_images image_gallery_images_uploaded_by_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.image_gallery_images
     ADD CONSTRAINT image_gallery_images_uploaded_by_foreign FOREIGN KEY (uploaded_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: order_notifications order_notifications_order_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_notifications
+    ADD CONSTRAINT order_notifications_order_id_foreign FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE CASCADE;
 
 
 --
@@ -4278,5 +4419,5 @@ ALTER TABLE ONLY public.saved_addresses
 -- PostgreSQL database dump complete
 --
 
-\unrestrict DHdWQwMqwybigpRaZO7yGk1difuE9nmiF466RkEzkNTEH58IMhpGhoDkBOn6l3P
+\unrestrict cS8ZqWVC2R5knxOdNy6USg76IMkDzJ14CXlHyx9KV5PoAHw7tMsOcFhJvjPDfSy
 
