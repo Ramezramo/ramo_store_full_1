@@ -26,25 +26,27 @@
   $hasSavedLocation = is_numeric($initialLatitude) && is_numeric($initialLongitude);
   $checkoutText = [
     'isAr' => $isAr,
+    'requiredField' => $isAr ? 'اكتب البيانات المطلوبة هنا.' : 'Fill in this field.',
+    'requiredOption' => $isAr ? 'اختار من القائمة.' : 'Choose an option.',
+    'invalidEmail' => $isAr ? 'اكتب عنوان بريد إلكتروني صحيح.' : 'Enter a valid email address.',
+    'invalidPhone' => $isAr ? 'اكتب رقم موبايل صحيح.' : 'Enter a valid phone number.',
     'selected' => $isAr ? 'تم اختيار:' : 'Selected:',
     'locationSelected' => $isAr ? 'تم تحديد المكان.' : 'Location selected.',
     'detailsUnavailable' => $isAr ? 'تم تحديد المكان، بس ماقدرناش نجيب تفاصيل العنوان.' : 'Location selected, but address details could not be loaded.',
     'mapLoading' => $isAr ? 'بنحمّل الخريطة…' : 'Loading map…',
-    'mapReady' => $isAr ? 'الخريطة جاهزة. اضغط أو اسحب العلامة عشان تعدّل مكان التوصيل.' : 'Map ready. Tap or drag the pin to adjust your delivery location.',
     'mapUnavailable' => $isAr ? 'ماقدرناش نحمّل الخريطة. تقدر تكتب عنوانك بنفسك.' : 'The map could not be loaded. You can still enter your address manually.',
     'mapRetry' => $isAr ? 'جرّب تحميل الخريطة تاني' : 'Retry loading map',
     'locating' => $isAr ? 'بنحدد مكانك…' : 'Locating...',
-    'detected' => $isAr ? 'اتحدد مكانك' : 'Location detected',
-    'dragPin' => $isAr ? 'تقدر تسحب العلامة عشان تعدّله.' : 'You can drag the pin to adjust it.',
-    'manualAddress' => $isAr ? 'تقدر تكتب أو تعدّل عنوانك بنفسك.' : 'You can still enter or edit your address manually.',
     'accessDenied' => $isAr ? 'المتصفح رفض إذن الموقع. افتح إعدادات الموقع بجانب اسم الموقع واختار «السماح»، وبعدها اضغط «حاول تحديد موقعي تاني».' : 'Your browser denied location access. Open the site location settings, choose Allow, then press “Try my location again.”',
     'accessBlocked' => $isAr ? 'إذن الموقع متوقف لهذا الموقع من المتصفح. فعّله من إعدادات الموقع، أو استخدم الخريطة يدويًا لتحديد مكانك.' : 'Location access is blocked for this site. Enable it in the site settings or choose your location manually on the map.',
     'detectFailed' => $isAr ? 'المتصفح ماقدرش يحدد مكانك دلوقتي. اتأكد إن الـ GPS والإنترنت شغالين، أو اختار مكانك يدويًا على الخريطة.' : 'Your browser could not detect your location. Check that GPS and internet are available, or choose your location manually on the map.',
     'locationFallback' => $isAr ? 'لو مش عايز تسمح بالموقع، اضغط «تحديد المكان يدويًا» واختار نقطة التوصيل على الخريطة.' : 'If you prefer not to allow location access, choose “Choose location manually” and select your delivery point on the map.',
     'manualLocation' => $isAr ? 'تحديد المكان يدويًا' : 'Choose location manually',
     'retryLocation' => $isAr ? 'حاول تحديد موقعي تاني' : 'Try my location again',
-    'autoLocked' => $isAr ? 'تم تثبيت موقعك الحالي. استخدم «تحديد المكان يدويًا» لو عايز تغيّره.' : 'Your current location is locked. Use “Choose location manually” if you need to change it.',
-    'manualReady' => $isAr ? 'التحديد اليدوي شغال. اضغط على الخريطة أو اسحب العلامة لتغيير المكان.' : 'Manual selection is on. Tap the map or drag the pin to change the location.',
+    'autoLocked' => $isAr ? 'تم تثبيت العلامة. فعّل «حرّك العلامة» عشان تغيّرها.' : 'Pin locked. Turn on “Move pin” to adjust it.',
+    'placePin' => $isAr ? 'اضغط على الخريطة عشان تحدد مكان التوصيل.' : 'Tap the map to place your delivery pin.',
+    'manualReady' => $isAr ? 'اضغط على الخريطة أو اسحب العلامة عشان تغيّر مكان التوصيل.' : 'Tap the map or drag the pin to adjust it.',
+    'insecureLocation' => $isAr ? 'الموقع الحالي مش متاح على الاتصال ده. اختار نقطة على الخريطة أو اكتب عنوانك.' : 'Current location is unavailable on this connection. Choose a pin on the map or type your address.',
   ];
 @endphp
 @section('title', $isAr ? 'إتمام الطلب — Ramo Store' : 'Checkout — Ramo Store')
@@ -56,7 +58,56 @@
   .ck-auth-title{margin:0;color:#181818;font-size:15px;font-weight:800}.ck-auth-desc{margin:4px 0 0;color:#686868;font-size:12px;line-height:1.45}
   .ck-auth-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}.ck-auth-action{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:0 12px;border:1px solid #1b1b1b;border-radius:9px;background:#1b1b1b;color:#fff;font-size:12px;font-weight:750;line-height:1;text-decoration:none;white-space:nowrap;transition:.15s}.ck-auth-action:hover{background:#343434;border-color:#343434;color:#fff}.ck-auth-action-light{border-color:#d5d5d5;background:#fff;color:#272727}.ck-auth-action-light:hover{border-color:#aaa;background:#f6f6f6;color:#111}
   .ck-save-address{display:flex;align-items:center;gap:13px;min-height:64px;margin-top:4px;padding:12px 15px;border:1px solid #e4e4e4;border-radius:12px;background:#fcfcfc;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s}.ck-save-address:hover{border-color:#cfcfcf;background:#fff}.ck-save-address:has(input:focus-visible){border-color:#e85d26;box-shadow:0 0 0 3px rgba(232,93,38,.14)}.ck-save-address input[type="checkbox"]{width:20px!important;height:20px!important;min-width:20px;margin:0!important;flex:0 0 20px;accent-color:#e85d26;cursor:pointer}.ck-save-address-copy{display:flex;flex-direction:column;gap:3px;min-width:0}.ck-save-address-title{color:#202020;font-size:13px;font-weight:800;line-height:1.25}.ck-save-address-desc{color:#777;font-size:12px;line-height:1.35}
-  .ck-location-empty{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:12px;padding:18px;border:1px dashed #e8c4b3;border-radius:14px;background:linear-gradient(145deg,#fffaf7,#fff);}.ck-location-empty[hidden],.ck-location-map-panel[hidden]{display:none}.ck-location-empty-copy{display:flex;flex-direction:column;gap:5px;min-width:0}.ck-location-empty-title{color:#222;font-size:14px;font-weight:800}.ck-location-empty-copy span{color:#777;font-size:12px;line-height:1.45}.ck-location-choose-btn{min-height:42px;padding:0 15px;border:1px solid #e85d26;border-radius:9px;background:#e85d26;color:#fff;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}.ck-location-choose-btn:hover{background:#c94717;border-color:#c94717}.ck-location-choose-btn:focus-visible{outline:3px solid rgba(232,93,38,.24);outline-offset:2px}.ck-location-actions{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:12px}.ck-location-action{flex:1;min-height:42px;padding:0 13px;border:1px solid #e85d26;border-radius:9px;background:#fff;color:#c94717;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}.ck-location-action-primary{background:#e85d26;color:#fff}.ck-location-action:hover{background:#fff1e9}.ck-location-action-primary:hover{background:#c94717;color:#fff}.ck-location-action:focus-visible{outline:3px solid rgba(232,93,38,.24);outline-offset:2px}.ck-location-action[aria-pressed="true"]{border-color:#238653;background:#f0fff7;color:#17663d}.ck-location-action:disabled{cursor:wait;opacity:.65}.ck-location-switch{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:1;min-height:42px;padding:0 13px;border:1px solid #e85d26;border-radius:9px;background:#fff;color:#c94717;font-size:12px;font-weight:800;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s}.ck-location-switch:hover{background:#fff1e9}.ck-location-switch:has(input:focus-visible){outline:3px solid rgba(232,93,38,.24);outline-offset:2px}.ck-location-switch input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}.ck-switch-track{position:relative;display:inline-flex;width:40px;height:22px;flex:0 0 40px;align-items:center;padding:3px;border-radius:999px;background:#c9c9c9;transition:background .15s}.ck-switch-track::after{width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.22);content:"";transition:transform .15s}.ck-location-switch input:checked + .ck-switch-track{background:#238653}.ck-location-switch input:checked + .ck-switch-track::after{transform:translateX(18px)}.checkout-page-ar .ck-location-switch input:checked + .ck-switch-track::after{transform:translateX(-18px)}.ck-location-mode-note{display:block;margin:-4px 0 10px;color:#697586;font-size:11px;line-height:1.45}.ck-location-fallback{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;padding:12px;border:1px solid #f0d6ca;border-radius:12px;background:#fff9f6}.ck-location-fallback[hidden]{display:none}.ck-location-fallback-copy{color:#8a4c38;font-size:12px;line-height:1.45}.ck-location-fallback-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px}.ck-location-fallback-btn{min-height:36px;padding:0 11px;border:1px solid #e85d26;border-radius:8px;background:#fff;color:#c94717;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap}.ck-location-fallback-btn-primary{background:#e85d26;color:#fff}.ck-location-fallback-btn:hover{background:#fff1e9}.ck-location-fallback-btn-primary:hover{background:#c94717;color:#fff}.ck-location-fallback-btn:focus-visible{outline:3px solid rgba(232,93,38,.24);outline-offset:2px}.ck-map-shell{position:relative;width:100%;height:280px;margin-bottom:12px;border:1px solid rgba(0,0,0,.08);border-radius:14px;overflow:hidden;background:#f8f8f8}.ck-map-shell.map-location-locked{border-color:#b7d9c6}.ck-map-canvas{width:100%;height:100%}.ck-map-canvas.map-location-locked{cursor:default}.ck-map-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(145deg,#fffdfb,#f7f7f6);z-index:2;text-align:center}.ck-map-placeholder[hidden]{display:none}.ck-map-placeholder-inner{display:flex;max-width:240px;align-items:center;flex-direction:column;gap:8px}.ck-map-placeholder-icon{display:flex;width:40px;height:40px;align-items:center;justify-content:center;border-radius:50%;background:#fff1e9;color:#e85d26;font-size:21px}.ck-map-placeholder-title{color:#222;font-size:14px;font-weight:800}.ck-map-placeholder-copy{color:#757575;font-size:12px;line-height:1.4}  .ck-map-load-btn{min-height:38px;margin-top:2px;padding:0 13px;border:1px solid #e85d26;border-radius:9px;background:#fff;color:#c94717;font-size:12px;font-weight:800;cursor:pointer}.ck-map-load-btn:hover{background:#fff4ef}.ck-map-load-btn:focus-visible{outline:3px solid rgba(232,93,38,.24);outline-offset:2px}
+  .checkout-page .ck-page-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-block-end:18px}
+  .ck-page-heading h1{margin:0;color:#171717;font-size:clamp(1.375rem,4vw,1.875rem);font-weight:850;line-height:1.2}
+  .ck-page-heading a,.ck-address-jump{color:#555;font-size:.8125rem;font-weight:650;text-decoration:underline;text-underline-offset:3px}
+  .checkout-page .ck-section{padding:clamp(14px,3vw,24px)}
+  .checkout-page .ck-title{margin-block-end:12px}
+  .ck-location-map-panel{padding:10px;border:1px solid #ebebe8;border-radius:14px;background:#fafaf9}
+  .ck-location-heading{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:4px 10px;margin-block-end:8px}
+  .ck-location-heading strong{font-size:.875rem;font-weight:800}
+  .ck-location-actions{display:flex;align-items:stretch;gap:6px;margin-block-end:7px}
+  .ck-location-action,.checkout-page .form-group .ck-location-switch{
+    flex:1 1 0;min-inline-size:0;min-block-size:44px;margin:0;padding:6px 9px;
+    border:1px solid #deded9;border-radius:9px;font:inherit;font-size:.8125rem;
+    font-weight:750;line-height:1.25;letter-spacing:normal;text-transform:none;cursor:pointer;
+  }
+  .ck-location-action{display:flex;align-items:center;justify-content:center;gap:6px;text-align:center;background:#171717;border-color:#171717;color:#fff}
+  .ck-location-action svg{flex:none}
+  .ck-location-action:hover{background:#303030}
+  .ck-location-action:disabled{cursor:wait;opacity:.65}
+  .checkout-page .form-group .ck-location-switch{display:flex;align-items:center;justify-content:space-between;gap:6px;background:#fff;color:#252525}
+  .ck-location-switch input{position:absolute;width:1px;height:1px;padding:0;margin:0;border:0;opacity:0;pointer-events:none}
+  .ck-switch-track{position:relative;display:inline-flex;width:34px;height:20px;flex:0 0 34px;align-items:center;padding:3px;border-radius:999px;background:#bcbcb6;transition:background .15s}
+  .ck-switch-track::after{width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0002;content:"";transition:transform .15s}
+  .ck-location-switch input:checked + .ck-switch-track{background:#242424}
+  .ck-location-switch input:checked + .ck-switch-track::after{transform:translateX(14px)}
+  .checkout-page-ar .ck-location-switch input:checked + .ck-switch-track::after{transform:translateX(-14px)}
+  .ck-location-mode-note{display:block;margin:0 0 8px;color:#626767;font-size:.75rem;line-height:1.4}
+  .ck-location-action:focus-visible,.ck-location-switch:has(input:focus-visible),.ck-map-load-btn:focus-visible,.ck-location-fallback-btn:focus-visible,.ck-address-jump:focus-visible{
+    outline:2px solid #b44722;outline-offset:2px
+  }
+  .ck-location-fallback{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-block-start:8px}
+  .ck-location-fallback[hidden]{display:none}
+  .ck-location-fallback-copy{color:#6f3e2f;font-size:.75rem}
+  .ck-location-fallback-actions{display:flex;flex-wrap:wrap;gap:6px}
+  .ck-location-fallback-btn,.ck-map-load-btn{min-block-size:44px;padding:4px 9px;border:1px solid #d9d8d4;border-radius:8px;background:#fff;color:#333;font:inherit;font-size:.75rem;font-weight:700;cursor:pointer}
+  .ck-map-shell{position:relative;isolation:isolate;width:100%;height:clamp(190px,36svh,270px);border:1px solid #e1e1dd;border-radius:10px;overflow:hidden;background:#f5f5f3}
+  .ck-map-shell.map-location-locked{border-color:#b7d9c6}
+  .ck-map-canvas{width:100%;height:100%}
+  .ck-map-canvas.map-location-locked{cursor:default}
+  .ck-map-placeholder{position:absolute;inset:0;display:grid;place-items:center;padding:12px;background:#f5f5f3;z-index:500;text-align:center}
+  .ck-map-placeholder[hidden]{display:none}
+  .ck-map-placeholder-inner{display:flex;max-width:240px;align-items:center;flex-direction:column;gap:8px}
+  .ck-map-placeholder-copy{color:#555;font-size:.8125rem;line-height:1.4}
+  #map-locating-overlay{position:absolute;inset:0;z-index:900;display:grid;place-content:center;background:#fffd;color:#333;font-size:.875rem;font-weight:750;text-align:center}
+  #map-locating-overlay[hidden]{display:none}
+  .checkout-page #checkout-address{scroll-margin-block-start:80px}
+  .checkout-page .ck-address-fields label{font-size:.8125rem;text-transform:none;letter-spacing:normal}
+  @media(max-width:600px){
+    .checkout-page .ck-page-heading{margin-block-end:12px}
+    .ck-map-shell{height:clamp(170px,27svh,220px)}
+  }
   .ck-location-status{display:flex;align-items:flex-start;gap:8px;margin:10px 0;padding:11px 13px;border:1px solid #d9e6dc;border-radius:11px;background:#f5fff8;color:#20613b;font-size:12px;line-height:1.55;font-weight:700}.ck-location-status::before{content:'✓';display:inline-flex;flex:0 0 20px;width:20px;height:20px;align-items:center;justify-content:center;border-radius:50%;background:#d9f5e2;color:#167343;font-weight:900}.ck-location-status[hidden]{display:none}.ck-location-status[data-state="error"]{border-color:#f0cfc4;background:#fff7f4;color:#9a3412}.ck-location-status[data-state="error"]::before{content:'!';background:#ffe1d6;color:#b42318}.ck-location-status[data-state="loading"]{border-color:#eadfbd;background:#fffdf3;color:#8a6914}.ck-location-status[data-state="loading"]::before{content:'…';background:#fff0b8;color:#8a6914}
 
   .checkout-page-ar{font-family:'Cairo','Tahoma',sans-serif;text-align:right}.checkout-page-ar .ck-auth-actions{justify-content:flex-start}.checkout-page-ar .ck-save-address{direction:rtl}.checkout-page-ar .checkout-layout{direction:rtl}.checkout-page-ar .summary-row{direction:rtl}
@@ -98,17 +149,51 @@
   .checkout-page .ck-totals .total-note{margin:9px 1px 0;color:#8a8a8a;font-size:10px;line-height:1.4}
   @media(max-width:600px){.ck-auth-widget{align-items:flex-start;flex-direction:column;gap:13px;padding:15px}.ck-auth-actions{justify-content:flex-start;width:100%}.ck-auth-action{flex:1;padding:0 10px}.ck-save-address{min-height:58px;padding:11px 13px}.ck-location-fallback{align-items:stretch;flex-direction:column}.ck-location-fallback-actions{justify-content:stretch}.ck-location-fallback-btn{flex:1}.checkout-page .ck-summary{padding:14px 12px;border-radius:17px}.checkout-page .ck-summary-header{margin-bottom:12px}.checkout-page .ck-summary>.ck-summary-header .ck-title{font-size:16px}.checkout-page .ck-summary-caption{font-size:10px}.checkout-page .ck-summary-count{padding:5px 8px}.checkout-page .ck-item{grid-template-columns:54px minmax(0,1fr) auto;gap:8px;padding:8px;border-radius:12px}.checkout-page .ck-item-img{width:54px;height:54px;border-radius:11px}.checkout-page .ck-item-name{font-size:12px}.checkout-page .ck-item-price-wrap{min-width:78px}.checkout-page .ck-item-price-label{font-size:8px}.checkout-page .ck-item-price{font-size:11px}.checkout-page .ck-totals{padding:11px 9px 4px}
 .checkout-page .ck-totals .summary-row{font-size:11.5px}.checkout-page .ck-totals .total-row{font-size:14px}.checkout-page .ck-totals .total-row span:last-child{font-size:17px}}
+  .ck-payment-picker{display:grid;gap:8px}
+  .ck-payment-picker select{
+    inline-size:100%;min-inline-size:0;min-block-size:48px;padding:8px 12px;scroll-margin-block-start:80px;
+    border:1px solid #dcdcd8;border-radius:10px;background:#fff;color:#171717;
+    font:inherit;font-size:.9375rem;font-weight:750;cursor:pointer;
+  }
+  .ck-payment-picker select:focus-visible{outline:2px solid #b44722;outline-offset:2px}
+  .ck-payment-details{padding:10px 12px;border:1px solid #ecece8;border-radius:10px;background:#fafaf9;color:#555;font-size:.8125rem;line-height:1.45;overflow-wrap:anywhere}
+  .ck-payment-details[hidden],#cod-fee-summary-row[hidden]{display:none}
+  .ck-payment-details p{margin:0}
+  .ck-payment-details p + p,.ck-payment-details .pay-data{margin-block-start:6px}
+  .ck-payment-details a{color:#a63f1e;font-weight:700;text-decoration:underline}
+  .ck-order-actions{display:flex;align-items:center;gap:12px}
+  .ck-order-actions-copy{display:none}
+  .ck-order-actions .place-order-btn{min-block-size:48px}
+  .checkout-page .ck-field-error{display:block;margin-block-start:5px;color:#a52617;font-size:.8125rem}
+  .checkout-page :is(input,select,textarea)[aria-invalid="true"]{border-color:#ba3827;box-shadow:0 0 0 2px #ba382726}
+  @media(max-width:768px){
+    html:has(.checkout-page){scroll-padding-block-end:calc(var(--mobile-nav-height,58px) + 88px)}
+    .checkout-page{padding-block-end:96px}
+    html:has(body.checkout-keyboard-open){scroll-padding-block-end:16px}
+    body.checkout-keyboard-open #mob-nav{display:none!important}
+    body.checkout-keyboard-open .ck-order-actions{visibility:hidden;pointer-events:none}
+    .checkout-page .form-group :is(input:not([type="checkbox"]),select,textarea),.checkout-page .ck-payment-picker select{font-size:16px}
+    .ck-order-actions{
+      position:fixed;z-index:9998;inset-inline:0;
+      inset-block-end:calc(var(--mobile-nav-height,58px) + var(--mobile-nav-viewport-offset,0px));
+      padding:8px max(14px,env(safe-area-inset-right)) 8px max(14px,env(safe-area-inset-left));
+      border-block-start:1px solid #e5e5e2;background:#fff;box-shadow:0 -4px 16px #0001;
+    }
+    .ck-order-actions-copy{display:grid;gap:1px;flex:1 1 auto;min-inline-size:0;line-height:1.25}
+    .ck-order-actions-copy strong{font-size:.9375rem;overflow-wrap:anywhere}
+    .ck-order-actions-copy a{color:#555;font-size:.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:underline;text-underline-offset:2px}
+    .ck-order-actions .place-order-btn{flex:0 1 48%;inline-size:auto;min-inline-size:0;padding:8px 12px;font-size:.875rem;text-align:center}
+  }
   @media(max-width:900px){.checkout-page form{display:flex;flex-direction:column}.checkout-page .checkout-shipping-section{order:-1}}
 </style>
 @endpush
 
 @section('content')
 <div class="page checkout-page {{ $isAr ? 'checkout-page-ar' : '' }}" dir="{{ $isAr ? 'rtl' : 'ltr' }}">
-  <div class="breadcrumb">
-    <a href="{{ route('home') }}">{{ $isAr ? 'الرئيسية' : 'Home' }}</a><span>/</span>
-    <a href="{{ route('cart') }}">{{ $isAr ? 'السلة' : 'Cart' }}</a><span>/</span>
-    <strong>{{ $isAr ? 'إتمام الطلب' : 'Checkout' }}</strong>
-  </div>
+  <header class="ck-page-heading">
+    <h1>{{ $isAr ? 'إتمام الطلب' : 'Checkout' }}</h1>
+    <a href="{{ route('cart') }}">{{ $isAr ? 'ارجع للسلة' : 'Back to cart' }}</a>
+  </header>
 
   <div class="checkout-layout">
     {{-- FORM --}}
@@ -132,7 +217,7 @@
               <div class="ck-auth-copy">
                 <span class="ck-auth-kicker">{{ $isAr ? 'إتمام طلب كضيف' : 'Guest checkout' }}</span>
                 <p class="ck-auth-title">{{ $isAr ? 'سجّل دخولك عشان بياناتك المحفوظة ودفع أسرع' : 'Sign in for saved details and faster checkout' }}</p>
-                <p class="ck-auth-desc">{{ $isAr ? 'طرق الدخول المتاحة بيحددها مسؤول المتجر. تقدر كمان تكمل ببيانات طلبك.' : 'The options below are controlled by the store administrator. You can also continue by entering your checkout details.' }}</p>
+                <p class="ck-auth-desc">{{ $isAr ? 'تقدر تكمّل كضيف وتكتب بيانات التوصيل.' : 'You can also continue as a guest and enter your delivery details below.' }}</p>
               </div>
               <div class="ck-auth-actions">
                 @if($enabledLoginMethods['phone'])
@@ -152,24 +237,24 @@
           @endif
           <div class="form-grid-2">
             <div class="form-group">
-              <label>{{ $isAr ? 'الاسم الأول' : 'First Name' }} *</label>
-              <input type="text" name="first_name" value="{{ old('first_name', $user->first_name ?? '') }}" required>
+              <label for="checkout-first-name">{{ $isAr ? 'الاسم الأول' : 'First Name' }} *</label>
+              <input type="text" id="checkout-first-name" name="first_name" autocomplete="given-name" value="{{ old('first_name', $user->first_name ?? '') }}" required>
               @error('first_name')<span class="err">{{ $message }}</span>@enderror
             </div>
             <div class="form-group">
-              <label>{{ $isAr ? 'اسم العيلة' : 'Last Name' }} *</label>
-              <input type="text" name="last_name" value="{{ old('last_name', $user->last_name ?? '') }}" required>
+              <label for="checkout-last-name">{{ $isAr ? 'اسم العيلة' : 'Last Name' }} *</label>
+              <input type="text" id="checkout-last-name" name="last_name" autocomplete="family-name" value="{{ old('last_name', $user->last_name ?? '') }}" required>
               @error('last_name')<span class="err">{{ $message }}</span>@enderror
             </div>
           </div>
           <div class="form-group">
-            <label>{{ $isAr ? 'الإيميل' : 'Email Address' }} <span style="color:#999;font-weight:400;font-size:12px">({{ $isAr ? 'اختياري' : 'optional' }})</span></label>
-            <input type="email" name="email" value="{{ old('email', ($user && !str_ends_with($user->email ?? '', '@ramostore.local')) ? ($user->email ?? '') : '') }}" placeholder="you@example.com">
+            <label for="checkout-email">{{ $isAr ? 'الإيميل' : 'Email Address' }} <span style="color:#999;font-weight:400;font-size:12px">({{ $isAr ? 'اختياري' : 'optional' }})</span></label>
+            <input type="email" id="checkout-email" name="email" autocomplete="email" value="{{ old('email', ($user && !str_ends_with($user->email ?? '', '@ramostore.local')) ? ($user->email ?? '') : '') }}" placeholder="you@example.com">
             @error('email')<span class="err">{{ $message }}</span>@enderror
           </div>
           <div class="form-group">
-              <label>{{ $isAr ? 'رقم الموبايل' : 'Phone Number' }} *</label>
-              <input type="tel" name="phone" value="{{ old('phone', $user->phone ?? '') }}" placeholder="01xxxxxxxxx" inputmode="tel" pattern="[0-9+\-\s()]{7,20}" required>
+              <label for="checkout-phone">{{ $isAr ? 'رقم الموبايل' : 'Phone Number' }} *</label>
+              <input type="tel" id="checkout-phone" name="phone" autocomplete="tel" value="{{ old('phone', $user->phone ?? '') }}" placeholder="01xxxxxxxxx" inputmode="tel" pattern="[0-9+\-\s\(\)]{7,20}" required>
             @error('phone')<span class="err">{{ $message }}</span>@enderror
           </div>
         </div>
@@ -178,40 +263,33 @@
         <div class="ck-section checkout-shipping-section">
           <h3 class="ck-title">{{ $isAr ? 'عنوان الشحن' : 'Shipping Address' }}</h3>
           <div class="form-group">
-            <label>{{ $isAr ? 'حدّد مكان التوصيل' : 'Choose your delivery location' }}</label>
-            <div id="checkout-location-empty" class="ck-location-empty" hidden>
-              <div class="ck-location-empty-copy">
-                <strong class="ck-location-empty-title">{{ $isAr ? 'اختار مكان التوصيل الأول' : 'Choose your delivery location first' }}</strong>
-                <span>{{ $isAr ? 'اختار مكانك على الخريطة عشان نعرف نوصل طلبك بسهولة.' : 'Pick your location on the map so we can deliver your order easily.' }}</span>
-              </div>
-              <button type="button" id="choose-location-btn" class="ck-location-choose-btn">{{ $isAr ? 'اختار المكان' : 'Choose location' }}</button>
-            </div>
             <div id="checkout-location-map-panel" class="ck-location-map-panel">
+              <div class="ck-location-heading">
+                <strong>{{ $isAr ? 'مكان التوصيل' : 'Delivery location' }}</strong>
+                <a href="#checkout-address" class="ck-address-jump">{{ $isAr ? 'اكتب عنوانك' : 'Type your address' }}</a>
+              </div>
               <div class="ck-location-actions" aria-label="{{ $isAr ? 'اختيار موقع التوصيل' : 'Delivery location selection' }}">
-                <button type="button" class="ck-location-action ck-location-action-primary" id="use-current-location-btn">📍 {{ $isAr ? 'استخدم موقعي الحالي' : 'Use My Current Location' }}</button>
+                <button type="button" class="ck-location-action" id="use-current-location-btn">
+                  <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
+                  {{ $isAr ? 'استخدم موقعي' : 'Use my location' }}
+                </button>
                 <label class="ck-location-switch" for="manual-location-mode-switch">
-                  <span>{{ $checkoutText['manualLocation'] }}</span>
-                  <input type="checkbox" id="manual-location-mode-switch" checked role="switch" aria-checked="true" aria-describedby="location-mode-note">
+                  <span>{{ $isAr ? 'حرّك العلامة' : 'Move pin' }}</span>
+                  <input type="checkbox" id="manual-location-mode-switch" checked role="switch" aria-checked="true" aria-describedby="location-mode-note" @disabled(!$hasSavedLocation)>
                   <span class="ck-switch-track" aria-hidden="true"></span>
                 </label>
               </div>
-              <span id="location-mode-note" class="ck-location-mode-note">{{ $checkoutText['manualReady'] }}</span>
+              <span id="location-mode-note" class="ck-location-mode-note">{{ $hasSavedLocation ? $checkoutText['manualReady'] : $checkoutText['placePin'] }}</span>
               <div class="ck-map-shell">
                 <div id="checkout-map" class="ck-map-canvas" aria-label="{{ $isAr ? 'خريطة مكان التوصيل التفاعلية' : 'Interactive delivery location map' }}"></div>
                 <div id="checkout-map-placeholder" class="ck-map-placeholder">
                   <div class="ck-map-placeholder-inner">
-                    <span class="ck-map-placeholder-icon" aria-hidden="true">⌖</span>
-                    <span class="ck-map-placeholder-title">{{ $isAr ? 'اختار مكان التوصيل' : 'Choose a delivery pin' }}</span>
-                    <span class="ck-map-placeholder-copy">{{ $isAr ? 'بنحمّل الخريطة تلقائيًا. تقدر تحدد المكان يدويًا، وبعد استخدام موقعك الحالي هيثبت المؤشر لتجنب تغييره بالغلط.' : 'The interactive map loads automatically. You can choose a location manually; after using your current location, the pin will lock to prevent accidental changes.' }}</span>
+                    <span id="checkout-map-message" class="ck-map-placeholder-copy">{{ $checkoutText['mapLoading'] }}</span>
                     <button type="button" id="load-checkout-map-btn" class="ck-map-load-btn" aria-controls="checkout-map" hidden>{{ $checkoutText['mapRetry'] }}</button>
                   </div>
                 </div>
-                <div id="map-locating-overlay" style="display:none;position:absolute;inset:0;background:rgba(255,255,255,.75);border-radius:14px;z-index:999;flex-direction:column;align-items:center;justify-content:center;gap:10px">
-                  <div style="width:38px;height:38px;border:4px solid #e85d26;border-top-color:transparent;border-radius:50%;animation:map-spin .8s linear infinite"></div>
-                  <span style="font-size:13px;font-weight:600;color:#e85d26">{{ $isAr ? 'بنحدد مكانك…' : 'Getting your location…' }}</span>
-                </div>
+                <div id="map-locating-overlay" hidden role="status">{{ $checkoutText['locating'] }}</div>
               </div>
-              <style>@keyframes map-spin{to{transform:rotate(360deg)}}</style>
               <div id="location-status" class="ck-location-status" hidden aria-live="polite"></div>
               <div id="location-fallback" class="ck-location-fallback" hidden aria-live="polite">
                 <span id="location-fallback-copy" class="ck-location-fallback-copy"></span>
@@ -222,20 +300,20 @@
               </div>
             </div>
           </div>
-          <div class="form-group">
-            <label>{{ $isAr ? 'العنوان بالتفصيل' : 'Street Address' }} *</label>
-            <input type="text" name="address" value="{{ old('address', $savedAddress['address'] ?? '') }}" required>
+          <div class="form-group ck-address-fields">
+            <label for="checkout-address">{{ $isAr ? 'العنوان بالتفصيل' : 'Street Address' }} *</label>
+            <input type="text" id="checkout-address" name="address" autocomplete="address-line1" value="{{ old('address', $savedAddress['address'] ?? '') }}" required>
             @error('address')<span class="err">{{ $message }}</span>@enderror
           </div>
           <div class="form-grid-2">
             <div class="form-group">
-              <label>{{ $isAr ? 'المدينة' : 'City' }} *</label>
-              <input type="text" name="city" value="{{ old('city', $savedAddress['city'] ?? '') }}" required>
+              <label for="checkout-city">{{ $isAr ? 'المدينة' : 'City' }} *</label>
+              <input type="text" id="checkout-city" name="city" autocomplete="address-level2" value="{{ old('city', $savedAddress['city'] ?? '') }}" required>
               @error('city')<span class="err">{{ $message }}</span>@enderror
             </div>
             <div class="form-group">
-              <label>{{ $isAr ? 'المحافظة' : 'State / Governorate' }} *</label>
-                <select name="state" required>
+              <label for="checkout-state">{{ $isAr ? 'المحافظة' : 'Governorate' }} *</label>
+              <select id="checkout-state" name="state" autocomplete="address-level1" required>
                 <option value="">{{ $isAr ? 'اختار المحافظة' : 'Select governorate' }}</option>
                 @foreach(['Cairo','Giza','Alexandria','Aswan','Asyut','Beheira','Beni Suef','Dakahlia','Damietta','Faiyum','Gharbia','Ismailia','Kafr El Sheikh','Luxor','Matrouh','Minya','Monufia','New Valley','North Sinai','Port Said','Qalyubia','Qena','Red Sea','Sharqia','Sohag','South Sinai','Suez'] as $gov)
                   <option value="{{ $gov }}" {{ old('state', $savedAddress['state'] ?? '') === $gov ? 'selected' : '' }}>{{ $isAr ? ($governoratesAr[$gov] ?? $gov) : $gov }}</option>
@@ -260,41 +338,53 @@
         </div>
 
         {{-- PAYMENT --}}
-        <div class="ck-section">
-          <h3 class="ck-title">{{ $isAr ? 'طريقة الدفع' : 'Payment Method' }}</h3>
+        <div class="ck-section" id="checkout-payment">
+          <h3 class="ck-title" id="checkout-payment-title">{{ $isAr ? 'طريقة الدفع' : 'Payment Method' }}</h3>
           @php
-            $selectedPaymentMethod = old('payment_method', array_key_first($paymentMethods) ?: 'cod');
+            $selectedPaymentTitle = $isAr
+              ? ($paymentLabelsAr[$selectedPaymentMethod]['title'] ?? ($paymentMethods[$selectedPaymentMethod]['title'] ?? ''))
+              : ($paymentMethods[$selectedPaymentMethod]['title'] ?? '');
           @endphp
-          <div class="pay-methods">
+          <div class="ck-payment-picker">
+            <select id="checkout-payment-method" name="payment_method" required aria-labelledby="checkout-payment-title">
+              @forelse($paymentMethods as $val => $method)
+                <option value="{{ $val }}" @selected($selectedPaymentMethod === $val)>
+                  {{ $isAr ? ($paymentLabelsAr[$val]['title'] ?? $method['title']) : $method['title'] }}
+                </option>
+              @empty
+                <option value="">{{ $isAr ? 'مفيش طرق دفع متاحة' : 'No payment methods available' }}</option>
+              @endforelse
+            </select>
             @foreach($paymentMethods as $val => $method)
-            @php $paymentCopy = $isAr ? ($paymentLabelsAr[$val] ?? []) : []; @endphp
-            <label class="pay-option {{ $selectedPaymentMethod === $val ? 'selected' : '' }}" data-val="{{ $val }}">
-              <input type="radio" name="payment_method" value="{{ $val }}" {{ $selectedPaymentMethod === $val ? 'checked' : '' }}>
-              <span class="pay-icon">{{ $method['icon'] ?? '💳' }}</span>
-              <div>
-                <div class="pay-title">{{ $paymentCopy['title'] ?? $method['title'] }}</div>
-                <div class="pay-desc">{{ $paymentCopy['description'] ?? $method['description'] }}</div>
+              @php
+                $paymentCopy = $isAr ? ($paymentLabelsAr[$val] ?? []) : [];
+                $description = $paymentCopy['description'] ?? $method['description'];
+                $paymentData = trim((string) ($method['data'] ?? ''));
+              @endphp
+              <div class="ck-payment-details" data-payment-details="{{ $val }}" @if($selectedPaymentMethod !== $val) hidden @endif>
+                <p>{{ $description }}</p>
                 @if($val === 'cod' && $codFeeAmount > 0)
-                  <div class="pay-data" style="color:#9a3412">
+                  <div class="pay-data">
                     <span>{{ $isAr ? 'رسوم الدفع عند الاستلام' : 'Cash on Delivery fee' }}:</span>
                     <strong>{{ number_format($codFeeAmount, 2) }} EGP</strong>
                   </div>
                 @endif
-                @if($method['data'] ?? '')
+                @if($paymentData !== '' && strcasecmp($paymentData, trim($method['description'])) !== 0)
                   <div class="pay-data">
                     <span>{{ $paymentCopy['data_label'] ?? ($method['data_label'] ?? ($isAr ? 'التفاصيل' : 'Details')) }}:</span>
-                    <strong>{{ $method['data'] }}</strong>
-                    @if($method['link'] ?? null)
-                      <a href="{{ $method['link'] }}" target="_blank" rel="noopener">{{ $isAr ? 'افتح الرابط' : 'Open link' }}</a>
-                    @endif
+                    <strong>{{ $paymentData }}</strong>
                   </div>
                 @endif
+                @if($method['link'] ?? null)
+                  <p><a href="{{ $method['link'] }}" target="_blank" rel="noopener">{{ $isAr ? 'افتح رابط الدفع' : 'Open payment link' }}</a></p>
+                @endif
+                @if(in_array($val, ['manual_wallet', 'manual_instapay'], true))
+                  <p>{{ $isAr ? 'أكّد الطلب الأول، وبعد التحويل ارفع الإيصال من صفحة الطلب.' : 'Place the order first, then transfer the amount and upload the receipt from the order page.' }}</p>
+                @endif
               </div>
-            </label>
             @endforeach
           </div>
           @error('payment_method')<span class="err">{{ $message }}</span>@enderror
-          <div style="font-size:12px;color:#6b7280;margin-top:10px">{{ $isAr ? 'لو الدفع بمحفظة أو إنستاباي، اعمل الطلب الأول، حوّل المبلغ، وبعدها ارفع الإيصال من صفحة الطلب.' : 'For Wallet or InstaPay, place the order first, transfer the amount, then upload your receipt from the order page.' }}</div>
         </div>
 
         {{-- ORDER NOTES --}}
@@ -305,7 +395,13 @@
           </div>
         </div>
 
-        <button type="submit" class="btn btn-dark place-order-btn">{{ $isAr ? 'أكّد الطلب ←' : 'Place Order →' }}</button>
+        <div class="ck-order-actions">
+          <div class="ck-order-actions-copy">
+            <strong id="checkout-action-total" aria-live="polite">{{ number_format($total, 2) }} EGP</strong>
+            <a href="#checkout-payment-method" id="checkout-action-payment" title="{{ $isAr ? 'غيّر طريقة الدفع' : 'Change payment method' }}">{{ $selectedPaymentTitle }}</a>
+          </div>
+          <button type="submit" class="btn btn-dark place-order-btn" @disabled($selectedPaymentMethod === null)>{{ $isAr ? 'أكّد الطلب' : 'Place Order' }}</button>
+        </div>
         <p style="margin:12px 2px 0;color:#667085;font-size:12px;line-height:1.7">
           @if($isAr)
             بتأكيد الطلب، إنت بتوافق على <a href="{{ route('policy.terms') }}" style="color:#c94717;text-decoration:underline">الشروط والأحكام</a> و<a href="{{ route('policy.privacy') }}" style="color:#c94717;text-decoration:underline">سياسة الخصوصية</a>. راجع كمان <a href="{{ route('policy.shipping') }}" style="color:#c94717;text-decoration:underline">الشحن</a> و<a href="{{ route('policy.returns') }}" style="color:#c94717;text-decoration:underline">الاسترجاع</a> و<a href="{{ route('policy.payment') }}" style="color:#c94717;text-decoration:underline">الدفع</a>.
@@ -386,35 +482,121 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const checkoutText = @json($checkoutText);
-  const paymentOptions = document.querySelectorAll('input[name="payment_method"]');
-  const updateSelectedMethod = () => {
-    document.querySelectorAll('.pay-option').forEach((option) => {
-      option.classList.toggle('selected', option.querySelector('input')?.checked === true);
-    });
-  };
+  const paymentSelect = document.getElementById('checkout-payment-method');
+  const paymentDetails = document.querySelectorAll('[data-payment-details]');
   const codFeeAmount = Number(@json($codFeeAmount));
   const baseTotal = Number(@json($baseTotal));
   const codFeeRow = document.getElementById('cod-fee-summary-row');
   const codFeeValue = document.getElementById('cod-fee-summary-value');
   const checkoutTotalValue = document.getElementById('checkout-total-value');
-  const formatEgp = (value) => `${Number(value).toFixed(2)} EGP`;
-  const updateCheckoutTotal = () => {
-    const selected = document.querySelector('input[name="payment_method"]:checked')?.value;
+  const actionTotal = document.getElementById('checkout-action-total');
+  const actionPayment = document.getElementById('checkout-action-payment');
+  const formatEgp = (value) => Number(value).toFixed(2) + ' EGP';
+
+  const updatePayment = () => {
+    const selected = paymentSelect.value;
+    paymentDetails.forEach(details => { details.hidden = details.dataset.paymentDetails !== selected; });
     const fee = selected === 'cod' ? codFeeAmount : 0;
-    if (codFeeRow) codFeeRow.hidden = fee <= 0;
-    if (codFeeValue) codFeeValue.textContent = formatEgp(fee);
-    if (checkoutTotalValue) checkoutTotalValue.textContent = formatEgp(baseTotal + fee);
+    codFeeRow.hidden = fee <= 0;
+    codFeeValue.textContent = formatEgp(fee);
+    checkoutTotalValue.textContent = actionTotal.textContent = formatEgp(baseTotal + fee);
+    actionPayment.textContent = paymentSelect.selectedOptions[0]?.textContent.trim() || '';
   };
-  paymentOptions.forEach((input) => input.addEventListener('change', () => {
-    updateSelectedMethod();
-    updateCheckoutTotal();
-  }));
-  updateSelectedMethod();
-  updateCheckoutTotal();
+  paymentSelect.addEventListener('change', updatePayment);
+  updatePayment();
 
   const checkoutForm = document.getElementById('checkout-form');
-  checkoutForm?.addEventListener('submit', (event) => {
-    if (!checkoutForm.checkValidity()) return;
+  const mobileCheckout = window.matchMedia('(max-width: 768px)');
+  const viewport = window.visualViewport;
+  const pendingInvalidFields = new Set();
+  let validationFrame = null;
+
+  const errorMessage = (field) => {
+    if (field.validity.valueMissing) return field.tagName === 'SELECT' ? checkoutText.requiredOption : checkoutText.requiredField;
+    if (field.type === 'email' && field.validity.typeMismatch) return checkoutText.invalidEmail;
+    if (field.type === 'tel' && field.validity.patternMismatch) return checkoutText.invalidPhone;
+    return field.validationMessage;
+  };
+  const showFieldError = (field) => {
+    const errorId = field.id + '-validation';
+    let error = document.getElementById(errorId);
+    if (!error) {
+      error = document.createElement('span');
+      error.id = errorId;
+      error.className = 'ck-field-error';
+      error.setAttribute('role', 'alert');
+      field.insertAdjacentElement('afterend', error);
+      const descriptions = [field.getAttribute('aria-describedby'), errorId].filter(Boolean);
+      field.setAttribute('aria-describedby', descriptions.join(' '));
+    }
+    field.setAttribute('aria-invalid', 'true');
+    error.textContent = errorMessage(field);
+  };
+  const clearFieldError = ({ target: field }) => {
+    if (!field.validity?.valid) return;
+    const errorId = field.id + '-validation';
+    const error = document.getElementById(errorId);
+    if (!error) return;
+    error.remove();
+    field.removeAttribute('aria-invalid');
+    const remaining = (field.getAttribute('aria-describedby') || '').split(/\s+/).filter(id => id && id !== errorId);
+    if (remaining.length) field.setAttribute('aria-describedby', remaining.join(' '));
+    else field.removeAttribute('aria-describedby');
+  };
+
+  checkoutForm.addEventListener('invalid', (event) => {
+    event.preventDefault();
+    pendingInvalidFields.add(event.target);
+    if (validationFrame !== null) return;
+    validationFrame = requestAnimationFrame(() => {
+      validationFrame = null;
+      const fields = [...pendingInvalidFields].filter(field => !field.validity.valid && field.getClientRects().length)
+        .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+      pendingInvalidFields.clear();
+      const field = fields[0];
+      if (!field) return;
+
+      showFieldError(field);
+      if (mobileCheckout.matches) {
+        const group = field.closest('.form-group, .ck-section');
+        if (group) {
+          group.tabIndex = -1;
+          group.focus({ preventScroll: true });
+        }
+      } else {
+        field.focus({ preventScroll: true });
+      }
+      field.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
+    });
+  }, true);
+  checkoutForm.addEventListener('input', clearFieldError);
+  checkoutForm.addEventListener('change', clearFieldError);
+
+  const updateKeyboardLayout = () => {
+    const active = document.activeElement;
+    const isEditing = checkoutForm.contains(active)
+      && active.matches('textarea,input[type="text"],input[type="email"],input[type="tel"]');
+    const keyboardOpen = mobileCheckout.matches && isEditing && viewport
+      && Math.abs(viewport.scale - 1) < 0.05 && document.documentElement.clientHeight - viewport.height > 120;
+    const wasOpen = document.body.classList.contains('checkout-keyboard-open');
+    document.body.classList.toggle('checkout-keyboard-open', Boolean(keyboardOpen));
+    if (keyboardOpen && !wasOpen) {
+      const box = active.getBoundingClientRect();
+      if (box.top < viewport.offsetTop || box.bottom > viewport.offsetTop + viewport.height - 12) {
+        active.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
+      }
+    }
+  };
+  viewport?.addEventListener('resize', updateKeyboardLayout);
+  mobileCheckout.addEventListener('change', updateKeyboardLayout);
+  checkoutForm.addEventListener('focusin', updateKeyboardLayout);
+  checkoutForm.addEventListener('focusout', () => requestAnimationFrame(updateKeyboardLayout));
+
+  checkoutForm.addEventListener('submit', (event) => {
+    if (!checkoutForm.checkValidity()) {
+      event.preventDefault();
+      return;
+    }
     const submitButton = checkoutForm.querySelector('.place-order-btn');
     if (!submitButton || submitButton.disabled) {
       event.preventDefault();
@@ -432,10 +614,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const mapEl = document.getElementById('checkout-map');
   const mapPlaceholder = document.getElementById('checkout-map-placeholder');
   const loadMapBtn = document.getElementById('load-checkout-map-btn');
-  const chooseLocationBtn = document.getElementById('choose-location-btn');
-  const locationPrompt = document.getElementById('checkout-location-empty');
-  const locationMapPanel = document.getElementById('checkout-location-map-panel');
-  const hasInitialLocation = @json($hasSavedLocation);
+  const mapMessage = document.getElementById('checkout-map-message');
   const locationStatus = document.getElementById('location-status');
   const locationFallback = document.getElementById('location-fallback');
   const locationFallbackCopy = document.getElementById('location-fallback-copy');
@@ -450,6 +629,16 @@ document.addEventListener('DOMContentLoaded', () => {
   let marker = null;
   let mapLoadPromise = null;
   let manualLocationEnabled = true;
+  let pinRequest = 0;
+  const hasPin = () => Boolean(latitudeInput?.value && longitudeInput?.value
+    && Number.isFinite(Number(latitudeInput.value)) && Number.isFinite(Number(longitudeInput.value)));
+  const updateLocationNote = () => {
+    if (manualModeSwitch) manualModeSwitch.disabled = !hasPin();
+    if (locationModeNote) {
+      locationModeNote.textContent = !manualLocationEnabled ? checkoutText.autoLocked
+        : hasPin() ? checkoutText.manualReady : checkoutText.placePin;
+    }
+  };
 
   const setManualLocationMode = (enabled) => {
     manualLocationEnabled = enabled;
@@ -465,7 +654,7 @@ document.addEventListener('DOMContentLoaded', () => {
       manualModeSwitch.checked = enabled;
       manualModeSwitch.setAttribute('aria-checked', String(enabled));
     }
-    if (locationModeNote) locationModeNote.textContent = enabled ? checkoutText.manualReady : checkoutText.autoLocked;
+    updateLocationNote();
   };
 
   const setStatus = (msg, state = 'info') => {
@@ -485,6 +674,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const setCoords = (lat, lng) => {
     if (latitudeInput) latitudeInput.value = lat ?? '';
     if (longitudeInput) longitudeInput.value = lng ?? '';
+    updateLocationNote();
   };
   const norm = (v) => (v || '').toString().trim().toLowerCase();
   const matchGovernorate = (value) => {
@@ -502,12 +692,19 @@ document.addEventListener('DOMContentLoaded', () => {
     return !!found;
   };
   const updateFields = async (lat, lng) => {
+    const request = ++pinRequest;
+    hideLocationFallback();
+    const previous = { address: addressInput?.value, city: cityInput?.value, state: stateSelect?.value };
     setCoords(lat, lng);
+    setStatus(checkoutText.locationSelected);
     try {
       const language = checkoutText.isAr ? 'ar,en' : 'en';
       const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&zoom=18&addressdetails=1&accept-language=${encodeURIComponent(language)}`);
+      if (!res.ok) throw new Error('Address lookup failed.');
       const data = await res.json();
-      const addr = data.address || {};
+      if (request !== pinRequest) return;
+      if (!data.address) throw new Error('Address details unavailable.');
+      const addr = data.address;
       const firstNonEmpty = (values) => values.find((value) => value && String(value).trim())?.toString().trim() || '';
       const city = firstNonEmpty([
         addr.city,
@@ -539,21 +736,30 @@ document.addEventListener('DOMContentLoaded', () => {
         addr.postcode,
       ].filter((value, index, values) => value && values.indexOf(value) === index);
       const street = detailParts.join(', ') || data.display_name || [city, state].filter(Boolean).join(', ');
-      if (addressInput) addressInput.value = street;
-      if (cityInput) cityInput.value = city;
-      if (addressInput) addressInput.dispatchEvent(new Event('input', { bubbles: true }));
-      if (cityInput) cityInput.dispatchEvent(new Event('input', { bubbles: true }));
-      matchGovernorate(state);
+      if (street && addressInput?.value === previous.address && addressInput) {
+        addressInput.value = street;
+        addressInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      if (city && cityInput?.value === previous.city && cityInput) {
+        cityInput.value = city;
+        cityInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      if (stateSelect?.value === previous.state) matchGovernorate(state);
       setStatus(city || state ? `${checkoutText.selected} ${[city, state].filter(Boolean).join(', ')}` : checkoutText.locationSelected);
     } catch (_) {
-      setStatus(checkoutText.detailsUnavailable);
+      if (request === pinRequest) setStatus(checkoutText.detailsUnavailable);
     }
+  };
+  const showPin = (position) => {
+    marker.setLatLng(position);
+    if (!map.hasLayer(marker)) marker.addTo(map);
+    setManualLocationMode(manualLocationEnabled);
   };
   const initMap = (lat, lng) => {
     if (!window.L || !mapEl) return null;
     if (map) {
       map.setView([lat, lng], 14);
-      marker?.setLatLng([lat, lng]);
+      if (hasPin()) showPin([lat, lng]);
       return map;
     }
     map = L.map(mapEl, { zoomControl: true }).setView([lat, lng], 14);
@@ -561,7 +767,8 @@ document.addEventListener('DOMContentLoaded', () => {
       maxZoom: 20,
       attribution: 'Google Maps'
     }).addTo(map);
-    marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+    marker = L.marker([lat, lng], { draggable: manualLocationEnabled });
+    if (hasPin()) marker.addTo(map);
     marker.on('dragend', () => {
       if (!manualLocationEnabled) return;
       const p = marker.getLatLng();
@@ -572,19 +779,18 @@ document.addEventListener('DOMContentLoaded', () => {
         setStatus(checkoutText.autoLocked);
         return;
       }
-      marker.setLatLng(e.latlng);
       updateFields(e.latlng.lat, e.latlng.lng);
+      showPin(e.latlng);
     });
     setManualLocationMode(manualLocationEnabled);
     mapPlaceholder?.setAttribute('hidden', '');
     window.setTimeout(() => map.invalidateSize(), 0);
     return map;
   };
-  const savedLat = parseFloat(latitudeInput?.value || '');
-  const savedLng = parseFloat(longitudeInput?.value || '');
-  const startLat = Number.isFinite(savedLat) ? savedLat : 30.0444;
-  const startLng = Number.isFinite(savedLng) ? savedLng : 31.2357;
-  const ensureMap = (lat = startLat, lng = startLng) => {
+  const ensureMap = (
+    lat = hasPin() ? Number(latitudeInput.value) : 30.0444,
+    lng = hasPin() ? Number(longitudeInput.value) : 31.2357,
+  ) => {
     if (map) return Promise.resolve(initMap(lat, lng));
     if (mapLoadPromise) return mapLoadPromise.then(() => initMap(lat, lng));
 
@@ -608,7 +814,10 @@ document.addEventListener('DOMContentLoaded', () => {
       script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
       script.dataset.checkoutLeaflet = 'true';
       script.onload = complete;
-      script.onerror = () => reject(new Error('Map resources could not be loaded.'));
+      script.onerror = () => {
+        script.remove();
+        reject(new Error('Map resources could not be loaded.'));
+      };
       document.body.appendChild(script);
     }).catch((error) => {
       mapLoadPromise = null;
@@ -617,41 +826,34 @@ document.addEventListener('DOMContentLoaded', () => {
     return mapLoadPromise;
   };
   if (mapEl) {
-    const loadMap = () => {
-      setStatus(checkoutText.mapLoading);
-      // The loading overlay is the single source of loading text; hide the placeholder behind it.
-      mapPlaceholder?.setAttribute('hidden', '');
+    const loadMap = async () => {
+      if (map) {
+        map.invalidateSize();
+        return true;
+      }
+      if (mapMessage) mapMessage.textContent = checkoutText.mapLoading;
+      mapPlaceholder?.removeAttribute('hidden');
       loadMapBtn?.setAttribute('hidden', '');
-      return ensureMap().then(() => {
-        setStatus(checkoutText.mapReady);
-      }).catch(() => {
-        setStatus(checkoutText.mapUnavailable, 'error');
+      try {
+        await ensureMap();
+        return true;
+      } catch (_) {
+        if (mapMessage) mapMessage.textContent = checkoutText.mapUnavailable;
         mapPlaceholder?.removeAttribute('hidden');
         loadMapBtn?.removeAttribute('hidden');
-        showLocationFallback(checkoutText.mapUnavailable);
-      });
+        return false;
+      }
     };
 
     loadMapBtn?.addEventListener('click', loadMap);
-    const revealMap = (focusMap = false) => {
-      locationPrompt?.setAttribute('hidden', '');
-      locationMapPanel?.removeAttribute('hidden');
-      return new Promise((resolve) => {
-        window.requestAnimationFrame(() => {
-          const mapPromise = loadMap() || Promise.resolve();
-          mapPromise.then(() => {
-            if (focusMap) mapEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            resolve();
-          });
-        });
-      });
-    };
-    // Always show and initialize the map so a new customer can choose a pin immediately.
     loadMap();
 
     const mapOverlay = document.getElementById('map-locating-overlay');
-    const showMapLoading = () => { if (mapOverlay) mapOverlay.style.display = 'flex'; };
-    const hideMapLoading = () => { if (mapOverlay) mapOverlay.style.display = 'none'; };
+    const setLocating = (active) => {
+      if (mapOverlay) mapOverlay.hidden = !active;
+      if (useLocationBtn) useLocationBtn.disabled = active;
+      if (retryLocationBtn) retryLocationBtn.disabled = active;
+    };
     const fetchLocation = () => {
       hideLocationFallback();
       if (!navigator.geolocation) {
@@ -659,51 +861,43 @@ document.addEventListener('DOMContentLoaded', () => {
         showLocationFallback(checkoutText.locationFallback);
         return;
       }
-      setStatus(checkoutText.locating, 'loading');
-      showMapLoading();
+      setStatus('');
+      setLocating(true);
       navigator.geolocation.getCurrentPosition(async (pos) => {
-        const { latitude, longitude, accuracy } = pos.coords;
+        const { latitude, longitude } = pos.coords;
         setCoords(latitude, longitude);
         setManualLocationMode(false);
-        updateFields(latitude, longitude);
+        const addressLookup = updateFields(latitude, longitude);
         try {
           await ensureMap(latitude, longitude);
-          setStatus(accuracy
-            ? (checkoutText.isAr ? `${checkoutText.detected} (دقة ${Math.round(accuracy)} متر). ${checkoutText.autoLocked}` : `Location detected (${Math.round(accuracy)}m accuracy). ${checkoutText.autoLocked}`)
-            : `${checkoutText.detected}. ${checkoutText.autoLocked}`);
         } catch (_) {
-          setStatus(`${checkoutText.detected}. ${checkoutText.manualAddress}`);
+          if (mapMessage) mapMessage.textContent = checkoutText.mapUnavailable;
+          mapPlaceholder?.removeAttribute('hidden');
+          loadMapBtn?.removeAttribute('hidden');
         } finally {
-          hideMapLoading();
+          setLocating(false);
         }
+        await addressLookup;
       }, (error) => {
-        hideMapLoading();
+        setLocating(false);
         const message = error?.code === 1 ? checkoutText.accessDenied : checkoutText.detectFailed;
         setStatus(message, 'error');
         showLocationFallback(checkoutText.locationFallback);
       }, { enableHighAccuracy: true, timeout: 60000, maximumAge: 0 });
     };
     const requestCurrentLocation = () => {
-      // Request the browser permission and immediately continue when granted.
+      if (!window.isSecureContext) {
+        setStatus(checkoutText.insecureLocation, 'error');
+        return;
+      }
+      if (useLocationBtn?.disabled) return;
       if (navigator.permissions) {
         navigator.permissions.query({ name: 'geolocation' }).then((result) => {
-          if (result.state === 'granted') {
-            fetchLocation();
-          } else if (result.state === 'prompt') {
-            fetchLocation();
-            result.onchange = () => {
-              if (result.state === 'granted') {
-                result.onchange = null;
-                fetchLocation();
-              } else if (result.state === 'denied') {
-                result.onchange = null;
-                setStatus(checkoutText.accessDenied, 'error');
-                showLocationFallback(checkoutText.locationFallback);
-              }
-            };
-          } else {
+          if (result.state === 'denied') {
             setStatus(checkoutText.accessBlocked, 'error');
             showLocationFallback(checkoutText.locationFallback);
+          } else {
+            fetchLocation();
           }
         }).catch(() => fetchLocation());
       } else {
@@ -711,20 +905,16 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    chooseLocationBtn?.addEventListener('click', () => {
-      revealMap();
-      requestCurrentLocation();
-    });
     manualModeSwitch?.addEventListener('change', (event) => {
       const enabled = event.target.checked;
       setManualLocationMode(enabled);
-      setStatus(enabled ? checkoutText.manualReady : checkoutText.autoLocked);
+      if (locationStatus?.dataset.state === 'error') setStatus('');
     });
-    manualLocationBtn?.addEventListener('click', () => {
+    manualLocationBtn?.addEventListener('click', async () => {
       hideLocationFallback();
-      if (manualModeSwitch) manualModeSwitch.checked = true;
+      setStatus('');
       setManualLocationMode(true);
-      revealMap(true).then(() => setStatus(checkoutText.manualReady));
+      if (await loadMap()) mapEl.scrollIntoView({ block: 'center' });
     });
     retryLocationBtn?.addEventListener('click', requestCurrentLocation);
     useLocationBtn?.addEventListener('click', requestCurrentLocation);

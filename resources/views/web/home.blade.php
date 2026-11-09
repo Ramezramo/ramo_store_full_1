@@ -4,155 +4,6 @@
 @section('content')
 
 <style>
-@media (max-width:480px) {
-  .timeline-widgets .product-grid:not(.product-grid--showcase) .product-card {
-    min-height:0 !important;
-    border:1px solid #ececec !important;
-    border-radius:14px !important;
-    background:#fff !important;
-    box-shadow:0 4px 16px rgba(25,25,25,.06) !important;
-    overflow:hidden !important;
-  }
-  .timeline-widgets .product-grid:not(.product-grid--showcase) .product-card-img {
-    width:100% !important;
-    height:auto !important;
-    aspect-ratio:1 / 1 !important;
-    border-radius:0 !important;
-    background:#f7f7f7 !important;
-  }
-  .timeline-widgets .product-grid:not(.product-grid--showcase) .product-card-body {
-    display:flex !important;
-    flex-direction:column !important;
-    align-items:stretch !important;
-    min-width:0 !important;
-    padding:9px 8px 10px !important;
-    gap:0 !important;
-    text-align:center !important;
-  }
-  .timeline-widgets .product-grid:not(.product-grid--showcase) .product-card-name {
-    display:-webkit-box !important;
-    -webkit-box-orient:vertical !important;
-    -webkit-line-clamp:2 !important;
-    min-height:31px !important;
-    margin:0 !important;
-    overflow:hidden !important;
-    color:#202020 !important;
-    font-size:12px !important;
-    font-weight:700 !important;
-    line-height:1.3 !important;
-    text-align:center !important;
-  }
-  .timeline-widgets .product-grid:not(.product-grid--showcase) .pc-swatches,
-  .timeline-widgets .product-grid:not(.product-grid--showcase) .pc-sizes {
-    justify-content:center !important;
-    min-height:19px !important;
-    margin:5px 0 0 !important;
-    gap:4px !important;
-  }
-  .timeline-widgets .product-grid:not(.product-grid--showcase) .pc-swatches:empty,
-  .timeline-widgets .product-grid:not(.product-grid--showcase) .pc-sizes:empty { display:none !important; }
-  .timeline-widgets .product-grid:not(.product-grid--showcase) .pc-swatch {
-    width:15px !important;
-    height:15px !important;
-    border:2px solid #fff !important;
-    box-shadow:0 0 0 1px #d6d6d6 !important;
-  }
-  .timeline-widgets .product-grid:not(.product-grid--showcase) .pc-swatch.selected {
-    box-shadow:0 0 0 2px var(--c-orange),0 0 0 3px #fff !important;
-  }
-  .timeline-widgets .product-grid:not(.product-grid--showcase) .pc-size {
-    min-width:22px !important;
-    padding:3px 5px !important;
-    border:1px solid #e1e1e1 !important;
-    border-radius:6px !important;
-    background:#fafafa !important;
-    color:#555 !important;
-    font-size:9px !important;
-    font-weight:700 !important;
-    line-height:1 !important;
-  }
-  .timeline-widgets .product-grid:not(.product-grid--showcase) .pc-size.selected {
-    border-color:var(--c-dark) !important;
-    background:var(--c-dark) !important;
-    color:#fff !important;
-  }
-  .timeline-widgets .product-grid:not(.product-grid--showcase) .pc-selected {
-    min-height:13px !important;
-    max-height:13px !important;
-    margin:3px 0 0 !important;
-    overflow:hidden !important;
-    color:#8b8b8b !important;
-    font-size:9px !important;
-    line-height:1.4 !important;
-    text-align:center !important;
-    text-overflow:ellipsis !important;
-    white-space:nowrap !important;
-  }
-  .timeline-widgets .product-grid:not(.product-grid--showcase) .product-card-price {
-    display:flex !important;
-    align-items:baseline !important;
-    justify-content:center !important;
-    min-height:21px !important;
-    margin:6px 0 0 !important;
-    gap:4px !important;
-    line-height:1 !important;
-  }
-  .timeline-widgets .product-grid:not(.product-grid--showcase) .price-main {
-    color:#171717 !important;
-    font-size:14px !important;
-    font-weight:800 !important;
-    white-space:nowrap !important;
-  }
-  .timeline-widgets .product-grid:not(.product-grid--showcase) .price-main.sale { color:var(--c-orange) !important; }
-  .timeline-widgets .product-grid:not(.product-grid--showcase) .price-old {
-    color:#9a9a9a !important;
-    font-size:9px !important;
-    white-space:nowrap !important;
-  }
-  .timeline-widgets .product-grid:not(.product-grid--showcase) .pc-actions {
-    display:block !important;
-    margin:7px 0 0 !important;
-  }
-  .timeline-widgets .product-grid:not(.product-grid--showcase) .card-add-btn {
-    width:100% !important;
-    min-height:31px !important;
-    margin:0 !important;
-    padding:7px 4px !important;
-    border:0 !important;
-    border-radius:8px !important;
-    background:var(--c-dark) !important;
-    color:#fff !important;
-    font-size:10px !important;
-    font-weight:800 !important;
-    line-height:1 !important;
-    text-align:center !important;
-    white-space:nowrap !important;
-  }
-  .timeline-widgets .product-grid:not(.product-grid--showcase) .card-details-btn {
-    display:block !important;
-    width:100% !important;
-    margin:5px 0 0 !important;
-    padding:3px 0 0 !important;
-    border:0 !important;
-    background:transparent !important;
-    color:#777 !important;
-    font-size:9px !important;
-    font-weight:700 !important;
-    line-height:1.2 !important;
-    text-align:center !important;
-    text-decoration:none !important;
-  }
-  .timeline-widgets .product-grid:not(.product-grid--showcase) .wish-btn {
-    top:7px !important;
-    right:7px !important;
-    width:26px !important;
-    height:26px !important;
-    border:1px solid rgba(0,0,0,.08) !important;
-    background:rgba(255,255,255,.94) !important;
-    font-size:14px !important;
-  }
-  .timeline-widgets .product-grid:not(.product-grid--showcase) .pc-coupon-bar { display:none !important; }
-}
 @media(max-width:640px) {
   /* Banner navigation is touch-first on phones; keep product-scroll arrows untouched. */
   .tl-banner-slider .tl-arrow { display:none !important; }
@@ -190,26 +41,18 @@
   @if(($sec['layout'] ?? '') === 'announcement')
     @php
       $aMsg    = $sec['message']    ?? 'Welcome to Ramo Store! Free shipping on orders over 500 EGP.';
-      $aSpeed  = $sec['speed']      ?? 'normal';
       $aColor  = $sec['barColor']   ?? 'dark';
       $aDismiss = $sec['dismissableByUser'] ?? true;
       $aBg = match($aColor) {
         'orange' => '#e85d26', 'navy' => '#1a1a2e', 'white' => '#f8f8f8', default => '#111111'
       };
       $aFg = ($aColor === 'white') ? '#111' : '#fff';
-      $aSpeed2 = match($aSpeed) { 'slow' => '40s', 'fast' => '15s', 'static' => 'none', default => '25s' };
     @endphp
     <div class="tl-announcement" id="announce-{{ $si }}" style="background:{{ $aBg }};color:{{ $aFg }}">
       @if($aDismiss)
       <button class="tl-announce-close" onclick="document.getElementById('announce-{{ $si }}').style.display='none'" style="color:{{ $aFg }}">×</button>
       @endif
-      @if($aSpeed === 'static')
-        <div class="tl-announce-static">{{ $aMsg }}</div>
-      @else
-        <div class="tl-announce-scroll-wrap"><div class="tl-announce-scroll" style="animation-duration:{{ $aSpeed2 }}">
-          {{ $aMsg }} &nbsp;·&nbsp; {{ $aMsg }} &nbsp;·&nbsp; {{ $aMsg }}
-        </div></div>
-      @endif
+      <div class="tl-announce-static">{{ $aMsg }}</div>
     </div>
   @endif
 @endforeach
@@ -250,7 +93,7 @@
           --tl-card-r:{{ $tlDesk['cardBorderRadius'] ?? ($sec['cardBorderRadius'] ?? 14) }}px;
           @elseif(in_array($layout,['twoColumn','saleImages','seupermarketstars']))
           --tl-prod-w:{{ $tlDesk['productWidth'] ?? ($sec['productWidth'] ?? 200) }}px;
-          --tl-card-h:{{ (($tlDesk['cardHeight'] ?? ($sec['cardHeight'] ?? 0)) > 0) ? (($tlDesk['cardHeight'] ?? ($sec['cardHeight'] ?? 0)).'px') : 'auto' }};
+          --tl-product-card-max-h:{{ (($tlDesk['cardHeight'] ?? ($sec['cardHeight'] ?? 0)) > 0) ? (($tlDesk['cardHeight'] ?? ($sec['cardHeight'] ?? 0)).'px') : '34rem' }};
           --tl-img-w:{{ (($tlDesk['imageWidth'] ?? ($sec['imageWidth'] ?? 0)) > 0) ? (($tlDesk['imageWidth'] ?? ($sec['imageWidth'] ?? 0)).'px') : '100%' }};
           --tl-img-h:{{ $tlDesk['imageHeight'] ?? ($sec['imageHeight'] ?? 200) }}px;
           --tl-element-spacing:{{ max(0, min(40, (int)($tlDesk['elementSpacing'] ?? ($sec['elementSpacing'] ?? 0)))) }}px;
@@ -273,7 +116,7 @@
             --tl-card-r:{{ $tlMob['cardBorderRadius'] ?? ($sec['cardBorderRadius'] ?? 14) }}px;
             @elseif(in_array($layout,['twoColumn','saleImages','seupermarketstars']))
             --tl-prod-w:{{ $tlMob['productWidth'] ?? ($sec['productWidth'] ?? 200) }}px;
-            --tl-card-h:{{ (($tlMob['cardHeight'] ?? ($sec['cardHeight'] ?? 0)) > 0) ? (($tlMob['cardHeight'] ?? ($sec['cardHeight'] ?? 0)).'px') : 'auto' }};
+            --tl-product-card-max-h:{{ (($tlMob['cardHeight'] ?? ($sec['cardHeight'] ?? 0)) > 0) ? (($tlMob['cardHeight'] ?? ($sec['cardHeight'] ?? 0)).'px') : '34rem' }};
             --tl-img-w:{{ (($tlMob['imageWidth'] ?? ($sec['imageWidth'] ?? 0)) > 0) ? (($tlMob['imageWidth'] ?? ($sec['imageWidth'] ?? 0)).'px') : '100%' }};
             --tl-img-h:{{ $tlMob['imageHeight'] ?? ($sec['imageHeight'] ?? 200) }}px;
             --tl-element-spacing:{{ max(0, min(40, (int)($tlMob['elementSpacing'] ?? ($sec['elementSpacing'] ?? 0)))) }}px;
@@ -373,7 +216,7 @@
       @endphp
       @if(count($items))
         @if($isSlider)
-        <div class="tl-banner-slider" id="{{ $sliderId }}" style="border-radius:var(--tl-radius,{{ $radius }}px);margin-bottom:28px;max-height:var(--tl-banner-h,{{ $bannerHeight }}px)">
+        <div class="tl-banner-slider" id="{{ $sliderId }}" data-slide-count="{{ count($items) }}" style="border-radius:var(--tl-radius,{{ $radius }}px);margin-bottom:28px;max-height:var(--tl-banner-h,{{ $bannerHeight }}px)">
           <div class="tl-slides" id="{{ $sliderId }}-track">
             @foreach($items as $bi => $item)
               @php
@@ -535,7 +378,7 @@
         $cardHeight  = max(0, (int)($sec['cardHeight'] ?? 0));
         $imageWidth  = max(0, (int)($sec['imageWidth'] ?? 0));
         $elementSpacing = max(0, min(40, (int)($sec['elementSpacing'] ?? 0)));
-          $cardStyle   = '--pc-card-height:var(--tl-card-h,'.($cardHeight > 0 ? $cardHeight.'px' : 'auto').');--pc-image-width:var(--tl-img-w,'.($imageWidth > 0 ? $imageWidth.'px' : '100%').');--pc-image-height:var(--tl-img-h,'.$imgHeight.'px);--pc-element-spacing:var(--tl-element-spacing,'.$elementSpacing.'px)';
+          $cardStyle   = '--pc-card-max-height:var(--tl-product-card-max-h,'.($cardHeight > 0 ? $cardHeight.'px' : '34rem').');--pc-image-width:var(--tl-img-w,'.($imageWidth > 0 ? $imageWidth.'px' : '100%').');--pc-image-height:var(--tl-img-h,'.$imgHeight.'px);--pc-element-spacing:var(--tl-element-spacing,'.$elementSpacing.'px)';
         $secId       = 'sg-'.$si;
         $cardOptions = [
           'idPrefix'      => 'tl-'.$si,
@@ -551,7 +394,6 @@
           'showRating'    => $sec['showRating']    ?? false,
         ];
       @endphp
-      @php $uniformHeight = !empty($sec['uniformHeight']); @endphp
       @if($products->count())
       <style>
         #{{ $secId }} .product-card { border-radius: var(--tl-card-r,{{ $cardRadius }}px) }
@@ -559,13 +401,7 @@
           #{{ $secId }} { grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:10px !important; }
         }
         @if($imgHeight)
-        #{{ $secId }} .product-card-img { aspect-ratio: unset; height: var(--tl-img-h,{{ $imgHeight }}px) }
-        @endif
-        @if($uniformHeight)
-        #{{ $secId }} { align-items: stretch }
-        #{{ $secId }} .product-card { height: 100%; display: flex; flex-direction: column }
-        #{{ $secId }} .product-card-body { flex: 1; display: flex; flex-direction: column }
-        #{{ $secId }} .card-add-btn { margin-top: auto }
+        #{{ $secId }} .pc-media { block-size:var(--tl-img-h,{{ $imgHeight }}px) }
         @endif
       </style>
       <div class="sec-head">
@@ -594,7 +430,7 @@
           min-width:0;
           grid-template-columns:repeat(5,minmax(0,1fr));
           gap:24px 20px;
-          align-items:stretch;
+          align-items:start;
           margin-bottom:32px;
         }
         #tl-sec-{{ $si }} .all-products-infinite { display:flex;flex-direction:column;align-items:center;gap:10px;margin:8px 0 44px;min-height:24px }
@@ -615,12 +451,6 @@
         }
         @media(max-width:600px) {
           #tl-sec-{{ $si }} .all-products-grid { grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 12px;margin-bottom:24px }
-          #tl-sec-{{ $si }} .all-products-grid .product-card-body { padding:10px 9px 11px }
-          #tl-sec-{{ $si }} .all-products-grid .card-add-btn,
-          #tl-sec-{{ $si }} .all-products-grid .card-details-btn { min-height:40px }
-        }
-        @media(max-width:359px) {
-          #tl-sec-{{ $si }} .all-products-grid { grid-template-columns:minmax(0,1fr);gap:16px }
         }
       </style>
       <div class="sec-head" style="align-items:center;margin-bottom:18px">
@@ -763,16 +593,13 @@
         $title          = $sec['headerText'] ?? 'Products';
         $catId          = $sec['category'] ?? null;
         $prodWidth      = max(210, (int)($sec['productWidth'] ?? 224));
-        $imgHeight      = isset($sec['imageHeight']) ? max(160, (int)$sec['imageHeight']) : (isset($sec['imageRatio']) ? max(160, round($prodWidth * (float)$sec['imageRatio'])) : 210);
-        $cardRadius     = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 10;
-        $cardHeight     = max(0, (int)($sec['cardHeight'] ?? 0));
-        $imageWidth     = max(0, (int)($sec['imageWidth'] ?? 0));
-        $elementSpacing = max(0, min(40, (int)($sec['elementSpacing'] ?? 7)));
-        $cardStyle      = '--pc-card-height:var(--tl-card-h,'.($cardHeight > 0 ? $cardHeight.'px' : 'auto').');--pc-image-width:var(--tl-img-w,'.($imageWidth > 0 ? $imageWidth.'px' : '100%').');--pc-image-height:var(--tl-img-h,'.$imgHeight.'px);--pc-element-spacing:var(--tl-element-spacing,'.$elementSpacing.'px)';
         $secId          = 'sg-'.$si;
-        $uniformHeight  = $sec['uniformHeight'] ?? true;
+        $cardHeight     = max(0, (int)($sec['cardHeight'] ?? 0));
+        $cardStyle      = '--pc-card-max-height:var(--tl-product-card-max-h,'.($cardHeight > 0 ? $cardHeight.'px' : '34rem').')';
         $cardOptions = [
           'cardStyle'      => $cardStyle,
+          'variant'        => 'vertical',
+          'idPrefix'       => 'tl-'.$si,
           'showBadge'     => $sec['showBadge']     ?? true,
           'showWishlist'  => $sec['showWishlist']  ?? true,
           'showSwatches'  => $sec['showSwatches']  ?? true,
@@ -787,319 +614,22 @@
       @if($products->count())
       <style>
         #{{ $secId }} {
-          align-items:stretch;
+          align-items:flex-start;
           gap:16px;
-          padding:2px 14px 10px;
-          scroll-snap-type:x proximity;
+          padding:4px 14px 12px;
+          scroll-snap-type:inline proximity;
+          scroll-padding-inline:14px;
         }
         #{{ $secId }} .tl-scroll-card {
-          display:flex;
+          display:grid;
           flex:0 0 var(--tl-prod-w,{{ $prodWidth }}px);
-          width:var(--tl-prod-w,{{ $prodWidth }}px) !important;
-          min-width:var(--tl-prod-w,{{ $prodWidth }}px);
+          min-inline-size:0;
           scroll-snap-align:start;
         }
-        #{{ $secId }} .product-card {
-          width:100%;
-          height:auto;
-          min-height:0;
-          border:1px solid #e7e7e7;
-          border-radius:var(--tl-card-r,{{ $cardRadius }}px);
-          background:#fff;
-          box-shadow:0 4px 14px rgba(20,20,20,.055);
-        }
-        #{{ $secId }} .product-card:hover {
-          border-color:#d8d8d8;
-          box-shadow:0 10px 24px rgba(20,20,20,.10);
-        }
-        #{{ $secId }} .product-card-img {
-          flex:0 0 auto;
-          width:100%;
-          height:var(--tl-img-h,{{ $imgHeight }}px);
-          aspect-ratio:unset;
-          background:#f6f6f6;
-        }
-        #{{ $secId }} .product-card .product-card-body {
-          flex:0 0 auto;
-          min-width:0;
-          padding:13px 12px 12px;
-          gap:6px;
-        }
-        #{{ $secId }} .product-card .product-card-name {
-          min-height:40px;
-          margin:0;
-          color:#181818;
-          font-size:14px;
-          font-weight:700;
-          line-height:1.4;
-        }
-        #{{ $secId }} .product-card .pc-swatches,
-        #{{ $secId }} .product-card .pc-sizes {
-          min-height:24px;
-          margin:0;
-          gap:6px;
-          align-items:center;
-        }
-        #{{ $secId }} .product-card .pc-swatches + .pc-selected + .pc-sizes { margin-top:10px; }
-        #{{ $secId }} .product-card .pc-swatch {
-          width:20px;
-          height:20px;
-        }
-        #{{ $secId }} .product-card .pc-size {
-          min-height:25px;
-          padding:4px 9px;
-          border-color:#dedede;
-          background:#fafafa;
-          font-size:10px;
-        }
-        #{{ $secId }} .product-card .pc-selected {
-          position:absolute;
-          width:1px;
-          height:1px;
-          padding:0;
-          margin:-1px;
-          overflow:hidden;
-          clip:rect(0,0,0,0);
-          white-space:nowrap;
-          border:0;
-        }
-        #{{ $secId }} .product-card .product-card-price {
-          min-height:24px;
-          margin-top:2px;
-          padding:0;
-          gap:7px;
-        }
-        #{{ $secId }} .product-card .price-main {
-          font-size:15px;
-          font-weight:800;
-        }
-        #{{ $secId }} .product-card .price-old { font-size:12px; }
-        #{{ $secId }} .product-card .pc-actions {
-          display:flex;
-          flex-direction:column;
-          gap:7px;
-          margin-top:2px;
-        }
-        #{{ $secId }} .product-card .card-add-btn,
-        #{{ $secId }} .product-card .card-details-btn {
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          box-sizing:border-box;
-          width:100%;
-          min-height:40px;
-          margin:0;
-          border-radius:9px;
-        }
-        #{{ $secId }} .product-card .card-details-btn {
-          border:1px solid #e5e5e5;
-          background:#fff;
-        }
-        #{{ $secId }} ~ .tl-scroll-arrow.prev { left:-10px; }
-        #{{ $secId }} ~ .tl-scroll-arrow.next { right:-10px; }
-        @media(max-width:480px){
-          #{{ $secId }} .tl-scroll-card { min-width:0; }
-          #{{ $secId }} .product-card {
-            min-height:0 !important;
-            border:1px solid #ececec !important;
-            border-radius:14px !important;
-            background:#fff !important;
-            box-shadow:0 4px 16px rgba(25,25,25,.06) !important;
-            overflow:hidden !important;
-          }
-          #{{ $secId }} .product-card-img {
-            width:100% !important;
-            height:auto !important;
-            aspect-ratio:1 / 1 !important;
-            border-radius:0 !important;
-            background:#f7f7f7 !important;
-          }
-          #{{ $secId }} .product-card-body {
-            display:flex !important;
-            flex-direction:column !important;
-            align-items:stretch !important;
-            min-width:0 !important;
-            padding:9px 8px 10px !important;
-            gap:0 !important;
-            text-align:center !important;
-          }
-          #{{ $secId }} .product-card-name {
-            display:-webkit-box !important;
-            -webkit-box-orient:vertical !important;
-            -webkit-line-clamp:2 !important;
-            min-height:31px !important;
-            margin:0 !important;
-            overflow:hidden !important;
-            color:#202020 !important;
-            font-size:12px !important;
-            font-weight:700 !important;
-            line-height:1.3 !important;
-            text-align:center !important;
-          }
-          #{{ $secId }} .pc-swatches,
-          #{{ $secId }} .pc-sizes {
-            justify-content:center !important;
-            min-height:19px !important;
-            margin:5px 0 0 !important;
-            gap:4px !important;
-          }
-          #{{ $secId }} .pc-swatches:empty,
-          #{{ $secId }} .pc-sizes:empty { display:none !important; }
-          #{{ $secId }} .pc-swatch {
-            width:15px !important;
-            height:15px !important;
-            border:2px solid #fff !important;
-            box-shadow:0 0 0 1px #d6d6d6 !important;
-          }
-          #{{ $secId }} .pc-swatch.selected {
-            box-shadow:0 0 0 2px var(--c-orange),0 0 0 3px #fff !important;
-          }
-          #{{ $secId }} .pc-size {
-            min-width:22px !important;
-            padding:3px 5px !important;
-            border:1px solid #e1e1e1 !important;
-            border-radius:6px !important;
-            background:#fafafa !important;
-            color:#555 !important;
-            font-size:9px !important;
-            font-weight:700 !important;
-            line-height:1 !important;
-          }
-          #{{ $secId }} .pc-size.selected {
-            border-color:var(--c-dark) !important;
-            background:var(--c-dark) !important;
-            color:#fff !important;
-          }
-          #{{ $secId }} .pc-selected {
-            min-height:13px !important;
-            max-height:13px !important;
-            margin:3px 0 0 !important;
-            overflow:hidden !important;
-            color:#8b8b8b !important;
-            font-size:9px !important;
-            line-height:1.4 !important;
-            text-align:center !important;
-            text-overflow:ellipsis !important;
-            white-space:nowrap !important;
-          }
-          #{{ $secId }} .product-card-price {
-            display:flex !important;
-            align-items:baseline !important;
-            justify-content:center !important;
-            min-height:21px !important;
-            margin:6px 0 0 !important;
-            gap:4px !important;
-            line-height:1 !important;
-          }
-          #{{ $secId }} .price-main {
-            color:#171717 !important;
-            font-size:14px !important;
-            font-weight:800 !important;
-            white-space:nowrap !important;
-          }
-          #{{ $secId }} .price-main.sale { color:var(--c-orange) !important; }
-          #{{ $secId }} .price-old {
-            color:#9a9a9a !important;
-            font-size:9px !important;
-            white-space:nowrap !important;
-          }
-          #{{ $secId }} .pc-actions {
-            display:block !important;
-            margin:7px 0 0 !important;
-          }
-          #{{ $secId }} .card-add-btn {
-            width:100% !important;
-            min-height:31px !important;
-            margin:0 !important;
-            padding:7px 4px !important;
-            border:0 !important;
-            border-radius:8px !important;
-            background:var(--c-dark) !important;
-            color:#fff !important;
-            font-size:10px !important;
-            font-weight:800 !important;
-            line-height:1 !important;
-            text-align:center !important;
-            white-space:nowrap !important;
-          }
-          #{{ $secId }} .card-details-btn {
-            display:block !important;
-            width:100% !important;
-            margin:5px 0 0 !important;
-            padding:3px 0 0 !important;
-            border:0 !important;
-            background:transparent !important;
-            color:#777 !important;
-            font-size:9px !important;
-            font-weight:700 !important;
-            line-height:1.2 !important;
-            text-align:center !important;
-            text-decoration:none !important;
-          }
-          #{{ $secId }} .wish-btn {
-            top:7px !important;
-            right:7px !important;
-            width:26px !important;
-            height:26px !important;
-            border:1px solid rgba(0,0,0,.08) !important;
-            background:rgba(255,255,255,.94) !important;
-            font-size:14px !important;
-          }
-          #{{ $secId }} .pc-coupon-bar { display:none !important; }
-        }
         @media(max-width:720px){
-          #{{ $secId }} { gap:12px; padding-bottom:8px; }
-          #{{ $secId }} .tl-scroll-card {
-            flex-basis:min(72vw,224px) !important;
-            width:min(72vw,224px) !important;
-            min-width:min(72vw,224px) !important;
-          }
-          #{{ $secId }} .product-card { min-height:0 !important; }
-          #{{ $secId }} .product-card-img {
-            height:auto !important;
-            aspect-ratio:1.08 / 1 !important;
-          }
-          #{{ $secId }} .product-card .product-card-body {
-            padding:11px 10px 10px !important;
-            text-align:left !important;
-          }
-          #{{ $secId }} .product-card .product-card-name {
-            min-height:36px !important;
-            font-size:13px !important;
-            line-height:1.35 !important;
-            text-align:left !important;
-          }
-          #{{ $secId }} .product-card .pc-swatches,
-          #{{ $secId }} .product-card .pc-sizes {
-            justify-content:flex-start !important;
-            min-height:22px !important;
-            margin-top:4px !important;
-          }
-          #{{ $secId }} .product-card .product-card-price {
-            justify-content:flex-start !important;
-            min-height:22px !important;
-            margin-top:4px !important;
-          }
-          #{{ $secId }} .product-card .pc-actions { margin-top:8px !important; }
-          #{{ $secId }} .product-card .card-add-btn,
-          #{{ $secId }} .product-card .card-details-btn {
-            min-height:36px !important;
-            margin:0 !important;
-            padding:8px 6px !important;
-            border-radius:8px !important;
-          }
-          #{{ $secId }} .product-card .card-details-btn {
-            margin-top:6px !important;
-            border:1px solid #e6e6e6 !important;
-          }
+          #{{ $secId }} { gap:14px; }
+          #{{ $secId }} .tl-scroll-card { flex-basis:clamp(180px, 67%, 256px); }
         }
-        @if($uniformHeight)
-        #{{ $secId }} { align-items: stretch }
-        #{{ $secId }} .tl-scroll-card { display: flex; flex-direction: column }
-        #{{ $secId }} .product-card { height: 100%; display: flex; flex-direction: column }
-        #{{ $secId }} .product-card-body { flex: 1; display: flex; flex-direction: column }
-        #{{ $secId }} .card-add-btn { margin-top: auto }
-        @endif
       </style>
       <div class="sec-head">
         <h2 class="sec-title">{{ $title }}</h2>
@@ -1110,7 +640,7 @@
         <div class="tl-scroll-section">
           <div class="tl-scroll-track" id="{{ $secId }}">
             @foreach($products as $p)
-            <div class="tl-scroll-card" style="width:var(--tl-prod-w,{{ $prodWidth }}px)">
+            <div class="tl-scroll-card">
               @include('web.partials.product-card', [
                 'p'            => $p,
                 'cardVariations' => $sectionVariations[$p->id] ?? [],
@@ -1136,7 +666,7 @@
         $cardHeight = max(0, (int)($sec['cardHeight'] ?? 0));
         $imageWidth = max(0, (int)($sec['imageWidth'] ?? 0));
         $elementSpacing = max(0, min(40, (int)($sec['elementSpacing'] ?? 0)));
-        $cardStyle  = '--pc-card-height:var(--tl-card-h,'.($cardHeight > 0 ? $cardHeight.'px' : 'auto').');--pc-image-width:var(--tl-img-w,'.($imageWidth > 0 ? $imageWidth.'px' : '100%').');--pc-image-height:var(--tl-img-h,'.$imgHeight.'px);--pc-element-spacing:var(--tl-element-spacing,'.$elementSpacing.'px)';
+        $cardStyle  = '--pc-card-max-height:var(--tl-product-card-max-h,'.($cardHeight > 0 ? $cardHeight.'px' : '34rem').');--pc-image-width:var(--tl-img-w,'.($imageWidth > 0 ? $imageWidth.'px' : '100%').');--pc-image-height:var(--tl-img-h,'.$imgHeight.'px);--pc-element-spacing:var(--tl-element-spacing,'.$elementSpacing.'px)';
         $secId      = 'sg-'.$si;
         $cardOptions = [
           'idPrefix'      => 'tl-'.$si,
@@ -1152,7 +682,6 @@
           'showRating'    => $sec['showRating']    ?? false,
         ];
       @endphp
-      @php $uniformHeight = !empty($sec['uniformHeight']); @endphp
       @if($products->count())
       <style>
         #{{ $secId }} .product-card { border-radius: var(--tl-card-r,{{ $cardRadius }}px) }
@@ -1160,13 +689,7 @@
           #{{ $secId }} { grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:10px !important; }
         }
         @if($imgHeight)
-        #{{ $secId }} .product-card-img { aspect-ratio: unset; height: var(--tl-img-h,{{ $imgHeight }}px) }
-        @endif
-        @if($uniformHeight)
-        #{{ $secId }} { align-items: stretch }
-        #{{ $secId }} .product-card { height: 100%; display: flex; flex-direction: column }
-        #{{ $secId }} .product-card-body { flex: 1; display: flex; flex-direction: column }
-        #{{ $secId }} .card-add-btn { margin-top: auto }
+        #{{ $secId }} .pc-media { block-size:var(--tl-img-h,{{ $imgHeight }}px) }
         @endif
       </style>
       <div class="sec-head">
@@ -1396,24 +919,19 @@
       </div></div>
       @endif
 
-    {{-- NEW ARRIVALS TICKER --}}
+    {{-- NEW ARRIVALS ROW --}}
     @elseif($layout === 'arrivals')
       @php
         $products = $sectionArrivals[$si] ?? collect();
         $tag      = $sec['tag']   ?? 'Just Arrived';
-        $loop2    = $sec['loopInfinitely'] ?? true;
-        $pause    = $sec['pauseOnHover']   ?? true;
-        $tickerId = 'ticker-'.$si;
       @endphp
       @if($products->count())
       <div class="sec-head"><h2 class="sec-title">✨ {{ $sec['headerText'] ?? 'New Arrivals' }}</h2><a href="{{ route('shop') }}" class="sec-link">{{ $timelineSeeAllLabel }}</a></div>
-      <div class="tl-arrivals-wrap" id="{{ $tickerId }}" style="margin-bottom:36px" {{ $pause ? 'onmouseenter="this.style.animationPlayState=\'paused\'" onmouseleave="this.style.animationPlayState=\'running\'"' : '' }}>
-        <div class="tl-arrivals-track" style="{{ $loop2 ? '' : 'animation:none' }}">
-          @for($copy = 0; $copy < 2; $copy++)
-          <div class="tl-arrivals-group" @if($copy > 0) aria-hidden="true" @endif>
+      <div class="tl-arrivals-wrap" style="margin-bottom:36px">
+        <div class="tl-arrivals-track">
             @foreach($products as $p)
             @php $arrivalName = $p->timeline_name ?? $p->name; @endphp
-            <a href="{{ route('product', $p->id) }}" class="tl-arrival-card" @if($copy > 0) tabindex="-1" @endif>
+            <a href="{{ route('product', $p->id) }}" class="tl-arrival-card">
               @if($p->thumbnail_url)<img src="{{ $p->thumbnail_url }}" alt="{{ $arrivalName }}" class="tl-arrival-img">@else<div class="tl-arrival-placeholder">🛍️</div>@endif
               <div class="tl-arrival-body">
                 @if($sec['showCategoryChip'] ?? false)<span class="tl-arrival-tag">{{ $tag }}</span>@endif
@@ -1422,8 +940,6 @@
               </div>
             </a>
             @endforeach
-          </div>
-          @endfor
         </div>
       </div>
       @endif
@@ -1451,8 +967,6 @@
     @elseif($layout === 'reviewsCarousel')
       @php
         $revs     = $sectionReviewsCarousel[$si] ?? collect();
-        $interval = (int)($sec['interval'] ?? 4) * 1000;
-        $manualNav = $sec['allowManualNavigation'] ?? true;
         $carId    = 'revcar-'.$si;
       @endphp
       @if($revs->count())
@@ -1471,22 +985,31 @@
           </div>
           @endforeach
         </div>
-        @if($manualNav && $revs->count() > 1)
+        @if($revs->count() > 1)
         <div class="tl-revcar-nav">
-          <button onclick="revcarPrev('{{ $carId }}',{{ $revs->count() }})">‹</button>
+          <button type="button" data-review-step="-1">‹</button>
           <div class="tl-revcar-dots">
-            @foreach($revs as $ri => $rev)<span class="tl-revcar-dot {{ $ri===0 ? 'active' : '' }}" onclick="revcarGo('{{ $carId }}',{{ $ri }},{{ $revs->count() }})"></span>@endforeach
+            @foreach($revs as $ri => $rev)<span class="tl-revcar-dot {{ $ri===0 ? 'active' : '' }}" data-review-index="{{ $ri }}"></span>@endforeach
           </div>
-          <button onclick="revcarNext('{{ $carId }}',{{ $revs->count() }})">›</button>
+          <button type="button" data-review-step="1">›</button>
         </div>
         @endif
       </div>
       <script>
       (function(){
-        var id='{{ $carId }}', total={{ $revs->count() }}, cur=0, iv={{ $interval }};
-        function go(n){ document.getElementById(id+'-slide-'+cur).style.display='none'; cur=(n+total)%total; document.getElementById(id+'-slide-'+cur).style.display='flex'; document.querySelectorAll('#'+id+' .tl-revcar-dot').forEach(function(d,i){d.classList.toggle('active',i===cur);}); }
-        window.revcarNext=function(i,t){if(i===id)go(cur+1);}; window.revcarPrev=function(i,t){if(i===id)go(cur-1);}; window.revcarGo=function(i,n,t){if(i===id)go(n);};
-        if(total>1)setInterval(function(){go(cur+1);}, iv);
+        const carousel = document.getElementById('{{ $carId }}');
+        const slides = carousel.querySelectorAll('.tl-revcar-slide');
+        const dots = carousel.querySelectorAll('.tl-revcar-dot');
+        let current = 0;
+        carousel.querySelector('.tl-revcar-nav')?.addEventListener('click', event => {
+          const control = event.target.closest('[data-review-step], [data-review-index]');
+          if (!control) return;
+          const next = Number(control.dataset.reviewIndex ?? current + Number(control.dataset.reviewStep));
+          slides[current].style.display = 'none';
+          current = (next + slides.length) % slides.length;
+          slides[current].style.display = 'flex';
+          dots.forEach((dot, index) => dot.classList.toggle('active', index === current));
+        });
       })();
       </script>
       @endif
@@ -1985,13 +1508,9 @@ body{padding-top:44px}
 .tl-announcement{position:relative;width:100%;padding:9px 40px 9px 16px;font-size:13px;font-weight:500;overflow:hidden;z-index:100}
 .tl-announce-close{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:20px;cursor:pointer;line-height:1;padding:0}
 .tl-announce-static{text-align:center}
-.tl-announce-scroll-wrap{overflow:hidden;white-space:nowrap}
-.tl-announce-scroll{display:inline-block;animation:scrollTicker 25s linear infinite}
-@keyframes scrollTicker{from{transform:translateX(0)}to{transform:translateX(-33.333%)}}
 @media(max-width:640px){
   .tl-announcement{padding:6px 34px 6px 12px;font-size:11px;line-height:1.25}
   .tl-announce-close{right:10px;font-size:17px}
-  .tl-announce-scroll{line-height:1.25}
 }
 
 /* ── FLASH SALE BAR ── */
@@ -2013,12 +1532,9 @@ body{padding-top:44px}
 /* ── TRENDING ── */
 .tl-rank-badge{position:absolute;top:8px;left:8px;background:#e85d26;color:#fff;font-size:11px;font-weight:800;padding:2px 7px;border-radius:20px;z-index:2}
 
-/* ── NEW ARRIVALS TICKER ── */
-.tl-arrivals-wrap{overflow:hidden;cursor:pointer}
-.tl-arrivals-track{display:flex;width:max-content;gap:14px;animation:arrivalsScroll 30s linear infinite}
-.tl-arrivals-wrap:hover .tl-arrivals-track{animation-play-state:paused}
-.tl-arrivals-group{display:flex;flex:0 0 auto;gap:14px}
-@keyframes arrivalsScroll{from{transform:translateX(0)}to{transform:translateX(var(--arrivals-distance, -50%))}}
+/* ── NEW ARRIVALS ROW ── */
+.tl-arrivals-wrap{overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity}
+.tl-arrivals-track{display:flex;width:max-content;gap:14px}
 .tl-arrival-card{display:flex;flex-direction:column;flex-shrink:0;width:140px;text-decoration:none;color:inherit;border:1.5px solid var(--c-light);border-radius:10px;overflow:hidden;transition:box-shadow .15s}
 .tl-arrival-card{scroll-snap-align:start}
 .tl-arrival-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.1)}
@@ -2185,9 +1701,6 @@ a.tl-flex-banner:hover img{transform:scale(1.035)}
   .tl-loyalty-inner{gap:12px}
   .tl-bundle-body{gap:14px}
   .tl-arrival-card{width:120px}
-  .tl-arrivals-wrap{overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;scroll-snap-type:x proximity;cursor:grab}
-  .tl-arrivals-wrap::-webkit-scrollbar{display:none}
-  .tl-arrivals-track{animation:none !important;transform:none !important}
 }
 </style>
 @endpush
@@ -2243,9 +1756,11 @@ function copyCoupon(btn, code) {
 // ── SLIDER LOGIC ──────────────────────────────────────────────────
 const sliderState = {};
 
-function initSlider(id, count, autoPlay) {
-  sliderState[id] = { current: 0, count, timer: null };
-  const slider = document.getElementById(id);
+function initSlider(slider) {
+  const id = slider.id;
+  const count = Number(slider.dataset.slideCount);
+  if (count < 2) return;
+  sliderState[id] = { current: 0, count };
   if (slider && !slider.dataset.touchBound) {
     slider.dataset.touchBound = 'true';
     let startX = 0;
@@ -2298,9 +1813,6 @@ function initSlider(id, count, autoPlay) {
       suppressClick = false;
     }, true);
   }
-  if (autoPlay && count > 1) {
-    sliderState[id].timer = setInterval(() => slideNext(id), 4000);
-  }
 }
 
 function slideTo(id, idx) {
@@ -2312,11 +1824,6 @@ function slideTo(id, idx) {
   document.querySelectorAll(`#${id}-dots .tl-dot`).forEach((d, i) => {
     d.classList.toggle('active', i === state.current);
   });
-  // Reset timer on manual navigation
-  if (state.timer) {
-    clearInterval(state.timer);
-    state.timer = setInterval(() => slideNext(id), 4000);
-  }
 }
 
 function slideNext(id) {
@@ -2328,37 +1835,6 @@ function slidePrev(id) {
   const s = sliderState[id];
   if (s) slideTo(id, s.current - 1);
 }
-
-// Keep the arrivals marquee filled even when there are only a few products.
-function initArrivalTickers() {
-  document.querySelectorAll('.tl-arrivals-wrap').forEach((wrap) => {
-    const track = wrap.querySelector('.tl-arrivals-track');
-    const firstGroup = track?.querySelector('.tl-arrivals-group');
-    if (!track || !firstGroup) return;
-
-    track.querySelectorAll('[data-arrivals-clone="true"]').forEach((clone) => clone.remove());
-    if (track.style.animation === 'none' || track.style.animationName === 'none') {
-      track.querySelectorAll('.tl-arrivals-group:not(:first-child)').forEach((group) => group.remove());
-      return;
-    }
-
-    const distance = firstGroup.getBoundingClientRect().width + (parseFloat(getComputedStyle(track).columnGap) || 0);
-    if (!distance) return;
-    track.style.setProperty('--arrivals-distance', `-${distance}px`);
-    track.style.animationDuration = `${Math.max(18, distance / 24)}s`;
-
-    while (track.scrollWidth < wrap.clientWidth + distance) {
-      const clone = firstGroup.cloneNode(true);
-      clone.dataset.arrivalsClone = 'true';
-      clone.setAttribute('aria-hidden', 'true');
-      clone.querySelectorAll('a').forEach((link) => link.setAttribute('tabindex', '-1'));
-      track.appendChild(clone);
-    }
-  });
-}
-
-initArrivalTickers();
-window.addEventListener('resize', initArrivalTickers);
 
 // Horizontal product-scroll arrows (Shop by Look, etc.)
 // Note: the *track* (flex row of cards) doesn't scroll itself — its parent
@@ -2390,19 +1866,7 @@ window.addEventListener('resize', () => {
   document.querySelectorAll('.tl-scroll-wrap .tl-scroll-section').forEach(updateScrollArrows);
 });
 
-// Init all sliders declared in page
-@foreach($sections as $si => $sec)
-  @if(($sec['layout'] ?? '') === 'bannerImage')
-    @php
-      $items    = $sec['items'] ?? [];
-      $isSlider = ($sec['design'] ?? 'default') !== 'static' && count($items) > 1;
-      $autoPlay = $sec['autoPlay'] ?? true;
-    @endphp
-    @if($isSlider && count($items) > 1)
-      initSlider('slider-{{ $si }}', {{ count($items) }}, {{ $autoPlay ? 'true' : 'false' }});
-    @endif
-  @endif
-@endforeach
+document.querySelectorAll('.tl-banner-slider[data-slide-count]').forEach(initSlider);
 
 @if(request()->has('tl_preview'))
 (function(){

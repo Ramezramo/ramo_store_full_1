@@ -13,11 +13,11 @@ class ProductSelectionResetTest extends TestCase
 
         $this->assertIsString($product);
         $this->assertIsString($layout);
-        $this->assertStringContainsString('window.productCartAddFinished = function (success)', $product);
+        $this->assertStringContainsString('window.productCartAddFinished = function (success, failedItems = [])', $product);
         $this->assertStringContainsString('function resetProductSelections()', $product);
         $this->assertStringContainsString('selectedAttrs = {};', $product);
         $this->assertStringContainsString('selectedColorValues = new Set();', $product);
-        $this->assertStringContainsString('colorQuantities = {};', $product);
+        $this->assertStringContainsString('bulkSelection.clear();', $product);
         $this->assertStringContainsString('currentVariation = null;', $product);
         $this->assertStringContainsString("document.querySelectorAll('[data-attr-key].selected')", $product);
         $this->assertStringContainsString('updateSelectedSummary();', $product);
@@ -53,7 +53,7 @@ class ProductSelectionResetTest extends TestCase
         $this->assertStringContainsString('pi-price-explanation', $product);
     }
 
-    public function test_cart_selection_summary_is_positioned_above_the_add_button_and_tracks_selected_items(): void
+    public function test_bulk_cart_selection_summary_tracks_selected_items(): void
     {
         $product = file_get_contents(resource_path('views/web/product.blade.php'));
 
@@ -63,7 +63,8 @@ class ProductSelectionResetTest extends TestCase
         $this->assertStringContainsString('What will be added to cart', $product);
         $this->assertStringContainsString('اللي هيتضاف للسلة', $product);
         $this->assertStringContainsString('function updateCartSelectionSummary()', $product);
-        $this->assertStringContainsString('colorQuantities[colorQuantityKey(value)]', $product);
+        $this->assertStringContainsString('if (!multiVariantMode)', $product);
+        $this->assertStringContainsString('Array.from(bulkSelection, ([id, qty]) => ({ variation_id: Number(id), qty }))', $product);
         $this->assertStringContainsString('updateCartSelectionSummary();', $product);
         $this->assertStringContainsString('changeQty(delta)', $product);
     }
@@ -73,26 +74,21 @@ class ProductSelectionResetTest extends TestCase
         $product = file_get_contents(resource_path('views/web/product.blade.php'));
 
         $this->assertIsString($product);
-        $this->assertStringContainsString('height: 52px;', $product);
-        $this->assertStringContainsString('max-height: 56px;', $product);
-        $this->assertStringContainsString('flex: 0 0 auto;', $product);
-        $this->assertStringContainsString('.product-page .pi-cart-action { flex: 1 1 100%; flex-basis: 100%; width: 100%; align-self: flex-start; }', $product);
-        $this->assertStringContainsString('.product-page .pi-cart-row .pi-atc-btn { height: 54px; min-height: 54px; max-height: 54px; }', $product);
+        $this->assertStringContainsString('id="single-qty-controls"', $product);
+        $this->assertStringContainsString('.product-page .pi-cart-row .pi-atc-btn', $product);
+        $this->assertStringContainsString('min-block-size:52px', $product);
+        $this->assertStringContainsString('flex:1 1 126px', $product);
     }
 
-    public function test_color_variation_card_is_clickable_without_interfering_with_quantity_controls(): void
+    public function test_color_selection_and_bulk_quantity_use_separate_native_controls(): void
     {
         $product = file_get_contents(resource_path('views/web/product.blade.php'));
 
         $this->assertIsString($product);
-        $this->assertStringContainsString('class="var-color-option"', $product);
-        $this->assertStringContainsString('role="button"', $product);
-        $this->assertStringContainsString('tabindex="0"', $product);
-        $this->assertStringContainsString('onclick="selectColorCard(event, this)"', $product);
-        $this->assertStringContainsString("event.target.closest('.var-swatch') || event.target.closest('.color-qty-stepper')", $product);
-        $this->assertStringContainsString('function selectColorCard(event, card)', $product);
-        $this->assertStringContainsString('event?.stopPropagation();', $product);
-        $this->assertStringContainsString("input.addEventListener('click', (event) => event.stopPropagation())", $product);
-        $this->assertStringContainsString("input.addEventListener('change', (event) =>", $product);
+        $this->assertStringContainsString('<button type="button" class="product-color-choice"', $product);
+        $this->assertStringContainsString('onclick="selectAttr(this.dataset.attrKey,this.dataset.attrVal)"', $product);
+        $this->assertStringContainsString('class="bulk-qty-stepper" hidden', $product);
+        $this->assertStringContainsString('onclick="toggleMultiVariantMode(this)"', $product);
+        $this->assertStringContainsString('let multiVariantMode = false;', $product);
     }
 }

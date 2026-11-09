@@ -32,19 +32,6 @@
       grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
       gap: 12px;
     }
-    .wishlist-grid .product-card-img {
-      aspect-ratio: 3 / 4;
-    }
-    .wishlist-grid .product-card-body {
-      padding: 10px;
-    }
-    .wishlist-grid .product-card-name {
-      min-height: 38px;
-      display: -webkit-box;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
-      overflow: hidden;
-    }
   }
 
   .wishlist-page[dir="rtl"] .breadcrumb,
@@ -52,7 +39,7 @@
   .wishlist-page[dir="rtl"] .product-card,
   .wishlist-page[dir="rtl"] .product-card-body {
     direction: rtl;
-    text-align: right;
+    text-align: start;
   }
   .wishlist-page[dir="rtl"] .wishlist-grid {
     direction: rtl;

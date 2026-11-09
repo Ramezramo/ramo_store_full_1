@@ -2,6 +2,11 @@
 
 @php
   $otpRtl = session('locale', 'en') === 'ar';
+  $otpConfig = \App\Helpers\AuthConfig::get();
+  $otpLength = max(4, min(8, (int) $otpConfig['otp_length']));
+  $otpCooldown = max(0, (int) $otpConfig['resend_cooldown_seconds']);
+  $fromCheckout = session('url.intended') === route('checkout');
+  $loginUrl = route('login', $fromCheckout ? ['checkout' => 1] : []);
   $otpCopy = $otpRtl ? [
     'pageTitle' => 'تأكيد كود الموبايل — Ramo Store',
     'title' => 'اكتب كود التأكيد', 'sentTo' => 'الكود اتبعت على', 'loading' => 'جاري التحميل…',
@@ -9,7 +14,7 @@
     'resendIn' => 'إعادة الإرسال خلال', 'seconds' => 'ثانية', 'resend' => 'إعادة إرسال الكود',
     'changePhone' => 'تغيير رقم الموبايل', 'devTitle' => 'وضع التجربة — كود التأكيد',
     'devNote' => 'وضع تجربة فقط · الكود ما اتبعتش برسالة SMS حقيقية',
-    'incomplete' => 'اكتب الـ6 أرقام كلها.', 'verified' => 'تم التأكيد. جاري التحويل…',
+    'incomplete' => 'اكتب أرقام الكود كلها.', 'verified' => 'تم التأكيد. جاري التحويل…',
     'incorrect' => 'الكود غير صحيح.', 'networkError' => 'في مشكلة في النت. جرّب تاني.',
     'resending' => 'جاري إعادة الإرسال', 'resent' => 'تم إعادة إرسال الكود.',
     'resendFailed' => 'مش قادرين نعيد إرسال الكود دلوقتي.',
@@ -20,7 +25,7 @@
     'resendIn' => 'Resend in', 'seconds' => 's', 'resend' => 'Resend OTP',
     'changePhone' => 'Change phone number', 'devTitle' => 'Dev Mode — OTP Code',
     'devNote' => 'Development preview only · not sent via real SMS',
-    'incomplete' => 'Please enter all 6 digits.', 'verified' => 'Verified! Redirecting…',
+    'incomplete' => 'Enter the full verification code.', 'verified' => 'Verified! Redirecting…',
     'incorrect' => 'Incorrect code.', 'networkError' => 'Network error. Please try again.',
     'resending' => 'Resending', 'resent' => 'OTP resent!', 'resendFailed' => 'Could not resend OTP.',
   ];
@@ -30,7 +35,7 @@
 
 @push('styles')
 <style>
-.otp-boxes { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:clamp(5px,2vw,10px); width:100%; max-width:100%; margin:24px 0; direction:ltr; }
+.otp-boxes { display:grid; grid-template-columns:repeat(var(--otp-length),minmax(0,1fr)); gap:clamp(5px,2vw,10px); width:100%; max-width:100%; margin:24px 0; direction:ltr; }
 .otp-boxes input {
   width:100%; min-width:0; height:clamp(48px,15vw,56px); box-sizing:border-box; text-align:center; font-size:22px; font-weight:700;
   border:2px solid #e5e7eb; border-radius:10px; outline:none; transition:.15s;
@@ -64,9 +69,10 @@
     <p class="otp-sent-to">{{ $otpCopy['sentTo'] }}</p>
     <p class="otp-phone-display" id="display-phone">{{ $otpCopy['loading'] }}</p>
 
-    <div class="otp-boxes" id="otp-boxes">
-      @for($i = 0; $i < 6; $i++)
-        <input type="text" inputmode="numeric" maxlength="1" class="otp-input" autocomplete="one-time-code">
+    <div class="otp-boxes" id="otp-boxes" style="--otp-length:{{ $otpLength }}">
+      @for($i = 0; $i < $otpLength; $i++)
+        <input type="text" inputmode="numeric" maxlength="1" class="otp-input" autocomplete="one-time-code"
+               aria-label="{{ $otpRtl ? 'رقم ' . ($i + 1) : 'Digit ' . ($i + 1) }}">
       @endfor
     </div>
 
@@ -80,12 +86,15 @@
     </button>
 
     <div class="otp-resend-row" style="margin-top:14px">
-      <span id="resend-timer">{{ $otpCopy['resendIn'] }} <strong id="countdown">60</strong> {{ $otpCopy['seconds'] }}</span>
+      <span id="resend-timer">{{ $otpCopy['resendIn'] }} <strong id="countdown">{{ $otpCooldown }}</strong> {{ $otpCopy['seconds'] }}</span>
       <span id="resend-link" style="display:none"><a onclick="resendOtp()">{{ $otpCopy['resend'] }}</a></span>
     </div>
 
     <div class="otp-change-phone">
-      <a href="{{ route('login') }}">{{ $otpRtl ? '→' : '←' }} {{ $otpCopy['changePhone'] }}</a>
+      <a href="{{ $loginUrl }}">{{ $otpRtl ? '→' : '←' }} {{ $otpCopy['changePhone'] }}</a>
+      @if($fromCheckout)
+        · <a href="{{ route('cart') }}">{{ $otpRtl ? 'ارجع للسلة' : 'Back to cart' }}</a>
+      @endif
     </div>
 
     <div id="dev-otp-box" aria-live="polite" style="display:none;margin-top:16px;padding:12px 14px;background:#fffbeb;border:1.5px dashed #f59e0b;border-radius:10px;text-align:center">
@@ -99,12 +108,13 @@
 <script>
 const otpCopy = @json($otpCopy);
 const phone = sessionStorage.getItem('otp_phone') || '';
-let countdownVal = 60;
+const resendCooldown = @json($otpCooldown);
+let countdownVal = resendCooldown;
 let countdownTimer;
 
 document.getElementById('display-phone').textContent = '+20' + phone.replace(/^0/, '');
 
-if (!phone) { window.location.href = '{{ route("login") }}'; }
+if (!phone) window.location.replace(@json($loginUrl));
 
 const boxes = document.querySelectorAll('.otp-input');
 boxes.forEach((box, idx) => {
@@ -138,6 +148,7 @@ async function verifyOtp() {
   const otp = getOtpValue();
   if (otp.length < boxes.length) { setErr(otpCopy.incomplete); return; }
   const btn = document.getElementById('verify-btn');
+  if (btn.disabled || !phone) return;
   btn.disabled = true;
   btn.classList.add('is-loading');
   btn.setAttribute('aria-busy', 'true');
@@ -192,7 +203,7 @@ async function resendOtp() {
     if (data.success) {
       setOk(otpCopy.resent);
       showDevelopmentOtp(data.dev_otp);
-      startCountdown(60);
+      startCountdown(resendCooldown);
     } else {
       setErr(data.message || otpCopy.resendFailed);
       if (data.wait) startCountdown(data.wait);
@@ -205,6 +216,11 @@ async function resendOtp() {
 function startCountdown(seconds) {
   clearInterval(countdownTimer);
   countdownVal = seconds;
+  if (countdownVal <= 0) {
+    document.getElementById('resend-timer').style.display = 'none';
+    document.getElementById('resend-link').style.display = '';
+    return;
+  }
   document.getElementById('countdown').textContent = countdownVal;
   document.getElementById('resend-timer').style.display = '';
   document.getElementById('resend-link').style.display = 'none';
@@ -223,14 +239,14 @@ function setErr(msg) { document.getElementById('otp-err').textContent = msg; doc
 function setOk(msg) { document.getElementById('otp-ok').textContent = msg; document.getElementById('otp-err').textContent = ''; }
 
 function showDevelopmentOtp(devOtp) {
-  if (!devOtp || !/^\d{6}$/.test(String(devOtp))) return;
+  if (!devOtp || (!/^\d+$/.test(String(devOtp)) || String(devOtp).length !== boxes.length)) return;
   document.getElementById('dev-otp-box').style.display = 'block';
   document.getElementById('dev-otp-val').textContent = String(devOtp);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   boxes[0].focus();
-  startCountdown(60);
+  startCountdown(resendCooldown);
   const devOtp = sessionStorage.getItem('dev_otp');
   showDevelopmentOtp(devOtp);
   sessionStorage.removeItem('dev_otp');

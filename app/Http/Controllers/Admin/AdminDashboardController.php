@@ -582,7 +582,36 @@ class AdminDashboardController extends Controller
         $images       = json_decode($product->images ?? '{}', true) ?: [];
         $translations = json_decode($product->translations ?? '[]', true) ?: [];
         $tags         = json_decode($product->tags ?? '[]', true) ?: [];
-        $attributes   = json_decode($product->attributes ?? '[]', true) ?: [];
+        $rawAttributes = json_decode($product->attributes ?? '[]', true) ?: [];
+        $variationAttributeValues = [];
+        foreach ($dbVariations as $dbVariation) {
+            foreach ((array) ($dbVariation->attributes ?? []) as $attributeName => $attributeValue) {
+                foreach (is_array($attributeValue) ? $attributeValue : [$attributeValue] as $value) {
+                    if (!is_scalar($value) || trim((string) $value) === '') continue;
+                    $variationAttributeValues[$attributeName][] = trim((string) $value);
+                }
+            }
+        }
+        $attributes = [];
+        foreach ((array) $rawAttributes as $key => $attribute) {
+            if (is_string($attribute)) {
+                $name = trim($attribute);
+                $values = $variationAttributeValues[$name] ?? [];
+            } elseif (is_array($attribute)) {
+                $name = trim((string) ($attribute['name'] ?? (is_string($key) ? $key : '')));
+                $values = $attribute['values'] ?? [];
+            } else {
+                continue;
+            }
+
+            if ($name === '') continue;
+            if (is_string($values)) $values = explode(',', $values);
+            $values = array_values(array_unique(array_filter(array_map(
+                static fn ($value) => is_scalar($value) ? trim((string) $value) : '',
+                (array) $values
+            ))));
+            $attributes[] = ['name' => $name, 'values' => $values];
+        }
         $whatsapp     = json_decode($product->whatsapp ?? '{}', true) ?: [];
         $unit         = json_decode($product->unit ?? '{}', true) ?: [];
         $unitType     = $unit ? array_key_first($unit) : 'piece';

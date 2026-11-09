@@ -10,6 +10,7 @@ use App\Http\Controllers\Web\CheckoutController;
 use App\Http\Controllers\Web\AuthWebController;
 use App\Http\Controllers\Web\WishlistController;
 use App\Http\Controllers\Web\AccountController;
+use App\Http\Controllers\Web\OrderNotificationController;
 use App\Http\Controllers\Web\SearchController;
 use App\Http\Controllers\Admin\ConfigAdminController;
 use App\Http\Controllers\Admin\AdminTimelineController;
@@ -103,6 +104,10 @@ Route::middleware('auth')->prefix('account')->group(function () {
     Route::get('/referral', [AccountController::class, 'referral'])->name('account.referral');
     Route::post('/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
     Route::get('/orders', [AccountController::class, 'orders'])->name('account.orders');
+    Route::get('/notifications', [OrderNotificationController::class, 'index'])->name('account.notifications');
+    Route::get('/notifications/unread', [OrderNotificationController::class, 'unread'])->name('account.notifications.unread');
+    Route::post('/notifications/read-all', [OrderNotificationController::class, 'markAllRead'])->name('account.notifications.read-all');
+    Route::post('/notifications/{notification}/open', [OrderNotificationController::class, 'open'])->whereNumber('notification')->name('account.notifications.open');
     Route::get('/orders/{id}', [AccountController::class, 'orderDetail'])->name('account.order');
     Route::post('/orders/{id}/messages', [OrderMessageController::class, 'store'])->name('account.order.messages.store');
     Route::post('/orders/{id}/payment-receipt', [PaymentReceiptController::class, 'uploadForAccount'])->name('account.order.payment-receipt');

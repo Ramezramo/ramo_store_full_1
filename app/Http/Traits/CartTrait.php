@@ -26,6 +26,19 @@ trait CartTrait
         return session('ramo_cart', []);
     }
 
+    protected function cartVariationQuantities(array $cart, int $productId): array
+    {
+        $quantities = [];
+        foreach ($cart as $item) {
+            $variationId = (int) ($item['variation_id'] ?? 0);
+            if ((int) ($item['product_id'] ?? 0) === $productId && $variationId > 0) {
+                $quantities[$variationId] = ($quantities[$variationId] ?? 0) + (int) ($item['qty'] ?? 0);
+            }
+        }
+
+        return $quantities;
+    }
+
     protected function saveCart(array $cart): void
     {
         if (Auth::check()) {

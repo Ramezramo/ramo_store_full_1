@@ -11,6 +11,7 @@ class MobileCheckoutShippingOrderTest extends TestCase
         $template = file_get_contents(resource_path('views/web/checkout.blade.php'));
 
         $this->assertIsString($template);
+        $template = str_replace("\r\n", "\n", $template);
         $this->assertStringContainsString(
             '<div class="ck-section checkout-shipping-section">',
             $template,
@@ -20,7 +21,7 @@ class MobileCheckoutShippingOrderTest extends TestCase
             $template,
         );
         $this->assertStringContainsString(
-            '<div id="checkout-location-empty" class="ck-location-empty" hidden>',
+            '<a href="#checkout-address" class="ck-address-jump">',
             $template,
         );
         $this->assertStringContainsString(
@@ -28,7 +29,7 @@ class MobileCheckoutShippingOrderTest extends TestCase
             $template,
         );
         $this->assertStringContainsString(
-            "// Always show and initialize the map so a new customer can choose a pin immediately.\n    loadMap();",
+            "loadMapBtn?.addEventListener('click', loadMap);\n    loadMap();",
             $template,
         );
         $this->assertStringContainsString(
@@ -88,7 +89,7 @@ class MobileCheckoutShippingOrderTest extends TestCase
             $template,
         );
         $this->assertStringContainsString(
-            "setManualLocationMode(false);\n        updateFields(latitude, longitude);",
+            "setManualLocationMode(false);\n        const addressLookup = updateFields(latitude, longitude);",
             $template,
         );
         $this->assertStringContainsString(

@@ -72,6 +72,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
           {{ $isAr ? 'طلباتي' : 'My Orders' }}
         </a>
+        <a href="{{ route('account.notifications') }}" class="acc-nav-item {{ request()->routeIs('account.notifications') ? 'active' : '' }}">
+          @include('web.partials.notification-bell')
+          {{ $isAr ? 'الإشعارات' : 'Notifications' }}
+        </a>
         <a href="{{ route('account.referral') }}" class="acc-nav-item {{ request()->routeIs('account.referral') ? 'active' : '' }}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="8" r="3"/><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9.5 10.5L7.5 14M14.5 10.5l2 3"/></svg>
           {{ $isAr ? 'شارك واربح' : 'Refer & Earn' }}

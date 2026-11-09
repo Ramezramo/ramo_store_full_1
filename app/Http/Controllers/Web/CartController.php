@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
-use App\Helpers\AuthConfig;
 use App\Helpers\ShippingConfig;
 use App\Http\Controllers\CouponController;
 use App\Http\Traits\CartTrait;
@@ -130,10 +129,9 @@ class CartController extends Controller
             ? DB::table('orders')->where('customer_id', Auth::id())->exists()
             : false;
         $total       = $afterDiscount + $shippingFee;
-        $authConfig  = AuthConfig::get();
         return view('web.cart', compact(
             'cart', 'subtotal', 'discount', 'total', 'coupon', 'shippingFee',
-            'freeShippingEnabled', 'freeShippingThreshold', 'hasPreviousOrders', 'authConfig'
+            'freeShippingEnabled', 'freeShippingThreshold', 'hasPreviousOrders'
         ));
     }
 
@@ -328,7 +326,10 @@ class CartController extends Controller
         $cart = $this->getCart();
         $result = $this->addVariationToCart($cart, $product, $variation, max(1, (int) $r->input('qty', 1)));
         if (!$result['success']) {
-            return response()->json(['success' => false, 'message' => $result['message']], 422);
+            return response()->json($this->cartAddResponse($cart, [
+                'success' => false,
+                'message' => $result['message'],
+            ]), 422);
         }
 
         $this->saveCart($cart);
@@ -678,8 +679,15 @@ class CartController extends Controller
         return redirect()->route('cart');
     }
 
-    public function count()
+    public function count(Request $request)
     {
-        return response()->json(['count' => count($this->getCart())]);
+        $validated = $request->validate(['product_id' => 'sometimes|integer|min:1']);
+        $cart = $this->getCart();
+        $data = ['count' => count($cart)];
+        if (isset($validated['product_id'])) {
+            $data['quantities'] = $this->cartVariationQuantities($cart, (int) $validated['product_id']);
+        }
+
+        return response()->json($data)->header('Cache-Control', 'private, no-store');
     }
 }

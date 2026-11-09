@@ -48,7 +48,13 @@ class OrderMessageController extends Controller
 
         // Fallback: derive from first product in the order
         if (! $vendorId) {
-            $items = json_decode($order->line_items ?? '[]', true) ?: [];
+            // Order casts line_items to an array, but older/imported records may
+            // still arrive as JSON text. Accept either representation.
+            $lineItems = $order->line_items ?? [];
+            if (is_string($lineItems)) {
+                $lineItems = json_decode($lineItems, true);
+            }
+            $items = is_array($lineItems) ? $lineItems : [];
             $firstProductId = $items[0]['product_id'] ?? null;
             if ($firstProductId) {
                 $vendorId = DB::table('products_data')->where('id', $firstProductId)->value('vendor_id');

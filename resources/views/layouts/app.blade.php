@@ -13,6 +13,7 @@
   $headerAdminPanelLabel = $headerIsArabic ? 'لوحة التحكم' : 'Admin Panel';
   $headerWishlistLabel = $headerIsArabic ? 'المفضلة' : 'Wishlist';
   $headerCartLabel = $headerIsArabic ? 'السلة' : 'Cart';
+  $headerNotificationsLabel = $headerIsArabic ? 'الإشعارات' : 'Notifications';
   $mobileMenuLabel = $headerIsArabic ? 'القائمة' : 'Menu';
   $mobileSearchLabel = $headerIsArabic ? 'دوّر في رامو ستور' : 'Search Ramo Store';
   $mobileSearchPlaceholder = $headerIsArabic ? 'دوّر على منتجات…' : 'What are you looking for?';
@@ -56,14 +57,12 @@
 <link rel="icon" type="image/png" sizes="256x256" href="{{ asset('favicon.png') }}">
 <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
 <meta name="theme-color" content="#111111">
-@if(request()->routeIs('cart'))
-<meta http-equiv="refresh" content="20">
-@endif
 <meta name="robots" content="@yield('meta_robots', $storefrontNoIndex ? 'noindex,nofollow' : 'index,follow')">
 <link rel="canonical" href="@yield('canonical', url()->current())">
 <title>@yield('title', $headerIsArabic ? 'رامو ستور' : 'Ramo Store') — {{ $headerIsArabic ? 'موضة وأكثر' : 'Fashion & More' }}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"></noscript>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -72,7 +71,7 @@
   --radius:8px;--radius-lg:14px;--shadow:0 1px 3px rgba(0,0,0,.04);--shadow-md:0 12px 32px rgba(0,0,0,.08);
   --page-max:1320px;
 }
-html{scroll-behavior:smooth;overflow-x:hidden;width:100%}
+html{overflow-x:hidden;width:100%}
 body{font-family:'Inter',sans-serif;background:var(--c-bg);color:var(--c-dark);font-size:15px;line-height:1.65;min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden;width:100%;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
 img{max-width:100%;display:block}
@@ -99,6 +98,12 @@ button{cursor:pointer;font-family:inherit}
 .nav-language-btn:hover,.nav-language-btn:focus-visible{background:var(--c-tag);border-color:#bcbcbc;color:var(--c-orange);outline:none}
 .nav-icon-btn{position:relative;width:40px;height:40px;border-radius:12px;border:1px solid transparent;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--c-mid);cursor:pointer;text-decoration:none;transition:background .18s,border-color .18s,color .18s,transform .18s}
 .nav-action-icon{width:19px;height:19px;display:block}
+.nav-notifications-top svg{width:20px;height:20px}
+.nav-notifications-badge[hidden]{display:none!important}
+@media(max-width:768px){.nav-actions .nav-notifications-top{display:none}}
+#mob-nav .nav-notifications-badge{right:auto;inset-inline-end:clamp(6px,3vw,14px)}
+#mob-nav .nav-notifications-label{max-inline-size:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
 .nav-icon-btn:hover,.nav-icon-btn:focus-visible{background:var(--c-tag);border-color:var(--c-light);color:var(--c-dark);outline:none;transform:translateY(-1px)}
 .nav-icon-btn:focus-visible{box-shadow:0 0 0 3px rgba(232,93,38,.16)}
 .nav-wishlist-icon{stroke-width:1.7}.nav-offers-icon{stroke-width:1.8}
@@ -195,42 +200,132 @@ button{cursor:pointer;font-family:inherit}
 
 /* Shared product-card component. Page layouts control only columns/width; every
    product-card partial inherits its internal spacing and controls from here. */
-.product-grid--showcase{align-items:stretch}
-.product-card--shared{width:100%;min-width:0;min-height:0;height:100%;overflow:hidden;border:1px solid #e9e6e2;border-radius:14px;background:#fff;box-shadow:0 3px 12px rgba(25,25,25,.045);transition:transform .18s ease,box-shadow .18s ease}
-.product-card--shared:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(25,25,25,.1)}
-.product-card--shared .product-card-img{flex:none;width:100%;height:auto;aspect-ratio:1/1.08;background:#f6f3ef}
-.product-card--shared .product-card-body{flex:1 1 auto;min-width:0;padding:12px;gap:7px}
-.product-card--shared .product-card-name{min-height:40px;margin:0;font-size:14px;font-weight:600;line-height:1.4}
-.product-card--shared .pc-swatches,.product-card--shared .pc-sizes{min-height:24px;margin:0;gap:6px;align-items:center}
-.product-card--shared .pc-swatches + .pc-selected + .pc-sizes{margin-top:0}
-.product-card--shared .pc-swatches:empty,.product-card--shared .pc-sizes:empty{display:none}
-.product-card--shared .pc-swatch{width:20px;height:20px}
-.product-card--shared .pc-size{min-height:25px;padding:4px 9px;font-size:10px}
-.product-card--shared .pc-size.selected{border-color:#d6d6d6;background:#fff;color:var(--c-dark);box-shadow:0 0 0 2px #fff,0 0 0 4px var(--c-dark);font-weight:800}
-.product-card--shared .pc-selected{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
-.product-card--shared .product-card-price{min-height:24px;margin:0;padding:0;gap:7px;align-items:baseline}
-.product-card--shared .price-main{font-size:15px;font-weight:800}
-.product-card--shared .price-old{font-size:12px}
-.product-card--shared .pc-actions{display:flex;flex-direction:column;gap:7px;margin:2px 0 0}
-.product-card--shared .card-add-btn,.product-card--shared .card-details-btn{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:100%;min-height:40px;margin:0;border-radius:9px}
-.product-card--shared .card-details-btn{border:1px solid #e5e5e5;background:#fff}
-.product-card--shared .product-card-img .placeholder,.product-card--shared .product-card-img .pc-img-fallback{background:linear-gradient(145deg,#f8f5f1,#eee9e3)!important;color:#b8aaa0!important;flex-direction:column;gap:8px;font-size:0!important}
-.product-card--shared .product-card-img .placeholder::before,.product-card--shared .product-card-img .pc-img-fallback::before{content:"";width:38px;height:30px;border:1px solid #d4c9bf;border-radius:6px;background:linear-gradient(145deg,#fdfbf9,#ece5de);box-shadow:0 2px 5px rgba(70,50,35,.08)}
-.product-card--shared .product-card-img .placeholder::after,.product-card--shared .product-card-img .pc-img-fallback::after{content:"NO PHOTO";margin-top:8px;color:#a99b90;font-size:9px;font-weight:700;letter-spacing:.12em}
-@media(max-width:600px){
-  .product-card--shared .product-card-img{aspect-ratio:1/1}
-  .product-card--shared .product-card-body{padding:9px 8px 10px;gap:5px}
-  .product-card--shared .product-card-name{min-height:31px;font-size:12px;font-weight:700;line-height:1.3}
-  .product-card--shared .pc-swatches,.product-card--shared .pc-sizes{min-height:19px;gap:4px}
-  .product-card--shared .pc-swatch{width:15px;height:15px;border:2px solid #fff;box-shadow:0 0 0 1px #d6d6d6}
-  .product-card--shared .pc-size{min-width:22px;min-height:0;padding:3px 5px;font-size:9px;line-height:1}
-  .product-card--shared .product-card-price{min-height:21px;gap:4px;line-height:1}
-  .product-card--shared .price-main{font-size:14px}
-  .product-card--shared .price-old{font-size:9px}
-  .product-card--shared .pc-actions{margin-top:2px}
-  .product-card--shared .card-add-btn,.product-card--shared .card-details-btn{min-height:34px;padding:7px 4px;font-size:10px}
-  .product-card--shared .wish-btn{top:7px;right:7px;width:26px;height:26px;border:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.94);font-size:14px}
-  .product-card--shared .pc-coupon-bar{display:none}
+.product-card.product-card--shared{
+  --pc-surface:#fff;--pc-ink:#111;--pc-muted:#626262;--pc-border:#e9e9e9;
+  --pc-option-bg:#f2f2f2;--pc-accent:#e8541e;
+  container:store-card / inline-size;position:relative;min-inline-size:0;
+  --pc-card-limit:max(24rem,var(--pc-card-max-height,34rem));
+  align-self:start;
+  transition:box-shadow .2s,border-color .2s;
+  background:var(--pc-surface);border:1px solid var(--pc-border);
+  border-radius:var(--pc-radius,20px);box-shadow:0 6px 20px rgba(17,17,17,.055);
+}
+.dark .product-card--shared,.product-card--shared.dark{
+  --pc-surface:#1b1b1b;--pc-ink:#f5f5f5;--pc-muted:#c4c4c4;--pc-border:#414141;
+  --pc-option-bg:#282828;--pc-accent:#ff855c;
+}
+.product-card--shared .pc-media{
+  position:relative;flex:none;min-inline-size:0;
+  inline-size:var(--pc-image-width,100%);max-inline-size:100%;margin-inline:auto;
+  block-size:var(--pc-image-height,auto);
+  max-block-size:min(15rem,calc(var(--pc-card-limit) * .45),max(56px,calc(var(--pc-card-limit) - var(--pc-body-height,0px) - 2px)));
+  aspect-ratio:100 / 92;background:#080808;
+}
+.product-card.product-card--shared .product-card-img{position:absolute;inset:0;inline-size:auto;block-size:auto;aspect-ratio:auto;background:transparent}
+.product-card--shared .product-card-img img{display:block}
+@media(hover:none){
+  .product-card.product-card--shared:hover,.product-card--shared:hover .product-card-img img{transform:none}
+}
+.product-card--shared.pc-out-of-stock .product-card-img img{opacity:.48}
+.product-card--shared .pc-media .badge-sale{
+  position:absolute;inset-block-start:clamp(8px,4cqi,16px);inset-inline-start:clamp(8px,4cqi,16px);
+  z-index:1;background:#e8541e;color:#fff;border-radius:999px;
+  padding:5px 10px;font-size:clamp(10px,4.7cqi,13px);font-weight:800;line-height:1.3;
+}
+.product-card--shared .pc-media .badge-flash{background:linear-gradient(135deg,#e8541e,#d27407)}
+.product-card--shared .pc-media .wish-btn{
+  inset:auto;inset-block-start:clamp(4px,2.4cqi,10px);inset-inline-end:clamp(4px,2.4cqi,10px);
+  inline-size:44px;block-size:44px;border:0;background:transparent;
+  color:#111;font-size:20px;isolation:isolate;transform:none;
+}
+.product-card--shared .pc-media .wish-btn::before{
+  content:"";position:absolute;inset:2px;border-radius:50%;background:#fff;
+  border:1px solid #e8e8e8;box-shadow:0 1px 4px #0002;z-index:-1;
+}
+.product-card--shared .pc-media .wish-btn.wished{color:#c82333}
+.product-card--shared .product-card-body{
+  min-inline-size:0;flex:none;text-align:start;
+  padding:clamp(8px,4.7cqi,20px);gap:var(--pc-element-spacing,clamp(6px,3cqi,12px));
+}
+.product-card--shared .product-card-body > *{flex-shrink:0}
+.product-card--shared .product-card-name{
+  display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;
+  margin:0;color:var(--pc-ink);font-size:clamp(.8125rem,6.5cqi,1.125rem);font-weight:700;
+}
+.product-card--shared .pc-option-area{min-inline-size:0;display:grid}
+.product-card--shared .pc-swatches,.product-card--shared .pc-sizes{
+  display:flex;min-inline-size:0;align-items:center;flex-wrap:nowrap;overflow-x:auto;
+  padding:3px;margin:0;gap:5px;scrollbar-width:thin;
+}
+.product-card--shared .pc-swatches:not(:has(button:not([hidden]))),
+.product-card--shared .pc-sizes:not(:has(button:not([hidden]))){display:none}
+.product-card--shared .pc-swatches{gap:clamp(2px,1.6cqi,6px);padding:0}
+.product-card--shared .pc-swatch{
+  --pc-swatch-target:clamp(44px,21cqi,48px);
+  display:grid;place-items:center;inline-size:var(--pc-swatch-target);block-size:var(--pc-swatch-target);
+  flex:none;padding:0;border:0;outline:0;background:none;
+}
+.product-card--shared .pc-swatch::before{
+  content:"";inline-size:clamp(28px,15.5cqi,36px);aspect-ratio:1;
+  border-radius:50%;background:var(--pc-swatch-color);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--pc-ink) 20%,transparent);
+  outline:1.5px solid transparent;outline-offset:2px;
+  transition:outline-color .2s ease;
+}
+.product-card--shared .pc-swatch:not(.unavail):hover::before{outline-color:var(--pc-border)}
+.product-card--shared .pc-swatch.selected:not(.unavail)::before{outline-color:var(--pc-accent)}
+.product-card--shared .pc-swatch.unavail{opacity:.45;cursor:not-allowed}
+.product-card--shared .pc-size{
+  flex:none;min-inline-size:44px;min-block-size:44px;padding:5px 9px;
+  border:1px solid var(--pc-border);border-radius:10px;background:var(--pc-option-bg);
+  color:var(--pc-muted);font-size:.75rem;font-weight:700;white-space:nowrap;
+  transition:color .2s,background .2s,box-shadow .2s;
+}
+.product-card--shared .pc-size.selected{
+  background:var(--pc-ink);color:var(--pc-surface);border-color:var(--pc-surface);
+  box-shadow:0 0 0 2px var(--pc-ink);
+}
+.product-card--shared .pc-selected{
+  position:absolute;inline-size:1px;block-size:1px;padding:0;margin:-1px;
+  overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0;
+}
+.product-card--shared .product-card-price{margin:0;padding:0;gap:2px 7px;align-items:baseline}
+.product-card--shared :is(.price-main,.price-old){min-inline-size:0;white-space:normal;overflow-wrap:anywhere}
+.product-card--shared .price-main{color:var(--pc-ink);font-size:clamp(.875rem,7.8cqi,1.375rem);font-weight:800}
+.product-card--shared .price-main.sale{color:var(--pc-accent)}
+.product-card--shared .price-old{color:var(--pc-muted);font-size:.75rem}
+.product-card--shared .pc-actions{display:flex;flex-direction:column;gap:clamp(6px,3cqi,12px);padding-block-start:2px}
+.product-card--shared .pc-add-row{display:flex;gap:6px}
+.product-card--shared :is(.card-add-btn,.card-details-btn){
+  display:flex;align-items:center;justify-content:center;flex:1;min-inline-size:0;
+  min-block-size:clamp(44px,19cqi,52px);margin:0;padding:6px;
+  border-radius:clamp(9px,4cqi,16px);font-size:clamp(.625rem,4.5cqi,.8125rem);
+  font-weight:800;line-height:1.25;text-align:center;white-space:normal;overflow-wrap:anywhere;
+}
+.product-card--shared .card-add-btn{background:#111;color:#fff}
+.product-card--shared .card-add-btn:hover{background:#292929}
+.product-card--shared .card-add-btn:disabled{opacity:.55;cursor:not-allowed}
+.product-card--shared .card-details-btn{background:transparent;color:var(--pc-muted);border:1.5px solid var(--pc-border)}
+.product-card--shared .pc-option-link{display:none;align-items:center;min-block-size:44px;color:var(--pc-muted);font-size:.75rem;text-decoration:underline}
+.product-card--shared .pc-stock-label{color:var(--pc-muted);font-size:.75rem;font-weight:700}
+.product-card--shared :is(button,a):focus-visible{outline:2px solid var(--pc-accent);outline-offset:-2px}
+.product-card--shared [hidden]{display:none!important}
+.product-card--shared .pc-coupon-bar{margin:0;flex-wrap:wrap;line-height:1.25}
+.product-card--shared :is(.pc-coupon-left,.pc-coupon-right){white-space:normal;min-inline-size:0;flex-wrap:wrap;overflow-wrap:anywhere}
+.product-card--shared.pc-horizontal{display:grid;grid-template-columns:minmax(0,35fr) minmax(0,65fr)}
+.product-card--shared.pc-horizontal .pc-media{aspect-ratio:auto;min-block-size:110px;max-block-size:none}
+.product-card--shared.pc-horizontal .product-card-body{padding:clamp(8px,3.2cqi,20px)}
+.product-card--shared.pc-horizontal .pc-media .wish-btn{inset-block-start:auto;inset-block-end:4px;inset-inline-end:4px}
+.product-card--shared.pc-compact .pc-option-area,.product-card--shared.pc-compact .card-details-btn,
+.product-card--shared.pc-compact[data-requires-variation-selection="1"] .card-add-btn{display:none}
+.product-card--shared.pc-compact .pc-option-link{display:flex}
+.product-card--shared.pc-compact:not(:has(.pc-add-row form)) .pc-actions:not(:has(.card-add-btn)),
+.product-card--shared.pc-compact[data-requires-variation-selection="1"]:not(:has(.pc-add-row form)) .pc-actions{display:none}
+@container store-card (width < 178px){
+  .pc-auto .pc-option-area,.pc-auto .card-details-btn,.pc-auto[data-requires-variation-selection="1"] .card-add-btn{display:none}
+  .pc-auto .pc-option-link{display:flex}
+  .pc-auto:not(:has(.pc-add-row form)) .pc-actions:not(:has(.card-add-btn)),
+  .pc-auto[data-requires-variation-selection="1"]:not(:has(.pc-add-row form)) .pc-actions{display:none}
 }
 
 /* ── SHOP LAYOUT ── */
@@ -597,6 +692,7 @@ button{cursor:pointer;font-family:inherit}
 
 /* ── TOAST ── */
 .toast{position:fixed;bottom:24px;right:24px;background:var(--c-dark);color:#fff;padding:14px 20px;border-radius:10px;font-size:14px;font-weight:600;box-shadow:var(--shadow-md);transform:translateY(80px);opacity:0;transition:all .3s;z-index:9999;display:flex;align-items:center;gap:10px;max-width:320px}
+.toast[hidden]{display:none}
 .toast.show{transform:none;opacity:1}
 .toast.toast-ok{background:#22a35c}
 .toast.toast-err{background:#e02020}
@@ -697,9 +793,11 @@ button{cursor:pointer;font-family:inherit}
     background:none;
     padding:0;
     -webkit-tap-highlight-color:rgba(0,0,0,.08);
+    touch-action:manipulation;
     cursor:pointer;
   }
   #mob-nav a.on,#mob-nav a:active{color:var(--c-orange)}
+  #mob-nav a.is-opening{color:var(--c-orange);background:var(--c-tag)}
   #mob-nav a svg{display:block}
   #mob-nav a span{display:block;line-height:1}
   #mob-nav .mn-badge{
@@ -1061,6 +1159,13 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
         <span class="nav-badge" id="wishlist-badge" style="display:{{ $wCount ? 'flex' : 'none' }}">{{ $wCount }}</span>
       </a>
 
+      <a href="{{ route('account.notifications') }}" class="nav-icon-btn nav-notifications-top"
+         title="{{ $headerNotificationsLabel }}" aria-label="{{ $headerNotificationsLabel }}" data-notifications-link
+         @if(request()->routeIs('account.notifications')) aria-current="page" @endif>
+        @include('web.partials.notification-bell')
+        <span class="nav-badge nav-notifications-badge" data-notifications-count hidden aria-hidden="true"></span>
+      </a>
+
       {{-- Cart --}}
       <a href="{{ route('cart') }}" class="nav-icon-btn nav-top-cart" title="{{ $headerCartLabel }}" aria-label="{{ $headerCartLabel }}">
         <svg class="nav-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 8H6"/><path d="M10 8V5m0 0L8.5 6.5M10 5l1.5 1.5"/></svg>
@@ -1200,12 +1305,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
       <a href="{{ route('offers') }}" class="{{ request()->routeIs('offers') ? 'active' : '' }}">🎁 {{ $mobileOffersLabel }}</a>
       <a href="{{ route('cart') }}" class="{{ request()->routeIs('cart') ? 'active' : '' }}">
         🛒 {{ $mobileCartLabel }}
-        @php
-          $__mc = Auth::check()
-            ? \Illuminate\Support\Facades\DB::table('cart_items')->where('user_id', Auth::id())->count()
-            : count(session('ramo_cart', []));
-        @endphp
-        @if($__mc) <span style="background:var(--c-orange);color:#fff;font-size:11px;font-weight:800;padding:1px 7px;border-radius:50px;margin-{{ $headerIsArabic ? 'right' : 'left' }}:4px">{{ $__mc }}</span> @endif
+        @if($cCount) <span style="background:var(--c-orange);color:#fff;font-size:11px;font-weight:800;padding:1px 7px;border-radius:50px;margin-{{ $headerIsArabic ? 'right' : 'left' }}:4px">{{ $cCount }}</span> @endif
       </a>
       <a href="{{ route('wishlist') }}" class="{{ request()->routeIs('wishlist') ? 'active' : '' }}">♡ {{ $mobileWishlistLabel }}</a>
       <a href="{{ route('order.track') }}" class="{{ request()->routeIs('order.track*') ? 'active' : '' }}">📦 {{ $mobileTrackOrderLabel }}</a>
@@ -1270,9 +1370,9 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 </footer>
 
 <!-- TOAST -->
-<div class="toast" id="toast">
-  <span id="toast-icon">🛍️</span>
-  <span id="toast-msg">{{ $headerIsArabic ? 'تم' : 'Done!' }}</span>
+<div class="toast" id="toast" role="status" hidden>
+  <span id="toast-icon" aria-hidden="true">🛍️</span>
+  <span id="toast-msg"></span>
 </div>
 
 <!-- ADDED-TO-CART DRAWER -->
@@ -1310,8 +1410,14 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
     @if($cCount ?? 0)<span class="mn-badge" id="mn-cart-badge">{{ $cCount }}</span>@endif
     <span>{{ $mobileCartLabel }}</span>
   </a>
+  <a href="{{ route('account.notifications') }}" class="{{ request()->routeIs('account.notifications') ? 'on' : '' }}"
+     aria-label="{{ $headerNotificationsLabel }}" data-notifications-link @if(request()->routeIs('account.notifications')) aria-current="page" @endif>
+    @include('web.partials.notification-bell')
+    <span class="mn-badge nav-notifications-badge" data-notifications-count hidden aria-hidden="true"></span>
+    <span class="nav-notifications-label">{{ $headerNotificationsLabel }}</span>
+  </a>
   @auth
-  <a href="{{ route('account.hub') }}" class="{{ request()->routeIs('account.*') ? 'on' : '' }}">
+  <a href="{{ route('account.hub') }}" class="{{ request()->routeIs('account.*') && !request()->routeIs('account.notifications') ? 'on' : '' }}">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
     <span>{{ $mobileAccountLabel }}</span>
   </a>
@@ -1322,6 +1428,43 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
   </a>
   @endauth
 </nav>
+
+@auth
+<script>
+(() => {
+  const label = @json($headerNotificationsLabel);
+  const unreadLabel = @json($headerIsArabic ? 'غير مقروء' : 'unread');
+  let loading = false;
+
+  async function refreshUnreadCount() {
+    if (document.hidden || loading) return;
+    loading = true;
+    try {
+      const response = await fetch(@json(route('account.notifications.unread')), {
+        cache: 'no-store', headers: { Accept: 'application/json' },
+      });
+      if (!response.ok) return;
+      const { unread } = await response.json();
+      document.querySelectorAll('[data-notifications-link]').forEach(link => {
+        const badge = link.querySelector('[data-notifications-count]');
+        badge.hidden = !unread;
+        badge.textContent = unread > 99 ? '99+' : unread;
+        link.setAttribute('aria-label', unread ? label + ', ' + unread + ' ' + unreadLabel : label);
+      });
+    } catch {
+      // The inbox link remains available if the unread count cannot be loaded.
+    } finally {
+      loading = false;
+    }
+  }
+
+  refreshUnreadCount();
+  window.addEventListener('pageshow', event => { if (event.persisted) refreshUnreadCount(); });
+  document.addEventListener('visibilitychange', refreshUnreadCount);
+  window.setInterval(refreshUnreadCount, 30000);
+})();
+</script>
+@endauth
 
 <script>
 const CSRF_TOKEN = '{{ csrf_token() }}';
@@ -1380,56 +1523,6 @@ if ('serviceWorker' in navigator) {
     .catch(() => {});
 })();
 
-// ── Remember scroll position per page (stored on-device, in localStorage) ─
-// Every page's scroll offset is saved as the user scrolls, keyed by its
-// path+query, and restored automatically the next time that exact page is
-// opened — whether via Back/Forward, a fresh link click, or the cached
-// Home/Shop pages above.
-(function scrollMemory() {
-  const scrollMemoryEnabled = location.pathname === '/' || location.pathname === '/shop';
-  if (!scrollMemoryEnabled) return;
-
-  const KEY_PREFIX = 'ramo_scroll::';
-  const key = KEY_PREFIX + location.pathname + location.search;
-
-  if ('scrollRestoration' in history) {
-    history.scrollRestoration = 'manual';
-  }
-
-  function restore() {
-    const saved = sessionStorage.getItem(key) || localStorage.getItem(key);
-    if (!saved) return;
-    const y = parseInt(saved, 10);
-    if (!isNaN(y) && y > 0) window.scrollTo(0, y);
-  }
-
-  // Restore once the page (incl. images) has finished laying out, and again
-  // shortly after in case late-loading content shifted the page height.
-  window.addEventListener('load', function () {
-    restore();
-    setTimeout(restore, 300);
-  });
-  if (document.readyState === 'complete') restore();
-
-  let ticking = false;
-  function saveScroll() {
-    const y = window.scrollY || window.pageYOffset || 0;
-    try {
-      sessionStorage.setItem(key, String(y));
-      localStorage.setItem(key, String(y));
-    } catch (e) { /* storage full/blocked — ignore */ }
-    ticking = false;
-  }
-  window.addEventListener('scroll', function () {
-    if (!ticking) {
-      ticking = true;
-      requestAnimationFrame(saveScroll);
-    }
-  }, { passive: true });
-  window.addEventListener('pagehide', saveScroll);
-  window.addEventListener('beforeunload', saveScroll);
-})();
-
 // Keep fixed mobile controls attached to the visible page edge while Chrome's
 // address bar expands or collapses during scrolling on Android.
 (function syncMobileNavigationToVisualViewport() {
@@ -1486,18 +1579,24 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-function notifyProductCartAddFinished(success) {
+function notifyProductCartAddFinished(success, failedItems = []) {
   if (typeof window.productCartAddFinished === 'function') {
-    window.productCartAddFinished(Boolean(success));
+    window.productCartAddFinished(Boolean(success), failedItems);
   }
 }
 
 function showToast(msg, type = 'default') {
   const t = document.getElementById('toast');
-  document.getElementById('toast-msg').textContent = msg;
+  const message = document.getElementById('toast-msg');
+  t.hidden = false;
   t.className = 'toast show' + (type === 'ok' ? ' toast-ok' : type === 'err' ? ' toast-err' : '');
+  message.textContent = msg;
   clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.classList.remove('show'), 3200);
+  t._timer = setTimeout(() => {
+    t.hidden = true;
+    t.classList.remove('show');
+    message.textContent = '';
+  }, 3200);
 }
 
 // Cart badge update (top nav + bottom nav)
@@ -1518,6 +1617,11 @@ function updateCartBadge(count) {
   if (mnBadge) { mnBadge.textContent = count; mnBadge.style.display = count > 0 ? 'flex' : 'none'; }
 }
 
+function showCartErrors(messages) {
+  if (window.showProductCartErrors?.(messages)) return;
+  showToast(messages.join(' • '), 'err');
+}
+
 // Add to cart (AJAX)
 async function addToCart(productId, name, price, image, variationId = null, qty = 1, varLabel = null, oldPrice = null) {
   try {
@@ -1527,16 +1631,17 @@ async function addToCart(productId, name, price, image, variationId = null, qty 
       body: JSON.stringify({ product_id: productId, variation_id: variationId, qty })
     });
     const data = await res.json();
+    if (Array.isArray(data.items)) window.dispatchEvent(new CustomEvent('cart:updated', { detail: data }));
     if (data.success) {
       updateCartBadge(data.count);
       openAtcDrawer({ image, oldPrice, varLabel, items: data.items, count: data.count, cartTotal: data.cart_total, rowId: data.row_id });
       notifyProductCartAddFinished(true);
     } else {
-      showToast(data.message || STOREFRONT_COPY.addError, 'err');
+      showCartErrors([data.message || STOREFRONT_COPY.addError]);
       notifyProductCartAddFinished(false);
     }
   } catch(e) {
-    showToast(STOREFRONT_COPY.networkError, 'err');
+    showCartErrors([STOREFRONT_COPY.networkError]);
     notifyProductCartAddFinished(false);
   }
 }
@@ -1544,7 +1649,7 @@ async function addToCart(productId, name, price, image, variationId = null, qty 
 function showBulkAddFailures(data) {
   const failures = Array.isArray(data.failed_items) ? data.failed_items : [];
   if (!failures.length) {
-    showToast(data.message || STOREFRONT_COPY.addError, 'err');
+    showCartErrors([data.message || STOREFRONT_COPY.addError]);
     return;
   }
 
@@ -1557,7 +1662,7 @@ function showBulkAddFailures(data) {
 
   // The backend message contains the actual reason for every rejected variation
   // (stock, minimum, or per-order limit), including when none could be added.
-  showToast(messages.join(' • '), 'err');
+  showCartErrors(messages);
 }
 
 // Add multiple variations to cart in one request.
@@ -1569,17 +1674,18 @@ async function addMultipleToCart(productId, items) {
       body: JSON.stringify({ product_id: productId, items })
     });
     const data = await res.json();
+    if (Array.isArray(data.items)) window.dispatchEvent(new CustomEvent('cart:updated', { detail: data }));
     if (data.success) {
       updateCartBadge(data.count);
       openAtcDrawer({ items: data.items, count: data.count, cartTotal: data.cart_total, rowIds: data.row_ids || [] });
       if (data.failed_items && data.failed_items.length) showBulkAddFailures(data);
-      notifyProductCartAddFinished(true);
+      notifyProductCartAddFinished(true, data.failed_items);
     } else {
       showBulkAddFailures(data);
       notifyProductCartAddFinished(false);
     }
   } catch (e) {
-    showToast(STOREFRONT_COPY.networkError, 'err');
+    showCartErrors([STOREFRONT_COPY.networkError]);
     notifyProductCartAddFinished(false);
   }
 }
@@ -1711,8 +1817,6 @@ function _pcSelectInitialVariation(pid, source = null) {
     if (swatch) {
       card.querySelectorAll('.pc-swatch').forEach(btn => btn.classList.remove('selected'));
       swatch.classList.add('selected');
-      const imgEl = card.querySelector('.product-card-img img, .product-card-img .placeholder');
-      if (imgEl && swatch.dataset.img) imgEl.src = swatch.dataset.img;
     }
   }
 
@@ -1758,10 +1862,6 @@ function pcPickColor(pid, colorVal, btn) {
     card.dataset.selColorLabel = btn.dataset.display || colorVal;
     card.querySelectorAll('.pc-swatch').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
-    // Swap image if variation has one
-    const imgEl = card.querySelector('.product-card-img img, .product-card-img .placeholder');
-    if (imgEl && btn.dataset.img) { imgEl.src = btn.dataset.img; }
-    else if (imgEl) { imgEl.src = card.dataset.baseImg; }
   }
   card.querySelectorAll('.pc-swatch').forEach(b => b.setAttribute('aria-pressed', card.dataset.selColor === b.dataset.color ? 'true' : 'false'));
   _pcUpdateColors(pid, card);
@@ -1792,6 +1892,7 @@ function pcPickSize(pid, sizeVal, btn) {
     card.querySelectorAll('.pc-size').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
   }
+  _pcUpdateSizes(pid, card);
   _pcUpdatePrice(pid, card);
   _pcUpdateSummary(pid, card);
 }
@@ -1806,7 +1907,8 @@ function _pcUpdateSizes(pid, source = null) {
   if (!sizeEl) return;
   if (hasColorAttrs && !color) {
     sizeEl.querySelectorAll('.pc-size').forEach(btn => {
-      btn.style.display = 'none';
+      btn.hidden = true;
+      btn.setAttribute('aria-pressed', 'false');
       btn.classList.remove('selected', 'unavail');
     });
     card.dataset.selSize = '';
@@ -1821,7 +1923,9 @@ function _pcUpdateSizes(pid, source = null) {
     const exists = matches.length > 0;
     btn.classList.toggle('unavail', !avail && exists);
     btn.classList.toggle('selected', card.dataset.selSize === size && avail);
-    btn.style.display = !exists ? 'none' : '';
+    btn.hidden = !exists;
+    btn.setAttribute('aria-disabled', String(!avail));
+    btn.setAttribute('aria-pressed', String(card.dataset.selSize === size && avail));
   });
   // Deselect size if it is not present for the selected color anymore.
   const selSize = card.dataset.selSize;
@@ -1843,7 +1947,7 @@ function _pcUpdatePrice(pid, source = null) {
   const size  = card.dataset.selSize;
   const priceEl = card.querySelector('.product-card-price .price-main');
   const origEl  = card.querySelector('.product-card-price .price-old');
-  const addControl = card.querySelector('.pc-actions .card-add-btn');
+  const addControl = card.querySelector('.pc-actions button.card-add-btn');
   if (!priceEl || !vars.length) return;
 
   const isSellable = _pcVariationIsSellable;
@@ -1879,33 +1983,53 @@ function _pcUpdatePrice(pid, source = null) {
     selectionAvailable = card.dataset.hasAvailableStock === '1';
   }
 
+  const currency = card.dataset.currency || 'EGP';
+  const money = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const hasDiscount = match && match.sale > 0 && match.sale < match.price;
+  const effectivePrice = (variation) => variation.sale > 0 && variation.sale < variation.price
+    ? variation.sale
+    : variation.price;
+
   if (match) {
-    const displayPrice = match.sale && match.sale < match.price ? match.sale : match.price;
-    const matchAvailable = isSellable(match);
-    priceEl.textContent = displayPrice.toFixed(2) + ' EGP';
-    priceEl.className   = match.sale && match.sale < match.price ? 'price-main sale' : 'price-main';
-    if (origEl) origEl.textContent = match.sale && match.sale < match.price ? match.price.toFixed(2) : '';
-    // Never retain an unavailable variation ID: pcAddToCart must not be able
-    // to send an out-of-stock choice even if called outside the button click.
-    card.dataset.selVar   = matchAvailable ? String(match.id) : '';
-    card.dataset.selPrice = matchAvailable ? displayPrice : '';
-  } else {
-    // Show base / range
-    const prices = vars.map(v => v.sale && v.sale < v.price ? v.sale : v.price);
-    const mn = Math.min(...prices), mx = Math.max(...prices);
-    priceEl.textContent = mn===mx ? mn.toFixed(2)+' EGP' : mn.toFixed(2)+' – '+mx.toFixed(2)+' EGP';
+    const displayPrice = effectivePrice(match);
+    priceEl.textContent = money.format(displayPrice) + ' ' + currency;
+    card.dataset.selVar = isSellable(match) ? String(match.id) : '';
+    card.dataset.selPrice = isSellable(match) ? displayPrice : '';
+  } else if (hasColorAttrs || hasSizeAttrs) {
+    const prices = vars.filter(isSellable).map(effectivePrice);
+    if (prices.length) {
+      const low = Math.min(...prices);
+      const high = Math.max(...prices);
+      priceEl.textContent = (low === high ? money.format(low) : money.format(low) + ' – ' + money.format(high)) + ' ' + currency;
+    }
     card.dataset.selVar = '';
     card.dataset.selPrice = '';
   }
 
-  if (addControl) {
-    addControl.style.display = selectionAvailable ? '' : 'none';
-    addControl.textContent = selectionAvailable ? STOREFRONT_COPY.add : STOREFRONT_COPY.unavailable;
-    const actionWrap = card.querySelector('.pc-actions');
-    if (actionWrap && !actionWrap.querySelector('form')) {
-      actionWrap.style.display = selectionAvailable ? '' : 'none';
+  if (match || ((hasColorAttrs || hasSizeAttrs) && vars.some(isSellable))) {
+    priceEl.classList.toggle('sale', Boolean(hasDiscount));
+    if (origEl) {
+      origEl.hidden = !hasDiscount;
+      origEl.textContent = hasDiscount ? money.format(match.price) : '';
+    }
+    const badge = card.querySelector('[data-pc-discount]');
+    if (badge) {
+      badge.hidden = !hasDiscount;
+      const percent = hasDiscount ? Math.round(100 * (match.price - match.sale) / match.price) : 0;
+      badge.textContent = percent ? '-' + percent + '%' : card.dataset.saleLabel;
     }
   }
+
+  const img = card.querySelector('.product-card-img img');
+  if (img) {
+    const selectedSwatch = card.querySelector('.pc-swatch.selected');
+    const source = match?.img || selectedSwatch?.dataset.img || card.dataset.baseImg || img.dataset.fallback;
+    if (img.dataset.requestedSrc !== source) {
+      img.dataset.requestedSrc = source;
+      if (img.getAttribute('src') !== source) img.src = source;
+    }
+  }
+  if (addControl) addControl.disabled = !selectionAvailable || addControl.dataset.adding === 'true';
 }
 
 function _pcUpdateSummary(pid, source = null) {
@@ -1926,6 +2050,22 @@ function _pcUpdateSummary(pid, source = null) {
   el.textContent = parts.join(' • ');
 }
 
+// Reserve space for the card controls by capping the photo against the
+// body's natural height. Tall content can still grow beyond the target.
+const productCardBodyObserver = typeof ResizeObserver === 'function'
+  ? new ResizeObserver(entries => {
+      entries.forEach(({ target, borderBoxSize }) => {
+        const card = target.closest('.product-card--shared');
+        if (!card || !target.isConnected) {
+          productCardBodyObserver.unobserve(target);
+          return;
+        }
+        const height = borderBoxSize?.[0]?.blockSize ?? target.offsetHeight;
+        card.style.setProperty('--pc-body-height', Math.ceil(height) + 'px');
+      });
+    })
+  : null;
+
 function _pcInitializeVariations(root = document) {
   // DOMContentLoaded passes an Event object to listeners. Normalize that call
   // as well as direct page/fragment calls to one queryable component root.
@@ -1937,6 +2077,10 @@ function _pcInitializeVariations(root = document) {
     _pcUpdateSizes(pid, card);
     _pcUpdatePrice(pid, card);
     _pcUpdateSummary(pid, card);
+    if (productCardBodyObserver && card.matches('.product-card--shared:not(.pc-horizontal)')) {
+      const body = card.querySelector('.product-card-body');
+      if (body) productCardBodyObserver.observe(body, { box: 'border-box' });
+    }
   });
 }
 
@@ -1946,10 +2090,12 @@ if (document.readyState === 'loading') {
   _pcInitializeVariations();
 }
 
-function pcAddToCart(pid, source = null) {
+async function pcAddToCart(pid, source = null) {
   const card    = _pcGetCard(pid, source);
   if (!card) return;
-  const name    = card.querySelector('.card-add-btn')?.dataset.name  || '';
+  const button = card.querySelector('button.card-add-btn');
+  if (!button || button.disabled) return;
+  const name = button.dataset.name || '';
   const baseImg = card.dataset.baseImg || '';
   const curImg  = card.querySelector('.product-card-img img')?.src || baseImg;
   const varId   = card.dataset.selVar   ? parseInt(card.dataset.selVar) : null;
@@ -1961,7 +2107,17 @@ function pcAddToCart(pid, source = null) {
     return;
   }
   const price   = card.dataset.selPrice ? parseFloat(card.dataset.selPrice) : parseFloat(card.dataset.basePrice);
-  addToCart(pid, name, price, curImg, varId, 1);
+  button.dataset.adding = 'true';
+  button.setAttribute('aria-busy', 'true');
+  button.disabled = true;
+  try {
+    await addToCart(pid, name, price, curImg, varId, 1);
+  } finally {
+    delete button.dataset.adding;
+    button.removeAttribute('aria-busy');
+    button.disabled = false;
+    _pcUpdatePrice(pid, card);
+  }
 }
 
 // ── Wishlist state ────────────────────────────────────────────────────────
@@ -1972,6 +2128,8 @@ let wishlistStateVersion = 0;
 function setWishlistButtonState(btn, wished) {
   btn.classList.toggle('wished', wished);
   btn.title = wished ? STOREFRONT_COPY.removeWishlist : STOREFRONT_COPY.addWishlist;
+  btn.setAttribute('aria-label', btn.title);
+  btn.setAttribute('aria-pressed', String(wished));
   btn.textContent = wished ? '♥' : '♡';
 }
 
@@ -2041,18 +2199,20 @@ async function toggleWishlist(btn, productId) {
 
 refreshWishlistState();
 
-// Mobile bottom nav — show on narrow screens.
-(function mobNav() {
-  var nav = document.getElementById('mob-nav');
-  if (!nav) return;
-  function check() {
-    var mobile = window.innerWidth <= 768;
-    var suppress = document.body.classList.contains('mobile-auth-screen');
-    nav.style.display = mobile && !suppress ? 'flex' : 'none';
+// Give native link navigation immediate feedback while the destination loads.
+(function () {
+  const nav = document.getElementById('mob-nav');
+  function clearOpening() {
+    nav.querySelector('.is-opening')?.classList.remove('is-opening');
   }
-  check();
-  window.addEventListener('resize', check);
-  setTimeout(check, 800);
+  nav.addEventListener('click', event => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const link = event.target.closest('a[href]');
+    if (!link) return;
+    clearOpening();
+    link.classList.add('is-opening');
+  });
+  window.addEventListener('pageshow', clearOpening);
 })();
 
 </script>

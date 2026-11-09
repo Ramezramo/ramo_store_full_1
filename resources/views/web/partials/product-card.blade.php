@@ -15,7 +15,9 @@
   $coShowRating     = $co['showRating']     ?? false;
 
   /* ── Layout / style options ────────────────────────────── */
-  $coCompact        = $co['compact']        ?? false;  // smaller card for scroll rows
+  $cardVariant      = $co['variant'] ?? (!empty($co['compact']) ? 'compact' : 'auto');
+  $cardVariant      = in_array($cardVariant, ['auto', 'compact', 'horizontal', 'vertical', 'shop'], true) ? $cardVariant : 'auto';
+  $cardPresentation = $cardVariant === 'shop' ? 'shop-product-card' : 'product-card--shared pc-'.$cardVariant;
   $coNameLimit      = (int)($co['nameLimit'] ?? 0);    // 0 = no limit
   $coImgHeight      = $co['imgHeight']      ?? null;   // e.g. '180px'
   $coIdPrefix       = $co['idPrefix']       ?? 'pc';   // id prefix on outer div
@@ -66,7 +68,7 @@
   }
 
   /* ── Resolve display image ──────────────────────────────── */
-  $displayImg = $p->thumbnail_url;
+  $displayImg = $p->thumbnail_url ?? null;
   if (!$displayImg && count($colorMap)) {
     $first = array_values($colorMap)[0];
     $displayImg = $first['img'] ?? null;
@@ -81,7 +83,7 @@
     'stockStatus' => strtolower(trim((string) ($v->stock_status ?? 'instock'))),
     'status' => strtolower(trim((string) ($v->status ?? 'publish'))),
     'attrs' => (array)($v->attributes ?? []),
-    'img'   => (is_array($v->images) && count($v->images)) ? \App\Constants\AppConstants::imageUrl($v->images[0]) : null,
+    'img'   => (!empty($v->images) && is_array($v->images)) ? \App\Constants\AppConstants::imageUrl($v->images[0]) : null,
   ])->values()->toArray();
 
   // Render the first sellable variation as the card's initial choice. Keeping
@@ -96,7 +98,16 @@
   $initialColor = $initialAttrs['Color'] ?? '';
   $initialSize = $initialAttrs['Size'] ?? '';
 
+  $baseImg = $displayImg;
+  $displayImg = $initialVariation['img'] ?? $baseImg;
+  $fallbackImg = asset('images/product-placeholder.svg');
   $basePrice = $p->on_sale ? $p->sale_price : $p->price;
+  $regularPrice = (float) ($initialVariation['price'] ?? $p->price);
+  $salePrice = (float) ($initialVariation['sale'] ?? $p->sale_price ?? 0);
+  $discounted = $salePrice > 0 && $salePrice < $regularPrice;
+  $displayPrice = $discounted ? $salePrice : $regularPrice;
+  $discount = $discounted ? (int) round(100 * ($regularPrice - $salePrice) / $regularPrice) : 0;
+  $currency = $p->currency ?? 'EGP';
   $quickAddMinimum = max(1, (int) ($p->minimum_order_qty ?? 1));
   // Variation rows are the authoritative inventory source when they exist.
   // This prevents a stale product-level stock value from showing Add to Cart
@@ -107,7 +118,7 @@
       $variationStatus = strtolower(trim((string) ($v->status ?? 'publish')));
       $stockStatus = strtolower(trim((string) ($v->stock_status ?? 'instock')));
       $isSellable = $variationStatus === 'publish'
-        && !in_array($stockStatus, ['outofstock', 'out_of_stock', 'out of stock'], true);
+        && in_array(preg_replace('/[\s_-]+/', '', $stockStatus), ['instock', 'available'], true);
       return $isSellable ? max(0, (int) ($v->stock_quantity ?? 0)) : 0;
     });
   }
@@ -117,27 +128,20 @@
   if ($p->sold_individually ?? false) $quickAddMaximum = min($quickAddMaximum, 1);
   // Cards have no quantity selector, so they may quick-add only products whose seller minimum is one.
   $canQuickAdd = $quickAddMinimum === 1 && $quickAddMaximum >= 1;
-  // Do not render an Add to Cart action when the effective available stock is zero.
-  // Products with stock below their minimum order quantity keep the existing
-  // product-link prompt so the customer can review the requirement.
+  // Keep the quantity prompt for products with a minimum greater than one.
   $hasAvailableStock = $quickAddMaximum > 0;
-  $hasColors = count($colorMap) > 1;
+  $hasColors = count($colorMap) > 0;
   $hasSizes  = count($sizeList) > 0;
   $hasCardOptions = ($coShowSwatches && $hasColors) || ($coShowSizes && $hasSizes);
-  // Variation cards require an explicit color/size choice before quick-add.
-  // Keep the action in the DOM so JavaScript can reveal it after a sellable
-  // variation is selected, but do not show it on the initial card render.
+  // Quick-add requires a sellable variation whenever there are options.
   $requiresVariationSelection = $hasAvailableStock && ($hasColors || $hasSizes);
 
-  /* ── Compact-mode style helpers ─────────────────────────── */
-  $imgStyle  = $coCompact ? 'height:180px' : '';
-  if ($coImgHeight) $imgStyle = "height:{$coImgHeight}";
-  $bodyPad   = $coCompact ? 'padding:8px' : '';
-  $nameStyle = $coCompact ? 'font-size:12px' : '';
-  $priceStyle= $coCompact ? 'font-size:12px' : '';
-
-  /* ── Timeline-controlled dimensions / spacing ───────────── */
   $cardStyle = $co['cardStyle'] ?? '';
+  if ($coImgHeight) {
+    $cardStyle .= ";--pc-image-height:{$coImgHeight}";
+  }
+  $optionsCount = $coShowSizes && $hasSizes ? count($sizeList) : ($coShowSwatches && $hasColors ? count($colorMap) : 0);
+  $stockLabel = $cardRtl ? 'نفد المخزون' : 'Out of stock';
 
   /* ── Displayed product name ─────────────────────────────── */
   // $cardNameHtml can be passed as a variable for raw HTML (e.g. search highlights)
@@ -145,10 +149,12 @@
   $displayName = $coNameLimit > 0 ? Str::limit($productDisplayName, $coNameLimit) : $productDisplayName;
 @endphp
 
-<div class="product-card product-card--shared" id="{{ $cardDomId }}" @if($cardStyle) style="{{ $cardStyle }}" @endif
+<div class="product-card {{ $cardPresentation }}{{ $hasAvailableStock ? '' : ' pc-out-of-stock' }}" id="{{ $cardDomId }}" @if($cardStyle) style="{{ $cardStyle }}" @endif
      data-pid="{{ $pid }}"
-     data-base-img="{{ $displayImg }}"
+     data-base-img="{{ $baseImg }}"
      data-base-price="{{ $basePrice }}"
+     data-currency="{{ $currency }}"
+     data-sale-label="{{ $cardRtl ? $cardCopy['sale'] : 'SALE' }}"
      data-has-available-stock="{{ $hasAvailableStock ? '1' : '0' }}"
      data-requires-variation-selection="{{ $requiresVariationSelection ? '1' : '0' }}"
      data-sel-color="{{ $initialColor }}"
@@ -157,30 +163,29 @@
      data-sel-var="{{ $initialVariation['id'] ?? '' }}"
      data-vars='@json($jsVars)'>
 
-  <a href="{{ route('product', $pid) }}" class="product-card-img" @if($imgStyle) style="{{ $imgStyle }}" @endif>
-    @if($displayImg)
-      <img src="{{ $displayImg }}" alt="{{ $productDisplayName }}" loading="lazy" id="{{ $domPrefix }}-img-{{ $pid }}"
-           onerror="this.onerror=null;this.style.display='none';this.parentElement.querySelector('.pc-img-fallback')?.style.setProperty('display','flex')">
-      <div class="pc-img-fallback" style="display:none;width:100%;height:100%;align-items:center;justify-content:center;background:#f7f7f7;color:#ccc;font-size:32px">🛍️</div>
-    @else
-      <div class="placeholder" id="{{ $domPrefix }}-img-{{ $pid }}">🛍️</div>
-    @endif
-    @if($coShowBadge && $p->on_sale)
+  <div class="pc-media">
+    <a href="{{ route('product', $pid) }}" class="product-card-img">
+      <img src="{{ $displayImg ?: $fallbackImg }}" alt="{{ $productDisplayName }}" loading="lazy"
+           id="{{ $domPrefix }}-img-{{ $pid }}" data-fallback="{{ $fallbackImg }}"
+           onerror="if (this.getAttribute('src') !== this.dataset.fallback) this.src = this.dataset.fallback">
+    </a>
+    @if($coShowBadge)
       @if(!empty($p->flash_sale))
         <span class="badge-sale badge-flash">⚡ {{ $cardRtl ? $cardCopy['sale'].' '.round($p->flash_discount_pct).'%' : round($p->flash_discount_pct).'% OFF' }}</span>
-      @elseif($p->discount_percentage > 0)
-        <span class="badge-sale">-{{ round($p->discount_percentage) }}%</span>
       @else
-        <span class="badge-sale">{{ $cardRtl ? $cardCopy['sale'] : 'SALE' }}</span>
+        <span class="badge-sale" data-pc-discount @if(!$discounted) hidden @endif dir="auto">{{ $discount ? '-'.$discount.'%' : ($cardRtl ? $cardCopy['sale'] : 'SALE') }}</span>
       @endif
     @endif
     @if($coShowWishlist)
-    <button class="wish-btn" data-wishlist-product-id="{{ $pid }}" onclick="event.preventDefault();toggleWishlist(this,{{ $pid }})" title="{{ $cardRtl ? $cardCopy['wishlist'] : 'Add to Wishlist' }}">♡</button>
+      <button type="button" class="wish-btn" data-wishlist-product-id="{{ $pid }}" aria-pressed="false"
+              onclick="toggleWishlist(this,{{ $pid }})"
+              aria-label="{{ $cardRtl ? $cardCopy['wishlist'] : 'Add to Wishlist' }}"
+              title="{{ $cardRtl ? $cardCopy['wishlist'] : 'Add to Wishlist' }}">♡</button>
     @endif
-  </a>
+  </div>
 
-  <div class="product-card-body" @if($bodyPad) style="{{ $bodyPad }}" @endif>
-    <a href="{{ route('product', $pid) }}" class="product-card-name" @if($nameStyle) style="{{ $nameStyle }}" @endif>
+  <div class="product-card-body">
+    <a href="{{ route('product', $pid) }}" class="product-card-name" title="{{ $productDisplayName }}">
       @if(!empty($cardNameSegments))
         @foreach($cardNameSegments as $nameSegment)
           @if($nameSegment['match'] ?? false)<mark class="search-hl">{{ $nameSegment['text'] }}</mark>@else{{ $nameSegment['text'] }}@endif
@@ -204,20 +209,21 @@
     @endif
     @endif
 
-    <div class="pc-option-area{{ $hasCardOptions ? '' : ' pc-option-area--empty' }}">
-    {{-- Color swatches (only when 2+ colors exist) --}}
+    @if($hasCardOptions)
+    <div class="pc-option-area">
+    {{-- Color swatches --}}
     @if($coShowSwatches && $hasColors)
-    <div class="pc-swatches" id="{{ $domPrefix }}-swatches-{{ $pid }}">
+    <div class="pc-swatches" role="group" aria-label="{{ $cardRtl ? 'الألوان' : 'Colors' }}" id="{{ $domPrefix }}-swatches-{{ $pid }}">
       @foreach($colorMap as $colorName => $cdata)
-      <button class="pc-swatch{{ $initialColor === $colorName ? ' selected' : '' }}"
+      <button type="button" class="pc-swatch{{ $initialColor === $colorName ? ' selected' : '' }}"
               title="{{ $cdata['display'] ?? $colorName }}"
               aria-label="{{ $cdata['display'] ?? $colorName }}"
               data-color="{{ $colorName }}"
               data-display="{{ $cdata['display'] ?? $colorName }}"
               data-img="{{ $cdata['img'] ?? '' }}"
               aria-pressed="{{ $initialColor === $colorName ? 'true' : 'false' }}"
-              style="background:{{ $cdata['hex'] }};{{ $cdata['hex'] === '#f5f5f5' ? 'border-color:#bbb' : '' }}"
-              onclick="event.preventDefault();pcPickColor({{ $pid }},'{{ addslashes($colorName) }}',this)">
+              style="--pc-swatch-color:{{ $cdata['hex'] }}"
+              onclick="event.preventDefault();pcPickColor({{ $pid }},this.dataset.color,this)">
       </button>
       @endforeach
     </div>
@@ -227,11 +233,11 @@
 
     {{-- Size pills --}}
     @if($coShowSizes && $hasSizes)
-    <div class="pc-sizes" id="{{ $domPrefix }}-sizes-{{ $pid }}">
+    <div class="pc-sizes" role="group" aria-label="{{ $cardRtl ? 'الخيارات' : 'Options' }}" id="{{ $domPrefix }}-sizes-{{ $pid }}">
       @foreach($sizeList as $sz)
-      <button class="pc-size{{ $initialSize === $sz ? ' selected' : '' }}"
-              data-size="{{ $sz }}"
-              onclick="event.preventDefault();pcPickSize({{ $pid }},'{{ addslashes($sz) }}',this)">
+      <button type="button" class="pc-size{{ $initialSize === $sz ? ' selected' : '' }}"
+              data-size="{{ $sz }}" aria-pressed="{{ $initialSize === $sz ? 'true' : 'false' }}"
+              onclick="event.preventDefault();pcPickSize({{ $pid }},this.dataset.size,this)">
         {{ $sz }}
       </button>
       @endforeach
@@ -239,51 +245,58 @@
     @endif
     </div>
 
-    {{-- Price --}}
-    <div class="product-card-price">
-      @if($p->on_sale)
-        <span class="price-main sale" id="{{ $domPrefix }}-price-{{ $pid }}"{{ $priceStyle ? ' style="'.$priceStyle.'"' : '' }}>{{ number_format($p->sale_price, 2) }} EGP</span>
-        @if($coShowOldPrice)
-        <span class="price-old" id="{{ $domPrefix }}-orig-{{ $pid }}" aria-label="{{ $cardRtl ? 'السعر قبل الخصم' : 'Original price' }}">{{ number_format($p->price, 2) }} EGP</span>
-        @endif
-      @else
-        <span class="price-main" id="{{ $domPrefix }}-price-{{ $pid }}"{{ $priceStyle ? ' style="'.$priceStyle.'"' : '' }}>{{ number_format($p->price, 2) }} EGP</span>
-      @endif
-    </div>
-
-    @if(($coShowAddToCart && ($hasAvailableStock || $requiresVariationSelection)) || $coRemoveWishlist)
-    <div class="pc-actions" style="{{ $coRemoveWishlist ? 'display:flex;gap:8px;margin-top:4px' : (($requiresVariationSelection && !$initialVariation) ? 'display:none' : '') }}">
-      @if($coShowAddToCart && ($hasAvailableStock || $requiresVariationSelection))
-        @if($canQuickAdd)
-        <button class="card-add-btn{{ $coRemoveWishlist ? '' : '' }}" id="{{ $domPrefix }}-add-{{ $pid }}"
-                data-name="{{ addslashes($productDisplayName) }}"
-                data-img="{{ $displayImg }}"
-                style="{{ $coRemoveWishlist ? 'flex:1' : (($requiresVariationSelection && !$initialVariation) ? 'display:none' : '') }}"
-                onclick="pcAddToCart({{ $pid }},this)">
-          {{ $cardRtl ? $cardCopy['add'] : 'Add to Cart' }}
-        </button>
-        @else
-        <a class="card-add-btn{{ $coRemoveWishlist ? '' : '' }}" href="{{ route('product', $pid) }}"
-           style="{{ $coRemoveWishlist ? 'flex:1' : '' }};text-align:center;text-decoration:none">
-          {{ $quickAddMaximum < $quickAddMinimum
-              ? ($cardRtl ? $cardCopy['unavailable'] : 'Unavailable')
-              : ($cardRtl ? $cardCopy['selectQty'].$quickAddMinimum.')' : 'Select quantity (min '.$quickAddMinimum.')') }}
-        </a>
-        @endif
-      @endif
-      @if($coRemoveWishlist)
-      <form action="{{ route('wishlist.remove', $pid) }}" method="POST" style="flex-shrink:0">
-        @csrf @method('DELETE')
-        <button class="btn btn-outline" style="padding:9px 12px;font-size:13px;border-radius:8px;color:#e02020;border-color:#e02020;height:100%" title="{{ $cardRtl ? $cardCopy['removeWishlist'] : 'Remove from wishlist' }}">✕</button>
-      </form>
-      @endif
-    </div>
+    @endif
+    @if($optionsCount)
+      <a href="{{ route('product', $pid) }}" class="pc-option-link">{{ $cardRtl ? '+'.$optionsCount.' خيارات' : '+'.$optionsCount.' options' }}</a>
     @endif
 
-    @if($coShowDetails)
-    <a href="{{ route('product', $pid) }}" class="card-details-btn">
-      {{ $cardRtl ? $cardCopy['details'] : 'See details' }}
-    </a>
+    <div class="product-card-price" aria-live="polite">
+      <bdi class="price-main{{ $discounted ? ' sale' : '' }}" id="{{ $domPrefix }}-price-{{ $pid }}">{{ number_format($displayPrice, 2) }} {{ $currency }}</bdi>
+      @if($coShowOldPrice)
+        <bdi class="price-old" id="{{ $domPrefix }}-orig-{{ $pid }}" @if(!$discounted) hidden @endif
+             aria-label="{{ $cardRtl ? 'السعر قبل الخصم' : 'Original price' }}">{{ $discounted ? number_format($regularPrice, 2) : '' }}</bdi>
+      @endif
+    </div>
+
+    @if(!$hasAvailableStock)
+      <span class="pc-stock-label">{{ $stockLabel }}</span>
+    @endif
+
+    @if($coShowAddToCart || $coShowDetails || $coRemoveWishlist)
+    <div class="pc-actions">
+      @if($coShowAddToCart || $coRemoveWishlist)
+      <div class="pc-add-row">
+        @if($coShowAddToCart)
+          @if($canQuickAdd || !$hasAvailableStock)
+            <button type="button" class="card-add-btn" id="{{ $domPrefix }}-add-{{ $pid }}"
+                    data-name="{{ $productDisplayName }}" data-img="{{ $displayImg }}"
+                    aria-label="{{ $cardRtl ? $cardCopy['add'] : 'Add to Cart' }}: {{ $productDisplayName }}"
+                    @disabled(!$hasAvailableStock || ($requiresVariationSelection && !$initialVariation))
+                    onclick="pcAddToCart({{ $pid }},this)">
+              {{ $cardRtl ? $cardCopy['add'] : 'Add to Cart' }}
+            </button>
+          @else
+            <a class="card-add-btn" href="{{ route('product', $pid) }}">
+              {{ $quickAddMaximum < $quickAddMinimum
+                  ? ($cardRtl ? $cardCopy['unavailable'] : 'Unavailable')
+                  : ($cardRtl ? $cardCopy['selectQty'].$quickAddMinimum.')' : 'Select quantity (min '.$quickAddMinimum.')') }}
+            </a>
+          @endif
+        @endif
+        @if($coRemoveWishlist)
+          <form action="{{ route('wishlist.remove', $pid) }}" method="POST">
+            @csrf @method('DELETE')
+            <button class="btn btn-outline" aria-label="{{ $cardRtl ? $cardCopy['removeWishlist'] : 'Remove from wishlist' }}">✕</button>
+          </form>
+        @endif
+      </div>
+      @endif
+      @if($coShowDetails)
+        <a href="{{ route('product', $pid) }}" class="card-details-btn">
+          {{ $cardRtl ? $cardCopy['details'] : 'See details' }}
+        </a>
+      @endif
+    </div>
     @endif
 
     {{-- Coupon banner --}}
@@ -307,29 +320,3 @@
 
   </div>
 </div>
-
-@once
-<style>
-.product-card{min-height:var(--pc-card-height,auto)}
-/* The editor's Element Spacing value controls every vertical gap. At 0px these rules
-   also neutralise the original product-card margins and top/bottom body padding. */
-.product-card .product-card-img{width:var(--pc-image-width,100%);height:var(--pc-image-height,auto);max-width:100%;align-self:center;margin-bottom:var(--pc-element-spacing,0px)}
-.product-card .product-card-body{padding:var(--pc-element-spacing,0px) 4px;gap:var(--pc-element-spacing,0px)}
-.product-card .product-card-name,.product-card .pc-swatches,.product-card .pc-sizes,.product-card .pc-selected,.product-card .product-card-price,.product-card .pc-actions,.product-card .card-add-btn,.product-card .card-details-btn{margin:0}
-.product-card .product-card-price{padding-top:0}
-.product-card .pc-coupon-bar{margin:0}
-.product-grid--showcase{align-items:stretch}
-.product-card.product-card--shared{height:100%}
-.product-card.product-card--shared .product-card-body{flex:1 1 auto;padding:var(--pc-element-spacing,8px) 12px 12px;gap:var(--pc-element-spacing,6px)}
-.product-card--shared .pc-option-area{display:flex;flex:0 0 52px;min-height:52px;flex-direction:column;justify-content:center;gap:4px}
-.product-card--shared .pc-option-area--empty{display:none;flex-basis:0;min-height:0}
-.product-card--shared .pc-option-area .pc-swatches,.product-card--shared .pc-option-area .pc-sizes{min-height:24px;flex:0 0 24px}
-.product-card--shared .pc-option-area .pc-swatches + .pc-selected + .pc-sizes{margin-top:4px}
-.product-card--shared .pc-actions{margin-top:auto;padding-top:4px}
-@media(max-width:600px){.product-card.product-card--shared .product-card-body{padding:var(--pc-element-spacing,9px) 8px 10px;gap:var(--pc-element-spacing,5px)}.product-card--shared .pc-option-area{flex-basis:58px;min-height:58px;gap:4px}.product-card--shared .pc-option-area .pc-swatches{min-height:26px;flex-basis:26px}.product-card--shared .pc-option-area .pc-sizes{min-height:28px;flex-basis:28px}}
-.pc-coupon-bar{display:flex;text-decoration:none;border-radius:0 0 10px 10px;overflow:hidden;margin:10px -14px -14px;font-size:11px;font-weight:700;line-height:1}
-.pc-coupon-left{flex:1;background:#7c3aed;color:#fff;padding:8px 10px;display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pc-coupon-code{background:rgba(255,255,255,.2);border-radius:4px;padding:1px 5px;letter-spacing:.03em}
-.pc-coupon-right{background:#5b21b6;color:#fff;padding:8px 10px;display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0}
-</style>
-@endonce

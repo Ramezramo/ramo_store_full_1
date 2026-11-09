@@ -25,7 +25,9 @@ class AuthWebController extends Controller
 
     public function showLogin(Request $request)
     {
-        if (Auth::check()) return redirect()->route('account.profile');
+        if (Auth::check()) {
+            return redirect()->route($request->boolean('checkout') ? 'checkout' : 'account.profile');
+        }
         if ($request->boolean('checkout')) {
             $request->session()->put('url.intended', route('checkout'));
         }

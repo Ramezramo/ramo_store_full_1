@@ -166,7 +166,10 @@ class CheckoutController extends Controller
         $totalTax = round($cartTax + $shippingTax, 2);
         $baseTotal = round($afterDiscount + $shippingFee + $totalTax, 2);
         $paymentMethods = PaymentConfig::checkoutMethods();
-        $selectedPaymentMethod = old('payment_method', array_key_first($paymentMethods) ?: 'cod');
+        $previousPaymentMethod = old('payment_method');
+        $selectedPaymentMethod = is_string($previousPaymentMethod) && isset($paymentMethods[$previousPaymentMethod])
+            ? $previousPaymentMethod
+            : array_key_first($paymentMethods);
         // A free-shipping coupon waives delivery-related charges, including COD.
         $codFeeAmount = $freeShipping ? 0.0 : PaymentConfig::codFee();
         $codFee = $selectedPaymentMethod === 'cod' ? $codFeeAmount : 0.0;

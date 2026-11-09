@@ -27,7 +27,8 @@
 .method-divider::before,.method-divider::after { content:''; flex:1; height:1px; background:#e5e7eb; }
 .otp-phone-row { display:flex; gap:8px; }
 .otp-phone-row .country-prefix { display:flex; align-items:center; gap:6px; background:#f9f9f9; border:1.5px solid #e5e7eb; border-radius:10px; padding:0 12px; font-size:14px; font-weight:600; white-space:nowrap; color:#333; }
-.otp-phone-row input { flex:1; }
+.otp-phone-row input { flex:1; min-inline-size:0; }
+.checkout-cart-link { display:block; margin-block-start:18px; text-align:center; color:var(--c-mid); text-decoration:underline; }
 .google-btn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:13px; border-radius:10px; border:1.5px solid #e5e7eb; background:#fff; color:#333; font-size:14px; font-weight:600; cursor:pointer; transition:.15s; text-decoration:none; }
 .google-btn:hover { border-color:#aaa; background:#fafafa; }
 .google-btn svg { width:20px; height:20px; }
@@ -60,14 +61,16 @@
     <div class="auth-logo">Ramo<span>Store</span></div>
 
     @php
-      $intendedUrl   = session('url.intended', '');
-      $fromCheckout  = str_contains($intendedUrl, '/checkout');
+      $fromCheckout  = request()->boolean('checkout') || session('url.intended') === route('checkout');
       $guestAllowed  = $authConfig['guest_checkout'] ?? false;
+      $phoneEnabled  = $authConfig['phone_otp_login'] ?? false;
     @endphp
 
     @if($fromCheckout)
-      <h2 class="auth-title">{{ $loginRtl ? $loginCopy['continue'] : 'Sign in to continue' }}</h2>
-      <p class="auth-sub">{{ $loginRtl ? $loginCopy['checkoutHint'] : 'Sign in to your account to complete your order' }}</p>
+      <h1 class="auth-title">{{ $loginRtl ? $loginCopy['continue'] : 'Continue to checkout' }}</h1>
+      <p class="auth-sub">{{ $phoneEnabled
+          ? ($loginRtl ? $loginCopy['checkoutHint'] : 'Verify your mobile number to continue to checkout.')
+          : ($loginRtl ? 'سجّل دخول عشان تكمّل طلبك.' : 'Sign in to complete your order.') }}</p>
     @else
       <h2 class="auth-title">{{ $loginRtl ? $loginCopy['welcome'] : 'Welcome back' }}</h2>
       <p class="auth-sub">{{ $loginRtl ? $loginCopy['accountHint'] : 'Sign in to your account' }}</p>
@@ -91,18 +94,19 @@
     @endif
 
     <div class="auth-methods">
-      @if($authConfig['phone_otp_login'] ?? false)
-      <div id="phone-otp">
+      @if($phoneEnabled)
+      <form id="phone-otp" onsubmit="event.preventDefault(); sendOtp()">
+        <label class="form-label" for="otp-phone">{{ $loginRtl ? 'رقم الموبايل' : 'Mobile number' }}</label>
         <div class="otp-phone-row">
           <div class="country-prefix">🇪🇬 +20</div>
-          <input type="tel" id="otp-phone" placeholder="01xxxxxxxxx" maxlength="11" style="border-radius:10px;border:1.5px solid #e5e7eb;padding:13px 14px;font-size:14px;outline:none;width:100%;transition:.15s" oninput="this.value=this.value.replace(/[^0-9]/,'')">
+          <input type="tel" id="otp-phone" autocomplete="tel-national" inputmode="numeric" placeholder="01xxxxxxxxx" maxlength="11" style="border-radius:10px;border:1.5px solid #e5e7eb;padding:13px 14px;font-size:14px;outline:none;width:100%;transition:.15s" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
         </div>
-        <button onclick="document.getElementById('referral-invitation')?.remove(); sendOtp()" id="send-otp-btn" class="btn btn-dark" style="width:100%;justify-content:center;border-radius:10px;padding:13px;margin-top:10px;font-size:14px" aria-busy="false">
+        <button type="submit" id="send-otp-btn" class="btn btn-dark" style="width:100%;justify-content:center;border-radius:10px;padding:13px;margin-top:10px;font-size:14px" aria-busy="false">
           <span class="otp-btn-label">{{ $loginRtl ? $loginCopy['sendOtp'] : 'Send OTP Code' }}</span>
           <span class="otp-loading-indicator" role="status" aria-label="{{ $loginRtl ? 'جاري التحميل' : 'Loading' }}"></span>
         </button>
-        <div id="otp-msg" style="font-size:12px;margin-top:6px;text-align:center;color:#888"></div>
-      </div>
+        <div id="otp-msg" role="status" style="font-size:12px;margin-top:6px;text-align:center;color:#888"></div>
+      </form>
       @endif
 
       @if(($authConfig['phone_otp_login'] ?? false) && (($authConfig['google_login'] ?? false) || ($authConfig['email_login'] ?? true)))
@@ -151,7 +155,11 @@
       @endif
     </div>
 
-    @if(!$fromCheckout && !$loginRtl)
+    @if($fromCheckout)
+    <a class="checkout-cart-link" href="{{ route('cart') }}">{{ $loginRtl ? 'ارجع للسلة' : 'Back to cart' }}</a>
+    @endif
+
+    @if(!$loginRtl && (!$fromCheckout || !$phoneEnabled))
     <p class="auth-register-copy" style="text-align:center;font-size:13px;color:#888;margin-top:18px">
       Don't have an account? <a href="{{ route('register') }}" style="color:#1a1a1a;font-weight:600">Sign up</a>
     </p>
@@ -161,11 +169,13 @@
 <script>
 const loginRtl = @json($loginRtl);
 const loginCopy = @json($loginJsCopy);
+const checkoutLogin = @json($fromCheckout);
 async function sendOtp() {
   document.getElementById('referral-invitation')?.remove();
   const phoneInput = document.getElementById('otp-phone');
   const btn = document.getElementById('send-otp-btn');
   const msg = document.getElementById('otp-msg');
+  if (btn.disabled) return;
   const rawPhone = phoneInput.value.trim();
   if (!rawPhone || rawPhone.length < 9) {
     msg.style.color = '#e53e3e';
@@ -176,13 +186,13 @@ async function sendOtp() {
   btn.classList.add('is-loading');
   btn.setAttribute('aria-busy', 'true');
   try {
-    const resp = await fetch('/auth/send-otp', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN }, body: JSON.stringify({ phone: rawPhone }) });
+    const resp = await fetch(@json(route('auth.send-otp')), { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN }, body: JSON.stringify({ phone: rawPhone, context: checkoutLogin ? 'checkout' : undefined }) });
     const contentType = resp.headers.get('content-type') || '';
     const data = contentType.includes('application/json') ? await resp.json() : { success: false, message: await resp.text() };
     if (data.success) {
       sessionStorage.setItem('otp_phone', rawPhone);
       if (data.dev_otp) sessionStorage.setItem('dev_otp', data.dev_otp);
-      window.location.href = '/auth/otp-verify';
+      window.location.href = @json(route('auth.otp-verify'));
     } else {
       msg.style.color = '#e53e3e';
       msg.textContent = data.message || loginCopy.otpFailed;
@@ -194,7 +204,8 @@ async function sendOtp() {
     msg.style.color = '#e53e3e';
     msg.textContent = e?.message || loginCopy.networkError;
     btn.disabled = false;
-    btn.textContent = loginCopy.sendOtp;
+    btn.classList.remove('is-loading');
+    btn.setAttribute('aria-busy', 'false');
   }
 }
 

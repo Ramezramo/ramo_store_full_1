@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Constants\AppConstants;
 use App\Http\Middleware\SetInitialLocaleFromCountry;
+use App\Http\Traits\CartTrait;
 use App\Services\FlashSaleService;
 use App\Services\TimelineLayoutService;
 use Illuminate\Http\Request;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\DB;
 
 class WebController extends Controller
 {
+    use CartTrait;
+
     public function setLocale(Request $request, string $lang)
     {
         $lang = strtolower(trim($lang));
@@ -404,32 +407,7 @@ class WebController extends Controller
         // Build category hierarchy for sidebar
         $allCats = DB::table('categories2')->orderBy('menu_order')->orderBy('name')->get();
 
-        $parentCats = $allCats->filter(fn($c) => $c->parent == 0 || $c->parent === null)->values();
         $childCats  = $allCats->filter(fn($c) => $c->parent > 0)->groupBy('parent');
-
-        // Direct counts for child-category badges. Parent badges below are
-        // computed over the same parent + child ID set used by the filter.
-        $catCounts = DB::table('product_category as pc')
-            ->join('products_data as p', 'p.id', '=', 'pc.product_id')
-            ->where('p.status', 'publish')
-            ->where('p.acceptance_status', 'approved')
-            ->select('pc.category_id', DB::raw('count(distinct pc.product_id) as cnt'))
-            ->groupBy('pc.category_id')
-            ->pluck('cnt', 'category_id');
-
-        foreach ($parentCats as $parentCategory) {
-            $categoryIds = [(int) $parentCategory->id];
-            foreach ($childCats[$parentCategory->id] ?? [] as $childCategory) {
-                $categoryIds[] = (int) $childCategory->id;
-            }
-            $catCounts[$parentCategory->id] = DB::table('product_category as pc')
-                ->join('products_data as p', 'p.id', '=', 'pc.product_id')
-                ->whereIn('pc.category_id', $categoryIds)
-                ->where('p.status', 'publish')
-                ->where('p.acceptance_status', 'approved')
-                ->distinct('pc.product_id')
-                ->count('pc.product_id');
-        }
 
         // Collect all child IDs for a given category ID (including itself)
         $requestedCategories = $request->input('categories', []);
@@ -572,6 +550,7 @@ class WebController extends Controller
                 $html .= view('web.partials.product-card', [
                     'p'              => $p,
                     'cardVariations' => $cardVariations[$p->id] ?? [],
+                    'cardOptions'    => ['variant' => 'shop', 'idPrefix' => 'shop'],
                 ])->render();
             }
             return response()->json([
@@ -580,6 +559,32 @@ class WebController extends Controller
                 'nextPage' => $products->currentPage() + 1,
                 'total'    => $products->total(),
             ]);
+        }
+
+        $parentCats = $allCats->filter(fn($c) => $c->parent == 0 || $c->parent === null)->values();
+
+        // Direct counts for child-category badges. Parent badges below are
+        // computed over the same parent + child ID set used by the filter.
+        $catCounts = DB::table('product_category as pc')
+            ->join('products_data as p', 'p.id', '=', 'pc.product_id')
+            ->where('p.status', 'publish')
+            ->where('p.acceptance_status', 'approved')
+            ->select('pc.category_id', DB::raw('count(distinct pc.product_id) as cnt'))
+            ->groupBy('pc.category_id')
+            ->pluck('cnt', 'category_id');
+
+        foreach ($parentCats as $parentCategory) {
+            $categoryIds = [(int) $parentCategory->id];
+            foreach ($childCats[$parentCategory->id] ?? [] as $childCategory) {
+                $categoryIds[] = (int) $childCategory->id;
+            }
+            $catCounts[$parentCategory->id] = DB::table('product_category as pc')
+                ->join('products_data as p', 'p.id', '=', 'pc.product_id')
+                ->whereIn('pc.category_id', $categoryIds)
+                ->where('p.status', 'publish')
+                ->where('p.acceptance_status', 'approved')
+                ->distinct('pc.product_id')
+                ->count('pc.product_id');
         }
 
         // Find active parent: if a child is selected, its parent is considered "open"
@@ -726,13 +731,15 @@ class WebController extends Controller
             ? DB::table('wishlists')->where('user_id', Auth::id())->where('product_id', $id)->exists()
             : in_array((int)$id, session('ramo_wishlist', []));
 
-        return view('web.product', compact(
+        $cartQuantities = $this->cartVariationQuantities($this->getCart(), (int) $id);
+
+        return response()->view('web.product', compact(
             'product', 'variations', 'related',
             'vendor', 'vendorProducts',
             'reviews', 'userReviewed', 'userReview',
             'distribution', 'helpfulVoted',
-            'inWishlist'
-        ));
+            'inWishlist', 'cartQuantities'
+        ))->header('Cache-Control', 'private, no-cache');
     }
 
     public function vendor($id)
