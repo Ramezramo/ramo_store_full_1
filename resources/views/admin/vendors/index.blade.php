@@ -65,6 +65,10 @@
           <td style="color:var(--muted)">{{ $vendor->created_at ? date('M d, Y', strtotime($vendor->created_at)) : '—' }}</td>
           <td>
             <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <form method="POST" action="{{ route('admin.vendors.workspace', $vendor->id) }}">
+                @csrf
+                <button type="submit" class="btn btn-primary btn-sm">Open Vendor Dashboard</button>
+              </form>
               @if($vendor->status !== 'active')
                 <form method="POST" action="{{ route('admin.vendors.approve', $vendor->id) }}">
                   @csrf

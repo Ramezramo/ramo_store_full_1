@@ -176,8 +176,14 @@
             @if(\App\Helpers\PaymentConfig::isManualMethod($order->payment_method ?? null))
               <div class="or-summary-row" style="font-size:12px;color:#9a3412">
                 <span>{{ $isAr ? 'حالة الدفع' : 'Payment status' }}</span>
-                <strong>{{ $isAr ? match(strtolower($order->payment_status ?? 'pending_payment')) { 'confirmed' => 'تم التأكيد', 'failed' => 'فشل', default => 'في الانتظار' } : ucwords(str_replace('_', ' ', $order->payment_status ?? 'pending_payment')) }}</strong>
+                <strong>{{ $isAr ? match(strtolower($order->payment_status ?? 'pending_payment')) { 'confirmed' => 'تم التأكيد', 'pending_payment' => 'في انتظار الدفع', 'pending_verification' => 'الإيصال في انتظار المراجعة', 'rejected' => 'الإيصال مرفوض', 'expired' => 'انتهت المهلة', 'failed' => 'فشل', default => 'في الانتظار' } : ucwords(str_replace('_', ' ', $order->payment_status ?? 'pending_payment')) }}</strong>
               </div>
+              @if($order->payment_due_at && in_array($order->payment_status ?? '', ['pending_payment', 'rejected', 'failed'], true))
+                <div class="or-summary-row" style="font-size:12px;color:#9a3412">
+                  <span>{{ $isAr ? 'آخر موعد للدفع' : 'Payment deadline' }}</span>
+                  <strong>{{ \Carbon\Carbon::parse($order->payment_due_at)->setTimezone('Africa/Cairo')->locale($isAr ? 'ar' : 'en')->translatedFormat($isAr ? 'j F Y، g:i A' : 'M d, Y · g:i A') }} {{ $isAr ? 'بتوقيت القاهرة' : 'Cairo time' }}</strong>
+                </div>
+              @endif
             @endif
           </div>
         </div>
@@ -204,10 +210,12 @@
         </div>
         @endif
 
-        @if(\App\Helpers\PaymentConfig::isManualMethod($order->payment_method ?? null) && ($order->payment_status ?? '') !== 'confirmed')
+        @if(\App\Helpers\PaymentConfig::isManualMethod($order->payment_method ?? null) && !in_array($order->status, ['cancelled', 'canceled', 'refunded'], true) && !in_array($order->payment_status ?? '', ['confirmed', 'expired'], true))
           @php
             $guestPaymentMethod = \App\Helpers\PaymentConfig::detailsFor($order->payment_method);
             $guestHasUploadedReceipt = filled($order->payment_receipt_path);
+            $guestReceiptUnderReview = $order->payment_status === 'pending_verification';
+            $guestUploadWindowClosed = \App\Services\OrderPaymentExpiryService::deadlinePassed($order);
             $guestReceiptUploadLimit = \App\Http\Controllers\Web\PaymentReceiptController::MAX_UPLOADS_PER_ORDER;
             $guestReceiptUploadCount = $paymentReceiptCount ?? 0;
             $guestReceiptUploadsRemaining = max(0, $guestReceiptUploadLimit - $guestReceiptUploadCount);
@@ -216,25 +224,35 @@
           @if($guestPaymentMethod)
           <div class="or-section" style="background:#fffaf5">
             <div class="or-section-title" style="color:#9a3412">{{ $guestHasUploadedReceipt ? ($isAr ? 'مراجعة الدفع' : 'Payment verification') : ($isAr ? 'ارفع إيصال الدفع' : 'Upload payment receipt') }}</div>
-            @if($guestHasUploadedReceipt)
+            @if($order->payment_due_at && in_array($order->payment_status ?? '', \App\Services\OrderPaymentExpiryService::AWAITING_PAYMENT_STATUSES, true))
+              <div style="margin-bottom:12px;padding:10px 12px;border-radius:9px;background:#fff7ed;color:#9a3412;font-size:13px;line-height:1.55">
+                {{ $isAr ? 'الطلب هيتلغى تلقائي بعد 24 ساعة من غير إيصال.' : 'The order will be cancelled automatically after 24 hours without a receipt.' }}
+              </div>
+            @endif
+            @if($guestHasUploadedReceipt && $guestReceiptUnderReview)
               <div style="margin:0 0 12px;padding:12px 14px;border-radius:9px;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;font-size:13px;line-height:1.6">
                 <strong>✓ {{ $isAr ? 'تم رفع الإيصال وهو تحت المراجعة.' : 'Your receipt has been uploaded and is pending review.' }}</strong>
-                <div style="margin-top:3px">{{ $isAr ? 'مش محتاج ترفع حاجة تاني، إلا لو عايز تستبدل الإيصال الحالي.' : 'You do not need to upload another file unless you want to replace the current receipt.' }}</div>
-                <div style="margin-top:3px">{{ $isAr ? 'متاح لك '.$guestReceiptUploadsRemaining.' من أصل '.$guestReceiptUploadLimit.' محاولات رفع.' : $guestReceiptUploadsRemaining.' of '.$guestReceiptUploadLimit.' upload attempts remain.' }}</div>
+                @unless($guestUploadWindowClosed)
+                  <div style="margin-top:3px">{{ $isAr ? 'متاح لك '.$guestReceiptUploadsRemaining.' من أصل '.$guestReceiptUploadLimit.' محاولات رفع.' : $guestReceiptUploadsRemaining.' of '.$guestReceiptUploadLimit.' upload attempts remain.' }}</div>
+                @endunless
                 <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($order->payment_receipt_path) }}" target="_blank" rel="noopener" style="display:inline-block;margin-top:6px;color:#047857;font-weight:700">{{ $isAr ? 'شوف الإيصال المرفوع ←' : 'View uploaded receipt →' }}</a>
               </div>
             @endif
+            @if(!$guestUploadWindowClosed || $guestReceiptUnderReview)
             <p style="font-size:13px;color:#555;line-height:1.6;margin-bottom:10px">
-              @if($guestHasUploadedReceipt)
+              @if($guestReceiptUnderReview)
                 {{ $isAr ? 'بنراجع تحويل' : 'We are reviewing your transfer of' }} <strong>{{ number_format($order->final_total, 2) }} EGP</strong>{{ $isAr ? ' إلى ' : ' to ' }}<strong>{{ $guestPaymentMethod['destination'] }}</strong>{{ $isAr ? ' حسب الإيصال المرفوع.' : ' using the uploaded receipt.' }}
               @else
                 {{ $isAr ? 'حوّل' : 'Transfer' }} <strong>{{ number_format($order->final_total, 2) }} EGP</strong> {{ $isAr ? 'إلى' : 'to' }} <strong>{{ $guestPaymentMethod['destination'] }}</strong>{{ $isAr ? '، وبعدها ارفع الإيصال هنا.' : ', then upload the receipt below.' }}
               @endif
             </p>
-            @if(!empty($guestPaymentMethod['link']))
+            @endif
+            @if(!$guestReceiptUnderReview && !$guestUploadWindowClosed && !empty($guestPaymentMethod['link']))
               <a href="{{ $guestPaymentMethod['link'] }}" target="_blank" rel="noopener" style="font-size:12px;color:#e85d26;display:inline-block;margin-bottom:10px">{{ $isAr ? 'افتح رابط إنستاباي ←' : 'Open InstaPay link →' }}</a>
             @endif
-            @if($guestCanUploadReceipt)
+            @if($guestUploadWindowClosed)
+              <p style="font-size:13px;color:#6b7280;margin-top:12px">{{ $isAr ? 'مهلة رفع الإيصال انتهت.' : 'The receipt upload window has closed.' }}</p>
+            @elseif($guestCanUploadReceipt)
               <form method="POST" action="{{ route('guest.order.payment-receipt', $order->id) }}" enctype="multipart/form-data">
                 @csrf
                 <input type="hidden" name="email" value="{{ $billing['email'] ?? '' }}">

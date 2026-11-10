@@ -1,6 +1,24 @@
 @extends('layouts.app')
-@php $isAr = session('locale') === 'ar'; @endphp
-@section('title', $isAr ? 'تم تأكيد الطلب — Ramo Store' : 'Order Confirmed — Ramo Store')
+@php
+  $isAr = session('locale') === 'ar';
+  $manualPayment = \App\Helpers\PaymentConfig::isManualMethod($order->payment_method ?? null);
+  $paymentExpired = $order->payment_status === 'expired';
+  $orderClosed = in_array($order->status, ['cancelled', 'canceled', 'refunded'], true);
+  $awaitingPayment = !$orderClosed && $manualPayment && in_array($order->payment_status, \App\Services\OrderPaymentExpiryService::AWAITING_PAYMENT_STATUSES, true);
+  $receiptUnderReview = !$orderClosed && $manualPayment && $order->payment_status === 'pending_verification';
+  $uploadWindowClosed = \App\Services\OrderPaymentExpiryService::deadlinePassed($order);
+  $payLater = $awaitingPayment && request()->query('pay') === 'later';
+  $paymentDeadline = $awaitingPayment && $order->payment_due_at
+    ? \Carbon\Carbon::parse($order->payment_due_at)->setTimezone('Africa/Cairo')->locale($isAr ? 'ar' : 'en')->translatedFormat($isAr ? 'j F Y، g:i A' : 'M d, Y · g:i A')
+    : null;
+  $pageHeading = match (true) {
+    $paymentExpired => $isAr ? 'انتهت مهلة الدفع' : 'Payment window expired',
+    $awaitingPayment => $isAr ? 'طلبك في انتظار الدفع' : 'Order awaiting payment',
+    $receiptUnderReview => $isAr ? 'الإيصال في انتظار المراجعة' : 'Receipt under review',
+    default => $isAr ? 'طلبك اتسجل!' : 'Order placed!',
+  };
+@endphp
+@section('title', $pageHeading.' — Ramo Store')
 
 @push('styles')
 <style>
@@ -12,10 +30,27 @@
 <div class="page order-success-page {{ $isAr ? 'order-success-page-ar' : '' }}" dir="{{ $isAr ? 'rtl' : 'ltr' }}" style="max-width:700px;margin:0 auto">
 
   <div class="success-card">
-    <div class="success-icon">✅</div>
-    <h1 class="success-title">{{ $isAr ? 'طلبك اتأكد!' : 'Order Placed!' }}</h1>
-    <p class="success-sub">{{ $isAr ? 'شكرًا إنك اشتريت من RamoStore. استلمنا طلبك وبنجهزه دلوقتي.' : 'Thank you for shopping with RamoStore. Your order has been received and is being processed.' }}</p>
+    <div class="success-icon">{{ $paymentExpired ? '⌛' : (($awaitingPayment || $receiptUnderReview) ? '⏳' : '✅') }}</div>
+    <h1 class="success-title">{{ $pageHeading }}</h1>
+    <p class="success-sub">
+      @if($paymentExpired)
+        {{ $isAr ? 'الطلب اتلغى تلقائيًا بعد انتهاء مهلة الدفع.' : 'This order was cancelled automatically when the payment deadline passed.' }}
+      @elseif($payLater)
+        {{ $isAr ? 'طلبك محفوظ. ارجع لطلباتي عشان تدفع وترفع الإيصال قبل الموعد الموضح تحت.' : 'Your order is saved. Return to My Orders to pay and upload your receipt by the deadline below.' }}
+      @elseif($awaitingPayment)
+        {{ $isAr ? 'استخدم تعليمات الدفع تحت وارفع الإيصال قبل انتهاء المهلة.' : 'Follow the payment instructions below and upload your receipt before the deadline.' }}
+      @elseif($receiptUnderReview)
+        {{ $isAr ? 'استلمنا إيصالك. هنراجع الدفع ونبعتلك تحديث لما يتأكد.' : 'We received your receipt. We will review it and update you when payment is confirmed.' }}
+      @else
+        {{ $isAr ? 'شكرًا إنك اشتريت من RamoStore. استلمنا طلبك.' : 'Thank you for shopping with RamoStore. Your order has been received.' }}
+      @endif
+    </p>
     <div class="success-badge">{{ $isAr ? 'طلب رقم' : 'Order' }} #{{ $order->id }}</div>
+    @if($payLater)
+      <div style="margin-block-start:14px">
+        <a class="btn btn-dark" href="{{ route('account.order', $order->id) }}#order-payment">{{ $isAr ? 'كمّل الدفع' : 'Complete payment' }}</a>
+      </div>
+    @endif
   </div>
 
   <div class="order-detail-card">
@@ -43,7 +78,7 @@
     @endphp
     <div class="od-row"><span class="od-label">{{ $isAr ? 'حالة الطلب' : 'Status' }}</span><span class="status-badge status-{{ $displayOrderStatus }}">{{ $displayOrderLabel }}</span></div>
     @if(\App\Helpers\PaymentConfig::isManualMethod($order->payment_method ?? null))
-      <div class="od-row"><span class="od-label">{{ $isAr ? 'حالة الدفع' : 'Payment status' }}</span><span class="status-badge" style="background:#fff7ed;color:#9a3412">{{ $isAr ? match(strtolower($order->payment_status ?? 'pending_payment')) { 'confirmed' => 'تم التأكيد', 'failed' => 'فشل', default => 'في الانتظار' } : ucwords(str_replace('_', ' ', $order->payment_status ?? 'pending_payment')) }}</span></div>
+      <div class="od-row"><span class="od-label">{{ $isAr ? 'حالة الدفع' : 'Payment status' }}</span><span class="status-badge" style="background:{{ $order->payment_status === 'expired' ? '#fef2f2;color:#991b1b' : '#fff7ed;color:#9a3412' }}">{{ $isAr ? match(strtolower($order->payment_status ?? 'pending_payment')) { 'confirmed' => 'تم التأكيد', 'pending_verification' => 'في انتظار مراجعة الإيصال', 'expired' => 'انتهت المهلة', 'rejected' => 'الإيصال مرفوض', 'failed' => 'فشل', default => 'في انتظار الدفع' } : ucwords(str_replace('_', ' ', $order->payment_status ?? 'pending_payment')) }}</span></div>
     @endif
     <div class="od-row"><span class="od-label">{{ $isAr ? 'طريقة الدفع' : 'Payment' }}</span><span>{{ $order->payment_method_title }}</span></div>
     <div class="od-row"><span class="od-label">{{ $isAr ? 'التاريخ' : 'Date' }}</span><span>{{ $isAr ? \Carbon\Carbon::parse($order->date_created)->locale('ar')->translatedFormat('j F Y، g:i A') : \Carbon\Carbon::parse($order->date_created)->format('M d, Y h:i A') }}</span></div>
@@ -54,9 +89,12 @@
       <div class="od-row"><span class="od-label">{{ $isAr ? 'الضريبة' : 'Tax' }}</span><span>{{ number_format($order->total_tax, 2) }} EGP</span></div>
     @endif
     <div class="od-row"><span class="od-label">{{ $isAr ? 'الإجمالي' : 'Total' }}</span><span class="od-total">{{ number_format($order->final_total, 2) }} EGP</span></div>
+    @if($paymentDeadline)
+      <div class="od-row"><span class="od-label">{{ $isAr ? 'آخر موعد للدفع بتوقيت القاهرة' : 'Payment deadline (Cairo time)' }}</span><strong style="color:#9a3412">{{ $paymentDeadline }}</strong></div>
+    @endif
   </div>
 
-  @if(\App\Helpers\PaymentConfig::isManualMethod($order->payment_method ?? null) && ($order->payment_status ?? '') !== 'confirmed')
+  @if(($awaitingPayment && !$payLater) || $receiptUnderReview)
     @php
       $paymentMethod = \App\Helpers\PaymentConfig::detailsFor($order->payment_method);
       $successBilling = json_decode($order->billing ?? '{}', true) ?: [];
@@ -68,6 +106,7 @@
     @if($paymentMethod)
     <div class="order-detail-card" style="margin-top:16px;background:#fffaf5;border:1.5px solid #fed7aa">
       <h3 style="font-size:15px;font-weight:800;margin-bottom:7px">{{ $isAr ? 'كمّل الدفع' : 'Complete your payment' }}</h3>
+      @if($awaitingPayment && !$uploadWindowClosed)
       <p style="font-size:13px;color:#6b7280;line-height:1.6;margin-bottom:12px">
         {{ $isAr ? 'حوّل' : 'Transfer' }} <strong>{{ number_format($order->final_total, 2) }} EGP</strong> {{ $isAr ? 'باستخدام' : 'using' }} {{ $paymentMethod['title'] }} {{ $isAr ? 'إلى:' : 'to:' }}
       </p>
@@ -77,7 +116,8 @@
           · <a href="{{ $paymentMethod['link'] }}" target="_blank" rel="noopener" style="font-size:12px;color:#e85d26">{{ $isAr ? 'افتح رابط إنستاباي' : 'Open InstaPay link' }}</a>
         @endif
       </div>
-      @if($order->payment_receipt_path)
+      @endif
+      @if($receiptUnderReview && $order->payment_receipt_path)
         <div style="margin-top:14px;padding:12px 14px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:9px;color:#065f46">
           <div style="font-size:13px;font-weight:800">✓ {{ $isAr ? 'الإيصال اترفع بنجاح' : 'Receipt uploaded successfully' }}</div>
           <div style="font-size:12px;line-height:1.5;margin-top:4px">
@@ -85,7 +125,9 @@
             @if($order->payment_receipt_name)
               {{ $isAr ? 'الملف:' : 'File:' }} <strong>{{ $order->payment_receipt_name }}</strong>
             @endif
-            <div style="margin-top:4px">{{ $isAr ? 'متاح لك '.$successReceiptUploadsRemaining.' من أصل '.$successReceiptUploadLimit.' محاولات رفع.' : $successReceiptUploadsRemaining.' of '.$successReceiptUploadLimit.' upload attempts remain.' }}</div>
+            @unless($uploadWindowClosed)
+              <div style="margin-top:4px">{{ $isAr ? 'متاح لك '.$successReceiptUploadsRemaining.' من أصل '.$successReceiptUploadLimit.' محاولات رفع.' : $successReceiptUploadsRemaining.' of '.$successReceiptUploadLimit.' upload attempts remain.' }}</div>
+            @endunless
           </div>
           <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($order->payment_receipt_path) }}"
              target="_blank" rel="noopener" style="display:inline-block;margin-top:7px;font-size:12px;font-weight:700;color:#047857">
@@ -93,7 +135,9 @@
           </a>
         </div>
       @endif
-      @if($successCanUploadReceipt)
+      @if($uploadWindowClosed)
+        <p style="font-size:13px;color:#6b7280;margin-top:12px">{{ $isAr ? 'مهلة رفع الإيصال انتهت.' : 'The receipt upload window has closed.' }}</p>
+      @elseif($successCanUploadReceipt)
         <p style="font-size:12px;color:#6b7280;margin:12px 0">
           {{ $order->payment_receipt_path ? ($isAr ? 'عاوز تغيّر الإيصال؟ اختار صورة جديدة تحت. متبقي '.$successReceiptUploadsRemaining.' من '.$successReceiptUploadLimit.'.' : 'Need to replace the receipt? Choose a new image below. '.$successReceiptUploadsRemaining.' of '.$successReceiptUploadLimit.' attempts remain.') : ($isAr ? 'بعد التحويل، ارفع سكرين شوت أو صورة للإيصال. متبقي '.$successReceiptUploadsRemaining.' من '.$successReceiptUploadLimit.'.' : 'After transferring, upload a screenshot or photo of the receipt. '.$successReceiptUploadsRemaining.' of '.$successReceiptUploadLimit.' attempts remain.') }}
         </p>
@@ -111,6 +155,7 @@
           </label>
           <div id="success-receipt-status-{{ $order->id }}" aria-live="polite" style="display:inline-block;margin-inline-start:8px;font-size:12px;color:#6b7280"></div>
           <noscript><button class="btn btn-dark" style="font-size:12px;margin-top:8px">{{ $isAr ? 'ابعت الإيصال' : 'Submit receipt' }}</button></noscript>
+          @error('receipt')<div class="err" style="margin-top:6px">{{ $message }}</div>@enderror
         </form>
       @else
         <div style="margin-top:12px;padding:12px 14px;border-radius:9px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;font-size:13px;line-height:1.6">

@@ -1,153 +1,124 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>App Config — Ramo Admin</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
-<meta name="csrf-token" content="{{ csrf_token() }}">
+@extends('admin.layout')
+@section('title', 'App Configs')
+@section('page-title', 'App Configuration')
+
+@push('styles')
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--c-bg:#f4f4f0;--c-white:#fff;--c-dark:#111;--c-mid:#555;--c-light:#e4e4e0;--c-orange:#e85d26;--c-green:#22a35c;--c-red:#e02020;--radius:10px;--shadow:0 2px 12px rgba(0,0,0,.07)}
-body{font-family:'Inter',sans-serif;background:var(--c-bg);color:var(--c-dark);font-size:14px;min-height:100vh}
-a{color:inherit;text-decoration:none}
-button{cursor:pointer;font-family:inherit}
-
-.admin-wrap{display:flex;min-height:100vh}
-.sidebar{width:220px;background:var(--c-dark);color:#fff;flex-shrink:0;display:flex;flex-direction:column;padding:0}
-.sidebar-brand{padding:20px 18px 16px;border-bottom:1px solid rgba(255,255,255,.1);font-size:15px;font-weight:800}
-.sidebar-brand span{color:var(--c-orange)}
-.sidebar-nav{padding:12px 0;flex:1}
-.sidebar-nav a{display:flex;align-items:center;gap:10px;padding:10px 18px;font-size:13px;color:rgba(255,255,255,.7);transition:all .15s}
-.sidebar-nav a:hover,.sidebar-nav a.active{background:rgba(255,255,255,.08);color:#fff}
-.sidebar-nav a .icon{font-size:16px;width:20px;text-align:center}
-.sidebar-footer{padding:16px 18px;border-top:1px solid rgba(255,255,255,.1);font-size:12px;color:rgba(255,255,255,.4)}
-.main{flex:1;min-width:0}
-.topbar{background:var(--c-white);border-bottom:1.5px solid var(--c-light);padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
-.topbar-title{font-size:16px;font-weight:700}
-.topbar-user{font-size:13px;color:var(--c-mid)}
-.content{padding:28px}
-.card{background:var(--c-white);border:1.5px solid var(--c-light);border-radius:var(--radius);padding:20px;margin-bottom:20px}
-.card-title{font-size:14px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
-.filter-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;align-items:center}
-.filter-bar form{display:flex;gap:8px;flex-wrap:wrap;align-items:center;flex:1}
-.filter-select{padding:8px 10px;border:1.5px solid var(--c-light);border-radius:8px;font-size:13px;font-family:inherit;background:var(--c-white);outline:none;color:var(--c-dark)}
-.filter-select:focus{border-color:#888}
-.filter-search{padding:8px 12px;border:1.5px solid var(--c-light);border-radius:8px;font-size:13px;font-family:inherit;background:var(--c-white);outline:none;color:var(--c-dark);min-width:180px}
-.filter-search:focus{border-color:#888}
-.btn-sm{padding:7px 14px;font-size:12.5px;font-weight:600;border:none;border-radius:8px;cursor:pointer;transition:all .12s}
-.btn-dark{background:var(--c-dark);color:#fff}
-.btn-dark:hover{background:#333}
-.btn-orange{background:var(--c-orange);color:#fff}
-.btn-orange:hover{opacity:.9}
-.btn-outline{background:var(--c-white);border:1.5px solid var(--c-light);color:var(--c-dark)}
-.btn-outline:hover{border-color:#888}
-.btn-red{background:#fff0f0;color:var(--c-red);border:1.5px solid #fdd}
-.btn-red:hover{background:#ffe0e0}
-.stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin-bottom:20px}
-.stat-card{background:var(--c-white);border:1.5px solid var(--c-light);border-radius:var(--radius);padding:16px}
-.stat-num{font-size:28px;font-weight:800;margin-bottom:2px}
-.stat-label{font-size:12px;color:var(--c-mid);text-transform:uppercase;letter-spacing:.5px}
-.config-table{width:100%;border-collapse:collapse}
-.config-table th{padding:10px 14px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--c-mid);border-bottom:2px solid var(--c-light);background:var(--c-bg)}
-.config-table td{padding:12px 14px;border-bottom:1px solid var(--c-light);vertical-align:top}
-.config-table tr:hover td{background:#fafaf8}
-.config-table tr:last-child td{border-bottom:none}
-.key-cell{font-family:monospace;font-size:13px;font-weight:700;color:var(--c-dark)}
-.group-badge{display:inline-block;padding:2px 8px;border-radius:50px;font-size:11px;font-weight:600;background:var(--c-bg);color:var(--c-mid);border:1px solid var(--c-light)}
-.lang-badge{display:inline-block;padding:2px 8px;border-radius:50px;font-size:11px;font-weight:600;margin-top:3px}
-.lang-en{background:#e8f4fd;color:#1a56a0}
-.lang-ar{background:#fff5e8;color:#b45309}
-.lang-de{background:#edf7ee;color:#145c34}
-.lang-null{background:var(--c-bg);color:#888}
-.value-preview{font-family:monospace;font-size:12px;color:var(--c-mid);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.public-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
-.dot-green{background:var(--c-green)}
-.dot-gray{background:#ccc}
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
-.modal-overlay.open{display:flex}
-.modal{background:var(--c-white);border-radius:12px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
-.modal-head{padding:20px 24px 16px;border-bottom:1px solid var(--c-light);display:flex;align-items:center;justify-content:space-between}
-.modal-head h3{font-size:15px;font-weight:700}
-.modal-close{background:none;border:none;font-size:22px;color:var(--c-mid);cursor:pointer;padding:0 4px}
-.modal-body{padding:20px 24px}
-.modal-foot{padding:16px 24px;border-top:1px solid var(--c-light);display:flex;gap:10px;justify-content:flex-end}
-.form-row{margin-bottom:16px}
-.form-row label{display:block;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--c-mid);margin-bottom:6px}
-.form-row input,.form-row select,.form-row textarea{width:100%;padding:9px 12px;border:1.5px solid var(--c-light);border-radius:8px;font-size:13px;font-family:monospace;outline:none;background:var(--c-bg);color:var(--c-dark);transition:border-color .12s;resize:vertical}
-.form-row textarea{min-height:160px;font-size:12px;line-height:1.6}
-.form-row input:focus,.form-row textarea:focus,.form-row select:focus{border-color:#888;background:#fff}
-.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.form-meta{font-size:12px;color:var(--c-mid);margin-top:4px}
-.toggle-row{display:flex;align-items:center;gap:8px;font-size:13px}
-input[type=checkbox]{width:16px;height:16px;accent-color:var(--c-dark)}
-.toast-bar{position:fixed;bottom:24px;right:24px;z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
-.toast{padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;color:#fff;background:var(--c-dark);box-shadow:0 4px 16px rgba(0,0,0,.15);animation:toastIn .25s ease;pointer-events:auto}
-.toast.ok{background:var(--c-green)}
-.toast.err{background:var(--c-red)}
-@keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.new-config-toggle{font-size:13px;color:var(--c-orange);cursor:pointer;font-weight:600;display:flex;align-items:center;gap:5px}
-.mobile-layout-form{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
-.mobile-layout-options{display:flex;gap:10px;flex-wrap:wrap;flex:1}
-.mobile-layout-option{position:relative;display:flex;align-items:flex-start;gap:10px;min-width:230px;flex:1;padding:13px 14px;border:1.5px solid var(--c-light);border-radius:9px;background:#fff;cursor:pointer;transition:all .14s}
-.mobile-layout-option:hover{border-color:#aaa;background:#fafaf8}
-.mobile-layout-option:has(input:checked){border-color:var(--c-orange);background:#fff5f2;box-shadow:0 0 0 2px rgba(232,93,38,.09)}
-.mobile-layout-option input{width:16px;height:16px;margin-top:2px;accent-color:var(--c-orange);flex-shrink:0}
-.mobile-layout-option strong{display:block;font-size:13px;margin-bottom:3px}
-.mobile-layout-option span{display:block;font-size:12px;color:var(--c-mid);line-height:1.45}
-.admin-flash{margin-bottom:16px;padding:11px 14px;border-radius:8px;background:#eaf8ef;color:#146c36;border:1px solid #c7edcf;font-size:13px;font-weight:600}
-@media(max-width:900px){
-  .admin-wrap{flex-direction:column}
-  .sidebar{width:100%;flex-direction:row;align-items:center;padding:0 16px}
-  .sidebar-brand{border-bottom:none;border-right:1px solid rgba(255,255,255,.1);padding:16px 16px 16px 0;margin-right:16px}
-  .sidebar-nav{display:flex;flex-direction:row;padding:0}
-  .sidebar-nav a{padding:16px 14px}
-  .sidebar-footer{display:none}
-}
+.config-page{--c-bg:var(--bg);--c-white:var(--card);--c-dark:var(--text);--c-mid:var(--muted);--c-light:var(--border);--c-orange:var(--accent);--c-green:var(--green);--c-red:var(--red);max-width:1200px}
+.config-page .card{margin-bottom:20px}
+.config-page .card-title{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.config-page .filter-select,.config-page .filter-search,.config-page .form-row input:not([type=checkbox]),.config-page .form-row select,.config-page .form-row textarea{padding:9px 12px;border:1px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;min-width:0}
+.config-page .filter-select:focus,.config-page .filter-search:focus,.config-page .form-row :is(input,select,textarea):focus{border-color:var(--accent)}
+.config-page .btn-sm{display:inline-flex;align-items:center;justify-content:center;padding:8px 14px;border:1px solid transparent;border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer}
+.config-page .btn-dark,.config-page .btn-outline{background:rgba(255,255,255,.06);color:var(--text);border-color:var(--border)}
+.config-page .btn-orange{background:var(--accent);color:#fff}
+.config-page .btn-red{background:rgba(239,68,68,.12);color:#f87171;border-color:rgba(239,68,68,.2)}
+.config-page .config-shortcuts{display:flex;gap:8px;flex-wrap:wrap}
+.config-page .config-shortcuts a{display:inline-flex;align-items:center;min-height:36px;padding:7px 12px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);font-size:12px;font-weight:600}
+.config-page .config-shortcuts a:hover,.config-page .config-shortcuts a[aria-current="page"]{color:var(--accent);border-color:var(--accent)}
+.config-page #config-list{scroll-margin-top:85px}
+.config-page .stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin-bottom:20px}
+.config-page .stat-card{padding:16px}.config-page .stat-num{font-size:24px;font-weight:800}.config-page .stat-label{text-transform:uppercase;letter-spacing:.05em}
+.config-page .config-table{width:100%;border-collapse:collapse}.config-page .config-table th{background:rgba(255,255,255,.03)}
+.config-page .key-cell{font-family:monospace;font-size:13px;font-weight:700;overflow-wrap:anywhere}
+.config-page .group-badge,.config-page .lang-badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;background:rgba(255,255,255,.07);color:var(--muted);margin:2px}
+.config-page .value-preview{font-family:monospace;font-size:12px;color:var(--muted);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.config-page .public-dot{width:8px;height:8px;border-radius:50%;display:inline-block}.config-page .dot-green{background:var(--green)}.config-page .dot-gray{background:#64748b}
+.config-page .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.config-page .modal-overlay.open{display:flex}.config-page .modal{background:var(--card);border:1px solid var(--border);border-radius:12px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.config-page .modal-head,.config-page .modal-foot{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.config-page .modal-head{border-bottom:1px solid var(--border)}.config-page .modal-head h3{font-size:15px}.config-page .modal-close{background:none;border:0;color:var(--muted);font-size:24px}
+.config-page .modal-body{padding:20px}.config-page .modal-foot{border-top:1px solid var(--border);justify-content:flex-end}
+.config-page .form-row{display:block;margin-bottom:16px}.config-page .form-row label:not(.toggle-row){display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.config-page .form-row input:not([type=checkbox]),.config-page .form-row select,.config-page .form-row textarea{width:100%}
+.config-page .form-row textarea{min-height:160px;font-family:monospace;line-height:1.6;resize:vertical}.config-page .form-meta{font-size:12px;color:var(--muted);margin-top:6px;overflow-wrap:anywhere}
+.config-page .toggle-row{display:inline-flex;align-items:center;gap:8px;font-size:13px}.config-page input[type=checkbox],.config-page input[type=radio]{width:16px;height:16px;accent-color:var(--accent);flex-shrink:0}
+.config-page .mobile-layout-form,.config-page .mobile-layout-options{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.config-page .mobile-layout-options{flex:1}
+.config-page .mobile-layout-option{display:flex;align-items:flex-start;gap:10px;min-width:min(230px,100%);flex:1;padding:13px 14px;border:1px solid var(--border);border-radius:9px;background:var(--bg);cursor:pointer}
+.config-page .mobile-layout-option:has(input:checked){border-color:var(--accent);background:rgba(232,93,38,.1)}.config-page .mobile-layout-option input{margin-top:2px}
+.config-page .mobile-layout-option strong,.config-page .mobile-layout-option span span{display:block}.config-page .mobile-layout-option strong{font-size:13px;margin-bottom:3px}.config-page .mobile-layout-option span span{font-size:12px;color:var(--muted);line-height:1.45}
+.config-page .toast-bar{position:fixed;bottom:24px;right:24px;z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none}.config-page .toast{padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+.config-page .toast.ok{background:#166534}.config-page .toast.err{background:#991b1b}
+@media(max-width:600px){.config-page .form-row-2{grid-template-columns:1fr!important}.config-page .mobile-layout-form{align-items:stretch}.config-page .mobile-layout-options{flex-basis:100%}}
 </style>
-</head>
-<body>
-<div class="admin-wrap">
-  <aside class="sidebar">
-    <div class="sidebar-brand">Ramo<span>Admin</span></div>
-    <nav class="sidebar-nav">
-      <a href="/admin/configs" class="active"><span class="icon">⚙️</span> App Config</a>
-      <a href="/admin/auth-settings"><span class="icon">🔐</span> Auth Settings</a>
-      <a href="/"><span class="icon">🏪</span> View Store</a>
-      <a href="/shop"><span class="icon">🛍️</span> Shop</a>
-      <a href="/admin/configs?group=layout"><span class="icon">📐</span> Layouts</a>
-      <a href="/admin/configs?group=language"><span class="icon">🌐</span> Languages</a>
-      <a href="/admin/configs?group=theme"><span class="icon">🎨</span> Theme</a>
-      <a href="/admin/configs?group=product"><span class="icon">📦</span> Products</a>
-      <a href="/admin/configs?group=payment"><span class="icon">💳</span> Payments</a>
-      <a href="/logout" onclick="event.preventDefault();document.getElementById('logout-form').submit()"><span class="icon">🚪</span> Logout</a>
-    </nav>
-    <form id="logout-form" action="/logout" method="POST" style="display:none">@csrf</form>
-    <div class="sidebar-footer">Signed in as {{ auth()->user()->name }}</div>
-  </aside>
-  <div class="main">
-    <div class="topbar">
-      <div class="topbar-title">App Configuration</div>
-      <div style="display:flex;align-items:center;gap:16px">
-        <a href="/admin/auth-settings" class="btn-sm btn-orange" style="font-size:12px;padding:6px 12px;border-radius:7px;display:inline-flex;align-items:center;gap:5px">🔐 Auth Settings</a>
-        <a href="/api/app-config" target="_blank" class="btn-sm btn-outline" style="font-size:12px;padding:6px 12px;border-radius:7px;border:1.5px solid var(--c-light);display:inline-flex;align-items:center;gap:5px">📡 API Preview</a>
-        <span class="topbar-user">{{ auth()->user()->email }}</span>
-      </div>
-    </div>
+@endpush
 
-    <div class="content">
-      <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border-radius:12px;padding:24px 28px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;gap:20px">
-        <div>
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--c-orange);margin-bottom:6px">Homepage Builder</div>
-          <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:6px">Manage Home Page Layout & Widgets</div>
-          <div style="font-size:13px;color:rgba(255,255,255,.6)">Add stats bars, promo blocks, testimonials, newsletters, banners, product grids, and more — drag & drop to reorder.</div>
-        </div>
-        <a href="/admin/timeline" style="flex-shrink:0;background:var(--c-orange);color:#fff;padding:12px 22px;border-radius:9px;font-size:13px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:7px;white-space:nowrap">📐 Open Homepage Builder →</a>
+@section('content')
+<div class="config-page">
+  @if($errors->any())
+    <div class="alert alert-error">{{ $errors->first() }}</div>
+  @endif
+      <div class="card">
+        <div class="card-title">Configuration groups</div>
+        <p style="color:var(--muted);font-size:13px;line-height:1.5;margin-bottom:12px">Choose a group to view its settings in the configuration list.</p>
+        <nav class="config-shortcuts" aria-label="Configuration groups">
+          @foreach(['all' => 'All settings', 'layout' => 'Layouts', 'language' => 'Languages', 'theme' => 'Theme', 'product' => 'Products', 'payment' => 'Payments'] as $groupKey => $groupLabel)
+            <a href="{{ route('admin.configs', $groupKey === 'all' ? [] : ['group' => $groupKey]) }}#config-list" @if($group === $groupKey) aria-current="page" @endif>{{ $groupLabel }}</a>
+          @endforeach
+        </nav>
+        <div class="card-title" style="margin-top:20px">Quick links</div>
+        <nav class="config-shortcuts" aria-label="Related pages">
+          <a href="{{ route('admin.timeline') }}">Homepage Builder</a>
+          <a href="{{ route('admin.auth-settings') }}">Auth Settings</a>
+          <a href="{{ route('home') }}">View Store</a>
+          <a href="{{ route('shop') }}">Shop</a>
+          <a href="{{ url('/api/app-config') }}" target="_blank" rel="noopener">API Preview ↗</a>
+        </nav>
       </div>
-      @if(session('success'))
-        <div class="admin-flash">{{ session('success') }}</div>
-      @endif
+      <div class="card" id="shop-display-settings">
+        <div class="card-title">
+          <span>Shop Categories &amp; Filters</span>
+          <a href="{{ route('shop') }}" target="_blank" rel="noopener" style="font-size:12px;color:var(--c-orange)">View shop ↗</a>
+        </div>
+        <form method="POST" action="{{ route('admin.configs.shop-display') }}">
+          @csrf
+          <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:18px">
+            <label style="display:grid;gap:6px;flex:1;min-width:220px;font-size:13px;font-weight:600">
+              Category row
+              <select class="filter-select" name="category_layout">
+                <option value="scroll" @selected(old('category_layout', $shopDisplay['category_layout']) === 'scroll')>Swipeable single row</option>
+                <option value="wrap" @selected(old('category_layout', $shopDisplay['category_layout']) === 'wrap')>Wrap into multiple rows</option>
+                <option value="hidden" @selected(old('category_layout', $shopDisplay['category_layout']) === 'hidden')>Hide category row</option>
+              </select>
+            </label>
+            <label style="display:grid;gap:6px;min-width:150px;font-size:13px;font-weight:600">
+              Categories shown
+              <input class="filter-search" type="number" name="category_limit" min="1" max="30" required value="{{ old('category_limit', $shopDisplay['category_limit']) }}" style="min-width:0">
+            </label>
+          </div>
+          <p style="font-size:12px;color:var(--c-mid);line-height:1.5;margin-bottom:14px">Selected categories stay visible. The count excludes the All products button.</p>
+          <fieldset style="border:0;margin-bottom:14px">
+            <legend style="font-size:13px;font-weight:600;margin-bottom:8px">Choose categories for the row</legend>
+            <div style="display:flex;flex-wrap:wrap;gap:10px 18px;max-height:170px;overflow-y:auto;padding:4px">
+              @foreach($shopCategories as $category)
+                <label class="toggle-row">
+                  <input type="checkbox" name="category_ids[]" value="{{ $category->id }}" @checked(in_array((int) $category->id, array_map('intval', old('category_ids', $shopDisplay['category_ids'])), true))>
+                  {{ $category->name }}
+                </label>
+              @endforeach
+            </div>
+            <p style="font-size:12px;color:var(--c-mid);line-height:1.5;margin-top:8px">Leave all unchecked to show categories in their usual order.</p>
+          </fieldset>
+          <div style="font-size:13px;font-weight:700;margin-bottom:10px">Filter panel</div>
+          <div style="display:flex;flex-wrap:wrap;gap:14px 22px;margin-bottom:12px">
+            @foreach([
+              'filters_enabled' => 'Show filters button',
+              'filter_price' => 'Price range',
+              'filter_categories' => 'Categories',
+              'filter_brands' => 'Brands',
+              'filter_sort' => 'Sort by',
+            ] as $settingKey => $settingLabel)
+              <label class="toggle-row">
+                <input type="hidden" name="{{ $settingKey }}" value="0">
+                <input type="checkbox" name="{{ $settingKey }}" value="1" @checked((bool) old($settingKey, $shopDisplay[$settingKey]))>
+                {{ $settingLabel }}
+              </label>
+            @endforeach
+          </div>
+          <p style="font-size:12px;color:var(--c-mid);line-height:1.5;margin-bottom:16px">Switches control which options customers see in the filter panel.</p>
+          <button class="btn-sm btn-orange" type="submit">Save shop settings</button>
+        </form>
+      </div>
 
       <div class="card">
         <div class="card-title">
@@ -185,7 +156,7 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--c-dark)}
         @endforeach
       </div>
 
-      <div class="card" style="padding:16px">
+      <div class="card" id="config-list" style="padding:16px">
         <form method="GET" action="/admin/configs" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
           <select name="group" class="filter-select" onchange="this.form.submit()">
             <option value="all" {{ $group==='all'?'selected':'' }}>All Groups</option>
@@ -244,8 +215,8 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--c-dark)}
                   <span class="public-dot {{ $cfg->is_public ? 'dot-green' : 'dot-gray' }}" title="{{ $cfg->is_public ? 'Public' : 'Private' }}"></span>
                 </td>
                 <td style="text-align:right">
-                  <button class="btn-sm btn-outline" style="margin-right:4px" onclick="openEdit({{ $cfg->id }}, {{ json_encode($cfg->config_key) }}, {{ json_encode($cfg->value) }}, {{ json_encode($cfg->label ?? '') }}, {{ json_encode($cfg->description ?? '') }}, {{ $cfg->is_public ? 'true' : 'false' }})">Edit</button>
-                  <button class="btn-sm btn-red" onclick="deleteConfig({{ $cfg->id }}, '{{ $cfg->config_key }}')">Del</button>
+                  <button class="btn-sm btn-outline" style="margin-right:4px" onclick="openEdit({{ $cfg->id }}, {{ Illuminate\Support\Js::from($cfg->config_key) }}, {{ Illuminate\Support\Js::from($cfg->value) }}, {{ Illuminate\Support\Js::from($cfg->label ?? '') }}, {{ Illuminate\Support\Js::from($cfg->description ?? '') }}, {{ $cfg->is_public ? 'true' : 'false' }})">Edit</button>
+                  <button class="btn-sm btn-red" onclick="deleteConfig({{ $cfg->id }}, {{ Illuminate\Support\Js::from($cfg->config_key) }})">Del</button>
                 </td>
               </tr>
               @empty
@@ -260,14 +231,11 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--c-dark)}
         </div>
         @endif
       </div>
-    </div>
-  </div>
-</div>
 
 <div class="modal-overlay" id="edit-modal">
   <div class="modal">
     <div class="modal-head">
-      <h3>Edit Config: <code id="edit-modal-key" style="font-size:13px;background:#f4f4f0;padding:2px 8px;border-radius:4px"></code></h3>
+      <h3>Edit Config: <code id="edit-modal-key" style="font-size:13px;background:var(--bg);padding:2px 8px;border-radius:4px"></code></h3>
       <button class="modal-close" onclick="closeModal('edit-modal')">×</button>
     </div>
     <div class="modal-body">
@@ -355,6 +323,11 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--c-dark)}
 
 <div class="toast-bar" id="toast-bar"></div>
 
+
+</div>
+@endsection
+
+@push('scripts')
 <script>
 const CSRF = document.querySelector('meta[name="csrf-token"]').content;
 function showToast(msg, type='ok') { const bar = document.getElementById('toast-bar'); const t = document.createElement('div'); t.className = `toast ${type}`; t.textContent = msg; bar.appendChild(t); setTimeout(() => t.remove(), 3200); }
@@ -367,5 +340,4 @@ async function deleteConfig(id, key) { if (!confirm(`Delete config "${key}"? Thi
 document.querySelectorAll('.modal-overlay').forEach(overlay => { overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); }); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open')); });
 </script>
-</body>
-</html>
+@endpush

@@ -43,7 +43,7 @@
         ))));
       @endphp
       <div class="gallery-wrap">
-        <div class="gallery-thumbs" id="gallery-thumbs">
+        <div class="gallery-thumbs" id="gallery-thumbs" role="group" aria-label="{{ $isAr ? 'صور المنتج' : 'Product images' }}">
           @foreach($allImages as $i => $url)
           <div class="gallery-thumb {{ $i === 0 ? 'active' : '' }}" onclick="switchImg(this,'{{ $url }}')">
             <img src="{{ $url }}" alt="{{ $isAr ? 'صورة' : 'Image' }} {{ $i+1 }}" loading="lazy"
@@ -793,6 +793,72 @@
 #main-img { transition: opacity 0.18s ease; }
 #main-img.img-switching { opacity: 0; }
 #gallery-thumbs:empty { display: none; }
+.product-page .gallery-wrap { flex-direction:column-reverse; align-items:stretch; gap:10px; }
+.product-page .gallery-main {
+  flex:0 0 auto;
+  height:min(80vw, 320px);
+  aspect-ratio:auto;
+}
+.product-page .gallery-main img { object-fit:cover; }
+.product-page .gallery-thumbs {
+  display:flex; flex-direction:row; width:100%; max-height:none;
+  overflow-x:auto; overflow-y:hidden; overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch; touch-action:pan-x;
+  scroll-snap-type:x proximity; scrollbar-width:thin;
+}
+.product-page .gallery-thumb { flex-shrink:0; padding:0; color:inherit; scroll-snap-align:start; }
+
+/* Keep the product photo balanced on tablet portrait screens. */
+@media (min-width:601px) and (max-width:900px) {
+  .product-page .product-layout { gap:6px; }
+  .product-page .gallery-wrap { gap:6px; }
+  .product-page .gallery-wrap { width:100%; max-width:none; margin-inline:0; }
+  .product-page .gallery-main {
+    flex:0 0 auto; width:100%; max-width:none; aspect-ratio:1 / 0.9;
+    margin-inline:auto;
+  }
+  /* The tablet frame is wider than the source photo. Fit the complete photo
+     instead of zooming/cropping it to fill the panoramic frame. */
+  .product-page .gallery-main { background:var(--c-white, #fff); }
+  .product-page .gallery-main img {
+    object-fit:contain;
+    object-position:center;
+    background:var(--c-white, #fff);
+  }
+}
+
+/* Keep the PC gallery at the phone-sized height without cropping or stretching
+   the source photo to fill the wider desktop column. */
+@media (min-width:901px) {
+  .product-page .product-layout { column-gap:32px; }
+  .product-page .gallery-wrap { align-items:stretch; }
+  .product-page .gallery-main {
+    width:80%;
+    height:auto;
+    max-width:none;
+    aspect-ratio:auto;
+    margin-inline:auto;
+    background:var(--c-white, #fff);
+  }
+  .product-page .gallery-thumbs { width:80%; margin-inline:auto; }
+  .product-page .gallery-main img {
+    display:block;
+    width:100%;
+    height:auto;
+    object-fit:contain;
+    object-position:center;
+    background:var(--c-white, #fff);
+  }
+  .product-page .pi-title-row { margin-bottom:6px; }
+  .product-page .pi-desc { margin-top:8px; padding-top:8px; }
+  .product-page .pi-stock { margin-bottom:4px; }
+  .product-page :is(.badge-stock-ok,.badge-stock-no) { margin-bottom:8px; }
+  .product-page .pi-price-block { margin-bottom:6px; }
+  .product-page .pi-variations-wrap { gap:6px; margin:6px 0 4px; }
+  .product-page .pi-var-group .var-label { margin-bottom:4px; }
+  .product-page .bulk-variant-toggle { min-block-size:28px; }
+  .product-page .pi-cart-row { gap:6px; margin-block-end:8px; }
+}
 
 /* ── Image placeholder ── */
 .img-placeholder-box {
@@ -876,15 +942,19 @@
 /* ── Narrow-phone product gallery polish ── */
 @media (max-width: 600px) {
   .product-page .product-layout {
-    gap:18px;
+    gap:6px;
   }
   .product-page .gallery-wrap {
     width:100%;
-    gap:10px;
+    gap:6px;
+  }
+  .product-page .product-info {
+    padding-top:0;
+    margin-top:0;
   }
   .product-page .gallery-main {
     width:100%;
-    aspect-ratio:1 / 1;
+    aspect-ratio:1 / 0.9;
     border:1px solid #e8e8e4;
     border-radius:18px;
     background:#fafaf8;
@@ -898,14 +968,11 @@
     object-fit:cover;
     background:#fff;
   }
-  .product-page #gallery-thumbs:not(:has(.gallery-thumb:nth-child(2))) {
-    display:none !important;
-  }
   .product-page .gallery-thumbs {
     width:100%;
     justify-content:flex-start;
     gap:8px;
-    padding:2px 2px 5px;
+    padding:2px 2px 2px;
     scroll-snap-type:x proximity;
   }
   .product-page .gallery-thumb {
@@ -1102,19 +1169,26 @@ function updateAvailability() {
       });
     }
 
-    // Keep the preferred/main variation image on load without selecting an
-    // unavailable variation.
-    if (main.images && main.images.length > 0) {
-      _lockedImgUrl = main.images[0];
+    // Show every variation photo in the gallery as soon as the product loads.
+    // The selected color only controls which photo is active in the large view.
+    const colorKey = Object.keys(main.attrs).find(k => k.toLowerCase() === 'color');
+    const selectedImage = main.images?.[0]
+      || (colorKey ? getColorImage(colorKey, main.attrs[colorKey]) : null);
+    if (selectedImage) {
+      _lockedImgUrl = selectedImage;
       const img = document.getElementById('main-img');
-      if (img) img.dataset.originalSrc = img.src;
-      setMainImg(main.images[0]);
-      const colorKey = Object.keys(main.attrs).find(k => k.toLowerCase() === 'color');
-      if (colorKey) updateVariationThumbs(colorKey, main.attrs[colorKey]);
+      if (img && !img.dataset.originalSrc) img.dataset.originalSrc = img.src;
+      setMainImg(selectedImage);
     }
+    if (colorKey) updateVariationThumbs(colorKey, main.attrs[colorKey], selectedImage);
     currentVariation = preferred ? main : null;
     renderPriceStock(preferred ? main : null);
     updateSelectedLabels();
+  } else if (VAR_DATA.length) {
+    // Even without a preferred variation, keep every variation photo browseable.
+    const colorKey = ATTR_KEYS.find(key => key.toLowerCase() === 'color');
+    const firstColor = colorKey ? VAR_DATA.find(item => item.attrs?.[colorKey])?.attrs[colorKey] : null;
+    if (colorKey && firstColor) updateVariationThumbs(colorKey, firstColor);
   }
   updateAvailability();
   tryFindVariation();
@@ -1569,7 +1643,11 @@ function resetProductSelections() {
   document.querySelectorAll('[data-attr-key].selected').forEach((button) => button.classList.remove('selected'));
 
   const gallery = document.getElementById('gallery-thumbs');
-  if (gallery && INITIAL_GALLERY_HTML) gallery.innerHTML = INITIAL_GALLERY_HTML;
+  if (gallery && INITIAL_GALLERY_HTML) {
+    gallery.innerHTML = INITIAL_GALLERY_HTML;
+    const defaultColor = COLOR_ATTR_KEY ? VAR_DATA.find(item => item.attrs?.[COLOR_ATTR_KEY])?.attrs[COLOR_ATTR_KEY] : null;
+    if (defaultColor) updateVariationThumbs(COLOR_ATTR_KEY, defaultColor, gallery.querySelector('img')?.src || null);
+  }
 
   const mainImage = document.getElementById('main-img');
   const originalImage = mainImage?.dataset.originalSrc;
@@ -1782,27 +1860,54 @@ function getColorImage(attrKey, attrVal) {
   return imgs.length > 0 ? imgs[0] : null;
 }
 
-function updateVariationThumbs(attrKey, attrVal) {
+function updateVariationThumbs(attrKey, attrVal, selectedImageUrl = null) {
   const strip = document.getElementById('gallery-thumbs');
   if (!strip) return;
-  const imgs = getColorImages(attrKey, attrVal);
-  if (imgs.length === 0) return;
-  strip.innerHTML = '';
-  imgs.forEach((url, i) => {
-    const div = document.createElement('div');
-    div.className = 'gallery-thumb' + (i === 0 ? ' active' : '');
-    div.addEventListener('click', () => {
-      setMainImg(url, true);
-      strip.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
-      div.classList.add('active');
+  // Start with the product gallery, then append every unique variation photo.
+  // This keeps all color photos available in the swipeable strip while selecting
+  // a color still jumps the large image to that color's first photo.
+  strip.innerHTML = INITIAL_GALLERY_HTML;
+  const seen = new Set([...strip.querySelectorAll('img')].map(img => new URL(img.src, document.baseURI).href));
+
+  VAR_DATA.forEach(variation => {
+    const colorValue = variation.attrs?.[attrKey];
+    (variation.images || []).forEach((url, index) => {
+      if (!url) return;
+      const absoluteUrl = new URL(url, document.baseURI).href;
+      if (seen.has(absoluteUrl)) return;
+      seen.add(absoluteUrl);
+
+      const thumb = document.createElement('button');
+      thumb.type = 'button';
+      thumb.className = 'gallery-thumb';
+      thumb.setAttribute('aria-label', `${colorValue || attrVal} image ${index + 1}`);
+      thumb.addEventListener('click', () => {
+        _lockedImgUrl = url;
+        setMainImg(url, true);
+        strip.querySelectorAll('.gallery-thumb').forEach(item => item.classList.remove('active'));
+        thumb.classList.add('active');
+      });
+
+      const image = document.createElement('img');
+      image.src = url;
+      image.alt = `${colorValue || attrVal} ${index + 1}`;
+      image.loading = 'lazy';
+      image.onerror = () => handleThumbError(image);
+      thumb.appendChild(image);
+      strip.appendChild(thumb);
     });
-    const im = document.createElement('img');
-    im.src = url;
-    im.alt = attrVal + ' ' + (i + 1);
-    im.loading = 'lazy';
-    div.appendChild(im);
-    strip.appendChild(div);
   });
+
+  const activeUrl = selectedImageUrl || getColorImage(attrKey, attrVal);
+  if (activeUrl) {
+    const activeAbsoluteUrl = new URL(activeUrl, document.baseURI).href;
+    const activeThumb = [...strip.querySelectorAll('.gallery-thumb')].find(thumb => {
+      const image = thumb.querySelector('img');
+      return image && new URL(image.src, document.baseURI).href === activeAbsoluteUrl;
+    });
+    strip.querySelectorAll('.gallery-thumb').forEach(item => item.classList.toggle('active', item === activeThumb));
+    activeThumb?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
 }
 
 function previewColorImage(attrKey, attrVal) {
@@ -2253,6 +2358,42 @@ function deleteReview(btn, id, productId) {
   .rv-score-box { display: flex; align-items: center; gap: 12px; }
   .rv-big-num { font-size: 40px; }
   .rv-form-card { padding: 20px; }
+}
+
+/* Compact the mobile product controls while preserving their layout. */
+@media(max-width:600px) {
+  .product-page .pi-title { font-size:16.8px; }
+  .product-page .pi-wish-btn { width:34px; height:34px; font-size:16px; }
+  .product-page .pi-desc { font-size:11.2px; padding-top:16px; margin-top:16px; }
+  .product-page .pi-rating-row { gap:5px; margin-bottom:10px; }
+  .product-page :is(.pi-star-filled,.pi-star-empty) { font-size:12px; }
+  .product-page :is(.pi-rating-none,.pi-rating-count) { font-size:10.4px; }
+  .product-page .pi-stock { margin-bottom:8px; }
+  .product-page :is(.badge-stock-ok,.badge-stock-no) { font-size:9.6px; padding:3px 10px; margin-bottom:14px; }
+  .product-page .pi-price-main { font-size:20px; }
+  .product-page .pi-price-orig { font-size:11.2px; }
+  .product-page .pi-price-row { gap:8px; }
+  .product-page .pi-disc-badge { font-size:9.6px; padding:2px 7px; }
+  .product-page .pi-variations-wrap { gap:10px; margin:11px 0 8px; }
+  .product-page .var-label { font-size:.6rem; margin-bottom:5px; }
+  .product-page .var-options { gap:6px; }
+  .product-page :is(.product-color-choice,.var-btn) {
+    min-inline-size:36px; min-block-size:36px; padding:5px 10px;
+    gap:6px; border-radius:8px; font-size:11.2px;
+  }
+  .product-page .product-color-dot { inline-size:18px; block-size:18px; }
+  .product-page .var-hint { font-size:.6rem; }
+  .product-page .bulk-variant-toggle { min-block-size:29px; font-size:.6rem; }
+  .product-page :is(.bulk-qty-stepper,.pi-cart-row .qty-input) {
+    inline-size:100px; min-block-size:42px; grid-template-columns:35px minmax(26px,1fr) 35px;
+  }
+  .product-page :is(.bulk-qty-stepper,.pi-cart-row .qty-input) :is(button,input) { block-size:40px; }
+  .product-page :is(.bulk-qty-stepper,.pi-cart-row .qty-input) button { font-size:1rem; }
+  .product-page .pi-cart-row { gap:6px; margin-block-end:10px; }
+  .product-page .pi-cart-row .pi-atc-btn {
+    min-block-size:42px; padding:6px; border-radius:9px; font-size:.75rem;
+  }
+  .product-page .pi-cart-row #quantity-limit-hint { font-size:.6rem; }
 }
 </style>
 <script>

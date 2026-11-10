@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Helpers\ShopDisplayConfig;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -70,7 +71,12 @@ class ConfigAdminController extends Controller
 
         return view('admin.configs.index', compact(
             'configs', 'groups', 'langs', 'group', 'lang', 'search', 'shopMobileLayout'
-        ));
+        ) + [
+            'shopDisplay' => ShopDisplayConfig::get(),
+            'shopCategories' => DB::table('categories2')->where(function ($query) {
+                $query->whereNull('parent')->orWhere('parent', 0);
+            })->orderBy('menu_order')->orderBy('name')->get(['id', 'name']),
+        ]);
     }
 
     public function update(Request $request, int $id)
@@ -167,6 +173,46 @@ class ConfigAdminController extends Controller
 
         return redirect()->route('admin.configs', ['group' => 'layout'])
             ->with('success', 'Shop mobile layout saved.');
+    }
+
+    public function updateShopDisplay(Request $request)
+    {
+        if (!$this->isAdmin()) {
+            return redirect('/login')->with('error', 'Admin access required.');
+        }
+
+        $data = $request->validate([
+            'category_layout' => 'required|in:scroll,wrap,hidden',
+            'category_limit' => 'required|integer|min:1|max:30',
+            'category_ids' => 'nullable|array|max:100',
+            'category_ids.*' => 'integer|distinct|exists:categories2,id',
+            'filters_enabled' => 'required|boolean',
+            'filter_price' => 'required|boolean',
+            'filter_categories' => 'required|boolean',
+            'filter_brands' => 'required|boolean',
+            'filter_sort' => 'required|boolean',
+        ]);
+        $data['category_limit'] = (int) $data['category_limit'];
+        $data['category_ids'] = array_map('intval', $data['category_ids'] ?? []);
+        foreach (['filters_enabled', 'filter_price', 'filter_categories', 'filter_brands', 'filter_sort'] as $key) {
+            $data[$key] = $request->boolean($key);
+        }
+
+        DB::table('app_configs')->updateOrInsert(
+            ['config_key' => ShopDisplayConfig::KEY, 'lang' => null],
+            [
+                'config_group' => 'layout',
+                'value' => json_encode($data),
+                'label' => 'Shop categories and filters',
+                'description' => 'Control the category row and visible shop filters.',
+                'is_public' => false,
+                'sort_order' => 101,
+                'updated_at' => now(),
+            ]
+        );
+
+        return redirect()->route('admin.configs', ['group' => 'layout'])
+            ->with('success', 'Shop category and filter settings saved.');
     }
 
     public function destroy(int $id)

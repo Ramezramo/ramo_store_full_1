@@ -13,6 +13,7 @@ use App\Http\Controllers\Web\AccountController;
 use App\Http\Controllers\Web\OrderNotificationController;
 use App\Http\Controllers\Web\SearchController;
 use App\Http\Controllers\Admin\ConfigAdminController;
+use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminTimelineController;
 use App\Http\Controllers\Admin\AuthSettingsController;
 use App\Http\Controllers\Admin\ShippingSettingsController;
@@ -137,6 +138,7 @@ Route::get('/vendor-login', [VendorWebController::class, 'showLogin'])->name('ve
 Route::post('/vendor-login', [VendorWebController::class, 'login'])->name('vendor.login.submit');
 Route::post('/vendor-logout', [VendorWebController::class, 'logout'])->name('vendor.logout');
 Route::middleware('vendor.web.auth')->group(function () {
+    Route::post('/seller/admin-workspace/exit', [AdminDashboardController::class, 'closeVendorWorkspace'])->name('vendor.workspace.exit');
     Route::get('/seller/dashboard', [VendorWebController::class, 'dashboard'])->name('vendor.dashboard');
     Route::get('/seller/store-profile', [VendorWebController::class, 'showStoreProfile'])->name('vendor.store.profile');
     Route::post('/seller/store-profile', [VendorWebController::class, 'updateStoreProfile'])->name('vendor.store.profile.update');
@@ -164,10 +166,10 @@ Route::middleware('vendor.web.auth')->group(function () {
 
 Route::get('/admin/login', [AuthWebController::class, 'showAdminLogin'])->name('admin.login');
 Route::post('/admin/login', [AuthWebController::class, 'adminLogin'])->name('admin.login.post');
-use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminCategoryBrandController;
 use App\Http\Controllers\Admin\ReferralAdminController;
 Route::prefix('admin')->middleware(['auth', 'admin.auth', \App\Http\Middleware\RefreshAdminSidebarCounts::class])->group(function () {
+    Route::post('/vendors/{id}/workspace', [AdminDashboardController::class, 'openVendorWorkspace'])->name('admin.vendors.workspace');
     Route::get('/', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/users', [AdminDashboardController::class, 'users'])->name('admin.users');
     Route::patch('/users/{id}/block', [AdminDashboardController::class, 'blockUser'])->name('admin.users.block');
@@ -187,6 +189,7 @@ Route::prefix('admin')->middleware(['auth', 'admin.auth', \App\Http\Middleware\R
     Route::patch('/vendors/{id}/reject', [AdminDashboardController::class, 'rejectVendor'])->name('admin.vendors.reject');
     Route::delete('/vendors/{id}', [AdminDashboardController::class, 'deleteVendor'])->name('admin.vendors.delete');
     Route::get('/products', [AdminDashboardController::class, 'products'])->name('admin.products');
+    Route::post('/products/{id}/edit-as-vendor', [AdminDashboardController::class, 'editProductAsVendor'])->name('admin.products.edit-as-vendor');
     Route::post('/products/bulk', [AdminDashboardController::class, 'bulkProducts'])->name('admin.products.bulk');
     Route::get('/products/{id}', [AdminDashboardController::class, 'showProduct'])->name('admin.products.show');
     Route::post('/products/{id}/section', [AdminDashboardController::class, 'adminUpdateProductSection'])->name('admin.products.section');
@@ -222,6 +225,7 @@ Route::prefix('admin')->middleware(['auth', 'admin.auth', \App\Http\Middleware\R
     Route::put('/configs/{id}', [ConfigAdminController::class, 'update'])->name('admin.configs.update');
     Route::post('/configs', [ConfigAdminController::class, 'create'])->name('admin.configs.create');
     Route::post('/configs/shop-mobile-layout', [ConfigAdminController::class, 'updateShopMobileLayout'])->name('admin.configs.shop-mobile-layout');
+    Route::post('/configs/shop-display', [ConfigAdminController::class, 'updateShopDisplay'])->name('admin.configs.shop-display');
     Route::delete('/configs/{id}', [ConfigAdminController::class, 'destroy'])->name('admin.configs.destroy');
     Route::get('/auth-settings', [AuthSettingsController::class, 'index'])->name('admin.auth-settings');
     Route::put('/auth-settings', [AuthSettingsController::class, 'update'])->name('admin.auth-settings.update');

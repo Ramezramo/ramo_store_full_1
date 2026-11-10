@@ -6,7 +6,10 @@
     'pending', 'pending_payment' => 'في الانتظار', 'processing' => 'جاري التجهيز', 'shipped' => 'اتشحن', 'completed', 'delivered' => 'اتسلّم',
     'cancelled' => 'اتلغى', 'refunded' => 'اترجع', 'failed', 'payment_failed' => 'فشل الدفع', 'rejected' => 'اترفض', default => $status,
   } : app(\App\Services\OrderStatusService::class)->label($status);
-  $cancelled = in_array($order->status, ['cancelled','refunded','failed']);
+  $cancelled = in_array($order->status, ['cancelled', 'canceled', 'refunded', 'failed'], true);
+  $awaitingPayment = !$cancelled && in_array($order->payment_status, \App\Services\OrderPaymentExpiryService::AWAITING_PAYMENT_STATUSES, true);
+  $receiptUnderReview = $order->payment_status === 'pending_verification';
+  $uploadWindowClosed = \App\Services\OrderPaymentExpiryService::deadlinePassed($order);
   $hasSubOrders = isset($subOrders) && $subOrders->count() > 0;
   $messageCount = 0;
   if ($hasSubOrders) {
@@ -35,7 +38,78 @@
 @endphp
 
 @section('account-content')
-<div class="acc-section-title" style="margin-bottom:20px">{{ $isAr ? 'طلب رقم' : 'Order' }} #{{ $order->id }}</div>
+<style>
+  .odx-page{--odx-accent:#e85d26;--odx-ink:#171717;--odx-muted:#737373;--odx-line:#ececec;display:grid;gap:16px;color:var(--odx-ink)}
+  .odx-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:2px}
+  .odx-heading h1{font-size:clamp(20px,3vw,26px);line-height:1.2;margin:0;font-weight:800;letter-spacing:-.02em}
+  .odx-heading p{font-size:13px;color:var(--odx-muted);margin:5px 0 0}
+  .odx-overview,.odx-card{background:#fff;border:1px solid var(--odx-line);border-radius:18px;box-shadow:0 5px 20px rgba(20,20,20,.035)}
+  .odx-overview{padding:20px}
+  .odx-overview-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:16px;border-bottom:1px solid var(--odx-line)}
+  .odx-eyebrow{font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--odx-muted);margin:0 0 5px}
+  .odx-date{font-size:13px;color:var(--odx-muted);margin:0}
+  .odx-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding-top:16px}
+  .odx-fact{min-width:0;padding:12px;border-radius:12px;background:#fafafa}
+  .odx-fact-label{display:block;font-size:11px;color:var(--odx-muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px}
+  .odx-fact-value{display:block;font-size:14px;font-weight:750;overflow-wrap:anywhere}
+  .odx-card{overflow:hidden}
+  .odx-card-heading{padding:17px 18px;border-bottom:1px solid var(--odx-line);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .odx-card-heading h2{font-size:16px;margin:0;font-weight:800}
+  .odx-store{display:flex;align-items:center;gap:11px;min-width:0}
+  .odx-store-logo{width:44px;height:44px;flex:0 0 44px;border:1px solid var(--odx-line);border-radius:12px;background:#fafafa;object-fit:cover}
+  .odx-store-initial{display:grid;place-items:center;color:var(--odx-accent);font-weight:800;font-size:17px}
+  .odx-store-copy{min-width:0}
+  .odx-store-name{font-weight:800;font-size:14px;line-height:1.3;overflow-wrap:anywhere}
+  .odx-store-sub{font-size:12px;color:var(--odx-muted);margin-top:3px;line-height:1.4}
+  .odx-store-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .odx-store-link{font-size:12px;font-weight:750;color:var(--odx-accent);text-decoration:none;white-space:nowrap}
+  .odx-products{padding:4px 18px 10px}
+  .odx-product{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:13px;align-items:start;padding:14px 0;border-bottom:1px solid #f0f0f0}
+  .odx-product:last-child{border-bottom:0}
+  .odx-product-thumb{width:72px;height:72px;border-radius:12px;object-fit:cover;background:#f5f5f5;border:1px solid var(--odx-line);display:grid;place-items:center;color:#aaa;font-size:22px}
+  .odx-product-thumb[hidden]{display:none!important}
+  .odx-product-main{min-width:0}
+  .odx-product-name{display:block;color:var(--odx-ink);font-weight:750;font-size:14px;line-height:1.4;text-decoration:none;overflow-wrap:anywhere}
+  .odx-product-name:hover{color:var(--odx-accent)}
+  .odx-product-description{font-size:12px;color:var(--odx-muted);line-height:1.5;margin:4px 0 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .odx-product-meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+  .odx-product-tag{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;background:#f6f6f6;color:#555;font-size:11px;line-height:1.2;max-width:100%;overflow-wrap:anywhere}
+  .odx-product-total{text-align:end;white-space:nowrap;font-size:13px;font-weight:800;padding-top:2px}
+  .odx-product-total small{display:block;color:var(--odx-muted);font-size:11px;font-weight:500;margin-top:4px}
+  .odx-totals{padding:13px 18px 17px;background:#fafafa;border-top:1px solid var(--odx-line)}
+  .odx-total-row{display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:13px;padding:4px 0;color:var(--odx-muted)}
+  .odx-total-row strong{color:var(--odx-ink);white-space:nowrap}
+  .odx-total-row.is-final{font-size:15px;font-weight:800;color:var(--odx-ink);padding-top:10px;margin-top:5px;border-top:1px solid #e5e5e5}
+  .odx-total-row.is-final strong{color:var(--odx-accent)}
+  .odx-tracking{padding:12px 18px;background:#fffaf6;border-top:1px solid #f4e5dc;font-size:12px;color:#6b625e;line-height:1.5}
+  .odx-tracking strong{color:var(--odx-ink);overflow-wrap:anywhere}
+  .odx-address{font-size:14px;line-height:1.75;color:#454545;overflow-wrap:anywhere}
+  .odx-address p{margin:0}
+  .odx-address iframe{display:block}
+  @media(max-width:600px){
+    .odx-page{gap:12px}
+    .odx-overview{padding:16px;border-radius:15px}
+    .odx-facts{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .odx-fact{padding:10px}
+    .odx-card-heading{padding:14px}
+    .odx-products{padding-inline:14px}
+    .odx-product{grid-template-columns:60px minmax(0,1fr);gap:10px}
+    .odx-product-thumb{width:60px;height:60px;border-radius:10px}
+    .odx-product-total{grid-column:2;text-align:start;padding-top:0;margin-top:-4px}
+    .odx-product-total small{display:inline;margin-inline-start:5px}
+    .odx-totals{padding-inline:14px}
+    .odx-tracking{padding-inline:14px}
+  }
+</style>
+
+<div class="odx-page">
+<div class="odx-heading">
+  <div>
+    <h1>{{ $isAr ? 'تفاصيل الطلب' : 'Order details' }}</h1>
+    <p>{{ $isAr ? 'رقم الطلب' : 'Order' }} #{{ $order->id }} · {{ $isAr ? \Carbon\Carbon::parse($order->date_created)->locale('ar')->translatedFormat('j F Y، g:i A') : \Carbon\Carbon::parse($order->date_created)->format('M d, Y · h:i A') }}</p>
+  </div>
+  <a href="{{ route('account.orders') }}" class="btn btn-outline" style="font-size:12px;padding:9px 13px">{{ $isAr ? 'كل الطلبات' : 'All orders' }}</a>
+</div>
 
 @if($cancelled)
   <div class="acc-alert acc-alert-error" style="margin-bottom:24px">{{ $isAr ? 'الطلب ده حالته' : 'This order has been' }} <strong>{{ $statusLabel($order->status) }}</strong>{{ $isAr ? '.' : '.' }}</div>
@@ -49,30 +123,37 @@
 @endif
 
 {{-- ── ORDER META ────────────────────────────────────────────────── --}}
-<div class="order-detail-card">
-  <div class="od-row"><span class="od-label">{{ $isAr ? 'رقم الطلب' : 'Order #' }}</span><strong>#{{ $order->id }}</strong></div>
-  <div class="od-row"><span class="od-label">{{ $isAr ? 'الحالة' : 'Status' }}</span><span class="status-badge status-{{ $order->status }}">{{ $statusLabel($order->status) }}</span></div>
-  <div class="od-row"><span class="od-label">{{ $isAr ? 'التاريخ' : 'Date' }}</span><span>{{ $isAr ? \Carbon\Carbon::parse($order->date_created)->locale('ar')->translatedFormat('j F Y، g:i A') : \Carbon\Carbon::parse($order->date_created)->format('M d, Y h:i A') }}</span></div>
-  <div class="od-row"><span class="od-label">{{ $isAr ? 'طريقة الدفع' : 'Payment' }}</span><span>{{ $order->payment_method_title }}</span></div>
-  <div class="od-row"><span class="od-label">{{ $isAr ? 'المبلغ المدفوع' : 'Total Paid' }}</span><strong style="color:#e85d26">{{ number_format($order->final_total, 2) }} EGP</strong></div>
+<section class="odx-overview" aria-label="{{ $isAr ? 'ملخص الطلب' : 'Order summary' }}">
+  <div class="odx-overview-top">
+    <div>
+      <p class="odx-eyebrow">{{ $isAr ? 'ملخص الطلب' : 'Order summary' }}</p>
+      <p class="odx-date">{{ $isAr ? 'طلبك اتسجل بنجاح' : 'Your order is being tracked here' }}</p>
+    </div>
+    <span class="status-badge status-{{ $order->status }}">{{ $statusLabel($order->status) }}</span>
+  </div>
+  <div class="odx-facts">
+    <div class="odx-fact"><span class="odx-fact-label">{{ $isAr ? 'رقم الطلب' : 'Order number' }}</span><span class="odx-fact-value">#{{ $order->id }}</span></div>
+    <div class="odx-fact"><span class="odx-fact-label">{{ $isAr ? 'الدفع' : 'Payment' }}</span><span class="odx-fact-value">{{ $order->payment_method_title ?: ($isAr ? 'غير محدد' : 'Not specified') }}</span></div>
+    <div class="odx-fact"><span class="odx-fact-label">{{ $isAr ? 'إجمالي الطلب' : 'Order total' }}</span><span class="odx-fact-value" style="color:var(--odx-accent)">{{ number_format($order->final_total, 2) }} EGP</span></div>
+  </div>
   @if($order->customer_note)
-    <div class="od-row"><span class="od-label">{{ $isAr ? 'ملاحظاتك' : 'Notes' }}</span><span>{{ $order->customer_note }}</span></div>
+    <div style="margin-top:12px;padding:11px 13px;border-radius:11px;background:#fffaf6;color:#5f514b;font-size:13px;line-height:1.6"><strong>{{ $isAr ? 'ملاحظتك:' : 'Your note:' }}</strong> {{ $order->customer_note }}</div>
   @endif
-</div>
+</section>
 
 @if(\App\Helpers\PaymentConfig::isManualMethod($order->payment_method ?? null))
 @php
   $accountPaymentMethod = \App\Helpers\PaymentConfig::detailsFor($order->payment_method);
   $accountHasUploadedReceipt = filled($order->payment_receipt_path);
 @endphp
-<div class="order-detail-card" style="margin-top:16px;border:1.5px solid #fed7aa;background:#fffaf5">
+<div class="order-detail-card" id="order-payment" style="margin-top:16px;scroll-margin-block-start:90px;border:1.5px solid #fed7aa;background:#fffaf5">
   <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
     <div>
-      <div style="font-size:15px;font-weight:800">{{ $isAr ? 'مراجعة الدفع' : 'Payment verification' }}</div>
+      <div style="font-size:15px;font-weight:800">{{ $awaitingPayment ? ($isAr ? 'كمّل الدفع' : 'Complete payment') : ($isAr ? 'الدفع' : 'Payment') }}</div>
       <div style="font-size:13px;color:#6b7280;margin-top:4px">
         {{ $isAr ? 'الحالة:' : 'Status:' }}
         <strong style="color:{{ $order->payment_status === 'confirmed' ? '#15803d' : ($order->payment_status === 'rejected' ? '#b91c1c' : '#b45309') }}">
-          {{ $isAr ? match(strtolower($order->payment_status ?? 'pending_payment')) { 'confirmed' => 'تم التأكيد', 'rejected' => 'اترفض', 'failed' => 'فشل', default => 'في الانتظار' } : ucwords(str_replace('_', ' ', $order->payment_status ?? 'pending_payment')) }}
+          {{ $isAr ? match(strtolower($order->payment_status ?? 'pending_payment')) { 'confirmed' => 'تم التأكيد', 'pending_payment' => 'في انتظار الدفع', 'pending_verification' => 'الإيصال في انتظار المراجعة', 'rejected' => 'اترفض', 'expired' => 'انتهت المهلة', 'failed' => 'فشل', default => 'في الانتظار' } : ucwords(str_replace('_', ' ', $order->payment_status ?? 'pending_payment')) }}
         </strong>
       </div>
     </div>
@@ -89,24 +170,43 @@
       <strong>✓ {{ $isAr ? 'تم تأكيد الدفع بنجاح.' : 'Your payment has been confirmed.' }}</strong>
       <div style="margin-top:3px">{{ $isAr ? 'الإيصال اتراجع واتقبل، ومش محتاج ترفع حاجة تاني.' : 'Your receipt was reviewed and approved. You do not need to upload anything else.' }}</div>
     </div>
-  @elseif($accountHasUploadedReceipt)
+  @elseif($receiptUnderReview && $accountHasUploadedReceipt)
     <div style="margin-top:12px;padding:12px 14px;border-radius:9px;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;font-size:13px;line-height:1.6">
       <strong>✓ {{ $isAr ? 'تم رفع الإيصال وهو تحت المراجعة.' : 'Your receipt has been uploaded and is pending review.' }}</strong>
-      <div style="margin-top:3px">{{ $isAr ? 'مش محتاج ترفع حاجة تاني، إلا لو عايز تستبدل الإيصال الحالي.' : 'You do not need to upload another file unless you want to replace the current receipt.' }}</div>
-      <div style="margin-top:3px">{{ $isAr ? 'متاح لك '.$receiptUploadsRemaining.' من أصل '.$receiptUploadLimit.' محاولات رفع.' : $receiptUploadsRemaining.' of '.$receiptUploadLimit.' upload attempts remain.' }}</div>
+      @unless($uploadWindowClosed)
+        <div style="margin-top:3px">{{ $isAr ? 'متاح لك '.$receiptUploadsRemaining.' من أصل '.$receiptUploadLimit.' محاولات رفع.' : $receiptUploadsRemaining.' of '.$receiptUploadLimit.' upload attempts remain.' }}</div>
+      @endunless
     </div>
   @endif
-  @if($order->payment_status !== 'confirmed')
-    @if($accountPaymentMethod)
+  @if($order->payment_status === 'expired')
+    <div style="margin-top:12px;padding:12px 14px;border-radius:9px;background:#fef2f2;border:1px solid #fecaca;color:#991b1b;font-size:13px;line-height:1.6">
+      <strong>{{ $isAr ? 'انتهت مهلة الدفع واتلغى الطلب.' : 'The payment deadline passed and this order was cancelled.' }}</strong>
+      <div>{{ $isAr ? 'لو لسه عايز المنتجات، اعمل طلب جديد.' : 'If you still want these items, place a new order.' }}</div>
+    </div>
+  @endif
+  @if(!$cancelled && ($awaitingPayment || $receiptUnderReview))
+      @if($order->payment_due_at && $awaitingPayment)
+        <div style="margin-top:12px;padding:11px 13px;border-radius:9px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:13px;line-height:1.55">
+          {{ $isAr ? 'ادفع وارفع الإيصال قبل' : 'Pay and upload your receipt by' }}
+          <strong>{{ \Carbon\Carbon::parse($order->payment_due_at)->setTimezone('Africa/Cairo')->locale($isAr ? 'ar' : 'en')->translatedFormat($isAr ? 'j F Y، g:i A' : 'M d, Y · g:i A') }} {{ $isAr ? 'بتوقيت القاهرة' : 'Cairo time' }}</strong>.
+          {{ $isAr ? 'الطلب هيتلغى تلقائي لو مهلة الـ24 ساعة خلصت من غير إيصال.' : 'The order is cancelled automatically if the 24-hour window ends without a receipt.' }}
+        </div>
+      @endif
+    @if($accountPaymentMethod && (!$uploadWindowClosed || $receiptUnderReview))
       <p style="font-size:13px;color:#6b7280;line-height:1.6;margin-top:12px">
-        @if($accountHasUploadedReceipt)
+        @if($receiptUnderReview && $accountHasUploadedReceipt)
           {{ $isAr ? 'بنراجع تحويل' : 'We are reviewing your transfer of' }} <strong>{{ number_format($order->final_total, 2) }} EGP</strong>{{ $isAr ? ' إلى ' : ' to ' }}<strong>{{ $accountPaymentMethod['destination'] }}</strong>{{ $isAr ? ' حسب الإيصال المرفوع.' : ' using the uploaded receipt.' }}
         @else
           {{ $isAr ? 'حوّل' : 'Transfer' }} <strong>{{ number_format($order->final_total, 2) }} EGP</strong> {{ $isAr ? 'إلى' : 'to' }} <strong>{{ $accountPaymentMethod['destination'] }}</strong>{{ $isAr ? '، وبعدها ارفع الإيصال تحت.' : ', then upload the receipt below.' }}
         @endif
       </p>
+      @if($awaitingPayment && !empty($accountPaymentMethod['link']))
+        <a class="btn btn-outline" href="{{ $accountPaymentMethod['link'] }}" target="_blank" rel="noopener">{{ $isAr ? 'افتح رابط إنستاباي' : 'Open InstaPay link' }}</a>
+      @endif
     @endif
-    @if($canUploadReceipt)
+    @if($uploadWindowClosed)
+      <p style="font-size:13px;color:#6b7280;margin-top:12px">{{ $isAr ? 'مهلة رفع الإيصال انتهت.' : 'The receipt upload window has closed.' }}</p>
+    @elseif($canUploadReceipt)
       <form method="POST" action="{{ route('account.order.payment-receipt', $order->id) }}" enctype="multipart/form-data" style="margin-top:16px">
         @csrf
         <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:7px">
@@ -192,30 +292,6 @@
 </div>
 @endif
 
-{{-- ── SHIPPING ADDRESS ─────────────────────────────────────────── --}}
-@if(!empty($billing))
-<div class="order-detail-card" style="margin-top:16px">
-  <h3 style="font-size:15px;font-weight:700;margin-bottom:14px">{{ $isAr ? 'عنوان الشحن' : 'Shipping Address' }}</h3>
-  <p style="font-size:14px;line-height:1.8;color:var(--c-dark)">
-    {{ $billing['first_name'] ?? '' }} {{ $billing['last_name'] ?? '' }}<br>
-    {{ $billing['address_1'] ?? '' }}<br>
-    {{ $billing['city'] ?? '' }}@if(!empty($billing['state'])), {{ $billing['state'] }}@endif<br>
-    {{ $billing['phone'] ?? '' }}
-    @if(!empty($billing['latitude']) && !empty($billing['longitude']))
-      <br>
-      <iframe
-        width="100%"
-        height="220"
-        style="border:0;border-radius:12px;margin-top:10px"
-        loading="lazy"
-        referrerpolicy="no-referrer-when-downgrade"
-        src="https://www.google.com/maps?q={{ $billing['latitude'] }},{{ $billing['longitude'] }}&z=15&output=embed">
-      </iframe>
-    @endif
-  </p>
-</div>
-@endif
-
 {{-- ══════════════════════════════════════════════════════════════════ --}}
 {{-- SUB-ORDERS (one per vendor)                                        --}}
 {{-- ══════════════════════════════════════════════════════════════════ --}}
@@ -233,33 +309,45 @@
       $subCancelled = in_array($sub->status, ['cancelled']);
       $subFillPct   = $subCancelled ? 0 : match($subStepIndex) { 0=>0,1=>33,2=>66,3=>100,default=>0 };
       $subSteps     = $isAr ? ['pending'=>'في الانتظار','processing'=>'جاري التجهيز','shipped'=>'اتشحن','delivered'=>'اتسلّم'] : ['pending'=>'Pending','processing'=>'Processing','shipped'=>'Shipped','delivered'=>'Delivered'];
+      $store = $sub->store ?? null;
+      $storeName = $store['name'] ?? $sub->vendor_shop_name ?? ($isAr ? 'متجر رامو' : 'Ramo Store');
     @endphp
 
-    <div style="margin-top:20px;border:2px solid #e5e7eb;border-radius:16px;overflow:hidden">
+    <section class="odx-card">
 
       {{-- Sub-order header --}}
-      <div style="background:#f9fafb;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e5e7eb;flex-wrap:wrap;gap:8px">
-        <div>
-          <div style="font-size:13px;font-weight:800;color:#111827">
-            {{ $sub->vendor_shop_name ?: ($isAr ? 'المتجر' : 'Store') }}
-            <span style="font-weight:400;color:#6b7280;font-size:12px">— {{ $isAr ? 'طلب فرعي رقم' : 'Sub-order #' }}{{ $sub->id }}</span>
-          </div>
-          @if($sub->tracking_number)
-            <div style="font-size:12px;color:#6b7280;margin-top:3px">
-              {{ $isAr ? 'رقم التتبع:' : 'Tracking:' }} <strong style="font-family:monospace">{{ $sub->tracking_number }}</strong>
-              @if($sub->tracking_carrier) {{ $isAr ? 'عن طريق' : 'via' }} {{ $sub->tracking_carrier }} @endif
-            </div>
+      <div class="odx-card-heading">
+        <div class="odx-store">
+          @if(!empty($store['logo']))
+            <img class="odx-store-logo" src="{{ $store['logo'] }}" alt="{{ $storeName }}" loading="lazy">
+          @else
+            <div class="odx-store-logo odx-store-initial" aria-hidden="true">{{ mb_substr($storeName, 0, 1) }}</div>
           @endif
+          <div class="odx-store-copy">
+            <div class="odx-eyebrow" style="margin-bottom:3px">{{ $isAr ? 'المتجر' : 'Sold by' }}</div>
+            <div class="odx-store-name">{{ $storeName }}</div>
+            <div class="odx-store-sub">
+              {{ $isAr ? 'طلب الشحنة' : 'Shipment' }} #{{ $sub->id }}
+              @if(!empty($store['address'])) · {{ $store['address'] }} @endif
+              @if(!empty($store['rating_count']) && $store['rating_count'] > 0) · ★ {{ number_format($store['rating'], 1) }} ({{ $store['rating_count'] }}) @endif
+            </div>
+          </div>
         </div>
-        <span class="status-badge status-{{ $sub->status }}" style="font-size:12px">{{ $statusLabel($sub->status) }}</span>
+        <div class="odx-store-actions">
+          @if(!empty($store['id']))<a class="odx-store-link" href="{{ route('vendor.store', $store['id']) }}">{{ $isAr ? 'زيارة المتجر' : 'Visit store' }} →</a>@endif
+          <span class="status-badge status-{{ $sub->status }}">{{ $statusLabel($sub->status) }}</span>
+        </div>
       </div>
+      @if($sub->tracking_number)
+        <div class="odx-tracking">{{ $isAr ? 'رقم التتبع:' : 'Tracking number:' }} <strong>{{ $sub->tracking_number }}</strong>@if($sub->tracking_carrier) · {{ $isAr ? 'شركة الشحن' : 'Carrier' }}: <strong>{{ $sub->tracking_carrier }}</strong>@endif</div>
+      @endif
 
       {{-- Sub-order progress bar --}}
       @if(!$subCancelled)
       <div style="padding:16px 18px 4px;background:#fff">
         <div style="position:relative;display:flex;justify-content:space-between;margin-bottom:20px">
-          <div style="position:absolute;top:14px;left:0;right:0;height:3px;background:#e5e7eb;z-index:0"></div>
-          <div style="position:absolute;top:14px;left:0;height:3px;background:#e85d26;z-index:1;width:{{ $subFillPct }}%;transition:width .4s"></div>
+          <div style="position:absolute;top:14px;inset-inline:0;height:3px;background:#e5e7eb;z-index:0"></div>
+          <div style="position:absolute;top:14px;inset-inline-start:0;height:3px;background:#e85d26;z-index:1;width:{{ $subFillPct }}%;transition:width .4s"></div>
           @foreach($subSteps as $sKey => $sLabel)
             @php
               $si = array_search($sKey, array_keys($subSteps));
@@ -283,43 +371,43 @@
       @endif
 
       {{-- Sub-order items --}}
-      <div style="padding:0 18px 16px;background:#fff">
-        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin-bottom:10px">{{ $isAr ? 'المنتجات' : 'Items' }}</div>
+      <div class="odx-products">
+        <div class="odx-eyebrow" style="margin:10px 0 0">{{ $isAr ? 'منتجات الشحنة' : 'Products in this shipment' }}</div>
         @foreach($sub->items as $item)
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f3f4f6">
-            <div style="flex:1">
-              <a href="{{ route('product', $item['product_id']) }}" style="font-weight:600;font-size:13px;color:#111827;text-decoration:none;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px">{{ $item['name'] }}</a>
-              @if(!empty($item['model_number']))<div style="font-size:11px;color:#6b7280;margin-top:2px">{{ $isAr ? 'رقم الموديل' : 'Model number' }}: <strong>{{ $item['model_number'] }}</strong></div>@endif
-              @if(!empty($item['attributes']))
-                <div style="font-size:11px;color:#6b7280;margin-top:2px">
-                  @foreach($item['attributes'] as $k => $v){{ $k }}: {{ $v }} @endforeach
-                </div>
-              @endif
+          <article class="odx-product">
+            @if(!empty($item['product_info']['image']))
+              <img class="odx-product-thumb" src="{{ $item['product_info']['image'] }}" alt="{{ $item['name'] ?? ($isAr ? 'صورة المنتج' : 'Product image') }}" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false">
+              <div class="odx-product-thumb" hidden aria-hidden="true">▧</div>
+            @else
+              <div class="odx-product-thumb" aria-hidden="true">▧</div>
+            @endif
+            <div class="odx-product-main">
+              <a href="{{ route('product', $item['product_id']) }}" class="odx-product-name">{{ $item['name'] ?? ($isAr ? 'منتج' : 'Product') }}</a>
+              @if(!empty($item['product_info']['description']))<p class="odx-product-description">{{ strip_tags($item['product_info']['description']) }}</p>@endif
+              <div class="odx-product-meta">
+                @if(!empty($item['product_info']['sku']))<span class="odx-product-tag">SKU: {{ $item['product_info']['sku'] }}</span>@endif
+                @if(!empty($item['model_number']))<span class="odx-product-tag">{{ $isAr ? 'موديل' : 'Model' }}: {{ $item['model_number'] }}</span>@endif
+                @if(!empty($item['attributes']) && is_array($item['attributes']))
+                  @foreach($item['attributes'] as $k => $v)<span class="odx-product-tag">{{ $k }}: {{ $v }}</span>@endforeach
+                @endif
+              </div>
             </div>
-            <div style="font-size:12px;color:#6b7280;white-space:nowrap">× {{ $item['quantity'] }}</div>
-            <div style="font-size:13px;font-weight:700;white-space:nowrap;color:#111827">{{ number_format($item['subtotal'], 2) }} EGP</div>
-          </div>
+            <div class="odx-product-total">{{ number_format((float) ($item['subtotal'] ?? 0), 2) }} EGP<small>{{ $isAr ? 'الكمية' : 'Qty' }} {{ $item['quantity'] ?? 1 }}</small></div>
+          </article>
         @endforeach
-        <div style="display:flex;justify-content:space-between;padding-top:12px;font-size:13px">
-          <span style="color:#6b7280">{{ $isAr ? 'الإجمالي الفرعي' : 'Sub-total' }}</span>
-          <strong>{{ number_format($sub->subtotal, 2) }} EGP</strong>
-        </div>
+      </div>
+      <div class="odx-totals">
+        <div class="odx-total-row"><span>{{ $isAr ? 'الإجمالي الفرعي' : 'Subtotal' }}</span><strong>{{ number_format($sub->subtotal, 2) }} EGP</strong></div>
         @if($sub->discount_total > 0)
-          <div style="display:flex;justify-content:space-between;font-size:13px;margin-top:4px">
-            <span style="color:#22c55e">{{ $isAr ? 'الخصم' : 'Discount' }}</span>
-            <strong style="color:#22c55e">−{{ number_format($sub->discount_total, 2) }} EGP</strong>
-          </div>
+          <div class="odx-total-row"><span>{{ $isAr ? 'الخصم' : 'Discount' }}</span><strong style="color:#16a34a">−{{ number_format($sub->discount_total, 2) }} EGP</strong></div>
         @endif
-        <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:800;margin-top:8px;padding-top:8px;border-top:2px solid #e5e7eb">
-          <span>{{ $isAr ? 'إجمالي المتجر' : 'Vendor Total' }}</span>
-          <span style="color:#e85d26">{{ number_format($sub->total, 2) }} EGP</span>
-        </div>
+        <div class="odx-total-row is-final"><span>{{ $isAr ? 'إجمالي الشحنة' : 'Shipment total' }}</span><strong>{{ number_format($sub->total, 2) }} EGP</strong></div>
       </div>
 
       {{-- Messages & reply for this sub-order --}}
       <div style="padding:16px 18px;background:#fafafa;border-top:1px solid #e5e7eb">
         <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin-bottom:12px">
-          {{ $isAr ? 'رسايل مع' : 'Messages with' }} {{ $sub->vendor_shop_name ?: ($isAr ? 'البائع' : 'Vendor') }}
+          {{ $isAr ? 'رسايل مع' : 'Messages with' }} {{ $storeName }}
         </div>
 
         @if(isset($sub->messages) && count($sub->messages) > 0)
@@ -346,7 +434,7 @@
         <form method="POST" action="{{ route('account.order.messages.store', $order->id) }}">
           @csrf
           <input type="hidden" name="sub_order_id" value="{{ $sub->id }}">
-          <textarea name="message" rows="3" placeholder="{{ $isAr ? 'ابعت رسالة لـ ' : 'Message ' }}{{ $sub->vendor_shop_name ?: ($isAr ? 'البائع' : 'Vendor') }}..." style="width:100%;padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;resize:vertical;box-sizing:border-box"></textarea>
+          <textarea name="message" rows="3" placeholder="{{ $isAr ? 'ابعت رسالة لـ ' : 'Message ' }}{{ $storeName }}..." style="width:100%;padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;resize:vertical;box-sizing:border-box"></textarea>
           <div style="margin-top:8px">
             <button type="submit" class="btn btn-dark" style="font-size:12px;padding:8px 16px">{{ $isAr ? 'ابعت الرسالة' : 'Send Message' }}</button>
           </div>
@@ -360,38 +448,68 @@
         </div>
       @endif
 
-    </div>{{-- end sub-order card --}}
+    </section>{{-- end sub-order card --}}
   @endforeach
 
 @else
   {{-- LEGACY: no sub-orders, show all items as before --}}
-  <div class="order-detail-card" style="margin-top:16px">
-    <h3 style="font-size:15px;font-weight:700;margin-bottom:16px">{{ $isAr ? 'المنتجات' : 'Items' }}</h3>
+  <section class="odx-card">
+    <div class="odx-card-heading"><h2>{{ $isAr ? 'منتجات الطلب' : 'Order items' }}</h2></div>
+    <div class="odx-products">
     @foreach($lineItems as $item)
-    <div class="order-item-row">
-      <div class="order-item-info">
-        <a href="{{ route('product', $item['product_id']) }}" class="order-item-name">{{ $item['name'] }}</a>
-        @if(!empty($item['model_number']))<span class="order-item-attr">{{ $isAr ? 'رقم الموديل' : 'Model number' }}: {{ $item['model_number'] }}</span>@endif
-        @if(!empty($item['attributes']))
-          <span class="order-item-attr">@foreach($item['attributes'] as $k => $v){{ $k }}: {{ $v }} @endforeach</span>
+      <article class="odx-product">
+        @if(!empty($item['product_info']['image']))
+          <img class="odx-product-thumb" src="{{ $item['product_info']['image'] }}" alt="{{ $item['name'] ?? ($isAr ? 'صورة المنتج' : 'Product image') }}" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false">
+          <div class="odx-product-thumb" hidden aria-hidden="true">▧</div>
+        @else
+          <div class="odx-product-thumb" aria-hidden="true">▧</div>
         @endif
-      </div>
-      <span class="order-item-qty">× {{ $item['quantity'] }}</span>
-      <span class="order-item-price">{{ number_format($item['subtotal'], 2) }} EGP</span>
-    </div>
+        <div class="odx-product-main">
+          <a href="{{ route('product', $item['product_id']) }}" class="odx-product-name">{{ $item['name'] ?? ($isAr ? 'منتج' : 'Product') }}</a>
+          @if(!empty($item['product_info']['store']['id']))<div class="odx-store-sub">{{ $isAr ? 'من متجر' : 'Sold by' }} <a class="odx-store-link" href="{{ route('vendor.store', $item['product_info']['store']['id']) }}">{{ $item['product_info']['store']['name'] }}</a></div>@endif
+          @if(!empty($item['product_info']['description']))<p class="odx-product-description">{{ strip_tags($item['product_info']['description']) }}</p>@endif
+          <div class="odx-product-meta">
+            @if(!empty($item['product_info']['sku']))<span class="odx-product-tag">SKU: {{ $item['product_info']['sku'] }}</span>@endif
+            @if(!empty($item['model_number']))<span class="odx-product-tag">{{ $isAr ? 'موديل' : 'Model' }}: {{ $item['model_number'] }}</span>@endif
+            @if(!empty($item['attributes']) && is_array($item['attributes']))
+              @foreach($item['attributes'] as $k => $v)<span class="odx-product-tag">{{ $k }}: {{ $v }}</span>@endforeach
+            @endif
+          </div>
+        </div>
+        <div class="odx-product-total">{{ number_format((float) ($item['subtotal'] ?? 0), 2) }} EGP<small>{{ $isAr ? 'الكمية' : 'Qty' }} {{ $item['quantity'] ?? 1 }}</small></div>
+      </article>
     @endforeach
-    <div class="ck-totals" style="margin-top:16px">
-      <div class="summary-row"><span>{{ $isAr ? 'الإجمالي الفرعي' : 'Subtotal' }}</span><span>{{ number_format($order->original_total, 2) }} EGP</span></div>
-      @if($order->discount_total > 0)
-        <div class="summary-row discount-row"><span>{{ $isAr ? 'الخصم' : 'Discount' }}</span><span>−{{ number_format($order->discount_total, 2) }} EGP</span></div>
-      @endif
-      <div class="summary-divider"></div>
-      <div class="summary-row total-row"><span>{{ $isAr ? 'الإجمالي' : 'Total' }}</span><span>{{ number_format($order->final_total, 2) }} EGP</span></div>
     </div>
+    <div class="odx-totals">
+      <div class="odx-total-row"><span>{{ $isAr ? 'الإجمالي الفرعي' : 'Subtotal' }}</span><strong>{{ number_format($order->original_total, 2) }} EGP</strong></div>
+      @if($order->discount_total > 0)
+        <div class="odx-total-row"><span>{{ $isAr ? 'الخصم' : 'Discount' }}</span><strong style="color:#16a34a">−{{ number_format($order->discount_total, 2) }} EGP</strong></div>
+      @endif
+      <div class="odx-total-row is-final"><span>{{ $isAr ? 'الإجمالي' : 'Total' }}</span><strong>{{ number_format($order->final_total, 2) }} EGP</strong></div>
+    </div>
+  </section>
+@endif
+
+{{-- ── SHIPPING ADDRESS ─────────────────────────────────────────── --}}
+@if(!empty($billing))
+<section class="odx-card">
+  <div class="odx-card-heading"><h2>{{ $isAr ? 'عنوان الشحن' : 'Shipping address' }}</h2></div>
+  <div class="odx-address" style="padding:16px 18px">
+    <p>
+      <strong>{{ $billing['first_name'] ?? '' }} {{ $billing['last_name'] ?? '' }}</strong><br>
+      {{ $billing['address_1'] ?? '' }}<br>
+      {{ $billing['city'] ?? '' }}@if(!empty($billing['state'])), {{ $billing['state'] }}@endif<br>
+      {{ $billing['phone'] ?? '' }}
+    </p>
+    @if(!empty($billing['latitude']) && !empty($billing['longitude']))
+      <iframe width="100%" height="220" style="border:0;border-radius:12px;margin-top:10px" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q={{ $billing['latitude'] }},{{ $billing['longitude'] }}&z=15&output=embed"></iframe>
+    @endif
   </div>
+</section>
 @endif
 
 <div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap;align-items:center">
   <a href="{{ route('account.orders') }}" class="btn btn-outline">{{ $isAr ? 'الرجوع للطلبات ←' : '← Back to Orders' }}</a>
+</div>
 </div>
 @endsection

@@ -13,7 +13,7 @@ class VendorRefundController extends Controller
 {
     private function vendorId(): int
     {
-        return (int) auth('vendor_web')->id();
+        return (int) app(\App\Services\VendorWorkspace::class)->vendor()?->id;
     }
 
     public function index(Request $request)
@@ -42,7 +42,7 @@ class VendorRefundController extends Controller
 
     public function show(int $id)
     {
-        $vendor = auth('vendor_web')->user();
+        $vendor = app(\App\Services\VendorWorkspace::class)->vendor();
         $refundResource = RefundRequest::find($id);
         if (! $refundResource) abort(404);
 

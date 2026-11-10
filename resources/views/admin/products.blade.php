@@ -107,6 +107,12 @@
           <td>
             <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
               <a href="{{ route('admin.products.show', $product->id) }}" class="btn btn-secondary btn-sm">View</a>
+              @if($product->vendor_id)
+                <form method="POST" action="{{ route('admin.products.edit-as-vendor', $product->id) }}">
+                  @csrf
+                  <button type="submit" class="btn btn-primary btn-sm">Edit as Vendor</button>
+                </form>
+              @endif
               @if($product->acceptance_status !== 'approved')
                 <form method="POST" action="{{ route('admin.products.approve', $product->id) }}">
                   @csrf @method('PATCH')

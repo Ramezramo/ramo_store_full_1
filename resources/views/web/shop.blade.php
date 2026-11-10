@@ -115,15 +115,26 @@
 @media(max-width:600px){
   .shop-results-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
   .shop-product-card .product-card-body{padding:9px}
-  .shop-product-card .product-card-name{font-size:.8125rem}
+  .shop-product-card .product-card-name{font-size:.82rem}
+  .shop-product-card .pc-size{min-inline-size:40.25px;min-block-size:40.25px;padding:4.6px 8px;font-size:.69rem}
+  .shop-product-card .price-main{font-size:1rem}
+  .shop-product-card .price-old,.shop-product-card .pc-stock-label{font-size:.69rem}
+  .shop-product-card :is(.card-add-btn,.card-details-btn){
+    min-block-size:40.25px;padding:5px 4px;font-size:.575rem;
+  }
 }
 @media(max-width:480px){
   .shop-toolbar .search-bar{display:none}
   .shop-toolbar{flex-wrap:wrap;gap:6px;margin-bottom:12px}
   .shop-results-grid.shop-mobile-layout-horizontal{grid-template-columns:minmax(0,1fr)}
-  .shop-mobile-layout-horizontal .shop-product-card{grid-template-columns:minmax(0,36fr) minmax(0,64fr)}
+  .shop-mobile-layout-horizontal .shop-product-card{grid-template-columns:minmax(0,43.2fr) minmax(0,56.8fr)}
   .shop-mobile-layout-horizontal .shop-product-card .pc-media{aspect-ratio:auto;min-block-size:120px}
-  .shop-mobile-layout-horizontal .shop-product-card .product-card-body{padding:10px}
+  .shop-mobile-layout-horizontal .shop-product-card .product-card-body{padding:8px 10px;gap:4px}
+  .shop-mobile-layout-horizontal .shop-product-card :is(.pc-swatches,.pc-sizes){padding-block:1px}
+  .shop-mobile-layout-horizontal .shop-product-card .pc-swatch{block-size:42px}
+  .shop-mobile-layout-horizontal .shop-product-card .pc-size{min-block-size:38px}
+  .shop-mobile-layout-horizontal .shop-product-card .pc-actions{padding-block-start:0}
+  .shop-mobile-layout-horizontal .shop-product-card .pc-actions > *{flex:1 1 0;min-inline-size:0}
 }
 
 /* ══════════════════════════════════════════════
@@ -341,7 +352,21 @@
 .shop-filter-panel-actions{display:flex;align-items:center;gap:18px;flex:0 0 auto;padding:14px 24px;border-top:1px solid #eee;background:#fff}
 .shop-filter-apply{flex:0 0 auto;min-height:46px;padding:0 24px;border:0;border-radius:10px;background:#171717;color:#fff;font:inherit;font-size:13px;font-weight:800;cursor:pointer}
 .shop-filter-clear{margin-left:auto;color:#555;font-size:13px;font-weight:700;text-decoration:underline}
-.shop-category-chips{display:flex;align-items:center;flex-wrap:wrap;gap:9px;overflow:visible;margin:0 0 20px;padding:3px 1px 8px}
+.shop-category-chips{
+  display:flex;align-items:center;flex-wrap:nowrap;gap:9px;min-inline-size:0;
+  overflow-x:auto;overflow-y:hidden;overscroll-behavior-inline:contain;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;
+  margin:0 0 20px;padding:3px 1px 8px;
+}
+.shop-category-chips::-webkit-scrollbar{display:none}
+.shop-category-chips--wrap{flex-wrap:wrap;overflow:visible}
+.shop-page[data-filter-price="0"] #widget-price,
+.shop-page[data-filter-categories="0"] #widget-categories,
+.shop-page[data-filter-brands="0"] #widget-brands,
+.shop-page[data-filter-sort="0"] #widget-sort{display:none}
+.shop-page[data-filter-price="0"] #widget-price + .widget-divider,
+.shop-page[data-filter-categories="0"] #widget-categories + .widget-divider,
+.shop-page[data-filter-brands="0"] #widget-brands + .widget-divider{display:none}
 .shop-category-chip{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-height:38px;padding:0 16px;border:1px solid #dedede;border-radius:999px;background:#fff;color:#333;font-size:12px;font-weight:600;white-space:nowrap;transition:border-color .15s,background .15s}
 .shop-category-chip:hover{border-color:#222;background:#fafafa}
 .shop-category-chip.active{border-color:#222;background:#222;color:#fff}
@@ -460,7 +485,17 @@ body.shop-filter-open{overflow:hidden}
 @endpush
 
 @section('content')
-<div class="page shop-page" @if($shopRtl) lang="ar" dir="rtl" @endif>
+@php
+  $showFilterPanel = $shopDisplay['filters_enabled'] && (
+    $shopDisplay['filter_price'] || $shopDisplay['filter_categories']
+    || ($shopDisplay['filter_brands'] && $allBrands->isNotEmpty()) || $shopDisplay['filter_sort']
+  );
+@endphp
+<div class="page shop-page" @if($shopRtl) lang="ar" dir="rtl" @endif
+  data-filter-price="{{ (int) $shopDisplay['filter_price'] }}"
+  data-filter-categories="{{ (int) $shopDisplay['filter_categories'] }}"
+  data-filter-brands="{{ (int) $shopDisplay['filter_brands'] }}"
+  data-filter-sort="{{ (int) $shopDisplay['filter_sort'] }}">
 
   {{-- Breadcrumb --}}
   <div class="breadcrumb">
@@ -497,12 +532,15 @@ body.shop-filter-open{overflow:hidden}
     </form>
   </div>
 
+  @if($showFilterPanel)
   <button type="button" class="shop-filter-toggle" id="shop-filter-btn" onclick="toggleShopFilter()" aria-expanded="false" aria-controls="shop-filter-alert">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
     {{ $shopRtl ? $shopCopy['filters'] : 'Filters & Categories' }}
   </button>
+  @endif
 
-  <nav class="shop-category-chips" aria-label="{{ $shopRtl ? 'تصفّح التصنيفات' : 'Browse product categories' }}">
+  @if($shopDisplay['category_layout'] !== 'hidden')
+  <nav class="shop-category-chips {{ $shopDisplay['category_layout'] === 'wrap' ? 'shop-category-chips--wrap' : '' }}" aria-label="{{ $shopRtl ? 'تصفّح التصنيفات' : 'Browse product categories' }}">
     @php $allShopCategories = $parentCats->merge($childCats->flatten())->keyBy('id'); @endphp
     <a class="shop-category-chip {{ empty($selectedCategoryIds) ? 'active' : '' }}" href="{{ route('shop', array_filter(request()->except(['category','categories','page']))) }}">{{ $shopRtl ? $shopCopy['allProducts'] : 'All products' }}</a>
     @foreach($selectedCategoryIds ?? [] as $selectedChipId)
@@ -511,8 +549,11 @@ body.shop-filter-open{overflow:hidden}
         <a class="shop-category-chip active" href="{{ route('shop', array_merge(request()->except(['category','categories','page']), $remainingSelected ? ['categories' => $remainingSelected] : [])) }}">{{ \App\Support\StorefrontLabels::category($selectedChipCategory->name, $shopRtl) }} <span aria-hidden="true">×</span></a>
       @endif
     @endforeach
-    @php $remainingChipSlots = max(0, 5 - count($selectedCategoryIds ?? [])); @endphp
-    @foreach($parentCats->take(10) as $chipCategory)
+    @php $remainingChipSlots = max(0, $shopDisplay['category_limit'] - count($selectedCategoryIds ?? [])); @endphp
+    @foreach($parentCats as $chipCategory)
+      @if(!empty($shopDisplay['category_ids']) && !in_array((int) $chipCategory->id, $shopDisplay['category_ids'], true))
+        @continue
+      @endif
       @if(!in_array((int)$chipCategory->id, $selectedCategoryIds ?? [], true))
         @if($remainingChipSlots > 0)
           @php $nextSelected = array_values(array_unique(array_merge($selectedCategoryIds ?? [], [(int)$chipCategory->id]))); $remainingChipSlots--; @endphp
@@ -521,11 +562,13 @@ body.shop-filter-open{overflow:hidden}
       @endif
     @endforeach
   </nav>
+  @endif
 
   <div class="shop-layout">
 
     {{-- ══ SIDEBAR / MOBILE FILTER ALERT ═══════════════════════ --}}
-    <div class="shop-filter-alert" id="shop-filter-alert" aria-hidden="false">
+    @if($showFilterPanel)
+    <div class="shop-filter-alert" id="shop-filter-alert" aria-hidden="true">
       <button type="button" class="shop-filter-backdrop" onclick="closeShopFilter()" aria-label="{{ $shopRtl ? 'اقفل نافذة الفلاتر' : 'Close filters' }}"></button>
       <section class="shop-filter-panel" role="dialog" aria-modal="true" aria-labelledby="shop-filter-title" tabindex="-1">
         <header class="shop-filter-panel-header">
@@ -774,6 +817,7 @@ body.shop-filter-open{overflow:hidden}
         </footer>
       </section>
     </div>
+    @endif
 
     {{-- ══ MAIN ════════════════════════════════════════════════ --}}
     <div>

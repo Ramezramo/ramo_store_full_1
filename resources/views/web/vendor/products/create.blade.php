@@ -45,6 +45,9 @@
 .rp-tag button{background:none;border:none;cursor:pointer;color:var(--mid);font-size:14px;line-height:1;padding:0}
 .rp-tag button:hover{color:var(--red)}
 textarea.vs-input{resize:vertical;min-height:100px}
+.product-editor-form{padding-bottom:92px}
+.product-save-dock{position:fixed;inset-inline-start:254px;inset-inline-end:24px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:60;display:flex;justify-content:flex-end;gap:12px;padding:12px 14px;background:rgba(255,255,255,.96);border:1px solid var(--light);border-radius:12px;box-shadow:0 8px 28px rgba(17,24,39,.16);backdrop-filter:blur(10px)}
+@media(max-width:768px){.product-save-dock{inset-inline-start:12px;inset-inline-end:12px;bottom:calc(8px + env(safe-area-inset-bottom));display:grid;grid-template-columns:1fr 1fr;padding:10px}.product-save-dock .vs-btn{width:100%;padding-inline:10px}.product-save-dock #product-submit-btn{grid-column:1/-1}}
 
 /* ── Variation builder (Color+Size) ─────────────────── */
 .var-toggle-row{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#f9fafb;border:1px solid var(--light);border-radius:8px;margin-bottom:18px;cursor:pointer}
@@ -149,6 +152,15 @@ textarea.vs-input{resize:vertical;min-height:100px}
   <a href="{{ route('vendor.products') }}" style="color:var(--mid);font-size:13px">← Back to Products</a>
   <span style="color:var(--light)">|</span>
   <div style="font-size:22px;font-weight:800">{{ $isEdit ? 'Edit: '.$product->name : 'Add New Product' }}</div>
+  @if($isEdit)
+  <a href="{{ route('product', $product->id) }}" target="_blank" rel="noopener noreferrer"
+     onclick="event.preventDefault(); window.open(this.href, '_blank', 'noopener,noreferrer');"
+     aria-label="View {{ $product->name }} on the main website"
+     style="margin-inline-start:auto;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 14px;border:1px solid var(--light);border-radius:8px;background:#fff;color:var(--dark);font-size:13px;font-weight:700;white-space:nowrap">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h6"/></svg>
+    View on website
+  </a>
+  @endif
   @if(!empty($isDebug) && !$isEdit)
   <button type="button" onclick="fillFakeData()"
     style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#f3f4f6;border:1.5px dashed #9ca3af;border-radius:8px;font-size:12px;font-weight:700;color:#6b7280;cursor:pointer;transition:.15s"
@@ -232,7 +244,7 @@ textarea.vs-input{resize:vertical;min-height:100px}
 @endif
 @php $sectionErrors = $sectionErrors ?? []; @endphp
 
-<form method="POST" action="{{ $formAction }}" enctype="multipart/form-data" id="product-form">
+<form method="POST" action="{{ $formAction }}" enctype="multipart/form-data" id="product-form" class="product-editor-form">
   @csrf
 
 {{-- ── BASIC INFO ──────────────────────────────────────────────────── --}}
@@ -713,9 +725,14 @@ textarea.vs-input{resize:vertical;min-height:100px}
 </div>
 
 {{-- ── SAVE ─────────────────────────────────────────────────────────── --}}
-<div style="display:flex;justify-content:flex-end;gap:12px;margin-bottom:40px">
+<div class="product-save-dock">
   <a href="{{ route('vendor.products') }}" class="vs-btn vs-btn-ghost">Cancel</a>
-  <button type="submit" id="product-submit-btn" class="vs-btn vs-btn-primary">
+  @if($isEdit)
+  <button type="submit" name="save_action" value="save_and_view" formtarget="_blank" class="vs-btn vs-btn-ghost">
+    Save &amp; View Website
+  </button>
+  @endif
+  <button type="submit" name="save_action" value="save" id="product-submit-btn" class="vs-btn vs-btn-primary">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
     {{ $isEdit ? 'Save Changes' : 'Add Product' }}
   </button>
@@ -779,8 +796,14 @@ textarea.vs-input{resize:vertical;min-height:100px}
                   'stock_status_map' => [],
                   'status_map'       => [],
                   'sale_price'       => '',
-                  'images'           => $dv->images ?? [],
+                  'images'           => [],
               ];
+          }
+
+          foreach ((array) ($dv->images ?? []) as $imagePath) {
+              if ($imagePath && !in_array($imagePath, $editColorRows[$rowKey]['images'], true)) {
+                  $editColorRows[$rowKey]['images'][] = $imagePath;
+              }
           }
 
           $editColorRows[$rowKey]['sizes'][]                 = $size;
@@ -805,7 +828,13 @@ const EDIT_HAS_VARIATIONS = {{ $hasVariations ? 'true' : 'false' }};
 const EDIT_PRODUCT_DATA   = JSON.parse(document.getElementById('vendor-edit-product-data').textContent);
 const EDIT_COLOR_ROWS     = EDIT_PRODUCT_DATA.colors;
 const EDIT_PRODUCT_ID     = {{ $editProductId }};
+const PRODUCT_IMAGE_BASE  = @json(\App\Constants\AppConstants::imageBase());
 const EXISTING_TRANSLATIONS = EDIT_PRODUCT_DATA.translations;
+
+function variationImageUrl(path) {
+  const clean = String(path || '').replace(/\\/g, '/').replace(/^\/?storage\//, '').replace(/^\/+/, '');
+  return PRODUCT_IMAGE_BASE + clean;
+}
 
 // ─── Discount hint + live effective price recalc ──────────────────
 function updateDiscountHint(val) {
@@ -1356,6 +1385,7 @@ function addColorRow(colorData) {
   const sizes        = colorData.sizes || [];
   const priceMap        = colorData.price_map || {};
   const modelNumberMap  = colorData.model_number_map || {};
+  colorModelNumberMaps[idx] = modelNumberMap;
   const salePriceMap    = colorData.sale_price_map || {};
   const stockMap        = colorData.stock || {};
   const stockStatusMap  = colorData.stock_status_map || {};
@@ -1365,6 +1395,7 @@ function addColorRow(colorData) {
   const colorName       = colorData.name || '';
   const colorCode       = /^#[0-9a-f]{6}$/i.test(String(colorData.color_code || '')) ? String(colorData.color_code) : '#999999';
   const salePriceVal    = colorData.sale_price || '';
+  const existingImages  = Array.isArray(colorData.images) ? colorData.images : [];
 
   const row = document.createElement('div');
   row.className = 'color-row' + (isFirst ? ' is-main' : '');
@@ -1385,17 +1416,17 @@ function addColorRow(colorData) {
 
     <div class="vs-form-grid" style="margin-bottom:12px">
       <div class="vs-form-group">
-        <label class="vs-label" id="variation-name-label-${idx}">${variationType === 'color' ? 'Color name' : 'Attribute value'} <span style="color:var(--red)">*</span></label>
+        <label class="vs-label" id="variation-name-label-${idx}">${variationType === 'color' ? 'Color name (optional)' : 'Attribute value'} ${variationType === 'attribute' ? '<span style="color:var(--red)">*</span>' : ''}</label>
         <input type="text" name="colors[${idx}][name]" class="vs-input" placeholder="${variationType === 'color' ? 'e.g. Red, Navy Blue' : 'e.g. 6 GB RAM'}"
-               value="${escHtml(colorName)}" required
+               value="${escHtml(colorName)}" ${variationType === 'attribute' ? 'required' : ''}
                onblur="refreshSizePricingTable(${idx})">
-        <div class="color-code-hint" id="variation-name-hint-${idx}">${variationType === 'color' ? 'This value is shown as the color name.' : 'This is a normal attribute value, not a color.'}</div>
+        <div class="color-code-hint" id="variation-name-hint-${idx}">${variationType === 'color' ? 'Leave blank to use the color swatch without a name.' : 'This is a normal attribute value, not a color.'}</div>
       </div>
       <div class="vs-form-group" id="color-code-group-${idx}" style="${variationType === 'color' ? '' : 'display:none'}">
         <label class="vs-label">Color code <span style="color:var(--red)">*</span></label>
         <div class="color-code-wrap">
-          <input type="color" name="colors[${idx}][color_code]" id="color-code-${idx}" class="color-code-input" value="${colorCode}" ${variationType === 'color' ? 'required' : 'disabled'} oninput="updateColorCodeLabel(${idx}, this.value)">
-          <span class="color-code-hint" id="color-code-value-${idx}">${colorCode.toUpperCase()} — choose the actual color</span>
+          <input type="color" name="colors[${idx}][color_code]" id="color-code-${idx}" class="color-code-input" value="${colorCode}" ${variationType === 'color' ? 'required' : 'disabled'} aria-label="Pick the color swatch">
+          <span class="color-code-hint">Pick the color swatch shown to customers.</span>
         </div>
       </div>
       <div class="vs-form-group" id="attribute-name-group-${idx}" style="${variationType === 'attribute' ? '' : 'display:none'}">
@@ -1427,6 +1458,14 @@ function addColorRow(colorData) {
       <input type="file" id="color-img-${idx}" name="variation_images[${idx}][]"
              accept="image/jpeg,image/png,image/webp" multiple style="display:none"
              onchange="previewColorImages(this, ${idx})">
+      <div class="img-preview-row" id="existing-color-img-previews-${idx}" style="margin-top:8px">
+        ${existingImages.map(path => `
+          <div class="existing-variation-image" style="position:relative;width:96px;height:96px;border:1px solid #d1d5db;border-radius:10px;overflow:hidden;background:#f8fafc">
+            <img src="${escHtml(variationImageUrl(path))}" alt="Existing variation image" style="width:100%;height:100%;object-fit:cover">
+            <input type="hidden" name="colors[${idx}][existing_images][]" value="${escHtml(path)}">
+            <button type="button" aria-label="Remove existing variation image" onclick="this.closest('.existing-variation-image').remove()" style="position:absolute;top:4px;right:4px;width:24px;height:24px;border:0;border-radius:50%;background:#111;color:white;font-weight:700;cursor:pointer">×</button>
+          </div>`).join('')}
+      </div>
       <div class="img-preview-row" id="color-img-previews-${idx}" style="margin-top:8px"></div>
     </div>
 
@@ -1451,11 +1490,6 @@ function addColorRow(colorData) {
   sizes.forEach(s => addSize(idx, s, priceMap[s] || '', salePriceMap[s] || '', stockMap[s] || 0, stockStatusMap[s] || 'instock', statusMap[s] || 'publish'));
 }
 
-function updateColorCodeLabel(idx, value) {
-  const label = document.getElementById(`color-code-value-${idx}`);
-  if (label) label.textContent = `${String(value || '').toUpperCase()} — choose the actual color`;
-}
-
 function toggleVariationRowType(idx, type) {
   const row = document.getElementById(`color-row-${idx}`);
   if (!row) return;
@@ -1468,9 +1502,10 @@ function toggleVariationRowType(idx, type) {
   const attrGroup = document.getElementById(`attribute-name-group-${idx}`);
   const attrInput = document.getElementById(`attribute-name-${idx}`);
 
-  if (nameLabel) nameLabel.innerHTML = `${isColor ? 'Color name' : 'Attribute value'} <span style="color:var(--red)">*</span>`;
+  if (nameLabel) nameLabel.innerHTML = isColor ? 'Color name (optional)' : 'Attribute value <span style="color:var(--red)">*</span>';
   if (nameInput) nameInput.placeholder = isColor ? 'e.g. Red, Navy Blue' : 'e.g. 6 GB RAM';
-  if (nameHint) nameHint.textContent = isColor ? 'This value is shown as the color name.' : 'This is a normal attribute value, not a color.';
+  if (nameInput) nameInput.required = !isColor;
+  if (nameHint) nameHint.textContent = isColor ? 'Leave blank to use the color swatch without a name.' : 'This is a normal attribute value, not a color.';
   if (colorGroup) colorGroup.style.display = isColor ? '' : 'none';
   if (colorInput) {
     colorInput.disabled = !isColor;
@@ -1496,6 +1531,7 @@ function removeColorRow(idx) {
 
 // ─── Size management per color ────────────────────────────────────
 const colorSizes = {}; // colorIdx -> [{ size, price, salePrice, stock }]
+const colorModelNumberMaps = {}; // colorIdx -> { size: model number }
 
 function handleSizeInput(e, idx) {
   if (e.key === 'Enter' || e.key === ',') {
@@ -1504,6 +1540,17 @@ function handleSizeInput(e, idx) {
     const val   = input.value.trim().replace(/,/g, '');
     if (val) { addSize(idx, val); input.value = ''; }
   }
+}
+
+function commitPendingSizes() {
+  document.querySelectorAll('[data-color-idx]').forEach(row => {
+    const idx = Number(row.dataset.colorIdx);
+    const input = document.getElementById(`size-input-${idx}`);
+    if (!input || !input.value.trim()) return;
+    input.value.split(',').map(size => size.trim()).filter(Boolean)
+      .forEach(size => addSize(idx, size));
+    input.value = '';
+  });
 }
 
 function addSize(idx, size, price, salePrice, stock, stockStatus, status) {
@@ -1538,6 +1585,7 @@ function removeSize(idx, size) {
 
 function refreshSizePricingTable(idx) {
   const sizes     = colorSizes[idx] || [];
+  const modelNumberMap = colorModelNumberMaps[idx] || {};
   const container = document.getElementById(`size-pricing-${idx}`);
   if (!container) return;
 
@@ -1751,9 +1799,9 @@ function escJs(s) {
 // ─── Init (page load) ──────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
   if (EDIT_HAS_VARIATIONS) {
+    EDIT_COLOR_ROWS.forEach(c => addColorRow(c));
     document.getElementById('has-variations-toggle').checked = true;
     toggleVariations(true);
-    EDIT_COLOR_ROWS.forEach(c => addColorRow(c));
   } else {
     toggleVariations(false);
   }
@@ -1767,16 +1815,18 @@ document.addEventListener('DOMContentLoaded', function () {
   const summary = document.getElementById('error-summary');
   if (summary) {
     setTimeout(() => summary.scrollIntoView({ behavior: 'smooth', block: 'center' }), 120);
-    // Mark color rows missing name or sizes
+    // Mark attribute rows missing a value or any variation row missing sizes.
     document.querySelectorAll('.color-row').forEach(row => {
+      const isAttribute = row.querySelector('[name$="[type]"]')?.value === 'attribute';
       const nm  = row.querySelector('[name$="[name]"]')?.value?.trim() || '';
       const sz  = row.querySelectorAll('.size-tag').length;
-      if (!nm || sz === 0) row.classList.add('has-error');
+      if ((isAttribute && !nm) || sz === 0) row.classList.add('has-error');
     });
   }
 
   // ── Client-side pre-validation on submit ─────────────────────────
   document.getElementById('product-form').addEventListener('submit', function (e) {
+    commitPendingSizes();
     const issues = [];
 
     // Clear previous has-error on color rows
@@ -1795,10 +1845,11 @@ document.addEventListener('DOMContentLoaded', function () {
       } else {
         colorRows.forEach((row, i) => {
           const n   = i + 1;
+          const isAttribute = row.querySelector('[name$="[type]"]')?.value === 'attribute';
           const nm  = row.querySelector('[name$="[name]"]')?.value?.trim() || '';
           const sz  = row.querySelectorAll('.size-tag').length;
-          if (!nm)   { issues.push(`Color #${n}: name is required.`);               row.classList.add('has-error'); }
-          if (sz===0){ issues.push(`Color #${n} "${nm||'?'}": add at least one size.`); row.classList.add('has-error'); }
+          if (isAttribute && !nm) { issues.push(`Attribute #${n}: value is required.`); row.classList.add('has-error'); }
+          if (sz===0){ issues.push(`Variation #${n}${nm ? ` "${nm}"` : ''}: add at least one size.`); row.classList.add('has-error'); }
         });
       }
     } else {

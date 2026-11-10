@@ -41,6 +41,10 @@
       @endif
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <form method="POST" action="{{ route('admin.vendors.workspace', $vendor->id) }}">
+        @csrf
+        <button type="submit" class="btn btn-primary btn-sm">Open Vendor Dashboard</button>
+      </form>
       <span class="badge {{ $sc }}" style="font-size:13px;padding:6px 14px">{{ ucfirst($vendor->status) }}</span>
       @if($vendor->status !== 'approved')
         <form method="POST" action="{{ route('admin.vendors.approve', $vendor->id) }}">

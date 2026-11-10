@@ -98,11 +98,13 @@
         <form method="POST" action="{{ route('admin.orders.payment-review', $order->id) }}" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           @csrf
           <input type="hidden" name="decision" value="confirm">
+          <input type="hidden" name="receipt_id" value="{{ $paymentReceipts->firstWhere('status', 'pending')?->id }}">
           <button class="btn btn-primary">Confirm payment</button>
         </form>
         <form method="POST" action="{{ route('admin.orders.payment-review', $order->id) }}" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px">
           @csrf
           <input type="hidden" name="decision" value="reject">
+          <input type="hidden" name="receipt_id" value="{{ $paymentReceipts->firstWhere('status', 'pending')?->id }}">
           <input name="rejection_reason" required placeholder="Reason for rejection" style="flex:1;min-width:220px;padding:9px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text)">
           <button class="btn btn-danger">Reject receipt</button>
         </form>

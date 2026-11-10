@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Constants\AppConstants;
 use App\Models\Order;
 use App\Models\Referral;
 use App\Models\User;
@@ -254,6 +255,66 @@ class AccountController extends Controller
                 $sub->items = $localizeItems($sub->items);
             });
         }
+
+        // Hydrate the order snapshots with current catalog/store presentation data in
+        // two batched queries. The order itself remains the source of truth for price,
+        // quantity, and selected options, even if catalog details later change.
+        $allOrderItems = collect($lineItems)->concat($subOrders->flatMap(fn ($sub) => $sub->items));
+        $productIds = $allOrderItems->pluck('product_id')->filter()->unique()->values();
+        $productDetails = $productIds->isEmpty()
+            ? collect()
+            : DB::table('products_data')
+                ->whereIn('id', $productIds)
+                ->get(['id', 'slug', 'sku', 'images', 'short_description', 'description', 'vendor_id'])
+                ->keyBy('id');
+
+        $vendorIds = $productDetails->pluck('vendor_id')
+            ->merge($subOrders->pluck('vendor_id'))
+            ->filter()->unique()->values();
+        $stores = $vendorIds->isEmpty()
+            ? collect()
+            : DB::table('vendor_users')
+                ->whereIn('id', $vendorIds)
+                ->get(['id', 'shop_name', 'shop_logo', 'shop_address', 'rating', 'rating_count'])
+                ->mapWithKeys(function ($store) {
+                    return [$store->id => [
+                        'id' => (int) $store->id,
+                        'name' => $store->shop_name,
+                        'logo' => AppConstants::imageUrl($store->shop_logo),
+                        'address' => $store->shop_address,
+                        'rating' => (float) ($store->rating ?? 0),
+                        'rating_count' => (int) ($store->rating_count ?? 0),
+                    ]];
+                });
+
+        $enrichItems = function (array $items, $fallbackVendorId = null) use ($productDetails, $stores): array {
+            return array_map(function (array $item) use ($productDetails, $stores, $fallbackVendorId) {
+                $product = $productDetails->get($item['product_id'] ?? null);
+                $vendorId = $product?->vendor_id ?: $fallbackVendorId;
+                $item['product_info'] = [
+                    'sku' => $product?->sku ?: ($item['sku'] ?? null),
+                    'image' => $product ? AppConstants::productThumbnailUrl($product->images) : null,
+                    'description' => $product?->short_description ?: null,
+                    'slug' => $product?->slug ?: null,
+                    'store' => $vendorId ? $stores->get((int) $vendorId) : null,
+                ];
+                return $item;
+            }, $items);
+        };
+
+        $lineItems = $enrichItems($lineItems);
+        $subOrders->each(function ($sub) use ($enrichItems, $stores) {
+            $sub->items = $enrichItems($sub->items, $sub->vendor_id);
+            $sub->store = $sub->vendor_id ? $stores->get((int) $sub->vendor_id) : null;
+            if (!$sub->store) {
+                foreach ($sub->items as $item) {
+                    if (!empty($item['product_info']['store'])) {
+                        $sub->store = $item['product_info']['store'];
+                        break;
+                    }
+                }
+            }
+        });
 
         // Legacy: if no sub-orders, pass empty collection — view will fall back to lineItems
         $messages = collect(); // kept for backward compat if any view still uses it

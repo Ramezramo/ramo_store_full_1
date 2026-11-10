@@ -5,11 +5,12 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Helpers\PaymentConfig;
 use App\Models\SubOrder;
+use App\Services\OrderPaymentExpiryService;
+use App\Services\OrderStatusService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use App\Services\OrderStatusService;
 
 class PaymentReviewController extends Controller
 {
@@ -23,7 +24,7 @@ class PaymentReviewController extends Controller
 
     public function reviewAsVendor(Request $request, int $id)
     {
-        $vendor = auth('vendor_web')->user();
+        $vendor = app(\App\Services\VendorWorkspace::class)->vendor();
         $subOrderResource = SubOrder::find($id);
         abort_if(!$subOrderResource, 404);
 
@@ -47,45 +48,59 @@ class PaymentReviewController extends Controller
         $data = $request->validate([
             'decision' => 'required|in:confirm,reject',
             'rejection_reason' => 'nullable|string|max:1000',
+            'receipt_id' => 'nullable|integer|min:1',
         ]);
 
         if ($data['decision'] === 'reject' && trim($data['rejection_reason'] ?? '') === '') {
             return back()->with('error', 'Please provide a reason when rejecting a receipt.');
         }
 
-        if (!PaymentConfig::isManualMethod($order->payment_method) || $order->payment_status !== 'pending_verification') {
-            return back()->with('error', 'This order is not waiting for manual payment verification.');
-        }
-
-        $receipt = DB::table('payment_receipts')
-            ->where('order_id', $order->id)
-            ->where('status', 'pending')
-            ->orderByDesc('id')
-            ->first();
-
-        if (!$receipt) {
-            return back()->with('error', 'There is no pending receipt to review.');
-        }
-
-        $now = now();
         $confirmed = $data['decision'] === 'confirm';
-        $newPaymentStatus = $confirmed ? 'confirmed' : 'rejected';
-        $note = $confirmed ? 'Payment receipt approved.' : 'Payment receipt rejected: ' . trim($data['rejection_reason']);
-        $timeline = json_decode($order->timeline ?? '[]', true) ?: [];
-        $timeline[] = [
-            'status' => $newPaymentStatus,
-            'note' => $note,
-            'by' => $reviewer,
-            'at' => $now->toDateTimeString(),
-        ];
+        $result = DB::transaction(function () use ($order, $reviewer, $reviewerId, $data, $confirmed) {
+            // Receipt uploads and the expiry job also lock the order before changing payment state.
+            $lockedOrder = DB::table('orders')->where('id', $order->id)->lockForUpdate()->first();
+            abort_if(!$lockedOrder, 404);
 
-        DB::transaction(function () use ($receipt, $order, $reviewerId, $data, $now, $confirmed, $newPaymentStatus, $timeline) {
+            if (
+                !PaymentConfig::isManualMethod($lockedOrder->payment_method)
+                || $lockedOrder->payment_status !== 'pending_verification'
+                || in_array($lockedOrder->status, ['cancelled', 'canceled', 'refunded'], true)
+            ) {
+                return ['error' => 'This order is not waiting for manual payment verification.'];
+            }
+
+            if ($lockedOrder->payment_receipt_path !== $order->payment_receipt_path) {
+                return ['error' => 'The customer uploaded another receipt. Open the latest receipt before reviewing it.'];
+            }
+
+            $receipt = DB::table('payment_receipts')
+                ->where('order_id', $lockedOrder->id)
+                ->where('status', 'pending')
+                ->orderByDesc('id')
+                ->first();
+            if (!$receipt) {
+                return ['error' => 'There is no pending receipt to review.'];
+            }
+            if (isset($data['receipt_id']) && (int) $data['receipt_id'] !== (int) $receipt->id) {
+                return ['error' => 'The customer uploaded another receipt. Open the latest receipt before reviewing it.'];
+            }
+
+            $now = now();
+            $newPaymentStatus = $confirmed ? 'confirmed' : 'rejected';
+            $reason = $confirmed ? null : trim($data['rejection_reason']);
+            $timeline = json_decode($lockedOrder->timeline ?? '[]', true) ?: [];
+            $timeline[] = [
+                'status' => $newPaymentStatus,
+                'note' => $confirmed ? 'Payment receipt approved.' : 'Payment receipt rejected: '.$reason,
+                'by' => $reviewer,
+                'at' => $now->toDateTimeString(),
+            ];
             // Only the receipt selected for review receives the final decision.
             // Older pending uploads are no longer awaiting review after this
             // order-level decision, so mark them as superseded instead of
             // leaving a misleading Pending status in the customer's history.
             DB::table('payment_receipts')
-                ->where('order_id', $order->id)
+                ->where('order_id', $lockedOrder->id)
                 ->where('status', 'pending')
                 ->where('id', '<>', $receipt->id)
                 ->update([
@@ -95,13 +110,13 @@ class PaymentReviewController extends Controller
 
             DB::table('payment_receipts')->where('id', $receipt->id)->update([
                 'status' => $newPaymentStatus,
-                'rejection_reason' => $confirmed ? null : trim($data['rejection_reason']),
+                'rejection_reason' => $reason,
                 'reviewed_by' => $reviewerId,
                 'reviewed_at' => $now,
                 'updated_at' => $now,
             ]);
 
-            DB::table('orders')->where('id', $order->id)->update([
+            DB::table('orders')->where('id', $lockedOrder->id)->update([
                 'payment_status' => $newPaymentStatus,
                 'set_paid' => $confirmed,
                 'needs_payment' => !$confirmed,
@@ -109,16 +124,30 @@ class PaymentReviewController extends Controller
                 'date_paid_gmt' => $confirmed ? $now->toDateTimeString() : '',
                 'payment_reviewed_at' => $now,
                 'payment_reviewed_by' => $reviewerId,
-                'payment_rejection_reason' => $confirmed ? null : trim($data['rejection_reason']),
+                'payment_rejection_reason' => $reason,
                 'timeline' => json_encode($timeline),
                 'date_modified' => $now,
                 'updated_at' => $now,
             ]);
 
-            app(OrderStatusService::class)->sync($order->id);
+            if (!$confirmed) {
+                $lockedOrder->payment_status = $newPaymentStatus;
+                $lockedOrder->timeline = json_encode($timeline);
+                if (app(OrderPaymentExpiryService::class)->expireLockedOrder($lockedOrder)) {
+                    return ['message' => 'Receipt rejected. The payment deadline has passed and the order was cancelled.'];
+                }
+            }
+
+            app(OrderStatusService::class)->sync($lockedOrder->id);
+
+            return ['message' => $confirmed ? 'Payment confirmed.' : 'Receipt rejected. The customer can upload a new receipt.'];
         });
 
+        if (isset($result['error'])) {
+            return back()->with('error', $result['error']);
+        }
+
         return redirect($redirect ?: route('admin.orders.detail', $order->id))
-            ->with('success', $confirmed ? 'Payment confirmed.' : 'Receipt rejected. The customer can upload a new receipt.');
+            ->with('success', $result['message']);
     }
 }

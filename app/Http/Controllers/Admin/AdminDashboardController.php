@@ -284,6 +284,11 @@ class AdminDashboardController extends Controller
             return back()->with('error', 'Invalid store status.');
         }
 
+        $paymentStatus = DB::table('orders')->where('id', $orderId)->value('payment_status');
+        if ($status !== 'cancelled' && $paymentStatus !== 'confirmed') {
+            return back()->with('error', 'This order cannot be processed until its payment is confirmed.');
+        }
+
         $subOrder = DB::table('order_sub_orders')
             ->where('id', $subOrderId)
             ->where('parent_order_id', $orderId)
@@ -374,6 +379,33 @@ class AdminDashboardController extends Controller
         $productCount = DB::table('products_data')->where('vendor_id', $id)->count();
 
         return view('admin.vendors.show', compact('vendor', 'products', 'productCount', 'subOrders'));
+    }
+
+    public function openVendorWorkspace(int $id, \Illuminate\Http\Request $request)
+    {
+        abort_unless(DB::table('vendor_users')->where('id', $id)->exists(), 404);
+
+        $request->session()->put(\App\Services\VendorWorkspace::SESSION_KEY, $id);
+
+        return redirect()->route('vendor.dashboard');
+    }
+
+    public function closeVendorWorkspace(\Illuminate\Http\Request $request)
+    {
+        $request->session()->forget(\App\Services\VendorWorkspace::SESSION_KEY);
+
+        return redirect()->route('admin.vendors');
+    }
+
+    public function editProductAsVendor(int $id, \Illuminate\Http\Request $request)
+    {
+        $product = DB::table('products_data')->where('id', $id)->first(['id', 'vendor_id']);
+        abort_if(! $product || ! $product->vendor_id, 404, 'This product does not belong to a vendor.');
+        abort_unless(DB::table('vendor_users')->where('id', $product->vendor_id)->exists(), 404);
+
+        $request->session()->put(\App\Services\VendorWorkspace::SESSION_KEY, (int) $product->vendor_id);
+
+        return redirect()->route('vendor.products.edit', $product->id);
     }
 
     public function approveVendor(int $id)

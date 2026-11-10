@@ -78,6 +78,10 @@
         <td>
           <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
             <a href="{{ route('admin.vendors.show', $v->id) }}" class="btn btn-ghost btn-sm">View</a>
+            <form method="POST" action="{{ route('admin.vendors.workspace', $v->id) }}">
+              @csrf
+              <button class="btn btn-primary btn-sm">Open Vendor Dashboard</button>
+            </form>
             @if($v->status !== 'approved')
               <form method="POST" action="{{ route('admin.vendors.approve', $v->id) }}">
                 @csrf @method('PATCH')

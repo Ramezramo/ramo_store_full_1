@@ -86,11 +86,13 @@
       <form method="POST" action="{{ route('vendor.orders.payment-review', $subOrder->id) }}" style="margin-top:14px">
         @csrf
         <input type="hidden" name="decision" value="confirm">
+        <input type="hidden" name="receipt_id" value="{{ $paymentReceipts->firstWhere('status', 'pending')?->id }}">
         <button class="vs-btn vs-btn-primary" style="font-size:12px">Confirm payment</button>
       </form>
       <form method="POST" action="{{ route('vendor.orders.payment-review', $subOrder->id) }}" style="margin-top:10px">
         @csrf
         <input type="hidden" name="decision" value="reject">
+        <input type="hidden" name="receipt_id" value="{{ $paymentReceipts->firstWhere('status', 'pending')?->id }}">
         <input name="rejection_reason" required placeholder="Reason for rejection" class="sf-note" style="margin:0;min-height:0">
         <button class="vs-btn" style="margin-top:8px;background:#fee2e2;color:#991b1b;font-size:12px">Reject receipt</button>
       </form>

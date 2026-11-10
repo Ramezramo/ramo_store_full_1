@@ -92,6 +92,12 @@
 
 <div class="acc-section-title">{{ $isAr ? 'سجل الطلبات' : 'Order History' }}</div>
 
+@php
+  $canPay = fn ($order) => $order->payment_due_at
+    && !in_array($order->status, ['cancelled', 'canceled', 'refunded'], true)
+    && in_array($order->payment_status, \App\Services\OrderPaymentExpiryService::AWAITING_PAYMENT_STATUSES, true);
+  $completePayment = $isAr ? 'كمّل الدفع' : 'Complete payment';
+@endphp
 @if($orders->count())
 <div class="orders-table-wrap">
   <table class="orders-table">
@@ -106,9 +112,9 @@
         <td><strong>#{{ $order->id }}</strong></td>
         <td>{{ $isAr ? \Carbon\Carbon::parse($order->date_created)->locale('ar')->translatedFormat('j F Y') : \Carbon\Carbon::parse($order->date_created)->format('M d, Y') }}</td>
         <td><span class="status-badge status-{{ $order->status }}">{{ $isAr ? ($statusLabelsAr[$order->status] ?? app(\App\Services\OrderStatusService::class)->label($order->status)) : app(\App\Services\OrderStatusService::class)->label($order->status) }}</span></td>
-        <td>{{ $order->payment_method_title }}</td>
+        <td>{{ $order->payment_method_title }}@if($canPay($order))<br><small>{{ $isAr ? 'في انتظار الدفع' : 'Awaiting payment' }}</small>@endif</td>
         <td><strong>{{ number_format($order->final_total, 2) }} EGP</strong></td>
-        <td><a href="{{ route('account.order', $order->id) }}" class="btn btn-outline" style="font-size:12px;padding:6px 14px">{{ $isAr ? 'شوف' : 'View' }}</a></td>
+        <td><a href="{{ route('account.order', $order->id) }}{{ $canPay($order) ? '#order-payment' : '' }}" class="btn btn-outline" style="font-size:12px;padding:6px 14px">{{ $canPay($order) ? $completePayment : ($isAr ? 'شوف' : 'View') }}</a></td>
       </tr>
       @endforeach
     </tbody>
@@ -139,7 +145,7 @@
       <div class="order-mobile-details">
         <div>
           <span class="order-mobile-label">{{ $isAr ? 'الدفع' : 'Payment' }}</span>
-          <span class="order-mobile-value">{{ $order->payment_method_title }}</span>
+          <span class="order-mobile-value">{{ $order->payment_method_title }}@if($canPay($order))<br><small>{{ $isAr ? 'في انتظار الدفع' : 'Awaiting payment' }}</small>@endif</span>
         </div>
         <div>
           <span class="order-mobile-label">{{ $isAr ? 'الإجمالي' : 'Total' }}</span>
@@ -148,7 +154,7 @@
       </div>
 
       <div class="order-mobile-action">
-        <a href="{{ route('account.order', $order->id) }}" class="btn btn-outline">{{ $isAr ? 'شوف الطلب' : 'View order' }}</a>
+        <a href="{{ route('account.order', $order->id) }}{{ $canPay($order) ? '#order-payment' : '' }}" class="btn btn-outline">{{ $canPay($order) ? $completePayment : ($isAr ? 'شوف الطلب' : 'View order') }}</a>
       </div>
     </article>
   @endforeach

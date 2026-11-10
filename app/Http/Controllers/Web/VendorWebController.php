@@ -142,6 +142,12 @@ class VendorWebController extends Controller
 
     public function logout(Request $request)
     {
+        if (app(\App\Services\VendorWorkspace::class)->isAdminManaging()) {
+            $request->session()->forget(\App\Services\VendorWorkspace::SESSION_KEY);
+
+            return redirect()->route('admin.vendors');
+        }
+
         Auth::guard($this->guard)->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
@@ -150,9 +156,9 @@ class VendorWebController extends Controller
 
     public function dashboard()
     {
-        $vendor = Auth::guard($this->guard)->user();
+        $vendor = app(\App\Services\VendorWorkspace::class)->vendor();
 
-        if ($vendor->status === 'blocked') {
+        if ($vendor->status === 'blocked' && ! app(\App\Services\VendorWorkspace::class)->isAdminManaging()) {
             Auth::guard($this->guard)->logout();
             request()->session()->invalidate();
             request()->session()->regenerateToken();
@@ -188,13 +194,13 @@ class VendorWebController extends Controller
 
     public function showStoreProfile()
     {
-        $vendor = Auth::guard($this->guard)->user();
+        $vendor = app(\App\Services\VendorWorkspace::class)->vendor();
         return view('web.vendor.store-profile', compact('vendor'));
     }
 
     public function updateStoreProfile(Request $request)
     {
-        $vendor = Auth::guard($this->guard)->user();
+        $vendor = app(\App\Services\VendorWorkspace::class)->vendor();
 
         // Handle "remove" button — single image removal
         if ($request->filled('remove_image')) {

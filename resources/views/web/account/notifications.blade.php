@@ -12,8 +12,9 @@
     'refund-req' => 'تم طلب الاسترداد', 'refunded' => 'تم استرداد المبلغ', 'returned' => 'اترجع', 'failed' => 'فشل',
   ];
   $paymentStatusesAr = [
+    'pending_payment' => 'في انتظار الدفع',
     'pending_verification' => 'في انتظار المراجعة', 'confirmed' => 'اتأكد',
-    'rejected' => 'اترَفض', 'refunded' => 'تم استرداد المبلغ', 'failed' => 'فشل',
+    'rejected' => 'اترَفض', 'expired' => 'انتهت مهلة الدفع', 'refunded' => 'تم استرداد المبلغ', 'failed' => 'فشل',
   ];
 @endphp
 

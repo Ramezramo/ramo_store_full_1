@@ -17,7 +17,7 @@ class VendorOrderController extends Controller
 
     private function vendor()
     {
-        return Auth::guard($this->guard)->user();
+        return app(\App\Services\VendorWorkspace::class)->vendor();
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -190,6 +190,13 @@ class VendorOrderController extends Controller
         $newStatus = $newStatus === 'completed' ? 'delivered' : $newStatus;
         if (! in_array($newStatus, $allowed)) {
             return back()->with('error', 'Invalid status.');
+        }
+
+        $parentOrder = DB::table('orders')
+            ->where('id', $subOrder->parent_order_id)
+            ->first(['payment_status']);
+        if ($newStatus !== 'cancelled' && ($parentOrder->payment_status ?? null) !== 'confirmed') {
+            return back()->with('error', 'This order cannot be processed until its payment is confirmed.');
         }
 
         $now      = now();

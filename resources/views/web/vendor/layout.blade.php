@@ -88,7 +88,11 @@ table.vs-table tr:last-child td{border-bottom:none}
 </head>
 <body>
 
-@php $vendor = auth()->guard('vendor_web')->user(); @endphp
+@php
+  $vendorWorkspace = app(\App\Services\VendorWorkspace::class);
+  $vendor = $vendorWorkspace->vendor();
+  $adminManagingVendor = $vendorWorkspace->isAdminManaging();
+@endphp
 
 <aside class="vs-sidebar">
   <div class="vs-logo">
@@ -140,6 +144,7 @@ table.vs-table tr:last-child td{border-bottom:none}
         <div class="vs-vendor-status">{{ ucfirst($vendor?->status ?? '') }}</div>
       </div>
     </div>
+    @unless($adminManagingVendor)
     <form method="POST" action="{{ route('vendor.logout') }}">
       @csrf
       <button type="submit" class="vs-btn vs-btn-ghost" style="width:100%;font-size:13px;padding:8px">
@@ -147,6 +152,7 @@ table.vs-table tr:last-child td{border-bottom:none}
         Logout
       </button>
     </form>
+    @endunless
   </div>
 </aside>
 
@@ -154,7 +160,15 @@ table.vs-table tr:last-child td{border-bottom:none}
   <div class="vs-topbar">
     <div class="vs-topbar-title">@yield('page-title','Dashboard')</div>
     <div>
-      <a href="{{ route('home') }}" style="font-size:13px;color:var(--mid)">← Back to store</a>
+      @if($adminManagingVendor)
+        <form method="POST" action="{{ route('vendor.workspace.exit') }}" style="display:inline-flex;align-items:center;gap:12px">
+          @csrf
+          <span style="font-size:12px;font-weight:700;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:999px;padding:6px 10px">Admin managing {{ $vendor?->shop_name }}</span>
+          <button type="submit" class="vs-btn vs-btn-ghost vs-btn-sm">Return to Admin</button>
+        </form>
+      @else
+        <a href="{{ route('home') }}" style="font-size:13px;color:var(--mid)">← Back to store</a>
+      @endif
     </div>
   </div>
   <div class="vs-content">

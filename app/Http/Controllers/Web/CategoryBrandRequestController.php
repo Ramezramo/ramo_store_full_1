@@ -10,7 +10,7 @@ class CategoryBrandRequestController extends Controller
 {
     public function index()
     {
-        $vendor = auth()->guard('vendor_web')->user();
+        $vendor = app(\App\Services\VendorWorkspace::class)->vendor();
         $requests = DB::table('category_brand_requests')
             ->where('vendor_user_id', $vendor->id)
             ->orderByDesc('id')
@@ -31,7 +31,7 @@ class CategoryBrandRequestController extends Controller
 
     public function store(Request $request)
     {
-        $vendor = auth()->guard('vendor_web')->user();
+        $vendor = app(\App\Services\VendorWorkspace::class)->vendor();
 
         $validated = $request->validate([
             'type'               => 'required|in:category,brand',

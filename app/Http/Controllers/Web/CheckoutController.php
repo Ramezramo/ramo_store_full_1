@@ -212,7 +212,7 @@ class CheckoutController extends Controller
 
             if ($completedOrderId) {
                 session()->forget('checkout_idempotency_key');
-                return redirect()->route('order.success', $completedOrderId);
+                return $this->redirectAfterCheckout($r, $completedOrderId);
             }
         }
 
@@ -239,6 +239,7 @@ class CheckoutController extends Controller
             'longitude'      => 'nullable|numeric',
             'save_address'   => 'nullable|boolean',
             'payment_method' => 'required|string',
+            'payment_timing' => 'nullable|in:now,later',
             'notes'           => 'nullable|string|max:500',
             'idempotency_key' => 'required|uuid',
         ]);
@@ -252,7 +253,6 @@ class CheckoutController extends Controller
         }
 
         $paymentTitle = $paymentMethods[$r->payment_method]['title'];
-        $isManualPayment = PaymentConfig::isManualMethod($r->payment_method);
         $codFeeAmount = PaymentConfig::codFee();
         session(['checkout_save_address' => $r->boolean('save_address')]);
 
@@ -274,7 +274,7 @@ class CheckoutController extends Controller
         $customerId = Auth::id();
 
         try {
-            $checkoutResult = DB::transaction(function () use ($cart, $r, $billing, $paymentTitle, $isManualPayment, $idempotencyKey, $idempotencyUserId, $coupon, $customerId) {
+            $checkoutResult = DB::transaction(function () use ($cart, $r, $billing, $paymentTitle, $idempotencyKey, $idempotencyUserId, $coupon, $customerId) {
                 // Claim the key inside the same transaction as stock changes and order creation.
                 // A double-click or retry can therefore never create a second order.
                 $claimed = DB::table('idempotency_keys')->insertOrIgnore([
@@ -457,10 +457,14 @@ class CheckoutController extends Controller
 
                 $now = now();
                 $nowText = $now->toDateTimeString();
+                $paymentDueAt = $r->payment_method === 'cod' ? null : $now->copy()->addHours(24);
                 $orderId = DB::table('orders')->insertGetId([
                     'customer_id'          => Auth::id(),
                     'status'               => 'pending',
-                    'payment_status'       => $isManualPayment ? 'pending_verification' : 'confirmed',
+                    // COD can proceed as an order; every other configured method
+                    // currently uses manual transfer instructions and receipt review.
+                    'payment_status'       => $r->payment_method === 'cod' ? 'confirmed' : 'pending_payment',
+                    'payment_due_at'       => $paymentDueAt,
                     'currency'             => 'EGP',
                     'currency_symbol'      => 'ج.م',
                     'payment_method'       => $r->payment_method,
@@ -490,9 +494,9 @@ class CheckoutController extends Controller
                     'updated_at'           => $now,
                     'payment_url'          => '',
                     'is_editable'          => true,
-                    'needs_payment'        => $isManualPayment || $r->payment_method !== 'cod',
+                    'needs_payment'        => $r->payment_method !== 'cod',
                     'needs_processing'     => true,
-                    'set_paid'             => ! $isManualPayment && $r->payment_method === 'cod',
+                    'set_paid'             => $r->payment_method === 'cod',
                     'number'               => 0,
                     'timeline'             => '[]',
                     'created_via'          => 'website',
@@ -574,7 +578,7 @@ class CheckoutController extends Controller
 
         if ($checkoutResult['replayed']) {
             session()->forget('checkout_idempotency_key');
-            return redirect()->route('order.success', $checkoutResult['order_id']);
+            return $this->redirectAfterCheckout($r, $checkoutResult['order_id']);
         }
 
         $orderId = $checkoutResult['order_id'];
@@ -617,7 +621,17 @@ class CheckoutController extends Controller
         $this->saveCart([]);
         session()->forget(['ramo_coupon', 'checkout_idempotency_key']);
 
-        return redirect()->route('order.success', $orderId);
+        return $this->redirectAfterCheckout($r, $orderId);
+    }
+
+    private function redirectAfterCheckout(Request $request, int $orderId)
+    {
+        $parameters = ['id' => $orderId];
+        if ($request->input('payment_timing') === 'later') {
+            $parameters['pay'] = 'later';
+        }
+
+        return redirect()->route('order.success', $parameters);
     }
 
     public function success($orderId)

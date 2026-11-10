@@ -7,9 +7,11 @@ use Illuminate\Support\Facades\DB;
 class OrderStatusService
 {
     public const PAYMENT_STATUSES = [
+        'pending_payment',
         'pending_verification',
         'confirmed',
         'rejected',
+        'expired',
         'refunded',
         'failed',
     ];
@@ -42,6 +44,10 @@ class OrderStatusService
      */
     public function compute(?string $paymentStatus, array $vendorStatuses): string
     {
+        if ($paymentStatus === 'expired') {
+            return 'cancelled';
+        }
+
         if ($paymentStatus !== 'confirmed') {
             return 'pending';
         }
@@ -124,7 +130,7 @@ class OrderStatusService
         $orderOverride = DB::table('orders')
             ->where('id', $orderId)
             ->value('general_order_status_override');
-        $newStatus = $orderOverride ?: $computed;
+        $newStatus = $order->payment_status === 'expired' ? $computed : ($orderOverride ?: $computed);
         $update['status'] = $newStatus;
 
         DB::table('orders')->where('id', $orderId)->update($update);

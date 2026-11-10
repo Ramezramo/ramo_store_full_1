@@ -12,9 +12,59 @@ use Intervention\Image\Drivers\Gd\Driver;
 
 class VendorProductController extends Controller
 {
+    private function normalizeProductAttributes($rawAttributes, $variations): array
+    {
+        $attributes = is_string($rawAttributes)
+            ? (json_decode($rawAttributes, true) ?? [])
+            : $rawAttributes;
+
+        if (! is_array($attributes)) {
+            return [];
+        }
+
+        $variationValues = [];
+        foreach ($variations as $variation) {
+            $values = $variation->attributes ?? [];
+            if (is_string($values)) {
+                $values = json_decode($values, true) ?? [];
+            }
+            foreach ((array) $values as $name => $value) {
+                if (is_scalar($value) && trim((string) $value) !== '') {
+                    $variationValues[$name][] = trim((string) $value);
+                }
+            }
+        }
+
+        $normalized = [];
+        foreach ($attributes as $attribute) {
+            $name = is_array($attribute)
+                ? ($attribute['name'] ?? $attribute['attribute'] ?? '')
+                : (is_scalar($attribute) ? (string) $attribute : '');
+            $name = trim((string) $name);
+            if ($name === '') {
+                continue;
+            }
+
+            $values = is_array($attribute) ? ($attribute['values'] ?? []) : [];
+            if (is_string($values)) {
+                $values = preg_split('/\\s*,\\s*/', trim($values), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            }
+            if (! is_array($values) || $values === []) {
+                $values = $variationValues[$name] ?? [];
+            }
+
+            $normalized[] = [
+                'name' => $name,
+                'values' => array_values(array_unique(array_map('strval', (array) $values))),
+            ];
+        }
+
+        return $normalized;
+    }
+
     private function vendor()
     {
-        return auth()->guard('vendor_web')->user();
+        return app(\App\Services\VendorWorkspace::class)->vendor();
     }
 
     private function imageBase(): string
@@ -217,6 +267,9 @@ class VendorProductController extends Controller
         $vendor        = $this->vendor();
         $hasVariations = $request->boolean('has_variations');
 
+        if ($hasVariations) {
+            $this->syncVariationSizes($request);
+        }
         $request->validate($this->validationRules($hasVariations));
 
         $slug        = $this->uniqueSlug(Str::slug($this->sanitizeProductText($request->input('name'))));
@@ -225,6 +278,9 @@ class VendorProductController extends Controller
 
         $now = now();
         [$variations, $totalStock] = $this->buildVariations($request, $hasVariations);
+        if ($hasVariations && $variations === []) {
+            return back()->withErrors(['colors' => 'Add at least one size for every variation before saving.'])->withInput();
+        }
 
         $translations       = $this->buildTranslations($request);
         $availableLocales   = $this->buildLang($translations);
@@ -353,7 +409,7 @@ class VendorProductController extends Controller
         $images       = json_decode($product->images ?? '{}', true) ?: [];
         $translations = json_decode($product->translations ?? '[]', true) ?: [];
         $tags         = json_decode($product->tags ?? '[]', true) ?: [];
-        $attributes   = json_decode($product->attributes ?? '[]', true) ?: [];
+        $attributes   = $this->normalizeProductAttributes($product->attributes ?? '[]', $dbVariations);
         $whatsapp     = json_decode($product->whatsapp ?? '{}', true) ?: [];
         $unit         = json_decode($product->unit ?? '{}', true) ?: [];
         $unitType     = $unit ? array_key_first($unit) : 'piece';
@@ -639,6 +695,10 @@ class VendorProductController extends Controller
                 $v->images = is_string($v->images)
                     ? (json_decode($v->images, true) ?? [])
                     : (array) ($v->images ?? []);
+                $v->images = array_values(array_filter(array_map(function ($path) {
+                    $path = ltrim(str_replace('\\', '/', (string) $path), '/');
+                    return preg_replace('#^storage/#', '', $path);
+                }, $v->images), fn ($path) => $path !== '' && Storage::disk('public')->exists($path)));
                 return $v;
             });
 
@@ -657,7 +717,7 @@ class VendorProductController extends Controller
         $images       = json_decode($product->images ?? '{}', true) ?: [];
         $translations = json_decode($product->translations ?? '[]', true) ?: [];
         $tags         = json_decode($product->tags ?? '[]', true) ?: [];
-        $attributes   = json_decode($product->attributes ?? '[]', true) ?: [];
+        $attributes   = $this->normalizeProductAttributes($product->attributes ?? '[]', $dbVariations);
         $whatsapp     = json_decode($product->whatsapp ?? '{}', true) ?: [];
         $unit         = json_decode($product->unit ?? '{}', true) ?: [];
         $unitType     = $unit ? array_key_first($unit) : 'piece';
@@ -683,6 +743,9 @@ class VendorProductController extends Controller
         if (! $product) abort(404);
 
         $hasVariations = $request->boolean('has_variations');
+        if ($hasVariations) {
+            $this->syncVariationSizes($request);
+        }
         $request->validate($this->validationRules($hasVariations));
 
         $existingImages = json_decode($product->images ?? '{}', true) ?: [];
@@ -691,6 +754,9 @@ class VendorProductController extends Controller
 
         $now = now();
         [$variations, $totalStock] = $this->buildVariations($request, $hasVariations);
+        if ($hasVariations && $variations === []) {
+            return back()->withErrors(['colors' => 'Add at least one size for every variation before saving.'])->withInput();
+        }
 
         $translations       = $this->buildTranslations($request);
         $availableLocales   = $this->buildLang($translations);
@@ -749,6 +815,44 @@ class VendorProductController extends Controller
         }
 
         $variationImageMap = $this->uploadVariationImages($request);
+        $existingVariationImagesByColor = [];
+        foreach (DB::table('product_variations')->where('product_id', $id)->get() as $existingVariation) {
+            $existingAttrs = is_string($existingVariation->attributes)
+                ? (json_decode($existingVariation->attributes, true) ?? [])
+                : (array) ($existingVariation->attributes ?? []);
+            $existingColor = trim((string) ($existingAttrs['Color'] ?? ''));
+            if ($existingColor === '') continue;
+
+            $existingPaths = is_string($existingVariation->images)
+                ? (json_decode($existingVariation->images, true) ?? [])
+                : (array) ($existingVariation->images ?? []);
+            foreach ($existingPaths as $path) {
+                $path = ltrim(str_replace('\\', '/', (string) $path), '/');
+                $path = preg_replace('#^storage/#', '', $path);
+                if ($path !== '' && Storage::disk('public')->exists($path)) {
+                    $existingVariationImagesByColor[$existingColor][$path] = $path;
+                }
+            }
+        }
+
+        foreach ((array) $request->input('colors', []) as $colorIndex => $colorData) {
+            if (! is_array($colorData)) continue;
+            $colorName = trim($this->sanitizeProductText($colorData['name'] ?? ''));
+            if ($colorName === '' && ($colorData['type'] ?? 'color') === 'color') {
+                $colorName = 'Color ' . ((int) $colorIndex + 1);
+            }
+            if ($colorName === '') continue;
+
+            $allowedExisting = $existingVariationImagesByColor[$colorName] ?? [];
+            $keep = [];
+            foreach ((array) ($colorData['existing_images'] ?? []) as $path) {
+                $path = ltrim(str_replace('\\', '/', (string) $path), '/');
+                $path = preg_replace('#^storage/#', '', $path);
+                if (isset($allowedExisting[$path])) $keep[$path] = $path;
+            }
+            $new = $variationImageMap[$colorName] ?? [];
+            $variationImageMap[$colorName] = array_values(array_unique(array_merge(array_values($keep), $new)));
+        }
 
         DB::table('product_variations')->where('product_id', $id)->delete();
         foreach ($variations as $i => $v) {
@@ -769,7 +873,11 @@ class VendorProductController extends Controller
 
         app(\App\Services\ShopPriceRangeService::class)->refreshGlobal();
 
-        return redirect()->route('vendor.products')
+        if ($request->input('save_action') === 'save_and_view') {
+            return redirect()->route('product', $id);
+        }
+
+        return redirect()->route('vendor.products.edit', $id)
             ->with('success', 'Product updated successfully.');
     }
 
@@ -814,10 +922,50 @@ class VendorProductController extends Controller
     // PRIVATE HELPERS
     // ─────────────────────────────────────────────────────────────────────
 
+    /**
+     * The size chips build price_map keys in the browser. Reuse those keys
+     * when a client omits the parallel sizes[] fields during form submission.
+     */
+    private function syncVariationSizes(Request $request): void
+    {
+        $colors = (array) $request->input('colors', []);
+        foreach ($colors as &$color) {
+            if (! is_array($color)) {
+                continue;
+            }
+
+            $sizes = array_values(array_filter(array_map(
+                fn ($size) => trim((string) $size),
+                (array) ($color['sizes'] ?? [])
+            ), fn ($size) => $size !== ''));
+
+            if ($sizes === []) {
+                $sizes = array_values(array_filter(array_map(
+                    fn ($size) => trim((string) $size),
+                    array_keys((array) ($color['price_map'] ?? []))
+                ), fn ($size) => $size !== ''));
+            }
+
+            $priceMap = (array) ($color['price_map'] ?? []);
+            foreach ($sizes as $size) {
+                if (! array_key_exists($size, $priceMap)) {
+                    $priceMap[$size] = '';
+                }
+            }
+
+            $color['sizes'] = $sizes;
+            $color['price_map'] = $priceMap;
+        }
+        unset($color);
+
+        $request->merge(['colors' => $colors]);
+    }
+
     private function validationRules(bool $hasVariations): array
     {
         $base = [
             'name'                  => 'required|string|max:500',
+            'save_action'           => 'nullable|in:save,save_and_view',
             'status'                => 'required|in:publish,draft',
             'short_description'     => 'nullable|string|max:1000',
             'description'           => 'nullable|string',
@@ -857,20 +1005,22 @@ class VendorProductController extends Controller
         } else {
             $base['colors']                          = 'required|array|min:1';
             $base['colors.*.type']                   = 'required|in:color,attribute';
-            $base['colors.*.name']                   = 'required|string|max:100';
+            $base['colors.*.name']                   = 'required_if:colors.*.type,attribute|nullable|string|max:100';
             $base['colors.*.color_code']             = 'required_if:colors.*.type,color|nullable|regex:/^#[0-9a-fA-F]{6}$/';
             $base['colors.*.attribute_name']         = 'required_if:colors.*.type,attribute|nullable|string|max:50|not_in:Color,color,Size,size|regex:/^[^:_]+$/';
             $base['colors.*.main_variation']         = 'nullable|boolean';
-            $base['colors.*.sizes']                  = 'nullable|array';
+            $base['colors.*.sizes']                  = 'required|array|min:1';
             $base['colors.*.sizes.*']                = 'string|max:25';
             $base['colors.*.stock']                  = 'nullable|array';
             $base['colors.*.stock.*']                = 'integer|min:0';
-            $base['colors.*.price_map']              = 'nullable|array';
-            $base['colors.*.price_map.*']            = 'nullable|numeric|min:0';
+            $base['colors.*.price_map']              = 'required|array';
+            $base['colors.*.price_map.*']            = 'required|numeric|min:0.01';
             $base['colors.*.model_number_map']        = 'nullable|array';
             $base['colors.*.model_number_map.*']      = 'nullable|string|max:120';
             $base['colors.*.sale_price_map']         = 'nullable|array';
             $base['colors.*.sale_price_map.*']       = 'nullable|numeric|min:0';
+            $base['colors.*.existing_images']         = 'nullable|array';
+            $base['colors.*.existing_images.*']       = 'string|max:1024';
             $base['colors.*.regular_price']          = 'nullable|numeric|min:0';
             $base['colors.*.sale_price']             = 'nullable|numeric|min:0';
         }
@@ -928,18 +1078,19 @@ class VendorProductController extends Controller
         $colorsInput = array_values((array) $request->input('colors', []));
         $discountPct = (float) $request->input('discount_percentage', 0);
 
-        foreach ($colorsInput as $colorData) {
+        foreach ($colorsInput as $colorIndex => $colorData) {
             $variationType = ($colorData['type'] ?? 'color') === 'attribute' ? 'attribute' : 'color';
-            $optionName    = ucfirst($this->sanitizeProductText($colorData['name'] ?? ''));
-            if (! $optionName) continue;
+            $optionName = trim($this->sanitizeProductText($colorData['name'] ?? ''));
 
             if ($variationType === 'color') {
+                $optionName = $optionName !== '' ? $optionName : 'Color '.((int) $colorIndex + 1);
                 $attributeName = 'Color';
                 $colorCode = strtoupper(trim((string)($colorData['color_code'] ?? '')));
                 if (! preg_match('/^#[0-9A-F]{6}$/', $colorCode)) {
                     $colorCode = '#999999';
                 }
             } else {
+                if ($optionName === '') continue;
                 $attributeName = trim($this->sanitizeProductText($colorData['attribute_name'] ?? ''));
                 if (! $attributeName || in_array(strtolower($attributeName), ['color', 'size'], true)) continue;
                 $colorCode = null;

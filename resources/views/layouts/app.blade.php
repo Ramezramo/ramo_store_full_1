@@ -327,6 +327,125 @@ button{cursor:pointer;font-family:inherit}
   .pc-auto:not(:has(.pc-add-row form)) .pc-actions:not(:has(.card-add-btn)),
   .pc-auto[data-requires-variation-selection="1"]:not(:has(.pc-add-row form)) .pc-actions{display:none}
 }
+@container store-card (width < 240px){
+  .product-card--shared .product-card-body{
+    padding:clamp(4.8px,3.008cqi,12.8px);
+    gap:clamp(3.84px,1.92cqi,7.68px);
+  }
+  .product-card--shared .product-card-name{font-size:clamp(.52rem,4.16cqi,.72rem)}
+  .product-card--shared .pc-media .badge-sale{padding:3.2px 6.4px;font-size:clamp(6.4px,3.008cqi,8.32px)}
+  .product-card--shared .pc-media .wish-btn{inline-size:28px;block-size:28px;font-size:12.8px}
+  .product-card--shared .pc-swatch{--pc-swatch-target:28px}
+  .product-card--shared .pc-swatch::before{inline-size:clamp(17.92px,9.92cqi,23.04px)}
+  .product-card--shared .pc-size{min-inline-size:28px;min-block-size:28px;padding:3.2px 5.6px;font-size:.48rem}
+  .product-card--shared .price-main{font-size:clamp(.56rem,4.992cqi,.88rem)}
+  .product-card--shared .price-old{font-size:.48rem}
+  .product-card--shared :is(.card-add-btn,.card-details-btn){
+    min-block-size:28px;padding:4px;border-radius:5.6px;
+    font-size:clamp(.4rem,2.88cqi,.52rem);
+  }
+  .product-card--shared .pc-option-link{min-block-size:28px;font-size:.48rem}
+  .product-card--shared .pc-stock-label{font-size:.48rem}
+}
+@container store-card (width >= 240px) and (width < 360px){
+  .product-card--shared .product-card-body{
+    padding:calc(8.08cqi - 12.18px);
+    gap:calc(5.16cqi - 7.78px);
+  }
+  .product-card--shared .product-card-name{font-size:calc(6.68cqi - 6.06px)}
+  .product-card--shared .pc-media .badge-sale{
+    padding:calc(1.5cqi - .4px) calc(3cqi - .8px);
+    font-size:calc(4.82cqi - 4.35px);
+  }
+  .product-card--shared .pc-media .wish-btn{
+    inline-size:calc(13.2cqi - 3.52px);
+    block-size:calc(13.2cqi - 3.52px);
+    font-size:calc(6cqi - 1.6px);
+  }
+  .product-card--shared .pc-swatch{--pc-swatch-target:calc(13.2cqi - 3.52px)}
+  .product-card--shared .pc-swatch::before{inline-size:calc(10.8cqi - 2.88px)}
+  .product-card--shared .pc-size{
+    min-inline-size:calc(13.2cqi - 3.52px);
+    min-block-size:calc(13.2cqi - 3.52px);
+    padding:calc(1.5cqi - .4px) calc(3cqi - .8px);
+    font-size:calc(3.6cqi - .96px);
+  }
+  .product-card--shared .price-main{font-size:calc(8.35cqi - 8.06px)}
+  .product-card--shared .price-old{font-size:calc(3.6cqi - .96px)}
+  .product-card--shared :is(.card-add-btn,.card-details-btn){
+    min-block-size:calc(19cqi - 16.42px);
+    padding:calc(1.8cqi - .48px);
+    border-radius:calc(6.88cqi - 10.37px);
+    font-size:calc(5.07cqi - 5.26px);
+  }
+  .product-card--shared .pc-option-link{
+    min-block-size:calc(13.2cqi - 3.52px);
+    font-size:calc(3.6cqi - .96px);
+  }
+  .product-card--shared .pc-stock-label{font-size:calc(3.6cqi - .96px)}
+}
+
+/* Make card text and controls easier to read on phones. */
+@media (max-width:600px){
+  .product-card--shared .product-card-name{font-size:clamp(1.168rem,9.34375cqi,1.61725rem)}
+  .product-card--shared .pc-size{min-inline-size:63.25px;min-block-size:63.25px;padding:7.1875px 12.9375px;font-size:1.078125rem}
+  .product-card--shared .price-main{font-size:clamp(1.257875rem,11.2125cqi,1.976625rem)}
+  .product-card--shared .price-old,.product-card--shared .pc-stock-label{font-size:1.078125rem}
+  .product-card--shared :is(.card-add-btn,.card-details-btn){
+    min-block-size:clamp(63.25px,27.3125cqi,74.75px);padding:8.625px;
+    font-size:clamp(.8985rem,6.46875cqi,1.168rem);
+  }
+  .product-card--shared .pc-option-link{min-block-size:63.25px;font-size:1.078125rem}
+
+  @container store-card (width < 240px){
+    .product-card--shared .product-card-name{font-size:clamp(.7475rem,5.98cqi,1.035rem)}
+    .product-card--shared .pc-size{min-inline-size:40.25px;min-block-size:40.25px;padding:4.6px 8.05px;font-size:.69rem}
+    .product-card--shared .price-main{font-size:clamp(.805rem,7.176cqi,1.265rem)}
+    .product-card--shared .price-old,.product-card--shared .pc-stock-label{font-size:.69rem}
+    .product-card--shared :is(.card-add-btn,.card-details-btn){
+      min-block-size:40.25px;padding:5.75px;font-size:clamp(.575rem,4.14cqi,.7475rem);
+    }
+    .product-card--shared .pc-option-link{min-block-size:40.25px;font-size:.69rem}
+  }
+
+  @container store-card (width >= 240px) and (width < 360px){
+    .product-card--shared .product-card-name{font-size:calc(9.6025cqi - 8.71125px)}
+    .product-card--shared .pc-size{
+      min-inline-size:calc(18.975cqi - 5.06px);
+      min-block-size:calc(18.975cqi - 5.06px);
+      padding:calc(2.15625cqi - .575px) calc(4.3125cqi - 1.15px);
+      font-size:calc(5.175cqi - 1.38px);
+    }
+    .product-card--shared .price-main{font-size:calc(12.003125cqi - 11.58625px)}
+    .product-card--shared .price-old,.product-card--shared .pc-stock-label{font-size:calc(5.175cqi - 1.38px)}
+    .product-card--shared :is(.card-add-btn,.card-details-btn){
+      min-block-size:calc(27.3125cqi - 23.60375px);
+      padding:calc(2.5875cqi - .69px);
+      font-size:calc(7.288125cqi - 7.56125px);
+    }
+    .product-card--shared .pc-option-link{min-block-size:calc(18.975cqi - 5.06px);font-size:calc(5.175cqi - 1.38px)}
+  }
+}
+
+/* Keep color choices legible when a wider screen fits more cards per row. */
+@media (min-width:601px){
+  .product-card--shared .pc-swatch{--pc-swatch-target:44px}
+  .product-card--shared .pc-swatch::before{inline-size:28px}
+}
+
+/* Wider screens can contain narrow cards, but their content must stay readable. */
+@media (min-width:601px){
+  .product-card--shared{--pc-card-limit:max(32rem,var(--pc-card-max-height,34rem))}
+  .product-card--shared .product-card-body{padding:12px;gap:8px}
+  .product-card--shared .product-card-name{font-size:.875rem;line-height:1.35}
+  .product-card--shared .pc-size{min-inline-size:40px;min-block-size:40px;padding:5px 9px;font-size:.75rem}
+  .product-card--shared .price-main{font-size:1rem}
+  .product-card--shared .price-old,.product-card--shared .pc-stock-label{font-size:.75rem}
+  .product-card--shared :is(.card-add-btn,.card-details-btn){
+    min-block-size:40px;padding:6px 8px;border-radius:10px;font-size:.6875rem;
+  }
+  .product-card--shared .pc-option-link{min-block-size:40px;font-size:.75rem}
+}
 
 /* ── SHOP LAYOUT ── */
 .shop-layout{display:grid;grid-template-columns:220px 1fr;gap:28px;align-items:start}
@@ -752,9 +871,6 @@ button{cursor:pointer;font-family:inherit}
   body.mobile-auth-screen{padding-bottom:0}
   body.mobile-auth-screen #mob-nav{display:none !important}
   body.mobile-auth-screen .auth-card{margin-top:24px;padding:28px 20px}
-  body.mobile-auth-login.auth-input-focused{padding-bottom:0}
-  body.mobile-auth-login.auth-input-focused #mob-nav{display:none !important}
-  body.mobile-auth-login.auth-input-focused .page{padding-bottom:24px}
   footer{display:none}
   .toast{bottom:calc(var(--mobile-nav-height) + 14px + var(--mobile-nav-viewport-offset, 0px));right:14px;left:14px;max-width:none;justify-content:center}
   #mob-nav{
@@ -907,6 +1023,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
   .nav{background:rgba(255,255,255,.97);border-bottom-color:#e8e5df;box-shadow:0 4px 18px rgba(17,17,17,.055)}
   /* Keep the customer account header visible while the account list scrolls. */
   body.account-page .nav{position:fixed;top:0;right:0;left:0;width:100%;}
+  body.mobile-auth-login .nav{position:fixed;inset-block-start:0;inset-inline:0;width:100%;}
   .nav-inner{height:68px;padding:0 14px;gap:8px}
   .nav-logo{font-size:18px;letter-spacing:.45px;padding:7px 10px;border-radius:10px;line-height:1}
   .nav-logo span{color:var(--c-orange)}
@@ -928,6 +1045,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
   /* 58px bottom nav + 16px breathing room = 74px so nothing scrolls behind the nav */
   .page{padding:20px 14px 74px}
   body.account-page .page{padding-top:88px}
+  body.mobile-auth-login .page{padding-top:88px}
 }
 /* At very narrow phones the "Sign In" text overflows — hide it since bottom nav has it */
 @media(max-width:390px){
@@ -1363,7 +1481,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
       <a href="{{ route('policy.privacy') }}">{{ $headerIsArabic ? 'الخصوصية' : 'Privacy' }}</a>
       <a href="{{ route('policy.terms') }}">{{ $headerIsArabic ? 'الشروط والأحكام' : 'Terms' }}</a>
       <a href="{{ route('policy.contact') }}">{{ $headerIsArabic ? 'تواصل معانا' : 'Contact' }}</a>
-      <a href="{{ route('vendor.register') }}" style="color:var(--c-orange);font-weight:600">{{ $headerIsArabic ? 'بيع على رامو' : 'Sell on Ramo' }}</a>
+      <a href="{{ route('vendor.register') }}" target="_blank" rel="noopener noreferrer" onclick="event.preventDefault(); window.open(this.href, '_blank', 'noopener,noreferrer');" style="color:var(--c-orange);font-weight:600">{{ $headerIsArabic ? 'بيع على رامو' : 'Sell on Ramo' }}</a>
     </div>
     <div class="footer-note">© {{ date('Y') }} RamoStore. {{ $headerIsArabic ? 'كل الحقوق محفوظة.' : 'All rights reserved.' }}</div>
   </div>

@@ -214,7 +214,7 @@ function syncAuthInputState() {
   const focused = window.innerWidth <= 768 && active && active.closest('.auth-page input, .auth-page select, .auth-page textarea');
   document.body.classList.toggle('auth-input-focused', Boolean(focused));
   if (focused) {
-    window.setTimeout(() => active.scrollIntoView({ block: 'center', behavior: 'smooth' }), 120);
+    window.setTimeout(() => active.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 120);
   }
 }
 document.addEventListener('focusin', syncAuthInputState);

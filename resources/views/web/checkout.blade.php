@@ -161,6 +161,14 @@
   .ck-payment-details p{margin:0}
   .ck-payment-details p + p,.ck-payment-details .pay-data{margin-block-start:6px}
   .ck-payment-details a{color:#a63f1e;font-weight:700;text-decoration:underline}
+  .ck-payment-timing{display:grid;gap:8px;margin:4px 0 0;padding:0;border:0;min-inline-size:0}
+  .ck-payment-timing[hidden]{display:none}
+  .ck-payment-timing legend{padding:0;margin-block-end:6px;font-size:.875rem;font-weight:700}
+  .ck-payment-timing label{display:flex;align-items:center;gap:10px;padding:9px 12px;min-block-size:44px;border:1px solid #ecece8;border-radius:10px;cursor:pointer}
+  .ck-payment-timing label:has(input:checked){border-color:#b44722;background:#fff8f4}
+  .ck-payment-timing input{margin:0;accent-color:#b44722}
+  .ck-payment-timing strong,.ck-payment-timing small{display:block}
+  .ck-payment-timing small{color:#555;line-height:1.4}
   .ck-order-actions{display:flex;align-items:center;gap:12px}
   .ck-order-actions-copy{display:none}
   .ck-order-actions .place-order-btn{min-block-size:48px}
@@ -345,6 +353,12 @@
               ? ($paymentLabelsAr[$selectedPaymentMethod]['title'] ?? ($paymentMethods[$selectedPaymentMethod]['title'] ?? ''))
               : ($paymentMethods[$selectedPaymentMethod]['title'] ?? '');
           @endphp
+          @php
+            $showPaymentTiming = filled($selectedPaymentMethod) && $selectedPaymentMethod !== 'cod';
+            $paymentTiming = old('payment_timing', 'now');
+            $placeOrderLabel = $isAr ? 'أكّد الطلب' : 'Place order';
+            $continuePaymentLabel = $isAr ? 'تابع للدفع' : 'Continue to payment';
+          @endphp
           <div class="ck-payment-picker">
             <select id="checkout-payment-method" name="payment_method" required aria-labelledby="checkout-payment-title">
               @forelse($paymentMethods as $val => $method)
@@ -375,16 +389,22 @@
                     <strong>{{ $paymentData }}</strong>
                   </div>
                 @endif
-                @if($method['link'] ?? null)
-                  <p><a href="{{ $method['link'] }}" target="_blank" rel="noopener">{{ $isAr ? 'افتح رابط الدفع' : 'Open payment link' }}</a></p>
-                @endif
-                @if(in_array($val, ['manual_wallet', 'manual_instapay'], true))
-                  <p>{{ $isAr ? 'أكّد الطلب الأول، وبعد التحويل ارفع الإيصال من صفحة الطلب.' : 'Place the order first, then transfer the amount and upload the receipt from the order page.' }}</p>
-                @endif
               </div>
             @endforeach
+            <fieldset class="ck-payment-timing" id="checkout-payment-timing" @if(!$showPaymentTiming) hidden disabled @endif>
+              <legend>{{ $isAr ? 'هتدفع إمتى؟' : 'When would you like to pay?' }}</legend>
+              <label>
+                <input type="radio" name="payment_timing" value="now" @checked($paymentTiming !== 'later')>
+                <span><strong>{{ $isAr ? 'ادفع دلوقتي' : 'Pay now' }}</strong><small>{{ $isAr ? 'تابع لتعليمات التحويل وارفع الإيصال.' : 'Continue to the transfer instructions and upload your receipt.' }}</small></span>
+              </label>
+              <label>
+                <input type="radio" name="payment_timing" value="later" @checked($paymentTiming === 'later')>
+                <span><strong>{{ $isAr ? 'ادفع خلال 24 ساعة' : 'Pay within 24 hours' }}</strong><small>{{ $isAr ? 'ارجع للطلب وادفع وارفع الإيصال قبل ما الطلب يتلغى تلقائيًا.' : 'Return to your order to pay and upload your receipt before it expires.' }}</small></span>
+              </label>
+            </fieldset>
           </div>
           @error('payment_method')<span class="err">{{ $message }}</span>@enderror
+          @error('payment_timing')<span class="err">{{ $message }}</span>@enderror
         </div>
 
         {{-- ORDER NOTES --}}
@@ -400,7 +420,7 @@
             <strong id="checkout-action-total" aria-live="polite">{{ number_format($total, 2) }} EGP</strong>
             <a href="#checkout-payment-method" id="checkout-action-payment" title="{{ $isAr ? 'غيّر طريقة الدفع' : 'Change payment method' }}">{{ $selectedPaymentTitle }}</a>
           </div>
-          <button type="submit" class="btn btn-dark place-order-btn" @disabled($selectedPaymentMethod === null)>{{ $isAr ? 'أكّد الطلب' : 'Place Order' }}</button>
+          <button type="submit" class="btn btn-dark place-order-btn" @disabled($selectedPaymentMethod === null)>{{ $showPaymentTiming && $paymentTiming !== 'later' ? $continuePaymentLabel : $placeOrderLabel }}</button>
         </div>
         <p style="margin:12px 2px 0;color:#667085;font-size:12px;line-height:1.7">
           @if($isAr)
@@ -491,11 +511,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const checkoutTotalValue = document.getElementById('checkout-total-value');
   const actionTotal = document.getElementById('checkout-action-total');
   const actionPayment = document.getElementById('checkout-action-payment');
+  const paymentTiming = document.getElementById('checkout-payment-timing');
+  const placeOrderButton = document.querySelector('.place-order-btn');
   const formatEgp = (value) => Number(value).toFixed(2) + ' EGP';
 
   const updatePayment = () => {
     const selected = paymentSelect.value;
     paymentDetails.forEach(details => { details.hidden = details.dataset.paymentDetails !== selected; });
+    const prepaid = selected !== '' && selected !== 'cod';
+    paymentTiming.hidden = paymentTiming.disabled = !prepaid;
+    placeOrderButton.textContent = prepaid && paymentTiming.querySelector('input:checked')?.value === 'now'
+      ? @json($continuePaymentLabel) : @json($placeOrderLabel);
     const fee = selected === 'cod' ? codFeeAmount : 0;
     codFeeRow.hidden = fee <= 0;
     codFeeValue.textContent = formatEgp(fee);
@@ -503,6 +529,7 @@ document.addEventListener('DOMContentLoaded', () => {
     actionPayment.textContent = paymentSelect.selectedOptions[0]?.textContent.trim() || '';
   };
   paymentSelect.addEventListener('change', updatePayment);
+  paymentTiming.addEventListener('change', updatePayment);
   updatePayment();
 
   const checkoutForm = document.getElementById('checkout-form');

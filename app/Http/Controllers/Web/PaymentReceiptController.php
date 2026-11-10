@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Helpers\PaymentConfig;
 use App\Http\Controllers\Controller;
+use App\Services\OrderPaymentExpiryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -61,8 +62,24 @@ class PaymentReceiptController extends Controller
                 return ['error' => $this->localized('This order does not use a manual payment method.', 'الطلب ده مش بيستخدم طريقة دفع يدوي.')];
             }
 
+            if ($lockedOrder->payment_status === 'expired') {
+                return ['error' => $this->localized('This order was cancelled because the payment deadline passed.', 'الطلب اتلغى عشان مهلة الدفع انتهت.')];
+            }
+
+            if (in_array($lockedOrder->status, ['cancelled', 'canceled', 'refunded'], true)) {
+                return ['error' => $this->localized('This order can no longer accept payment.', 'الطلب ده مش متاح للدفع.')];
+            }
+
             if ($lockedOrder->payment_status === 'confirmed') {
                 return ['error' => $this->localized('This payment has already been confirmed.', 'الدفع ده تم تأكيده بالفعل.')];
+            }
+
+            if (app(OrderPaymentExpiryService::class)->expireLockedOrder($lockedOrder)) {
+                return ['error' => $this->localized('The 24-hour payment window has ended and this order was cancelled.', 'مهلة الدفع اللي مدتها 24 ساعة انتهت والطلب اتلغى.')];
+            }
+
+            if (OrderPaymentExpiryService::deadlinePassed($lockedOrder)) {
+                return ['error' => $this->localized('The upload deadline has passed. A receipt already submitted can still be reviewed.', 'مهلة رفع الإيصال انتهت. الإيصال اللي اترفع قبل الموعد ممكن يتراجع.')];
             }
 
             $uploadCount = DB::table('payment_receipts')->where('order_id', $lockedOrder->id)->count();

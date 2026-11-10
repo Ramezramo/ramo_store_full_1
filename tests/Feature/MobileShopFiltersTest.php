@@ -14,7 +14,7 @@ class MobileShopFiltersTest extends TestCase
         $response->assertOk()
             ->assertSee('class="page shop-page"', false)
             ->assertSee('id="shop-filter-alert"', false)
-            ->assertSee('aria-hidden="false"', false)
+            ->assertSee('aria-hidden="true"', false)
             ->assertSee('role="dialog"', false)
             ->assertSee('aria-modal="true"', false)
             ->assertSee('id="shop-filter-title"', false)

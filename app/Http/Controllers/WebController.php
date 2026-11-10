@@ -631,7 +631,7 @@ class WebController extends Controller
                 'activeCategoryId', 'selectedCategoryIds', 'activeParentId', 'catCounts',
                 'activeBrandName', 'allBrands', 'shopMobileLayout',
                 'priceRange', 'minPrice', 'maxPrice'
-            ))
+            ) + ['shopDisplay' => \App\Helpers\ShopDisplayConfig::get()])
             ->header('Cache-Control', 'private, no-cache');
     }
 
@@ -642,6 +642,26 @@ class WebController extends Controller
         $raw = $this->baseProductQuery()
             ->where('p.id', $id)
             ->first();
+
+        // Keep the public detail page available for published products whose
+        // variation rows have not been created yet. The catalog query above
+        // intentionally requires variations, but this page is also used as a
+        // seller preview while a product is being set up.
+        if (! $raw) {
+            $raw = DB::table('products_data as p')
+                ->where('p.id', $id)
+                ->where('p.status', 'publish')
+                ->where('p.acceptance_status', 'approved')
+                ->select(
+                    'p.id', 'p.name', 'p.slug', 'p.images', 'p.translations',
+                    'p.description', 'p.stock_quantity', 'p.unit',
+                    'p.minimum_order_qty', 'p.max_orders_per_person', 'p.sold_individually',
+                    'p.vendor_id', 'p.min_price as price', 'p.min_price as regular_price',
+                    'p.min_price as sale_price', 'p.discount_percentage',
+                    $this->productCategoryIdsSelect()
+                )
+                ->first();
+        }
 
         if (! $raw) abort(404);
 
