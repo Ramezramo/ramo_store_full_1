@@ -31,6 +31,7 @@ use App\Http\Controllers\Admin\ImageGalleryController;
 
 Route::get('/health', HealthController::class)->name('health');
 Route::get('/', [WebController::class, 'home'])->name('home');
+Route::get('/home/sections', [WebController::class, 'homeSections'])->name('home.sections');
 Route::get('/home/products', [WebController::class, 'homeProducts'])->name('home.products');
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 Route::get('/privacy', [PolicyPageController::class, 'show'])->defaults('page', 'privacy')->name('policy.privacy');
@@ -108,6 +109,7 @@ Route::middleware('auth')->prefix('account')->group(function () {
     Route::get('/notifications', [OrderNotificationController::class, 'index'])->name('account.notifications');
     Route::get('/notifications/unread', [OrderNotificationController::class, 'unread'])->name('account.notifications.unread');
     Route::post('/notifications/read-all', [OrderNotificationController::class, 'markAllRead'])->name('account.notifications.read-all');
+    Route::post('/notifications/vendor/{notification}', [OrderNotificationController::class, 'openVendor'])->whereNumber('notification')->name('account.notifications.vendor.open');
     Route::post('/notifications/{notification}/open', [OrderNotificationController::class, 'open'])->whereNumber('notification')->name('account.notifications.open');
     Route::get('/orders/{id}', [AccountController::class, 'orderDetail'])->name('account.order');
     Route::post('/orders/{id}/messages', [OrderMessageController::class, 'store'])->name('account.order.messages.store');
@@ -132,8 +134,13 @@ Route::post('/track', [OrderTrackingController::class, 'track'])->middleware('th
 use App\Http\Controllers\Web\VendorWebController;
 use App\Http\Controllers\Web\VendorProductController;
 use App\Http\Controllers\Web\CategoryBrandRequestController;
-Route::get('/become-a-vendor', [VendorWebController::class, 'showRegister'])->name('vendor.register');
-Route::post('/become-a-vendor', [VendorWebController::class, 'register'])->name('vendor.register.submit');
+Route::middleware('auth')->group(function () {
+    Route::get('/become-a-vendor', [\App\Http\Controllers\Web\VendorApplicationController::class, 'show'])->name('vendor.register');
+    Route::post('/become-a-vendor', [\App\Http\Controllers\Web\VendorApplicationController::class, 'savePersonal'])->middleware('throttle:10,1')->name('vendor.register.submit');
+    Route::post('/become-a-vendor/marketplace', [\App\Http\Controllers\Web\VendorApplicationController::class, 'saveMarketplace'])->name('vendor.marketplace.save');
+    Route::post('/become-a-vendor/switch', [\App\Http\Controllers\Web\VendorApplicationController::class, 'switchToSeller'])->name('vendor.marketplace.switch');
+    Route::post('/become-a-vendor/link-existing', [\App\Http\Controllers\Web\VendorApplicationController::class, 'linkExisting'])->middleware('throttle:6,10')->name('vendor.marketplace.link-existing');
+});
 Route::get('/vendor-login', [VendorWebController::class, 'showLogin'])->name('vendor.login');
 Route::post('/vendor-login', [VendorWebController::class, 'login'])->name('vendor.login.submit');
 Route::post('/vendor-logout', [VendorWebController::class, 'logout'])->name('vendor.logout');
@@ -172,6 +179,9 @@ Route::prefix('admin')->middleware(['auth', 'admin.auth', \App\Http\Middleware\R
     Route::post('/vendors/{id}/workspace', [AdminDashboardController::class, 'openVendorWorkspace'])->name('admin.vendors.workspace');
     Route::get('/', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/users', [AdminDashboardController::class, 'users'])->name('admin.users');
+    Route::get('/users/{id}/flags', [\App\Http\Controllers\Admin\UserFlagController::class, 'index'])->whereNumber('id')->name('admin.users.flags');
+    Route::post('/users/{id}/flags', [\App\Http\Controllers\Admin\UserFlagController::class, 'store'])->whereNumber('id')->name('admin.users.flags.store');
+    Route::patch('/users/{id}/flags/{flagId}/resolve', [\App\Http\Controllers\Admin\UserFlagController::class, 'resolve'])->whereNumber(['id', 'flagId'])->name('admin.users.flags.resolve');
     Route::patch('/users/{id}/block', [AdminDashboardController::class, 'blockUser'])->name('admin.users.block');
     Route::patch('/users/{id}/unblock', [AdminDashboardController::class, 'unblockUser'])->name('admin.users.unblock');
     Route::patch('/users/{id}/role', [AdminDashboardController::class, 'updateUserRole'])->name('admin.users.role');
@@ -183,6 +193,12 @@ Route::prefix('admin')->middleware(['auth', 'admin.auth', \App\Http\Middleware\R
      Route::delete('/orders/{id}/force-override', [AdminDashboardController::class, 'clearForceOverride'])->name('admin.orders.force-override.clear');
      Route::patch('/orders/{orderId}/sub-orders/{subOrderId}/status', [AdminDashboardController::class, 'updateSubOrderStatus'])->name('admin.orders.sub-orders.status');
     Route::get('/vendors', [AdminDashboardController::class, 'vendors'])->name('admin.vendors');
+    Route::get('/vendor-applications', [\App\Http\Controllers\Admin\VendorApplicationAdminController::class, 'index'])->name('admin.vendor-applications');
+    Route::post('/vendor-applications/settings', [\App\Http\Controllers\Admin\VendorApplicationAdminController::class, 'settings'])->name('admin.vendor-applications.settings');
+    Route::post('/vendor-applications/reasons', [\App\Http\Controllers\Admin\VendorApplicationAdminController::class, 'addReason'])->name('admin.vendor-applications.reasons.add');
+    Route::patch('/vendor-applications/reasons/{id}', [\App\Http\Controllers\Admin\VendorApplicationAdminController::class, 'toggleReason'])->whereNumber('id')->name('admin.vendor-applications.reasons.toggle');
+    Route::get('/vendor-applications/{id}/identity', [\App\Http\Controllers\Admin\VendorApplicationAdminController::class, 'identity'])->whereNumber('id')->name('admin.vendor-applications.identity');
+    Route::patch('/vendor-applications/{id}', [\App\Http\Controllers\Admin\VendorApplicationAdminController::class, 'review'])->whereNumber('id')->name('admin.vendor-applications.review');
     Route::get('/vendors/{id}', [AdminDashboardController::class, 'vendorShow'])->name('admin.vendors.show');
     Route::patch('/vendors/{id}/approve', [AdminDashboardController::class, 'approveVendor'])->name('admin.vendors.approve');
     Route::patch('/vendors/{id}/block', [AdminDashboardController::class, 'blockVendor'])->name('admin.vendors.block');

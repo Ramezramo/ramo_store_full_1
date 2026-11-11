@@ -312,7 +312,7 @@ class XssProtectionTest extends TestCase
     public function test_dynamic_html_audit_escapes_or_avoids_user_controlled_values(): void
     {
         $layout = file_get_contents(resource_path('views/layouts/app.blade.php'));
-        $home = file_get_contents(resource_path('views/web/home.blade.php'));
+        $home = file_get_contents(resource_path('views/web/partials/timeline-sections.blade.php'));
         $livePreview = file_get_contents(resource_path('views/admin/live_preview.blade.php'));
         $timeline = file_get_contents(resource_path('views/admin/timeline.blade.php'));
 

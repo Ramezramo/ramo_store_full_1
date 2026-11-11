@@ -575,7 +575,7 @@
         @if($review->title)
           <div class="rv-review-title">{{ $review->title }}</div>
         @endif
-        <div class="rv-review-body">{{ $review->body }}</div>
+        @if($review->body)<div class="rv-review-body">{{ $review->body }}</div>@endif
 
         <div class="rv-card-foot">
           <button class="rv-helpful {{ $alreadyHelpful ? 'voted' : '' }}"
@@ -603,7 +603,7 @@
         <div class="rv-form-card">
           <h3 class="rv-form-title">{{ $isAr ? 'اكتب تقييم' : 'Write a Review' }}</h3>
           <p class="rv-form-sub">{{ $isAr ? 'شاركنا تجربتك الحقيقية مع المنتج ده' : 'Share your honest experience with this product' }}</p>
-          <form method="POST" action="{{ route('review.store') }}" id="review-form">
+          <form method="POST" action="{{ route('review.store') }}" id="review-form" onsubmit="return validateReviewForm()">
             @csrf
             <input type="hidden" name="product_id" value="{{ $product->id }}">
 
@@ -612,37 +612,28 @@
               <label class="rv-form-label">{{ $isAr ? 'تقييمك' : 'Your Rating' }} *</label>
               <div class="rv-star-picker" id="star-picker">
                 @for($s=1;$s<=5;$s++)
-                  <span class="rv-star" data-val="{{ $s }}"
+                  <button type="button" class="rv-star" data-val="{{ $s }}" aria-label="{{ $isAr ? $s.' نجوم' : $s.' '.($s === 1 ? 'star' : 'stars') }}" aria-pressed="false"
                         onmouseenter="hoverStar({{ $s }})"
                         onmouseleave="resetStarHover()"
-                        onclick="setRating({{ $s }})">★</span>
+                        onclick="setRating({{ $s }})">★</button>
                 @endfor
               </div>
-              <input type="hidden" name="rating" id="rating-input" value="">
+              <input type="hidden" name="rating" id="rating-input" value="{{ old('rating') }}">
               <span class="rv-star-label" id="star-label">{{ $isAr ? 'اختار تقييم' : 'Click to rate' }}</span>
               @error('rating')<span class="rv-field-err">{{ $message }}</span>@enderror
             </div>
 
-            {{-- Title --}}
-            <div class="rv-form-row">
-              <label class="rv-form-label">{{ $isAr ? 'عنوان التقييم' : 'Review Title' }}</label>
-              <input type="text" name="title" class="rv-input" maxlength="150"
-                     placeholder="{{ $isAr ? 'لخّص تجربتك في سطر' : 'Sum up your experience in one line' }}"
-                     value="{{ old('title') }}">
-              @error('title')<span class="rv-field-err">{{ $message }}</span>@enderror
-            </div>
-
             {{-- Body --}}
             <div class="rv-form-row">
-              <label class="rv-form-label">{{ $isAr ? 'تقييمك' : 'Your Review' }} *</label>
+              <label class="rv-form-label" for="review-body">{{ $isAr ? 'تعليقك (اختياري)' : 'Your comment (optional)' }}</label>
               <textarea name="body" class="rv-textarea" rows="5" id="review-body"
-                        maxlength="1000" required
+                        maxlength="1000"
                         placeholder="{{ $isAr ? 'إيه رأيك؟ الجودة والمقاس والسعر…' : 'What did you think? Quality, fit, value for money…' }}">{{ old('body') }}</textarea>
-              <div class="rv-char-counter"><span id="char-count">0</span> / 1000</div>
+              <div class="rv-char-counter"><span id="char-count">{{ mb_strlen((string) old('body', '')) }}</span> / 1000</div>
               @error('body')<span class="rv-field-err">{{ $message }}</span>@enderror
             </div>
 
-            <button type="submit" class="rv-submit" id="rv-submit-btn" onclick="return validateReviewForm()">
+            <button type="submit" class="rv-submit" id="rv-submit-btn">
               {{ $isAr ? 'انشر التقييم' : 'Publish Review' }}
             </button>
           </form>
@@ -1936,7 +1927,7 @@ function changeQty(delta) {
 
 // ── Star rating picker ────────────────────────────────────────────────
 let _selectedRating = 0;
-const starLabels = ['','Terrible','Poor','OK','Good','Excellent'];
+const starLabels = PRODUCT_TEXT.isAr ? ['', 'سيئ جدًا', 'سيئ', 'مقبول', 'جيد', 'ممتاز'] : ['', 'Terrible', 'Poor', 'OK', 'Good', 'Excellent'];
 
 function hoverStar(val) {
   document.querySelectorAll('.rv-star').forEach((s,i) => s.classList.toggle('hover', i < val));
@@ -1950,16 +1941,20 @@ function setRating(val) {
   document.querySelectorAll('.rv-star').forEach((s,i) => {
     s.classList.toggle('lit', i < val);
     s.classList.remove('hover');
+    s.setAttribute('aria-pressed', String(i + 1 === val));
   });
   const lbl = document.getElementById('star-label');
-  if (lbl) lbl.textContent = starLabels[val] || '';
+  if (lbl) { lbl.textContent = starLabels[val] || ''; lbl.style.color = ''; }
+}
+if (Number(document.getElementById('rating-input')?.value) >= 1 && Number(document.getElementById('rating-input')?.value) <= 5) {
+  setRating(Number(document.getElementById('rating-input').value));
 }
 
 // ── Review form validation ─────────────────────────────────────────────
 function validateReviewForm() {
   if (!_selectedRating) {
     const lbl = document.getElementById('star-label');
-    if (lbl) { lbl.textContent = 'Please pick a rating!'; lbl.style.color = '#e85d26'; }
+    if (lbl) { lbl.textContent = PRODUCT_TEXT.isAr ? 'اختار عدد النجوم' : 'Please pick a rating!'; lbl.style.color = '#e85d26'; }
     document.getElementById('star-picker').scrollIntoView({behavior:'smooth', block:'center'});
     return false;
   }
@@ -2312,7 +2307,7 @@ function deleteReview(btn, id, productId) {
 
 .rv-star-picker { display: flex; gap: 4px; }
 .rv-star {
-  font-size: 32px; cursor: pointer; color: #e0e0e0;
+  font-size: 32px; cursor: pointer; color: #e0e0e0; background: transparent; border: 0; padding: 0; line-height: 1;
   transition: color .1s, transform .1s;
 }
 .rv-star.lit, .rv-star.hover { color: #f5a623; }

@@ -59,7 +59,7 @@ class ReviewController extends Controller
             'product_id' => 'required|integer|exists:products_data,id',
             'rating'     => 'required|integer|min:1|max:5',
             'title'      => 'nullable|string|max:150',
-            'body'       => 'required|string|min:5|max:1000',
+            'body'       => 'nullable|string|max:1000',
         ]);
 
         $existing = DB::table('product_reviews')
@@ -102,7 +102,7 @@ class ReviewController extends Controller
             'product_id' => 'required|integer|exists:products_data,id',
             'rating'     => 'required|integer|min:1|max:5',
             'title'      => 'nullable|string|max:150',
-            'body'       => 'required|string|min:5|max:1000',
+            'body'       => 'nullable|string|max:1000',
         ]);
 
         $existing = DB::table('product_reviews')

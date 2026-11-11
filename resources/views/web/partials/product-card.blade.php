@@ -262,16 +262,16 @@
       <span class="pc-stock-label">{{ $stockLabel }}</span>
     @endif
 
-    @if($coShowAddToCart || $coShowDetails || $coRemoveWishlist)
+    @if(($coShowAddToCart && $hasAvailableStock) || $coShowDetails || $coRemoveWishlist)
     <div class="pc-actions">
-      @if($coShowAddToCart || $coRemoveWishlist)
+      @if(($coShowAddToCart && $hasAvailableStock) || $coRemoveWishlist)
       <div class="pc-add-row">
-        @if($coShowAddToCart)
-          @if($canQuickAdd || !$hasAvailableStock)
+        @if($coShowAddToCart && $hasAvailableStock)
+          @if($canQuickAdd)
             <button type="button" class="card-add-btn" id="{{ $domPrefix }}-add-{{ $pid }}"
                     data-name="{{ $productDisplayName }}" data-img="{{ $displayImg }}"
                     aria-label="{{ $cardRtl ? $cardCopy['add'] : 'Add to Cart' }}: {{ $productDisplayName }}"
-                    @disabled(!$hasAvailableStock || ($requiresVariationSelection && !$initialVariation))
+                    @disabled($requiresVariationSelection && !$initialVariation)
                     onclick="pcAddToCart({{ $pid }},this)">
               {{ $cardRtl ? $cardCopy['add'] : 'Add to Cart' }}
             </button>

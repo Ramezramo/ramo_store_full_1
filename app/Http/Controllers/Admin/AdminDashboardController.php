@@ -61,8 +61,10 @@ class AdminDashboardController extends Controller
         if ($status === 'active')  $query->where('is_blocked', false);
 
         $users = $query->paginate(20)->withQueryString();
+        $flagCounts = DB::table('user_flags')->whereIn('user_id', $users->pluck('id'))->whereNull('resolved_at')
+            ->select('user_id')->selectRaw('count(*) as total')->groupBy('user_id')->pluck('total', 'user_id');
 
-        return view('admin.users', compact('users', 'search', 'role', 'status'));
+        return view('admin.users', compact('users', 'search', 'role', 'status', 'flagCounts'));
     }
 
     public function blockUser(Request $request, int $id)
@@ -428,7 +430,24 @@ class AdminDashboardController extends Controller
 
     public function deleteVendor(int $id)
     {
-        DB::table('vendor_users')->where('id', $id)->delete();
+        DB::transaction(function () use ($id) {
+            $application = \App\Models\VendorApplication::where('vendor_id', $id)->lockForUpdate()->first();
+            if ($application) {
+                $application->status = 'rejected';
+                $application->rejection_reason = 'Your seller account was removed. Contact support or submit a new application.';
+                $application->reviewed_at = now();
+                $application->reviewed_by = auth()->id();
+                $application->save();
+                DB::table('vendor_application_notifications')->insert([
+                    'user_id' => $application->user_id,
+                    'application_id' => $application->id,
+                    'status' => 'rejected',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+            DB::table('vendor_users')->where('id', $id)->delete();
+        }, 3);
         return redirect()->route('admin.vendors')->with('success', 'Vendor deleted.');
     }
 
@@ -465,8 +484,9 @@ class AdminDashboardController extends Controller
         if ($status)     $query->where('products_data.status', $status);
 
         $products = $query->paginate(20)->withQueryString();
+        $pendingCount = DB::table('products_data')->where('acceptance_status', 'pending')->count();
 
-        return view('admin.products', compact('products', 'search', 'acceptance', 'status'));
+        return view('admin.products', compact('products', 'search', 'acceptance', 'status', 'pendingCount'));
     }
 
     public function approveProduct(int $id, ProductPublicationValidator $publicationValidator)

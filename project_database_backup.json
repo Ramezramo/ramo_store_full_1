@@ -1,0 +1,9 @@
+{
+    "exported_at_utc": "2026-11-11T07:41:27+00:00",
+    "database_version": "18.4",
+    "format": "PostgreSQL plain SQL, encrypted with Laravel Crypt using the existing APP_KEY",
+    "encrypted_file": "project_database_backup.sql.enc",
+    "sql_bytes": 488354,
+    "sql_sha256": "f4b857d519dfe8b3c4c9f5223833ecec81e1f1909cc37d47466c0888647e5986",
+    "table_count": 55
+}

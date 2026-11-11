@@ -8,6 +8,10 @@
   <div class="alert alert-success" style="margin-bottom:16px">{{ session('success') }}</div>
 @endif
 
+<div style="margin-bottom:18px">
+  <a class="btn btn-primary" href="{{ route('admin.vendor-applications') }}">Vendor applications &amp; verification settings</a>
+</div>
+
 <form method="GET" class="form-row" style="margin-bottom:20px">
   <div class="form-group">
     <label>Search</label>

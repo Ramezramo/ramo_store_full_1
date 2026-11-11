@@ -4,6 +4,14 @@
 
 @section('content')
 
+<nav aria-label="Product sections" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+  <a href="{{ route('admin.products') }}" class="btn {{ !$acceptance ? 'btn-primary' : 'btn-ghost' }}" @if(!$acceptance) aria-current="page" @endif>All products</a>
+  <a href="{{ route('admin.products', ['acceptance' => 'pending']) }}" class="btn {{ $acceptance === 'pending' ? 'btn-primary' : 'btn-ghost' }}" @if($acceptance === 'pending') aria-current="page" @endif>Pending products <span style="margin-inline-start:6px">({{ $pendingCount }})</span></a>
+</nav>
+@if($acceptance === 'pending')
+  <p style="color:var(--muted);font-size:13px;margin-bottom:16px">Products waiting for your review. Approve them to publish or reject them to keep them hidden.</p>
+@endif
+
 <form method="GET" class="form-row">
   <div class="form-group">
     <label>Search</label>
@@ -49,6 +57,7 @@
     <button type="submit" class="btn btn-primary" onclick="return confirmBulkProducts()">Apply</button>
     <span style="color:var(--muted);font-size:13px">{{ $products->total() }} product(s) found</span>
   </div>
+</form>
 
   <div class="table-wrap">
     <table>
@@ -76,7 +85,7 @@
           };
         @endphp
         <tr>
-          <td><input type="checkbox" class="product-check" name="ids[]" value="{{ $product->id }}"></td>
+          <td><input type="checkbox" class="product-check" name="ids[]" value="{{ $product->id }}" form="bulk-products-form" aria-label="Select {{ $product->name }}"></td>
           <td style="color:var(--muted)">#{{ $product->id }}</td>
           <td style="font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $product->name }}</td>
           <td style="color:var(--muted);font-size:12px">{{ $product->shop_name ?? '—' }}</td>
@@ -133,13 +142,11 @@
           </td>
         </tr>
       @empty
-        <tr><td colspan="9" style="text-align:center;color:var(--muted);padding:32px">No products found.</td></tr>
+        <tr><td colspan="9" style="text-align:center;color:var(--muted);padding:32px">{{ $acceptance === 'pending' ? 'No pending products found.' : 'No products found.' }}</td></tr>
       @endforelse
       </tbody>
     </table>
   </div>
-</form>
-
 <div class="pagination">{{ $products->links('admin.pagination') }}</div>
 
 <script>

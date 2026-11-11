@@ -148,6 +148,10 @@ class VendorWebController extends Controller
             return redirect()->route('admin.vendors');
         }
 
+        if (Auth::guard('web')->check() && !Auth::guard($this->guard)->check()) {
+            return redirect()->route('account.hub');
+        }
+
         Auth::guard($this->guard)->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

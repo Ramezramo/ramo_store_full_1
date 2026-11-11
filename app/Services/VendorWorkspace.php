@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\VendorUser;
+use App\Models\VendorApplication;
 use Illuminate\Support\Facades\Auth;
 
 class VendorWorkspace
@@ -22,7 +23,13 @@ class VendorWorkspace
             return VendorUser::query()->find(session(self::SESSION_KEY));
         }
 
-        return Auth::guard('vendor_web')->user();
+        $legacyVendor = Auth::guard('vendor_web')->user();
+        if ($legacyVendor) return $legacyVendor;
+        if (!Auth::guard('web')->check()) return null;
+
+        $vendorId = VendorApplication::where('user_id', Auth::guard('web')->id())
+            ->where('status', 'approved')->value('vendor_id');
+        return $vendorId ? VendorUser::find($vendorId) : null;
     }
 
     public function isAdmin($user): bool

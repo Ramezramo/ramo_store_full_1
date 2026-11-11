@@ -49,7 +49,7 @@
   <header class="order-inbox-heading">
     <div>
       <h1 id="order-inbox-title">{{ $pageTitle }}</h1>
-      <p>{{ $isAr ? 'تابع طلباتك وحالة الدفع والتوصيل.' : 'Updates about your orders, payments, and deliveries.' }}</p>
+      <p>{{ $isAr ? 'تابع طلباتك وتحديثات حساب البائع.' : 'Updates about your orders and seller application.' }}</p>
     </div>
     @if($unread)
       <form action="{{ route('account.notifications.read-all') }}" method="POST">
@@ -59,6 +59,29 @@
     @endif
   </header>
 
+  @if($vendorNotifications->isNotEmpty())
+    <ul class="order-inbox-list" style="margin-bottom:8px">
+      @foreach($vendorNotifications as $notice)
+        <li>
+          <form action="{{ route('account.notifications.vendor.open', $notice->id) }}" method="POST">
+            @csrf
+            <button type="submit" class="order-inbox-row{{ $notice->read_at ? '' : ' is-unread' }}">
+              <span class="order-inbox-icon">@include('web.partials.notification-bell')</span>
+              <span class="order-inbox-copy">
+                <strong>{{ match ($notice->status) {
+                  'approved' => $isAr ? 'تمت الموافقة على طلب البائع' : 'Your vendor application was approved',
+                  'on_hold' => $isAr ? 'طلب البائع مؤجل للمراجعة لاحقًا' : 'Your vendor application is on hold',
+                  default => $isAr ? 'تم رفض طلب البائع' : 'Your vendor application was declined',
+                } }}</strong>
+                <small>{{ \Illuminate\Support\Carbon::parse($notice->created_at)->locale($isAr ? 'ar' : 'en')->diffForHumans() }}</small>
+              </span>
+              @if(!$notice->read_at)<span class="order-inbox-new">{{ $isAr ? 'جديد' : 'New' }}</span>@endif
+            </button>
+          </form>
+        </li>
+      @endforeach
+    </ul>
+  @endif
   @if($notifications->isNotEmpty())
     <ul class="order-inbox-list">
       @foreach($notifications as $notification)
@@ -88,7 +111,7 @@
         </li>
       @endforeach
     </ul>
-  @else
+  @elseif($vendorNotifications->isEmpty())
     <div class="order-inbox-empty">
       <strong>{{ $isAr ? 'لسه مفيش إشعارات' : 'No notifications yet' }}</strong>
       <p>{{ $isAr ? 'هتلاقي تحديثات طلباتك هنا.' : 'Updates will appear here after you place an order.' }}</p>

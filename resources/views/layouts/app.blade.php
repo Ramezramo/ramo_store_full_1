@@ -47,6 +47,9 @@
   ]);
   $isAccountPage = request()->is(['account', 'account/*']);
   $isLoginPage = request()->routeIs('login');
+  $catalogKeepAlive = !request()->is(['login', 'register', 'auth/*', 'logout', 'checkout', 'checkout/*', 'order-success/*', 'forgot-password', 'reset-password', 'email/*'])
+    && !request()->has('tl_preview') && !request()->has('tl_solo')
+    && !(request()->routeIs('home', 'shop') && count(request()->query()) > 0);
 @endphp
 <!DOCTYPE html>
 <html lang="{{ $timelineLocale }}" dir="{{ $headerIsArabic ? 'rtl' : 'ltr' }}">
@@ -57,13 +60,18 @@
 <link rel="icon" type="image/png" sizes="256x256" href="{{ asset('favicon.png') }}">
 <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
 <meta name="theme-color" content="#111111">
+@if($catalogKeepAlive)
+<meta name="catalog-session" content="{{ hash_hmac('sha256', (string) session()->token(), (string) config('app.key')) }}">
+<script>if (window === window.top) document.documentElement.classList.add('catalog-keep-alive');</script>
+<script src="{{ asset('js/catalog-navigation.js') }}?v={{ filemtime(public_path('js/catalog-navigation.js')) }}" defer></script>
+@endif
 <meta name="robots" content="@yield('meta_robots', $storefrontNoIndex ? 'noindex,nofollow' : 'index,follow')">
 <link rel="canonical" href="@yield('canonical', url()->current())">
 <title>@yield('title', $headerIsArabic ? 'رامو ستور' : 'Ramo Store') — {{ $headerIsArabic ? 'موضة وأكثر' : 'Fashion & More' }}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"></noscript>
-<style>
+<style id="storefront-layout-css">
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --c-bg:#ffffff;--c-white:#fff;--c-dark:#111;--c-mid:#6e6e6e;--c-light:#ececec;
@@ -1055,7 +1063,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
   .nav-portal{display:none}
 }
 @media(max-width:360px){
-  .product-grid,.product-grid.cols-4{grid-template-columns:1fr !important;gap:10px}
+  .product-grid:not(.all-products-grid),.product-grid.cols-4:not(.all-products-grid){grid-template-columns:1fr !important;gap:10px}
 }
 @media(max-width:600px){
   /* On phones, cart belongs in the bottom navigation; keep the wishlist heart in the header. */
@@ -1224,6 +1232,35 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
   transition:background .2s;
 }
 .vendor-banner-btn:hover{background:#d44f1a}
+#storefront-content{display:contents}
+#storefront-content[hidden],#nav-loading-shell[hidden],#storefront-content footer[hidden]{display:none!important}
+.catalog-view{display:contents}
+html.catalog-keep-alive body{height:100dvh;min-height:0;overflow:hidden}
+html.catalog-keep-alive body>.nav{flex:none}
+html.catalog-keep-alive #storefront-content{display:block;position:relative;flex:1;min-height:0;overflow:hidden}
+html.catalog-keep-alive .catalog-view{display:block;position:absolute;inset:0;overflow:auto;overscroll-behavior-y:contain;visibility:hidden;pointer-events:none;z-index:0}
+html.catalog-keep-alive .catalog-view[data-catalog-active="1"]{visibility:visible;pointer-events:auto;z-index:1}
+.catalog-view-loading{padding:28px 16px}
+.catalog-transient-frame{position:fixed;inset:0;display:block;width:100%;height:100%;border:0;background:var(--c-bg);z-index:100000;visibility:hidden;pointer-events:none}
+.catalog-transient-frame[data-ready="1"]{visibility:visible;pointer-events:auto}
+.catalog-transient-loading{position:absolute;inset:0;z-index:2;overflow:auto;background:var(--c-bg);padding:28px 16px 96px}
+.catalog-transient-loading h1{font-size:22px;margin:0 0 20px;color:var(--c-dark)}
+.catalog-transient-loading>*{width:100%;max-width:720px;margin-inline:auto}
+.catalog-transient-loading .nav-shell-status a{color:inherit;text-decoration:underline}
+#nav-loading-shell{box-sizing:border-box;width:100%;max-width:1280px;margin:0 auto;padding:28px 16px 96px;min-height:65vh}
+#nav-loading-shell h1{font-size:22px;margin:0 0 20px;color:var(--c-dark)}
+.nav-shell-shapes{display:grid;width:100%;gap:14px}
+.nav-shell-shapes--home,.nav-shell-shapes--shop{grid-template-columns:repeat(2,minmax(0,1fr))}
+.nav-shell-block{height:90px;border-radius:14px;background:linear-gradient(100deg,#f3f3f1 20%,#fafafa 40%,#f3f3f1 60%);background-size:200% 100%;animation:nav-shell-pulse 1.5s ease-in-out infinite}
+.nav-shell-shapes--home .nav-shell-block:first-child,.nav-shell-shapes--shop .nav-shell-block:first-child{grid-column:1/-1;height:70px}
+.nav-shell-shapes--home .nav-shell-block:not(:first-child),.nav-shell-shapes--shop .nav-shell-block:not(:first-child){height:180px}
+.nav-shell-shapes--cart .nav-shell-block{height:106px;position:relative;border:1px solid #eaeaea;background:#fff;animation:none}
+.nav-shell-shapes--cart .nav-shell-block::before{content:'';position:absolute;inset-block:14px;inset-inline-start:14px;width:76px;border-radius:10px;background:#f1f1ef}
+.nav-shell-shapes--cart .nav-shell-block::after{content:'';position:absolute;inset-block-start:24px;inset-inline-start:104px;inset-inline-end:18px;height:55px;background:linear-gradient(#ededeb,#ededeb) 0 0/80% 12px no-repeat,linear-gradient(#f4f4f2,#f4f4f2) 0 22px/55% 9px no-repeat,linear-gradient(#ededeb,#ededeb) 0 43px/38% 10px no-repeat}
+.nav-shell-status{margin:20px 0;color:var(--c-mid);font-size:13px}
+.nav-shell-status button{border:0;background:none;padding:0;text-decoration:underline;cursor:pointer;font:inherit;color:inherit}
+@keyframes nav-shell-pulse{to{background-position:-200% 0}}
+@media(prefers-reduced-motion:reduce){.nav-shell-block{animation:none}}
 </style>
 @stack('styles')
 </head>
@@ -1463,6 +1500,8 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
   </div>
 </div>
 
+<div id="storefront-content">
+@if($catalogKeepAlive)<div id="catalog-view-initial" class="catalog-view" data-catalog-view="{{ request()->getRequestUri() }}" data-catalog-active="1">@endif
 @yield('content')
 
 <!-- FOOTER -->
@@ -1486,6 +1525,9 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
     <div class="footer-note">© {{ date('Y') }} RamoStore. {{ $headerIsArabic ? 'كل الحقوق محفوظة.' : 'All rights reserved.' }}</div>
   </div>
 </footer>
+@if($catalogKeepAlive)</div>@endif
+</div>
+<div id="nav-loading-shell" hidden role="status" aria-live="polite" aria-busy="true"></div>
 
 <!-- TOAST -->
 <div class="toast" id="toast" role="status" hidden>
@@ -1578,6 +1620,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 
   refreshUnreadCount();
   window.addEventListener('pageshow', event => { if (event.persisted) refreshUnreadCount(); });
+  document.addEventListener('catalog:shown', refreshUnreadCount);
   document.addEventListener('visibilitychange', refreshUnreadCount);
   window.setInterval(refreshUnreadCount, 30000);
 })();
@@ -1632,13 +1675,19 @@ if ('serviceWorker' in navigator) {
 
 // Whatever the page shipped with for the cart badge count may be a stale
 // cached copy — always reconcile it against the live count right after paint.
-(function refreshCartBadgeFromServer() {
-  fetch('/cart/count', { headers: { 'Accept': 'application/json' } })
+(function () {
+  function refreshCartBadgeFromServer() {
+  fetch('/cart/count', { cache: 'no-store', headers: { 'Accept': 'application/json' } })
     .then((r) => (r.ok ? r.json() : null))
     .then((data) => {
       if (data && typeof data.count === 'number') updateCartBadge(data.count);
     })
     .catch(() => {});
+  }
+  refreshCartBadgeFromServer();
+  window.addEventListener('pageshow', event => { if (event.persisted) refreshCartBadgeFromServer(); });
+  window.addEventListener('cart:updated', refreshCartBadgeFromServer);
+  document.addEventListener('catalog:shown', refreshCartBadgeFromServer);
 })();
 
 // Keep fixed mobile controls attached to the visible page edge while Chrome's
@@ -2317,29 +2366,80 @@ async function toggleWishlist(btn, productId) {
 
 refreshWishlistState();
 
-// Give native link navigation immediate feedback while the destination loads.
+// Render a neutral local shell immediately while the browser requests the real page.
 (function () {
   const nav = document.getElementById('mob-nav');
+  const content = document.getElementById('storefront-content');
+  const shell = document.getElementById('nav-loading-shell');
+  const footer = document.querySelector('#storefront-content footer');
+  const arabic = @json($headerIsArabic);
+  let timer;
+  let previousActive;
   function clearOpening() {
     nav.querySelector('.is-opening')?.classList.remove('is-opening');
+    previousActive?.classList.add('on');
+    previousActive = null;
+    content.hidden = false;
+    shell.hidden = true;
+    shell.replaceChildren();
+    if (footer) footer.hidden = false;
+    clearTimeout(timer);
   }
   nav.addEventListener('click', event => {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     const link = event.target.closest('a[href]');
-    if (!link) return;
+    if (!link || link.target || link.hasAttribute('download')) return;
+    const target = new URL(link.href, location.href);
+    if (target.origin !== location.origin) return;
     clearOpening();
+    previousActive = nav.querySelector('a.on');
+    previousActive?.classList.remove('on');
     link.classList.add('is-opening');
+    const path = target.pathname.replace(/\/$/, '') || '/';
+    const kind = path === '/shop' ? 'shop' : path === '/cart' ? 'cart' : path === '/' ? 'home' : path === '/login' ? 'login' : path === '/account/notifications' ? 'notifications' : 'account';
+    const labels = arabic ? { home:'الرئيسية', shop:'المتجر', cart:'السلة', account:'الحساب', login:'تسجيل الدخول', notifications:'الإشعارات', loading:'جارٍ التحميل…', slow:'التحميل يستغرق وقتًا أطول من المعتاد.', retry:'حاول مرة أخرى', back:'العودة' }
+      : { home:'Home', shop:'Shop', cart:'Your Cart', account:'Account', login:'Sign In', notifications:'Notifications', loading:'Loading…', slow:'This is taking longer than expected.', retry:'Try again', back:'Go back' };
+    const heading = document.createElement('h1');
+    heading.textContent = labels[kind];
+    const status = document.createElement('p');
+    status.className = 'nav-shell-status';
+    status.textContent = labels.loading;
+    const shapes = document.createElement('div');
+    shapes.className = 'nav-shell-shapes nav-shell-shapes--' + kind;
+    shapes.setAttribute('aria-hidden', 'true');
+    for (let i = 0; i < (kind === 'home' || kind === 'shop' ? 4 : 3); i++) {
+      const block = document.createElement('div');
+      block.className = 'nav-shell-block';
+      shapes.appendChild(block);
+    }
+    shell.replaceChildren(heading, shapes, status);
+    content.hidden = true;
+    if (footer) footer.hidden = true;
+    shell.hidden = false;
+    window.scrollTo(0, 0);
+    timer = setTimeout(() => {
+      status.textContent = labels.slow + ' ';
+      const retry = document.createElement('a');
+      retry.href = link.href;
+      retry.textContent = labels.retry;
+      const back = document.createElement('button');
+      back.type = 'button';
+      back.textContent = labels.back;
+      back.addEventListener('click', () => { window.stop(); clearOpening(); });
+      status.append(retry, document.createTextNode(' · '), back);
+    }, 15000);
   });
   window.addEventListener('pageshow', clearOpening);
 })();
 
 </script>
-@stack('scripts')
+<div id="storefront-page-scripts" hidden>@stack('scripts')</div>
 <script>
 function saveCouponAndGo(code, cartUrl) {
   try { localStorage.setItem('pending_coupon', code); } catch(e) {}
   window.location.href = cartUrl;
 }
+if (window !== window.top) window.parent.postMessage({ type: 'storefront:ready' }, window.location.origin);
 </script>
 </body>
 </html>

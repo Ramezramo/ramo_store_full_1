@@ -36,11 +36,40 @@ class WebController extends Controller
         return redirect()->to($redirect);
     }
 
-    public function home()
+    private const TIMELINE_SECTIONS_PER_PAGE = 3;
+
+    public function home(Request $request)
     {
-        // ── Load horizon_layout timeline config ──────────────────
         $lang = (string) session('locale', 'en');
-        $sections = $this->homeTimelineSections($lang);
+        $allSections = $this->homeTimelineSections($lang);
+        $announcements = array_filter($allSections, fn ($section) => ($section['layout'] ?? '') === 'announcement' && empty($section['hidden']));
+        $preview = $request->has('tl_preview') || $request->has('tl_solo');
+        $page = max(1, (int) $request->query('timeline_page', 1));
+        $visible = array_filter($allSections, fn ($section) => empty($section['hidden']) && !in_array($section['layout'] ?? '', ['announcement', 'logo'], true));
+        $sections = $preview ? $allSections : array_slice($visible, ($page - 1) * self::TIMELINE_SECTIONS_PER_PAGE, self::TIMELINE_SECTIONS_PER_PAGE, true);
+        $hasMoreSections = !$preview && $page * self::TIMELINE_SECTIONS_PER_PAGE < count($visible);
+
+        return $this->renderHomeTimeline($sections, $lang, 'web.home', compact('announcements', 'hasMoreSections', 'page', 'preview'));
+    }
+
+    public function homeSections(Request $request)
+    {
+        $validated = $request->validate(['page' => 'required|integer|min:2|max:100000']);
+        $page = (int) $validated['page'];
+        $lang = (string) $request->session()->get('locale', 'en');
+        $visible = array_filter($this->homeTimelineSections($lang), fn ($section) => empty($section['hidden']) && !in_array($section['layout'] ?? '', ['announcement', 'logo'], true));
+        $sections = array_slice($visible, ($page - 1) * self::TIMELINE_SECTIONS_PER_PAGE, self::TIMELINE_SECTIONS_PER_PAGE, true);
+        $hasMore = $page * self::TIMELINE_SECTIONS_PER_PAGE < count($visible);
+
+        return response()->json([
+            'html' => $sections ? $this->renderHomeTimeline($sections, $lang, 'web.partials.timeline-sections')->render() : '',
+            'hasMore' => $hasMore,
+            'nextPage' => $hasMore ? $page + 1 : null,
+        ]);
+    }
+
+    private function renderHomeTimeline(array $sections, string $lang, string $view, array $extra = [])
+    {
         $flashSale = FlashSaleService::getActive($lang);
 
         // ── Pre-load product data for each section ────────────────
@@ -299,18 +328,19 @@ class WebController extends Controller
         $sectionVariations = $this->loadProductVariations($allProductIds);
 
         // ── Load categories for category-strip sections ───────────
-        $allCategories = DB::table('categories2')->orderBy('name')->get(['id', 'name', 'slug'])->keyBy('id');
+        $layouts = array_column($sections, 'layout');
+        $allCategories = in_array('category', $layouts, true) ? DB::table('categories2')->orderBy('name')->get(['id', 'name', 'slug'])->keyBy('id') : collect();
 
         // ── Brands ───────────────────────────────────────────────
-        $brands = DB::table('brands')->orderBy('name')->get();
+        $brands = array_intersect($layouts, ['brands', 'brandLogos']) ? DB::table('brands')->orderBy('name')->get() : collect();
 
-        return view('web.home', compact(
+        return view($view, array_merge(compact(
             'sections', 'sectionProducts', 'sectionProductPaginators', 'sectionVariations',
             'sectionVendors', 'allCategories', 'brands',
             'sectionTestimonials', 'sectionStats', 'sectionCoupons',
             'sectionTrending', 'sectionArrivals', 'sectionActivity', 'sectionReviewsCarousel',
             'sectionCategoryCards', 'sectionFeaturedProduct', 'sectionFeaturedVariations'
-        ));
+        ), $extra));
     }
 
     public function homeProducts(Request $request)

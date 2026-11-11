@@ -31,7 +31,8 @@ class AccountController extends Controller
     public function hub()
     {
         $user = Auth::user();
-        return view('web.account.hub', compact('user'));
+        $vendorApplication = \App\Models\VendorApplication::where('user_id', $user->id)->first();
+        return view('web.account.hub', compact('user', 'vendorApplication'));
     }
 
     public function profile()

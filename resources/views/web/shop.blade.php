@@ -1100,9 +1100,14 @@ document.addEventListener('keydown', function (event) {
   const endMsg    = document.getElementById('scroll-end');
 
   if (!grid || !sentinel) return;
+  const catalogView = grid.closest('[data-catalog-view]');
+  const isActive = () => !catalogView || catalogView.dataset.catalogActive === '1';
+  const shopBaseUrl = window.location.href;
 
   let nextPage    = null;
   let loading     = false;
+  const cacheLifetime = 5 * 60 * 1000;
+  let lastRefresh = Date.now();
   const resultCount = document.getElementById('shop-result-count');
   const sidebarTotal = document.getElementById('shop-total-sidebar');
   const loadingState = document.getElementById('product-loading-state');
@@ -1110,22 +1115,38 @@ document.addEventListener('keydown', function (event) {
 
   /* Build base URL from current page URL (strip ?page=…) */
   function buildUrl(page) {
-    const url = new URL(window.location.href);
+    const url = new URL(shopBaseUrl);
     url.searchParams.set('page', page);
     return url.toString();
   }
 
-  async function loadPage(page, replace = false) {
-    if (loading) return;
+  async function loadPage(page, replace = false, forceRefresh = false) {
+    if (loading || !isActive()) return;
     loading = true;
     if (!replace) loader.style.display = 'block';
 
     try {
-      const response = await fetch(buildUrl(page), {
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-      });
-      if (!response.ok) throw new Error('Unable to load shop products');
-      const data = await response.json();
+      const cacheKey = 'ramo-shop-products-v1:' + (shopRtl ? 'ar:' : 'en:') + buildUrl(page);
+      let data = null;
+      let dataSavedAt = Date.now();
+      if (!forceRefresh) {
+        try {
+          const cached = JSON.parse(sessionStorage.getItem(cacheKey) || 'null');
+          if (cached && Date.now() - cached.savedAt >= 0 && Date.now() - cached.savedAt < cacheLifetime) { data = cached.data; dataSavedAt = cached.savedAt; }
+          else sessionStorage.removeItem(cacheKey);
+        } catch (_) {}
+      }
+      if (!data) {
+        const response = await fetch(buildUrl(page), {
+          cache: 'no-store', headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+        });
+        if (!response.ok) throw new Error('Unable to load shop products');
+        data = await response.json();
+        if (typeof data.html !== 'string' || typeof data.hasMore !== 'boolean') throw new Error('Invalid shop product response');
+        dataSavedAt = Date.now();
+        try { sessionStorage.setItem(cacheKey, JSON.stringify({ savedAt: dataSavedAt, data })); } catch (_) {}
+      }
+      if (replace) lastRefresh = dataSavedAt;
       const batch = document.createElement('template');
       batch.innerHTML = data.html || '';
       if (typeof _pcInitializeVariations === 'function') {
@@ -1152,6 +1173,9 @@ document.addEventListener('keydown', function (event) {
       if (nextPage === null) {
         endMsg.style.display = 'block';
         observer.disconnect();
+      } else {
+        endMsg.style.display = 'none';
+        observer.observe(sentinel);
       }
     } catch {
       if (replace) {
@@ -1171,6 +1195,18 @@ document.addEventListener('keydown', function (event) {
   // Fetch products only after the complete page shell is available to the user.
   loadPage(1, true);
   observer.observe(sentinel);
+  // Refresh the catalog after five minutes, including when a background tab returns.
+  function refreshExpiredProducts() {
+    if (!document.hidden && isActive() && Date.now() - lastRefresh >= cacheLifetime && !loading) loadPage(1, true, true);
+  }
+  setInterval(refreshExpiredProducts, 30000);
+  document.addEventListener('visibilitychange', refreshExpiredProducts);
+  document.addEventListener('catalog:shown', () => {
+    if (isActive()) {
+      if (nextPage !== null) { observer.unobserve(sentinel); observer.observe(sentinel); }
+      refreshExpiredProducts();
+    }
+  });
 })();
 </script>
 

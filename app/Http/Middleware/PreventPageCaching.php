@@ -19,14 +19,27 @@ class PreventPageCaching
     {
         $response = $next($request);
 
+        // Only the two unfiltered storefront entry pages may be reused by this
+        // browser. Vary by session cookie and language to prevent one session
+        // or locale from receiving another session's personalized header/CSRF.
+        // Cart, account, previews, filtered pages and redirects remain no-store.
+        $contentType = (string) $response->headers->get('Content-Type', '');
+        if ($request->isMethod('GET') && $request->routeIs('home', 'shop')
+            && count($request->query()) === 0 && $response->getStatusCode() === 200
+            && str_contains($contentType, 'text/html')) {
+            $response->headers->set('Cache-Control', 'private, max-age=300, must-revalidate');
+            $response->setVary(['Cookie', 'Accept-Language']);
+            $response->headers->remove('Pragma');
+            $response->headers->remove('Expires');
+            return $response;
+        }
+
         // This middleware exists for visual QA only. Keep normal caching available
         // whenever production-safe debug mode is disabled, while preserving instant
         // reloads during local visual QA.
         if (! config('app.debug')) {
             return $response;
         }
-
-        $contentType = (string) $response->headers->get('Content-Type', '');
 
         if ($request->isMethod('GET') && ($response->isRedirection() || str_contains($contentType, 'text/html'))) {
             $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, private');

@@ -199,6 +199,23 @@
   <div class="acc-hub-section">
     <div class="acc-hub-section-label">{{ $isAr ? 'حسابي' : 'My Account' }}</div>
 
+    <a href="{{ route('vendor.register') }}" class="acc-hub-item">
+      <div class="acc-hub-item-icon">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22v-8h6v8"/></svg>
+      </div>
+      <div class="acc-hub-item-label">
+        <div>{{ $vendorApplication?->vendor_id ? ($isAr ? 'متجري' : 'My marketplace') : ($isAr ? 'البيع على رامو' : 'Become a vendor') }}</div>
+        <div class="acc-hub-item-sub">{{ match ($vendorApplication?->status) {
+          'pending' => $isAr ? 'طلبك تحت المراجعة' : 'Application under review',
+          'on_hold' => $isAr ? 'طلبك مؤجل للمراجعة لاحقًا' : 'Application on hold',
+          'approved' => $vendorApplication->vendor_id ? ($isAr ? 'افتح لوحة البائع' : 'Open your seller dashboard') : ($isAr ? 'أنشئ متجرك' : 'Create your marketplace'),
+          'rejected' => $isAr ? 'راجع طلبك وقدمه مرة تانية' : 'Review and resubmit your application',
+          default => $isAr ? 'ابدأ طلبك' : 'Start your application',
+        } }}</div>
+      </div>
+      <div class="acc-hub-chevron"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </a>
+
     <a href="{{ route('account.orders') }}" class="acc-hub-item">
       <div class="acc-hub-item-icon">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>

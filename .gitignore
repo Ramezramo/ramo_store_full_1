@@ -75,3 +75,8 @@ Thumbs.db
 .env.backup
 .env.local
 .app_key
+
+# Full local database exports and private application files
+/database-backup-*.sql
+/database-restore.sql
+/storage/app/private/*

@@ -74,6 +74,7 @@
         <td style="color:var(--muted);font-size:12px;white-space:nowrap">{{ $user->created_at ? \Carbon\Carbon::parse($user->created_at)->format('d M Y') : '—' }}</td>
         <td>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <a href="{{ route('admin.users.flags', $user->id) }}" class="btn btn-ghost btn-sm">Flags{{ !empty($flagCounts[$user->id]) ? ' ('.$flagCounts[$user->id].')' : '' }}</a>
             @if($user->is_blocked)
               <form method="POST" action="{{ route('admin.users.unblock', $user->id) }}">
                 @csrf @method('PATCH')

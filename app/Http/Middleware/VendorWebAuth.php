@@ -22,9 +22,15 @@ class VendorWebAuth
             return $next($request);
         }
 
-        if (! Auth::guard('vendor_web')->check()) {
+        $vendor = $workspace->vendor();
+        if (!$vendor) {
             return redirect()->route('vendor.login')
                 ->with('error', 'Please log in to access your vendor dashboard.');
+        }
+        if ($vendor->status !== 'approved') {
+            Auth::guard('vendor_web')->logout();
+            return redirect()->route(Auth::guard('web')->check() ? 'vendor.register' : 'vendor.login')
+                ->with('error', 'Your seller account is not currently active.');
         }
         return $next($request);
     }
