@@ -1238,8 +1238,10 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
 html.catalog-keep-alive body{height:100dvh;min-height:0;overflow:hidden}
 html.catalog-keep-alive body>.nav{flex:none}
 html.catalog-keep-alive #storefront-content{display:block;position:relative;flex:1;min-height:0;overflow:hidden}
-html.catalog-keep-alive .catalog-view{display:block;position:absolute;inset:0;overflow:auto;overscroll-behavior-y:contain;visibility:hidden;pointer-events:none;z-index:0}
-html.catalog-keep-alive .catalog-view[data-catalog-active="1"]{visibility:visible;pointer-events:auto;z-index:1}
+/* Child transitions can retain inherited visibility briefly. Opacity hides the
+   entire old view immediately without unmounting it or resetting its scroll. */
+html.catalog-keep-alive .catalog-view{display:block;position:absolute;inset:0;overflow:auto;overscroll-behavior-y:contain;background:var(--c-bg);isolation:isolate;opacity:0;visibility:hidden;pointer-events:none;z-index:0;transition:none}
+html.catalog-keep-alive .catalog-view[data-catalog-active="1"]{opacity:1;visibility:visible;pointer-events:auto;z-index:1}
 .catalog-view-loading{padding:28px 16px}
 .catalog-transient-frame{position:fixed;inset:0;display:block;width:100%;height:100%;border:0;background:var(--c-bg);z-index:100000;visibility:hidden;pointer-events:none}
 .catalog-transient-frame[data-ready="1"]{visibility:visible;pointer-events:auto}
@@ -1261,6 +1263,12 @@ html.catalog-keep-alive .catalog-view[data-catalog-active="1"]{visibility:visibl
 .nav-shell-status button{border:0;background:none;padding:0;text-decoration:underline;cursor:pointer;font:inherit;color:inherit}
 @keyframes nav-shell-pulse{to{background-position:-200% 0}}
 @media(prefers-reduced-motion:reduce){.nav-shell-block{animation:none}}
+.cart-button-content{display:inline-flex;align-items:center;justify-content:center;gap:.5em;max-inline-size:100%;vertical-align:middle}
+.cart-button-spinner{flex:none;inline-size:clamp(12px,1em,18px);block-size:clamp(12px,1em,18px);border:2px solid currentColor;border-inline-end-color:transparent;border-radius:50%;animation:cart-button-spin .7s linear infinite}
+button.cart-button-pending:disabled{opacity:1!important;cursor:progress!important}
+.cart-request-status{position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+@keyframes cart-button-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.cart-button-spinner{animation:none}}
 </style>
 @stack('styles')
 </head>
@@ -1530,6 +1538,7 @@ html.catalog-keep-alive .catalog-view[data-catalog-active="1"]{visibility:visibl
 <div id="nav-loading-shell" hidden role="status" aria-live="polite" aria-busy="true"></div>
 
 <!-- TOAST -->
+<div id="cart-request-status" class="cart-request-status" role="status" aria-live="polite" aria-atomic="true"></div>
 <div class="toast" id="toast" role="status" hidden>
   <span id="toast-icon" aria-hidden="true">🛍️</span>
   <span id="toast-msg"></span>
@@ -1627,12 +1636,17 @@ html.catalog-keep-alive .catalog-view[data-catalog-active="1"]{visibility:visibl
 </script>
 @endauth
 
+<script src="{{ asset('js/cart-feedback.js') }}?v={{ filemtime(public_path('js/cart-feedback.js')) }}"></script>
 <script>
 const CSRF_TOKEN = '{{ csrf_token() }}';
 const STOREFRONT_IS_AR = {{ $headerIsArabic ? 'true' : 'false' }};
 const STOREFRONT_COPY = STOREFRONT_IS_AR ? {
   addError: 'مش قادرين نضيف المنتج للسلة دلوقتي.',
   networkError: 'في مشكلة في الاتصال، جرّب تاني.',
+  adding: 'بنضيف للسلة…',
+  added: 'اتضاف للسلة.',
+  slowCart: 'الطلب واخد وقت أطول من المعتاد. راجع السلة قبل ما تحاول تاني.',
+  sessionExpired: 'الجلسة انتهت. حدّث الصفحة وحاول تاني.',
   cart: 'روح للسلة',
   sku: 'كود المنتج',
   quantity: 'الكمية',
@@ -1648,6 +1662,10 @@ const STOREFRONT_COPY = STOREFRONT_IS_AR ? {
 } : {
   addError: 'Could not add to cart.',
   networkError: 'Network error. Try again.',
+  adding: 'Adding…',
+  added: 'Added to cart.',
+  slowCart: 'This is taking longer than expected. Check your cart before trying again.',
+  sessionExpired: 'Your session expired. Refresh the page and try again.',
   cart: 'Go to Cart',
   sku: 'SKU',
   quantity: 'Qty',
@@ -1785,22 +1803,26 @@ function updateCartBadge(count) {
 }
 
 function showCartErrors(messages) {
+  CartFeedback.announce(messages.join(' • '));
   if (window.showProductCartErrors?.(messages)) return;
   showToast(messages.join(' • '), 'err');
 }
 
+function cartRequestError(error) {
+  if (error.name === 'AbortError') return STOREFRONT_COPY.slowCart;
+  if (error.status === 401 || error.status === 419) return STOREFRONT_COPY.sessionExpired;
+  return STOREFRONT_COPY.networkError;
+}
+
 // Add to cart (AJAX)
-async function addToCart(productId, name, price, image, variationId = null, qty = 1, varLabel = null, oldPrice = null) {
+async function addToCart(productId, name, price, image, variationId = null, qty = 1, varLabel = null, oldPrice = null, source = null) {
+  if (!CartFeedback.begin(source, STOREFRONT_COPY.adding)) return;
   try {
-    const res = await fetch('/cart/add', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json','X-CSRF-TOKEN': CSRF_TOKEN},
-      body: JSON.stringify({ product_id: productId, variation_id: variationId, qty })
-    });
-    const data = await res.json();
+    const data = await CartFeedback.request('/cart/add', { product_id: productId, variation_id: variationId, qty }, CSRF_TOKEN);
     if (Array.isArray(data.items)) window.dispatchEvent(new CustomEvent('cart:updated', { detail: data }));
     if (data.success) {
       updateCartBadge(data.count);
+      CartFeedback.announce(STOREFRONT_COPY.added);
       openAtcDrawer({ image, oldPrice, varLabel, items: data.items, count: data.count, cartTotal: data.cart_total, rowId: data.row_id });
       notifyProductCartAddFinished(true);
     } else {
@@ -1808,8 +1830,10 @@ async function addToCart(productId, name, price, image, variationId = null, qty 
       notifyProductCartAddFinished(false);
     }
   } catch(e) {
-    showCartErrors([STOREFRONT_COPY.networkError]);
+    showCartErrors([cartRequestError(e)]);
     notifyProductCartAddFinished(false);
+  } finally {
+    CartFeedback.end(source);
   }
 }
 
@@ -1835,15 +1859,11 @@ function showBulkAddFailures(data) {
 // Add multiple variations to cart in one request.
 async function addMultipleToCart(productId, items) {
   try {
-    const res = await fetch('/cart/add-multiple', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json','X-CSRF-TOKEN': CSRF_TOKEN},
-      body: JSON.stringify({ product_id: productId, items })
-    });
-    const data = await res.json();
+    const data = await CartFeedback.request('/cart/add-multiple', { product_id: productId, items }, CSRF_TOKEN);
     if (Array.isArray(data.items)) window.dispatchEvent(new CustomEvent('cart:updated', { detail: data }));
     if (data.success) {
       updateCartBadge(data.count);
+      CartFeedback.announce(STOREFRONT_COPY.added);
       openAtcDrawer({ items: data.items, count: data.count, cartTotal: data.cart_total, rowIds: data.row_ids || [] });
       if (data.failed_items && data.failed_items.length) showBulkAddFailures(data);
       notifyProductCartAddFinished(true, data.failed_items);
@@ -1852,7 +1872,7 @@ async function addMultipleToCart(productId, items) {
       notifyProductCartAddFinished(false);
     }
   } catch (e) {
-    showCartErrors([STOREFRONT_COPY.networkError]);
+    showCartErrors([cartRequestError(e)]);
     notifyProductCartAddFinished(false);
   }
 }
@@ -2274,15 +2294,9 @@ async function pcAddToCart(pid, source = null) {
     return;
   }
   const price   = card.dataset.selPrice ? parseFloat(card.dataset.selPrice) : parseFloat(card.dataset.basePrice);
-  button.dataset.adding = 'true';
-  button.setAttribute('aria-busy', 'true');
-  button.disabled = true;
   try {
-    await addToCart(pid, name, price, curImg, varId, 1);
+    await addToCart(pid, name, price, curImg, varId, 1, null, null, button);
   } finally {
-    delete button.dataset.adding;
-    button.removeAttribute('aria-busy');
-    button.disabled = false;
     _pcUpdatePrice(pid, card);
   }
 }

@@ -1336,7 +1336,7 @@
                   <button type="button" disabled aria-label="{{ $timelineRtl ? 'وصلت لأقصى كمية' : 'Maximum quantity reached' }}">+</button>
                 </div>
                 <button class="pcw-atc-btn"
-                        onclick="addToCart({{ $fp->id }}, '{{ addslashes($pcwName) }}', {{ (float)$pcwMinEff }}, '{{ $fp->thumbnail_url }}', null, 1)">
+                        onclick="addToCart({{ $fp->id }}, {{ \Illuminate\Support\Js::from($pcwName) }}, {{ (float)$pcwMinEff }}, {{ \Illuminate\Support\Js::from($fp->thumbnail_url) }}, null, 1, null, null, this)">
                   🛒 {{ $timelineRtl ? 'ضيف للسلة' : 'Add to Cart' }}
                 </button>
               @else

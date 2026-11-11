@@ -1610,9 +1610,14 @@ function updateAddButtonState() {
 
   [document.getElementById('add-to-cart-btn'), document.querySelector('.sticky-atc-btn')].forEach(button => {
     if (!button) return;
-    button.disabled = (!canOrder && !canGuide) || productCartRequestPending;
-    button.textContent = label;
-    button.setAttribute('aria-busy', String(productCartRequestPending));
+    if (productCartRequestPending) {
+      CartFeedback.begin(button, label);
+    } else {
+      CartFeedback.end(button);
+      button.disabled = !canOrder && !canGuide;
+      button.textContent = label;
+      button.setAttribute('aria-busy', 'false');
+    }
   });
   updateCartSelectionSummary();
 }
@@ -1661,6 +1666,7 @@ function resetProductSelections() {
 }
 
 window.productCartAddFinished = function (success, failedItems = []) {
+  if (!productCartRequestPending) return;
   productCartRequestPending = false;
   if (success && multiVariantMode && failedItems.length) {
     const failedIds = new Set(failedItems.map(item => String(item.variation_id)));
