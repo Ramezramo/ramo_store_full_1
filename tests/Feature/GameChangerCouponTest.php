@@ -205,13 +205,13 @@ class GameChangerCouponTest extends TestCase
                 ],
             ])->get(route('cart'));
             $cartPage->assertOk()
-                ->assertSee('<meta http-equiv="refresh" content="20">', false)
+                ->assertDontSee('<meta http-equiv="refresh" content="20">', false)
                 ->assertSee('id="cart-request-overlay"', false)
                 ->assertSee('data-cart-request', false)
                 ->assertSee('showCartRequestLoading', false)
-                ->assertSee('rememberCartRequestPosition', false)
-                ->assertSee('restoreCartRequestPosition', false)
-                ->assertSee('ramo_cart_request_position', false)
+                ->assertDontSee('rememberCartRequestPosition', false)
+                ->assertDontSee('restoreCartRequestPosition', false)
+                ->assertDontSee('ramo_cart_request_position', false)
                 ->assertDontSee("fetch('/cart/update", false)
                 ->assertDontSee('onclick="updateQty', false)
                 ->assertDontSee('onsubmit="applyCoupon', false);

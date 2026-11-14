@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Helpers\ResponseHandlerRam;
 use App\Models\Coupon;
 use App\Services\PricingService;
+use App\Services\CartRules;
+use App\Services\CouponEligibility;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -348,44 +350,26 @@ class CouponController extends Controller
      */
     private function calculateAuthenticatedCartTotal(int $userId): float
     {
-        $cartItems = DB::table('cart_items')->where('user_id', $userId)->get();
-        if ($cartItems->isEmpty()) {
-            throw new \InvalidArgumentException('Your cart is empty.', 422);
-        }
-
-        $productIds = $cartItems->pluck('product_id')->unique()->values()->all();
-        $products = DB::table('products_data')
-            ->whereIn('id', $productIds)
-            ->get(['id', 'discount_percentage'])
-            ->keyBy('id');
-        $variations = DB::table('product_variations')
-            ->whereIn('product_id', $productIds)
-            ->get(['id', 'product_id', 'main_variation', 'price', 'regular_price', 'status', 'stock_status'])
-            ->keyBy('id');
-
+        $cart = $this->authenticatedCart($userId);
+        if (! $cart) throw ValidationException::withMessages(['cart' => 'Your cart is empty.']);
         $subtotal = 0.0;
-        foreach ($cartItems as $item) {
-            $product = $products->get($item->product_id);
-            $variation = $item->variation_id
-                ? $variations->get($item->variation_id)
-                : $variations->first(fn ($row) => (int) $row->product_id === (int) $item->product_id && (bool) $row->main_variation);
-            $quantity = (int) $item->qty;
-
-            if (! $product || ! $variation || (int) $variation->product_id !== (int) $item->product_id) {
-                throw new \InvalidArgumentException('Your cart contains an unavailable product variation.', 422);
+        foreach (CartRules::canonicalize($cart) as $item) {
+            $product = DB::table('products_data')->where('id', $item['product_id'])->first();
+            $variation = CartRules::variation((int) $item['product_id'], $item['variation_id'] ?? null);
+            if ($error = CartRules::quantityError($product, $variation, (int) $item['qty'])) {
+                throw ValidationException::withMessages(['cart' => $error]);
             }
-            if ($quantity < 1) {
-                throw new \InvalidArgumentException('Your cart contains an invalid quantity.', 422);
-            }
-            if (($variation->status ?? 'publish') !== 'publish' || ($variation->stock_status ?? 'instock') !== 'instock') {
-                throw new \InvalidArgumentException('Your cart contains an unavailable product variation.', 422);
-            }
-
-            $subtotal += PricingService::effectiveVariationPrice($variation, $product) * $quantity;
+            $subtotal += PricingService::effectiveVariationPrice($variation, $product) * (int) $item['qty'];
         }
-
         return round($subtotal, 2);
     }
+
+    private function authenticatedCart(int $userId): array
+    {
+        return DB::table('cart_items')->where('user_id', $userId)->orderBy('id')->get()
+            ->map(fn ($item) => (array) $item)->all();
+    }
+
 
     /**
      * Validate coupon and return validation result.
@@ -393,7 +377,8 @@ class CouponController extends Controller
     public function validateCouponRules(
         string $code,
         float $cart_total,
-        ?int $user_id = null
+        ?int $user_id = null,
+        ?array $cart = null
     ): array {
         // Load the record without the active scope so the user can be told
         // whether the code is missing, disabled, or expired.
@@ -493,7 +478,12 @@ class CouponController extends Controller
         }
 
         // ✅ VALID - Return the same rounded discount used by order creation.
-        $discount = $this->getCouponDiscountAmount($coupon, $cart_total);
+        try {
+            $discount = CouponEligibility::discount($coupon, $cart_total, $user_id,
+                $cart ?? ($user_id ? $this->authenticatedCart($user_id) : null));
+        } catch (ValidationException $e) {
+            return ['valid' => false, 'reason' => 'ineligible', 'message' => 'This coupon is not valid for your account or cart.', 'code' => 422, 'data' => null];
+        }
 
         return [
             'valid' => true,
@@ -565,7 +555,7 @@ class CouponController extends Controller
             }
 
             return $this->successResponse(
-                data: $validation['data'],
+                data: array_replace($validation['data'], ['coupon' => $this->couponToArray($validation['data']['coupon'])]),
                 message: $validation['message']
             );
         } catch (ValidationException $e) {
@@ -582,7 +572,7 @@ class CouponController extends Controller
         }
     }
 
-    public function applyCouponLocally(string $code, float $cartTotal, ?int $userId = null, bool $consumeUsage = false): array
+    public function applyCouponLocally(string $code, float $cartTotal, ?int $userId = null, bool $consumeUsage = false, ?array $cart = null): array
     {
         // 1. Basic input validation
         $code = trim($code);
@@ -595,7 +585,7 @@ class CouponController extends Controller
         }
 
         // 2. Core coupon rules validation
-        $validation = $this->validateCouponRules($code, $cartTotal, $userId);
+        $validation = $this->validateCouponRules($code, $cartTotal, $userId, $cart);
 
         if (! $validation['valid']) {
             return $this->failureResponselocal($validation['message'], $validation['code']);
@@ -610,7 +600,7 @@ class CouponController extends Controller
         }
 
         // Calculate the preview or order discount from the server-computed subtotal.
-        $discount = $this->getCouponDiscountAmount($coupon, $cartTotal);
+        $discount = $validation['data']['discount_amount'];
 
         if ($consumeUsage) {
             $coupon = $coupon->refresh();
@@ -760,7 +750,7 @@ class CouponController extends Controller
             return $this->failureResponse($e->errors(), 422);
         } catch (\Throwable $e) {
 
-            return $this->failureResponse($e, 422);
+            return $this->failureResponse('This coupon could not be applied to your cart.', 422);
 
         }
     }

@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
-use App\Http\Traits\CartTrait;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -14,7 +14,6 @@ use Illuminate\Support\Str;
 
 class EmailVerificationController extends Controller
 {
-    use CartTrait;
     private int $tokenExpiryMinutes = 60;
 
     private function localized(string $english, string $arabic): string
@@ -22,122 +21,92 @@ class EmailVerificationController extends Controller
         return session('locale', 'en') === 'ar' ? $arabic : $english;
     }
 
-    private function generateAndStore(string $email): string
-    {
-        $token = Str::random(64);
-
-        DB::table('email_verification_tokens')->upsert(
-            ['email' => $email, 'token' => Hash::make($token), 'created_at' => now()],
-            ['email'],
-            ['token', 'created_at']
-        );
-
-        return $token;
-    }
-
-    private function sendOrShow(User $user, string $token): ?string
-    {
-        $url = route('email.verify', ['token' => $token, 'email' => $user->email]);
-
-        $canSendMail = false;
-        try {
-            $mailer = config('mail.default');
-            $host   = config('mail.mailers.smtp.host', '');
-            $canSendMail = ($mailer === 'smtp' && !empty($host) && $host !== 'mailpit' && $host !== 'localhost')
-                        || ($mailer !== 'log' && $mailer !== 'array');
-        } catch (\Throwable) {}
-
-        if ($canSendMail) {
-            try {
-                Mail::send('emails.verify-email', ['url' => $url, 'user' => $user], function ($m) use ($user) {
-                    $m->to($user->email, $user->name)
-                      ->subject('Verify your Ramo Store email');
-                });
-                return null;
-            } catch (\Throwable) {}
-        }
-
-        return $url;
-    }
-
     public function notice()
     {
-        if (!Auth::check()) return redirect()->route('login');
+        if (! Auth::check()) return redirect()->route('login');
         $user = Auth::user();
-        if ($user->email_verified_at) return redirect()->route('account.profile');
-        if (str_ends_with($user->email, '@ramostore.local')) return redirect()->route('account.profile');
-
+        if ($user->email_verified_at || ! $this->hasDeliverableEmail($user)) {
+            return redirect()->route('account.profile');
+        }
         return view('web.auth.verify-email', ['email' => $user->email]);
+    }
+
+    private function hasDeliverableEmail(User $user): bool
+    {
+        $email = (string) $user->email;
+        return filter_var($email, FILTER_VALIDATE_EMAIL)
+            && ! str_ends_with($email, '@ramostore.local')
+            && ! str_ends_with($email, '@phone.user');
     }
 
     public function resend(Request $request)
     {
-        if (!Auth::check()) return redirect()->route('login');
+        if (! Auth::check()) return redirect()->route('login');
         $user = Auth::user();
-
-        if ($user->email_verified_at) {
+        if ($user->email_verified_at || ! $this->hasDeliverableEmail($user)) {
             return redirect()->route('account.profile');
         }
-
         $existing = DB::table('email_verification_tokens')->where('email', $user->email)->first();
-        if ($existing) {
-            $ageSeconds = now()->diffInSeconds($existing->created_at);
-            if ($ageSeconds < 60) {
-                return back()->with('resend_error', $this->localized('Please wait a moment before requesting another link.', 'استنى شوية قبل ما تطلب لينك جديد.'));
-            }
+        if ($existing?->created_at && Carbon::parse($existing->created_at)->isAfter(now()->subSeconds(60))) {
+            return back()->with('resend_error', $this->localized('Please wait a moment before requesting another link.', 'استنى شوية قبل ما تطلب لينك جديد.'));
         }
 
-        $token  = $this->generateAndStore($user->email);
-        $devUrl = $this->sendOrShow($user, $token);
-
-        return back()->with([
-            'resent'   => true,
-            'dev_url'  => $devUrl,
-        ]);
+        $token = Str::random(64);
+        DB::table('email_verification_tokens')->upsert(
+            ['email' => $user->email, 'token' => Hash::make($token), 'created_at' => now()],
+            ['email'], ['token', 'created_at']
+        );
+        $url = route('email.verify', ['token' => $token, 'email' => $user->email]);
+        try {
+            if (in_array(config('mail.default'), ['log', 'array'], true)) {
+                throw new \RuntimeException('Email delivery is not configured.');
+            }
+            Mail::send('emails.verify-email', ['url' => $url, 'user' => $user], function ($mail) use ($user) {
+                $mail->to($user->email, $user->name)->subject('Verify your Ramo Store email');
+            });
+        } catch (\Throwable) {
+            // The bearer link must never be returned to an unverified requester.
+            return back()->with('resend_error', $this->localized(
+                'We could not send the verification email. Please try again later.',
+                'مش قادرين نبعت إيميل التأكيد دلوقتي. جرّب تاني بعد شوية.'
+            ));
+        }
+        return back()->with('resent', true);
     }
 
     public function verify(Request $request)
     {
         $email = $request->query('email');
         $token = $request->query('token');
-
-        if (!$email || !$token) {
+        if (! is_string($email) || ! filter_var($email, FILTER_VALIDATE_EMAIL)
+            || ! is_string($token) || strlen($token) !== 64) {
             return redirect()->route('login')->withErrors(['email' => $this->localized('Invalid verification link.', 'لينك التأكيد مش صحيح.')]);
         }
 
-        $record = DB::table('email_verification_tokens')->where('email', $email)->first();
+        $verified = DB::transaction(function () use ($email, $token): bool {
+            $user = User::query()->where('email', $email)->lockForUpdate()->first();
+            $record = DB::table('email_verification_tokens')->where('email', $email)->lockForUpdate()->first();
+            if (! $user || ! $record) return false;
+            if (! $record->created_at || Carbon::parse($record->created_at)->isBefore(now()->subMinutes($this->tokenExpiryMinutes))) {
+                DB::table('email_verification_tokens')->where('email', $email)->delete();
+                return false;
+            }
+            if (! Hash::check($token, $record->token)) return false;
 
-        if (!$record) {
-            return redirect()->route('login')->withErrors(['email' => $this->localized('Verification link not found. Please request a new one.', 'مش لاقيين لينك التأكيد. اطلب لينك جديد.')]);
-        }
-
-        $ageMinutes = now()->diffInMinutes($record->created_at);
-        if ($ageMinutes > $this->tokenExpiryMinutes) {
+            // This is a trusted ownership proof; keep the field guarded in User.
+            $user->forceFill(['email_verified_at' => now()])->save();
             DB::table('email_verification_tokens')->where('email', $email)->delete();
-            return redirect()->route('email.verify.notice')
-                ->with('expired', true)
-                ->with('info', $this->localized('Your verification link has expired. Please request a new one.', 'لينك التأكيد انتهت صلاحيته. اطلب لينك جديد.'));
+            return true;
+        });
+        if (! $verified) {
+            return redirect()->route('login')->withErrors(['email' => $this->localized(
+                'Invalid or expired verification link. Please request a new one.',
+                'لينك التأكيد مش صحيح أو انتهت صلاحيته. اطلب لينك جديد.'
+            )]);
         }
 
-        if (!Hash::check($token, $record->token)) {
-            return redirect()->route('login')->withErrors(['email' => $this->localized('Invalid verification link.', 'لينك التأكيد مش صحيح.')]);
-        }
-
-        $user = User::where('email', $email)->first();
-        if (!$user) {
-            return redirect()->route('login')->withErrors(['email' => $this->localized('Account not found.', 'مش لاقيين الحساب ده.')]);
-        }
-
-        $user->update(['email_verified_at' => now()]);
-        DB::table('email_verification_tokens')->where('email', $email)->delete();
-
-        if (!Auth::check()) {
-            Auth::login($user);
-            $request->session()->regenerate();
-            $this->mergeGuestSessionOnLogin($user->id);
-        }
-
-        return redirect()->route('account.profile')
-            ->with('success', $this->localized('Email verified! Welcome to Ramo Store.', 'الإيميل اتأكد بنجاح! أهلاً بيك في Ramo Store.'));
+        // An email confirmation is not an account sign-in or an account-linking action.
+        return redirect()->route(Auth::check() ? 'account.profile' : 'login')
+            ->with('success', $this->localized('Email verified successfully.', 'الإيميل اتأكد بنجاح.'));
     }
 }

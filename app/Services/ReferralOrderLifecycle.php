@@ -9,16 +9,16 @@ class ReferralOrderLifecycle
 {
     public function dispatchForTransition(int $orderId, ?string $oldStatus, ?string $newStatus): void
     {
-        if ($oldStatus === $newStatus || $newStatus === null) {
+        if ($newStatus === null) {
             return;
         }
 
-        if ($newStatus === 'completed' && $oldStatus !== 'completed') {
+        // Reconcile actual payment/refund/shipment facts even when a manual
+        // parent-status override keeps the visible status unchanged.
+        ClawBackReferralCommission::dispatch($orderId)->afterCommit();
+        if ($newStatus === 'completed') {
             ProcessReferralCommission::dispatch($orderId)->afterCommit();
         }
 
-        if (in_array($newStatus, ['refunded', 'cancelled'], true)) {
-            ClawBackReferralCommission::dispatch($orderId)->afterCommit();
-        }
     }
 }

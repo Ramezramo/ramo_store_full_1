@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Support\EgyptianPhoneNumber;
 
 class ReferralFraudChecker
 {
@@ -15,6 +16,11 @@ class ReferralFraudChecker
     {
         $reasons = [];
         $ip = $ip ?: request()->ip();
+
+        if ($referrer->getKey() && $newUser->getKey()
+            && (int) $referrer->getKey() === (int) $newUser->getKey()) {
+            $reasons[] = 'account_matches_referrer';
+        }
 
         if ($ip && $referrer->referral_lock_ip && hash_equals((string) $referrer->referral_lock_ip, (string) $ip)) {
             $reasons[] = 'registration_ip_matches_referrer';
@@ -43,6 +49,7 @@ class ReferralFraudChecker
         // carrier. Keep it as a review flag; identity/address matches remain
         // hard rejects and cannot qualify for a commission.
         $hardRejectReasons = [
+            'account_matches_referrer',
             'phone_matches_referrer',
             'email_matches_referrer',
             'shipping_address_matches_referrer',
@@ -60,7 +67,15 @@ class ReferralFraudChecker
 
     private function normalizePhone(?string $phone): string
     {
-        return preg_replace('/\D+/', '', (string) $phone) ?? '';
+        $canonical = EgyptianPhoneNumber::normalize((string) $phone);
+        if ($canonical !== null) {
+            return $canonical;
+        }
+
+        // Preserve comparisons for older non-Egyptian contacts without treating
+        // a different national spelling of an Egyptian number as a new identity.
+        $digits = preg_replace('/\D+/', '', (string) $phone) ?? '';
+        return str_starts_with($digits, '00') ? substr($digits, 2) : $digits;
     }
 
     private function looksLikeEmailAlias(string $first, string $second): bool

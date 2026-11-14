@@ -30,7 +30,9 @@ class OrderStatusServiceTest extends TestCase
         $this->assertSame('shipped', $this->service->compute('confirmed', ['shipped', 'shipped']));
         $this->assertSame('partially_shipped', $this->service->compute('confirmed', ['shipped', 'pending']));
         $this->assertSame('processing', $this->service->compute('confirmed', ['processing', 'pending']));
-        $this->assertSame('pending', $this->service->compute('confirmed', ['pending', 'returned']));
+        $this->assertSame('partially_cancelled', $this->service->compute('confirmed', ['pending', 'returned']));
+        $this->assertSame('cancelled', $this->service->compute('confirmed', ['returned']));
+        $this->assertSame('cancelled', $this->service->compute('refunded', ['delivered']));
     }
 
     public function test_legacy_completed_vendor_status_is_delivered(): void

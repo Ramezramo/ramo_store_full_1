@@ -1268,11 +1268,49 @@ class AdminDashboardController extends Controller
             'admin_note' => 'nullable|string|max:1000',
         ]);
 
-        DB::table('refund_requests')->where('id', $id)->update([
-            'status'     => $request->status,
-            'admin_note' => $request->admin_note,
-            'updated_at' => now(),
-        ]);
+        DB::transaction(function () use ($request, $id): void {
+            $identity = DB::table('refund_requests')->where('id', $id)->first();
+            abort_unless($identity, 404);
+            $order = \App\Models\Order::whereKey($identity->order_id)->lockForUpdate()->firstOrFail();
+            $refund = DB::table('refund_requests')->where('id', $id)->lockForUpdate()->first();
+            if ($refund->status === $request->status) return;
+            $allowed = [
+                'pending' => ['approved', 'rejected', 'completed'],
+                'approved' => ['rejected', 'completed'], 'rejected' => [], 'completed' => [],
+            ];
+            if (! in_array($request->status, $allowed[$refund->status] ?? [], true)) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['status' => 'This refund transition is not allowed.']);
+            }
+            DB::table('refund_requests')->where('id', $id)->update([
+                'status' => $request->status, 'admin_note' => $request->admin_note, 'updated_at' => now(),
+            ]);
+            if ($request->status === 'completed') {
+                $timeline = is_array($order->timeline) ? $order->timeline : [];
+                $timeline[] = ['event' => 'refund_completed', 'refund_id' => $id,
+                    'by' => 'admin:'.auth()->id(), 'timestamp' => now()->toIso8601String()];
+                $order->timeline = $timeline;
+                if (empty($refund->vendor_id)) {
+                    $order->status = 'refunded';
+                    $order->payment_status = 'refunded';
+                    $order->general_order_status = 'cancelled';
+                } else {
+                    $affected = DB::table('order_sub_orders')->where('parent_order_id', $order->id)
+                        ->where('vendor_id', $refund->vendor_id)->update([
+                            'status' => 'returned', 'vendor_status' => 'returned', 'updated_at' => now(),
+                        ]);
+                    if (! $affected) {
+                        throw \Illuminate\Validation\ValidationException::withMessages(['status' => 'The refund does not match a shipment in this order.']);
+                    }
+                }
+                $order->save();
+                // Reversal is committed together with refund completion. Any completed
+                // refund voids this order's reward; no unsupported partial amount is guessed.
+                (new \App\Jobs\ClawBackReferralCommission((int) $order->id, 'refund_completed', auth()->id()))->handle();
+                if (! empty($refund->vendor_id)) app(OrderStatusService::class)->sync((int) $order->id);
+            } elseif ($request->status === 'rejected' && $order->status === 'completed') {
+                \App\Jobs\ProcessReferralCommission::dispatch((int) $order->id)->afterCommit();
+            }
+        });
 
         return back()->with('success', 'Refund request updated to '.ucfirst($request->status).'.');
     }

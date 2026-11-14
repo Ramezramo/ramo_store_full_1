@@ -5,10 +5,14 @@ namespace App\Providers;
 use App\Http\Controllers\CouponController;
 use App\Http\Controllers\ProductController;
 use App\Http\View\Composers\AdminSidebarComposer;
+use App\Http\Middleware\BindSessionCredentials;
 use App\Models\User;
 use App\Observers\UserObserver;
+use App\Support\EgyptianPhoneNumber;
 use Illuminate\Http\Request;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
@@ -39,6 +43,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         User::observe(UserObserver::class);
+        Event::listen(Login::class, [BindSessionCredentials::class, 'recordLogin']);
 
         if (config('app.force_https')) {
             URL::forceScheme('https');
@@ -71,8 +76,12 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('password-reset', fn (Request $request) => Limit::perMinute(10)
             ->by('password.reset.' . $request->ip()));
 
-        RateLimiter::for('referral-register', fn (Request $request) => Limit::perHour(5)
-            ->by('referral.register.' . $request->ip() . '.' . hash('sha256', strtolower((string) $request->cookie('ref_code', $request->query('ref', ''))))));
+        RateLimiter::for('referral-register', fn (Request $request) => [
+            // A referral value cannot create a fresh IP registration allowance.
+            Limit::perHour(5)->by('referral.register.ip.' . $request->ip()),
+            Limit::perHour(5)->by('referral.register.code.' . $request->ip() . '.' . hash('sha256',
+                strtoupper(trim((string) $request->cookie('ref_code', $request->query('ref', '')))))),
+        ]);
 
         RateLimiter::for('cart-mutation', fn (Request $request) => Limit::perMinute(40)
             ->by('cart.mutation.' . self::customerOrIpKey($request)));
@@ -103,16 +112,7 @@ class AppServiceProvider extends ServiceProvider
 
     private static function otpPhoneKey(Request $request): string
     {
-        $phone = preg_replace('/\s+/', '', (string) $request->input('phone', '')) ?? '';
-
-        if (str_starts_with($phone, '0')) {
-            $phone = '+2' . $phone;
-        }
-
-        if ($phone !== '' && !str_starts_with($phone, '+')) {
-            $phone = '+' . $phone;
-        }
-
-        return hash('sha256', $phone);
+        $phone = (string) $request->input('phone', '');
+        return hash('sha256', EgyptianPhoneNumber::normalize($phone) ?? trim($phone));
     }
 }

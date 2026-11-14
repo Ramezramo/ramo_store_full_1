@@ -23,7 +23,7 @@ trait CartTrait
 
             return $this->loadCartFromDb();
         }
-        return session('ramo_cart', []);
+        return \App\Services\CartRules::canonicalize(session('ramo_cart', []));
     }
 
     protected function cartVariationQuantities(array $cart, int $productId): array
@@ -67,22 +67,18 @@ trait CartTrait
             if (!$product) continue;
 
             $variation = $item->variation_id ? ($variations[$item->variation_id] ?? null) : null;
-            if (!$variation) {
+            if (!$item->variation_id) {
                 $variation = DB::table('product_variations')
                     ->where('product_id', $item->product_id)
                     ->where('main_variation', true)
                     ->first();
             }
 
-            $regularPrice = (float) ($variation->regular_price ?? 0);
-            $price        = (float) ($variation->price ?? $regularPrice);
-            $discPct      = (float) ($product->discount_percentage ?? 0);
-            if ($discPct > 0 && $regularPrice > 0 && $price >= $regularPrice) {
-                $price = round($regularPrice * (1 - $discPct / 100), 2);
-            }
+            $bound = $variation && (int) $variation->product_id === (int) $product->id;
+            $price = $bound ? \App\Services\PricingService::effectiveVariationPrice($variation, $product) : 0;
 
             $attrs = [];
-            if ($item->variation_id && $variation) {
+            if ($bound) {
                 $vAttrs = $variation->attributes ?? null;
                 if ($vAttrs) {
                     $attrs = json_decode($vAttrs, true)
@@ -92,7 +88,7 @@ trait CartTrait
             }
 
             $rowId = md5($item->product_id . '_' . ($item->variation_id ?? '0'));
-            $cart[$rowId] = [
+            $cart[] = [
                 'rowId'        => $rowId,
                 'product_id'   => (int) $item->product_id,
                 'variation_id' => $item->variation_id ? (int) $item->variation_id : null,
@@ -105,52 +101,53 @@ trait CartTrait
             ];
         }
 
-        return $cart;
+        return \App\Services\CartRules::canonicalize($cart);
     }
 
     protected function syncCartToDb(array $cart): void
     {
-        $userId = Auth::id();
-        DB::table('cart_items')->where('user_id', $userId)->delete();
-        foreach ($cart as $item) {
-            DB::table('cart_items')->insert([
-                'user_id'      => $userId,
-                'product_id'   => $item['product_id'],
-                'variation_id' => $item['variation_id'] ?? null,
-                'qty'          => $item['qty'],
-                'created_at'   => now(),
-                'updated_at'   => now(),
-            ]);
-        }
+        DB::transaction(function () use ($cart) {
+            $userId = Auth::id();
+            DB::table('users')->where('id', $userId)->lockForUpdate()->first();
+            DB::table('cart_items')->where('user_id', $userId)->delete();
+            foreach (\App\Services\CartRules::canonicalize($cart) as $item) {
+                DB::table('cart_items')->insert([
+                    'user_id' => $userId, 'product_id' => $item['product_id'],
+                    'variation_id' => $item['variation_id'] ?? null, 'qty' => $item['qty'],
+                    'created_at' => now(), 'updated_at' => now(),
+                ]);
+            }
+        });
     }
 
     protected function mergeGuestCartToDb(int $userId, array $guestCart): void
     {
         if (empty($guestCart)) return;
-
-        foreach ($guestCart as $item) {
-            $existing = DB::table('cart_items')
-                ->where('user_id', $userId)
-                ->where('product_id', $item['product_id'])
-                ->where('variation_id', $item['variation_id'] ?? null)
-                ->first();
-
-            if ($existing) {
-                DB::table('cart_items')->where('id', $existing->id)->update([
-                    'qty'        => min($existing->qty + $item['qty'], $item['stock'] ?? 999),
-                    'updated_at' => now(),
-                ]);
-            } else {
-                DB::table('cart_items')->insert([
-                    'user_id'      => $userId,
-                    'product_id'   => $item['product_id'],
-                    'variation_id' => $item['variation_id'] ?? null,
-                    'qty'          => $item['qty'],
-                    'created_at'   => now(),
-                    'updated_at'   => now(),
-                ]);
+        DB::transaction(function () use ($userId, $guestCart) {
+            DB::table('users')->where('id', $userId)->lockForUpdate()->first();
+            foreach (\App\Services\CartRules::canonicalize($guestCart) as $item) {
+                $product = DB::table('products_data')->where('id', $item['product_id'])->first();
+                $variation = \App\Services\CartRules::variation((int) $item['product_id'], $item['variation_id'] ?? null);
+                if (! $product || ! $variation) continue;
+                $existing = DB::table('cart_items')->where('user_id', $userId)->where('product_id', $product->id)
+                    ->where(function ($q) use ($variation) {
+                        $q->where('variation_id', $variation->id);
+                        if ($variation->main_variation) $q->orWhereNull('variation_id');
+                    })->orderBy('id')->get();
+                $maximum = (int) $variation->stock_quantity;
+                if ((int) ($product->max_orders_per_person ?? 0) > 0) $maximum = min($maximum, (int) $product->max_orders_per_person);
+                if ($product->sold_individually ?? false) $maximum = min($maximum, 1);
+                $qty = min($maximum, (int) $existing->sum('qty') + (int) $item['qty']);
+                if (\App\Services\CartRules::quantityError($product, $variation, $qty)) continue;
+                $values = ['variation_id' => $variation->id, 'qty' => $qty, 'updated_at' => now()];
+                if ($existing->isNotEmpty()) {
+                    DB::table('cart_items')->where('user_id', $userId)->whereIn('id', $existing->pluck('id')->slice(1))->delete();
+                    DB::table('cart_items')->where('user_id', $userId)->where('id', $existing->first()->id)->update($values);
+                } else {
+                    DB::table('cart_items')->insert($values + ['user_id' => $userId, 'product_id' => $product->id, 'created_at' => now()]);
+                }
             }
-        }
+        });
     }
 
     protected function mergeGuestWishlistToDb(int $userId, array $guestWishlist): void

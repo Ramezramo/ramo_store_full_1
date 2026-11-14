@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Helpers\ShippingConfig;
 use App\Http\Controllers\CouponController;
 use App\Http\Traits\CartTrait;
+use App\Services\CartRules;
+use App\Services\PricingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -110,15 +112,7 @@ class CartController extends Controller
 
         $subtotal = collect($cart)->sum(fn($i) => $i['price'] * $i['qty']);
         $coupon   = $this->appliedCoupon($subtotal);
-        $discount = 0;
-
-        if ($coupon) {
-            if ($coupon['discount_type'] === 'percent') {
-                $discount = $subtotal * ($coupon['amount'] / 100);
-            } else {
-                $discount = min((float) $coupon['amount'], $subtotal);
-            }
-        }
+        $discount = (float) ($coupon['verified_discount'] ?? 0);
 
         $afterDiscount = max(0, $subtotal - $discount);
         $freeShipping = is_array($coupon) && ! empty($coupon['free_shipping']);
@@ -142,7 +136,7 @@ class CartController extends Controller
 
         $products = DB::table('products_data')
             ->whereIn('id', $productIds)
-            ->get(['id', 'name', 'translations', 'sku', 'discount_percentage', 'minimum_order_qty', 'max_orders_per_person', 'sold_individually'])
+            ->get(['id', 'name', 'translations', 'sku', 'discount_percentage', 'minimum_order_qty', 'max_orders_per_person', 'sold_individually', 'status', 'acceptance_status', 'purchasable', 'vendor_id'])
             ->keyBy('id');
 
         $variations = DB::table('product_variations')
@@ -171,10 +165,8 @@ class CartController extends Controller
             $varRow  = $varId ? ($variations[$varId] ?? null) : ($mainVariations[$item['product_id']] ?? null);
 
             $reg = $varRow ? (float) $varRow->regular_price : 0.0;
-            $eff = $reg > 0 ? $reg : (float) ($varRow->price ?? 0);
-            if ($discPct > 0 && $reg > 0) {
-                $eff = round($reg * (1 - $discPct / 100), 2);
-            }
+            $eff = $varRow && (int) $varRow->product_id === (int) $product->id
+                ? PricingService::effectiveVariationPrice($varRow, $product) : 0.0;
 
             $item['_priceChanged'] = false;
             if (abs(($item['price'] ?? -1) - $eff) > 0.001) {
@@ -190,7 +182,8 @@ class CartController extends Controller
             $item['stock'] = $liveStock;
             $item['minimum_qty'] = $minimumQuantity;
             $item['maximum_qty'] = $maximumQuantity;
-            $item['is_unavailable'] = ! $varRow
+            $item['is_unavailable'] = ! CartRules::purchasable($product) || ! $varRow
+                || (int) $varRow->product_id !== (int) $product->id
                 || $liveStock < 1
                 || (($varRow->status ?? 'publish') !== 'publish')
                 || (($varRow->stock_status ?? 'instock') !== 'instock');
@@ -226,7 +219,7 @@ class CartController extends Controller
         }
 
         return $query->first([
-            'id', 'attributes', 'regular_price', 'sale_price', 'price', 'model_number',
+            'id', 'product_id', 'attributes', 'regular_price', 'sale_price', 'price', 'model_number',
             'stock_quantity', 'stock_status', 'status',
         ]);
     }
@@ -237,6 +230,9 @@ class CartController extends Controller
      */
     private function addVariationToCart(array &$cart, object $product, object $variation, int $qty): array
     {
+        if (! CartRules::purchasable($product)) {
+            return ['success' => false, 'message' => $this->localized('This product is no longer available.', 'المنتج ده مبقاش متاح.')];
+        }
         if (($variation->status ?? 'publish') !== 'publish' || ($variation->stock_status ?? 'instock') !== 'instock') {
             return ['success' => false, 'message' => $this->localized('The selected product variation is unavailable.', 'الاختيار اللي اخترته مش متاح.')];
         }
@@ -247,11 +243,7 @@ class CartController extends Controller
         }
 
         $regularPrice = (float) ($variation->regular_price ?? 0);
-        $price = (float) ($variation->price ?? $regularPrice);
-        $discPct = (float) ($product->discount_percentage ?? 0);
-        if ($discPct > 0 && $regularPrice > 0 && $price >= $regularPrice) {
-            $price = round($regularPrice * (1 - $discPct / 100), 2);
-        }
+        $price = PricingService::effectiveVariationPrice($variation, $product);
 
         $resolvedVariationId = (int) $variation->id;
         $rowId = md5($product->id . '_' . $resolvedVariationId);
@@ -402,56 +394,25 @@ class CartController extends Controller
             return null;
         }
 
-        $record = DB::table('coupons')
-            ->whereRaw('LOWER(code) = ?', [strtolower(trim((string) $coupon['code']))])
-            ->first(['code', 'discount_type', 'amount', 'free_shipping', 'description', 'status', 'date_expires', 'minimum_amount', 'maximum_amount']);
-
-        $invalidMessage = null;
-        $invalidReason = null;
-        $invalidData = [];
-        if (! $record) {
-            $invalidReason = 'not_found';
-        } elseif (($record->status ?? 'publish') !== 'publish') {
-            $invalidReason = 'inactive';
-        } elseif ($record->date_expires && now()->isAfter($record->date_expires)) {
-            $invalidReason = 'expired';
-            $invalidData = ['expires_at' => $record->date_expires];
-        } elseif ($subtotal !== null && $subtotal < (float) ($record->minimum_amount ?? 0)) {
-            $invalidReason = 'minimum_amount';
-            $invalidData = [
-                'cart_total' => $subtotal,
-                'minimum_amount' => (float) ($record->minimum_amount ?? 0),
-            ];
-        } elseif ($subtotal !== null && (float) ($record->maximum_amount ?? 0) > 0 && $subtotal > (float) $record->maximum_amount) {
-            $invalidReason = 'maximum_amount';
-            $invalidData = [
-                'cart_total' => $subtotal,
-                'maximum_amount' => (float) $record->maximum_amount,
-            ];
-        }
-
-        if ($invalidReason !== null) {
-            $invalidMessage = app(CouponController::class)->localizedValidationMessage([
-                'reason' => $invalidReason,
-                'data' => $invalidData,
-            ], session('locale', 'en') === 'ar');
-        }
-
-        if ($invalidMessage !== null) {
+        $validation = app(CouponController::class)->validateCouponRules(
+            (string) $coupon['code'], (float) ($subtotal ?? 0), Auth::id(), $this->getCart()
+        );
+        if (! $validation['valid']) {
+            $message = app(CouponController::class)->localizedValidationMessage($validation, session('locale', 'en') === 'ar');
             $this->couponWasInvalidated = true;
-            $this->couponInvalidationMessage = $invalidMessage;
-            $this->couponInvalidationCode = strtoupper(trim((string) ($coupon['code'] ?? '')));
+            $this->couponInvalidationMessage = $message;
+            $this->couponInvalidationCode = strtoupper(trim((string) $coupon['code']));
             session()->forget('ramo_coupon');
-            session()->flash('coupon_error', $invalidMessage);
+            session()->flash('coupon_error', $message);
             session()->flash('coupon_error_code', $this->couponInvalidationCode);
             return null;
         }
-
-        $coupon['code'] = $record->code;
-        $coupon['discount_type'] = $record->discount_type ?? 'percent';
-        $coupon['amount'] = $record->amount ?? 0;
-        $coupon['free_shipping'] = (bool) ($record->free_shipping ?? false);
-        $coupon['description'] = $record->description ?? ($coupon['description'] ?? '');
+        $record = $validation['data']['coupon'];
+        $coupon = [
+            'code' => $record->code, 'discount_type' => $record->discount_type,
+            'amount' => $record->amount, 'free_shipping' => (bool) $record->free_shipping,
+            'description' => $record->description, 'verified_discount' => $validation['data']['discount_amount'],
+        ];
         session(['ramo_coupon' => $coupon]);
 
         return $coupon;
@@ -460,12 +421,7 @@ class CartController extends Controller
     private function calcTotals(float $subtotal): array
     {
         $coupon   = $this->appliedCoupon($subtotal);
-        $discount = 0;
-        if ($coupon) {
-            $discount = $coupon['discount_type'] === 'percent'
-                ? $subtotal * ($coupon['amount'] / 100)
-                : min((float) $coupon['amount'], $subtotal);
-        }
+        $discount = (float) ($coupon['verified_discount'] ?? 0);
         $afterDiscount = max(0, $subtotal - $discount);
         $freeShipping = is_array($coupon) && ! empty($coupon['free_shipping']);
         $shippingFee   = $freeShipping ? 0.0 : ShippingConfig::feeForSubtotal($afterDiscount);
@@ -508,7 +464,7 @@ class CartController extends Controller
             ->where('product_id', $item['product_id'])
             ->first(['id', 'stock_quantity', 'stock_status', 'status']);
 
-        if (! $product || ! $variation || (($variation->status ?? 'publish') !== 'publish') || (($variation->stock_status ?? 'instock') !== 'instock')) {
+        if (! CartRules::purchasable($product) || ! $variation || (($variation->status ?? 'publish') !== 'publish') || (($variation->stock_status ?? 'instock') !== 'instock')) {
             return response()->json(['success' => false, 'message' => $this->localized('This product variation is no longer available.', 'الاختيار ده مبقاش متاح.')], 422);
         }
 
@@ -623,7 +579,8 @@ class CartController extends Controller
         $validation = app(CouponController::class)->validateCouponRules(
             $code,
             $subtotal,
-            Auth::id()
+            Auth::id(),
+            $cart
         );
 
         if (! $validation['valid']) {

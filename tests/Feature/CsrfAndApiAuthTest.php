@@ -7,6 +7,23 @@ use Tests\TestCase;
 
 class CsrfAndApiAuthTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->app->bind(\App\Http\Middleware\VerifyCsrfToken::class, function ($app) {
+            return new class($app, $app['encrypter']) extends \App\Http\Middleware\VerifyCsrfToken {
+                protected function runningUnitTests() { return false; }
+            };
+        });
+    }
+
+    public function test_cart_and_checkout_mutations_require_csrf(): void
+    {
+        foreach (['/cart/add', '/cart/add-multiple', '/cart/coupon', '/checkout/place'] as $path) {
+            $this->postJson($path, [])->assertStatus(419);
+        }
+    }
+
     public function test_customer_login_requires_csrf_token(): void
     {
         $this->post(route('login'), [

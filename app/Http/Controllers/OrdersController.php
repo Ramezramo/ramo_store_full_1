@@ -284,152 +284,36 @@ class OrdersController extends Controller
 
     public function updateOrderState(Request $request)
     {
+        $vendor = $request->user();
+        if (! $vendor instanceof \App\Models\VendorUser) return $this->failureResponse('Vendor access required.', 403);
         try {
-            $user = Auth::user();
-
-            if (! $user) {
-                return $this->failureResponse('Unauthorized', 401);
-            }
-
-            $allowedStatuses = [
-                'auto-draft',        // طلب تم إنشاؤه تلقائيًا لكن العميل لسة مخلّصش الدفع ولا فتح صفحة الدفع حتى
-                'checkout-draft',    // العميل دخل صفحة الدفع (Checkout) وبدأ يكتب بياناته لكن لسة مكملش الطلب
-                'order_placed',      // الطلب اتبعت رسمي ووصل للمتجر (العميل ضغط "إتمام الطلب" بنجاح) ← بداية الطلب الحقيقي
-                'pending',           // الطلب موجود لكن الدفع لسة ما اتمدفعش (مثل الدفع عند الاستلام أو تحويل بنكي لسة ما اتأكدش)
-                'processing',        // الدفع اتأكد وتمام، والطلب دلوقتي في مرحلة التجهيز (بنعبّي المنتجات وبنحضر الفاتورة)
-                'packed',            // المنتجات اتعبّت في الكرتونة وجاهزة للشحن، بس لسة ما اتسلمتش لشركة الشحن
-                'shipped',           // الشحنة اتسلمّت لشركة الشحن ورقم التتبع (Tracking) موجود
-                'out_for_delivery',  // الشحنة وصلت المنطقة بتاعة العميل والمندوب خارج يوصّلها النهاردة
-                'on-hold',           // الطلب متوقف مؤقتًا (مثلًا العميل طلب تعديل أو في مشكلة في المخزون أو في انتظار رد من العميل)
-                'completed',         // الطلب خلصان تمامًا والعميل استلم الشحنة (أو في حالة الدفع عند الاستلام: اتم الدفع والتسليم)
-                'cancelled',         // الطلب اتلغى (من العميل أو من الإدارة لأي سبب)
-                'refund-req',        // العميل طلب إرجاع فلوس (رفع طلب رجوع)
-                'refunded',          // الفلوس فعليًا رجعت للعميل (تمت عملية الـ Refund)
-                'failed',            // الدفع فشل خالص (مثلًا البطاقة اتضربت وما نفعتش أو العملية اتلغت من البنك)
-            ];
-
-            $validated = $request->validate([
+            $data = $request->validate([
                 'order_id' => 'required|integer|exists:orders,id',
-                'status' => 'required|string|in:'.implode(',', $allowedStatuses),
-                'tracking_number' => 'nullable|string|max:100|required_if:status,shipped',
-                'carrier' => 'nullable|string|required_if:status,shipped|in:egypt_post,bosta,pharmaexpress,casinex,aramex,dhl,fedex,dpd,ups,own_fleet,other|max:50',
+                'sub_order_id' => 'nullable|integer',
+                'status' => 'required|string|in:pending,processing,packed,shipped,out_for_delivery,delivered,completed,cancelled,returned',
+                'tracking_number' => 'nullable|string|max:100',
+                'carrier' => 'nullable|string|max:50',
                 'note' => 'nullable|string|max:1000',
             ]);
-
-            $order = Order::findOrFail($validated['order_id']);
-
-            // === Secure Vendor Authorization ===
-            // This must run before any state-dependent branch so a vendor cannot
-            // probe the current status of an order they do not own.
-            if (! Gate::forUser($user)->check('vendor', $order)) {
-                return $this->failureResponse('Forbidden: You cannot update this order', 403);
+            $order = Order::findOrFail($data['order_id']);
+            $owned = DB::table('order_sub_orders')->where('parent_order_id', $order->id)->where('vendor_id', $vendor->id);
+            if (! empty($data['sub_order_id'])) $owned->where('id', $data['sub_order_id']);
+            $shipments = $owned->get();
+            if ($shipments->isEmpty()) {
+                if (! Gate::forUser($vendor)->check('vendor', $order)) return $this->failureResponse('Forbidden.', 403);
+                if ($order->status === $data['status']) return $this->failureResponse('Order already has this status.', 400);
+                return $this->failureResponse('No owned shipment was found. Ask an administrator to review this order.', 422);
             }
-
-            $newStatus = $validated['status'];
-            $oldStatus = $order->status;
-
-            // Prevent no-op only after vendor ownership has been confirmed.
-            if ($oldStatus === $newStatus) {
-                return $this->failureResponse("Order is already {$this->getStatusLabel($newStatus)}", 400);
-            }
-
-            // === Prepare Timeline Entry ===
-            $timelineEntry = [
-                'timestamp' => now(),
-                'changed_by' => $user->id,
-                'changed_by_name' => $user->name ?? $user->email ?? 'System',
-                'from' => $oldStatus,
-                'to' => $newStatus,
-                'from_label' => $this->getStatusLabel($oldStatus),
-                'to_label' => $this->getStatusLabel($newStatus),
-            ];
-
-            // Customize event type and extra data
-            match ($newStatus) {
-                'packed' => $timelineEntry += [
-                    'event' => 'order_packed',
-                    'message' => 'Order has been packed and is ready for shipping',
-                ],
-                'shipped' => $timelineEntry += [
-                    'event' => 'order_shipped',
-                    'message' => 'Order has been shipped',
-                    'tracking_number' => $validated['tracking_number'] ?? null,
-                    'carrier' => $validated['carrier'] ?? null,
-                    'tracking_url' => $this->generateTrackingUrl($validated['carrier'] ?? '', $validated['tracking_number'] ?? ''),
-                ],
-                'completed' => $timelineEntry += [
-                    'event' => 'order_delivered',
-                    'message' => 'Order marked as delivered and completed',
-                ],
-                default => $timelineEntry += [
-                    'event' => 'status_changed',
-                    'message' => "Status changed to {$this->getStatusLabel($newStatus)}",
-                ],
-            };
-
-            // Add optional manual note
-            if (! empty($validated['note'])) {
-                $timelineEntry['vendor_note'] = $validated['note'];
-            }
-
-            // Lifecycle state is platform-controlled, never mass assigned.
-            $order->status = $newStatus;
-            $order->tracking_number = $newStatus === 'shipped' ? ($validated['tracking_number'] ?? null) : $order->tracking_number;
-            $order->carrier = $newStatus === 'shipped' ? ($validated['carrier'] ?? null) : $order->carrier;
-            $order->save();
-
-            app(ReferralOrderLifecycle::class)->dispatchForTransition(
-                (int) $order->id,
-                $oldStatus,
-                $newStatus,
-            );
-
-            // === Append to Timeline ===
-            $timeline = $order->fresh()->timeline ?? [];
-            if (! is_array($timeline)) {
-                $timeline = [];
-            }
-            $timeline[] = $timelineEntry;
-            $order->update(['timeline' => $timeline]);
-
-            // === Internal Note (for admin panel) ===
-            // === Internal Note (for admin panel) ===
-            try {
-                UserNote::create([
-                    'order_id' => $order->id,
-                    'user_id' => $user->id ?? null,           // لو الـ user مش موجود هيحط null
-                    'note' => "Status → {$this->getStatusLabel($newStatus)}"
-                        .($newStatus === 'shipped'
-                            ? " | Tracking: {$validated['tracking_number']} ({$validated['carrier']})"
-                            : '')
-                        .(! empty($validated['note']) ? ' | Note: '.strip_tags($validated['note']) : ''),
-                    'customer_note' => false,
-                ]);
-            } catch (\Exception $e) {
-                // لو حصل أي مشكلة في الـ note (زي اللي حصل دلوقتي) متوقفش باقي العملية
-                Log::warning('Failed to create UserNote for order '.$order->id, [
-                    'user_id' => $user->id ?? null,
-                    'error' => $e->getMessage(),
-                ]);
-                // متعملش return failure هنا → خلي الـ response يطلع success عادي
-            }
-
-            return $this->successResponse($order->refresh(), 'Order status updated successfully');
-
+            if ($shipments->count() !== 1) return $this->failureResponse('Choose the shipment to update.', 422);
+            $shipment = app(\App\Services\VendorShipmentService::class)->update($vendor, (int) $shipments->first()->id, $data['status'], $data);
+            return $this->successResponse([
+                'order_id' => (int) $order->id, 'status' => $order->fresh()->status,
+                'sub_order' => $shipment->toArray(),
+            ], 'Shipment status updated successfully.');
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return $this->validatrionErrorResponse($e->errors(), 422, true);
-        } catch (\Exception $e) {
-            Log::error('Order status update failed', [
-                'user_id' => $user->id ?? null,
-                'order_id' => $request->order_id ?? null,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return $this->failureResponse($e, 500);
+            return $this->validatrionErrorResponse($e->errors(), 422);
         }
     }
-
     private function getStatusLabel(string $status): string
     {
         return match ($status) {
@@ -654,14 +538,15 @@ class OrdersController extends Controller
 
                 $calculatedTotal = 0;
                 $enrichedLineItems = [];
+                $orderedVariations = [];
 
                 foreach ($validatedData['line_items'] as $item) {
                     $productId = $item['product_id'];
                     $quantity  = intval($item['quantity'] ?? 1);
 
-                    $product = $products->get($productId);
-                    if (! $product) {
-                        throw new \InvalidArgumentException("Product ID {$productId} not found.", 422);
+                    $product = Product::where('id', $productId)->lockForUpdate()->first();
+                    if (! \App\Services\CartRules::purchasable($product)) {
+                        throw new \InvalidArgumentException("Product ID {$productId} is unavailable.", 422);
                     }
 
                     $variation = null;
@@ -699,6 +584,13 @@ class OrdersController extends Controller
                         throw new \InvalidArgumentException("The selected variation of {$product->name} is not available.", 422);
                     }
 
+                    if (isset($orderedVariations[$variation->id])) {
+                        throw new \InvalidArgumentException('Combine duplicate product options into one order line.', 422);
+                    }
+                    $orderedVariations[$variation->id] = true;
+                    if ($error = \App\Services\CartRules::quantityError($product, $variation, $quantity)) {
+                        throw new \InvalidArgumentException($error, 422);
+                    }
                     $variations->put($variation->id, $variation);
                     $price = PricingService::effectiveVariationPrice($variation, $product);
 
@@ -713,14 +605,11 @@ class OrdersController extends Controller
                         throw new \InvalidArgumentException("You can only order up to {$product->max_orders_per_person} units of '{$product->name}' per order.", 422);
                     }
 
-                    // Acquire a row-level lock, re-read stock from DB, then decrement atomically.
-                    // This prevents overselling when two requests race on the same variation.
-                    if ((bool) ($product->manage_stock ?? false)) {
-                        $lockedVariation = ProductVariation::where('id', $variation->id)->lockForUpdate()->first();
-                        if ($lockedVariation->stock_quantity < $quantity) {
-                            throw new \InvalidArgumentException("Insufficient stock for {$product->name}. Only {$lockedVariation->stock_quantity} left.", 422);
-                        }
-                        $lockedVariation->decrement('stock_quantity', $quantity);
+                    // Website and API orders reserve the same finite variation stock.
+                    $reserved = ProductVariation::where('id', $variation->id)
+                        ->where('stock_quantity', '>=', $quantity)->decrement('stock_quantity', $quantity);
+                    if (! $reserved) {
+                        throw new \InvalidArgumentException("Insufficient stock for {$product->name}.", 422);
                     }
 
                     $subtotal         = $price * $quantity;
@@ -747,11 +636,16 @@ class OrdersController extends Controller
                 if (! empty($validatedData['coupon'])) {
                     $couponCode = strtoupper(trim($validatedData['coupon']));
 
+                    \App\Models\Coupon::whereRaw('LOWER(code) = ?', [strtolower($couponCode)])->lockForUpdate()->first();
                     $couponResult = $couponController->applyCouponLocally(
                         code: $couponCode,
                         cartTotal: $calculatedTotal,
                         userId: $userId,
-                        consumeUsage: true
+                        consumeUsage: true,
+                        cart: array_map(fn ($line) => [
+                            'product_id' => $line['product']->id, 'variation_id' => $line['variation']->id,
+                            'qty' => $line['quantity'],
+                        ], $enrichedLineItems)
                     );
 
                     if (! $couponResult['success']) {

@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Helpers\ResponseHandlerRam;
+use App\Helpers\AuthConfig;
+use App\Support\EgyptianPhoneNumber;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
@@ -38,142 +39,49 @@ class AuthController extends Controller
         );
     }
 
-    // Helper method to convert to integer
-    private function tryConvertToInt($value)
-    {
-        try {
-            return (int)$value;
-        } catch (\Exception $e) {
-            return $this->failureResponse('Conversion to integer failed: '.$e->getMessage(), 400);
-        }
-    }
-
-    /**
-     * Step 1: Send OTP to the provided phone number
-     */
+    /** Legacy API phone authentication is intentionally unavailable. */
     public function sendOtp(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'phone' => 'required|string|max:20',
-        
-        ]);
-
-        if ($validator->fails()) {
-            return $this->failureResponse($validator->errors(), 400, true);
-        }
-        $phone = $this->tryConvertToInt($request->phone);
-
-        try {
-            // Logic to generate and send OTP via SMS provider (e.g., Twilio, Firebase, etc.)
-            // For this implementation, we'll assume the OTP is sent successfully.
-            $otp = rand(100000, 999999);
-
-            // Store OTP in cache or database with expiration (e.g., 5 minutes)
-            Cache::put('otp_'.$request->phone, $otp, now()->addMinutes(5));
-
-            return $this->successResponse(
-                data: ['phone' => $request->phone, 'otp' => $otp],
-                message: 'OTP sent successfully to '.$request->phone,
-                code: 200
-            );
-        } catch (\Exception $e) {
-            return $this->failureResponse('Failed to send OTP: '.$e->getMessage(), 500);
-        }
+        return $this->retiredPhoneEndpoint();
     }
 
-    /**
-     * Step 2: Register or Login with Phone and OTP
-     */
     public function registerWithPhone(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            
-            'phone' => 'required|string|max:20',
-            'otp' => 'required|string|size:6',
-            'name' => 'nullable|string|max:255', // Optional name during registration
-        ]);
-        if ($validator->fails()) {
-            return $this->failureResponse($validator->errors(), 400, true);
-        }
-        // Verify OTP logic
-        $storedOtp = Cache::get('otp_'.$request->phone);
-        if (! $storedOtp || $storedOtp != $request->otp) {
-            return $this->failureResponse('Invalid or expired OTP', 401);
-        }
-        try {
-            // Check if user already exists with this phone
-            $user = User::where('phone', $request->phone)->first();
-            if (! $user) {
-                // Create new user if not exists
-                $user = new User;
-                $user->phone = $request->phone;
-                $displayName = $request->name ?? 'User_'.Str::random(5);
-                $user->name = $displayName;
-                $user->email = $request->phone.'@phone.user';
-                $user->password = bcrypt($request->password);
-                $user->avatar = $request->avatar;
-                $user->user_login = 'phone_'.$request->phone;
-                $user->url = $request->url;
-                $user->user_nicename = $request->user_nicename ?? Str::slug($displayName);
-                $user->display_name = $request->display_name ?? $displayName;
-                $user->phone = $request->phone ?? '';
-                $user->first_name = $request->first_name;
-                $user->last_name = $request->last_name;
-                $user->role = json_encode(['customer']); // Default role
-                // $user->billing = $request->billing ? json_encode($request->billing) : null;
-                $user->shipping = json_encode([
-                    'first_name' => 'John',
-                    'last_name' => 'Doe',
-                    'address_1' => '123 Main St',
-                    'address_2' => '432 Main St',
-                    'city' => 'New York',
-                    'state' => 'NY',
-                    'postcode' => '10001',
-                    'country' => 'USA',
-                ]);
-                $user->capabilities = json_encode(['customer' => true]);
-                $user->description = $request->description ?? '';
-                $user->lastname = $displayName;
-                $user->firstname = $displayName;
-                $user->registered = now();
-                $user->nicename = $displayName;
-                // Indicator that this is a phone-only registration
-                $user->registration_method = 'phone_otp';
-                $user->is_phone_verified = true;
-                $user->save();
-                $message = 'Registration successful';
-                $code = 201;
-            } else {
-                $message = 'Login successful';
-                $code = 200;
-            }
-            // Delete the OTP from cache after successful login or registration
-            Cache::forget('otp_'.$request->phone);
+        return $this->retiredPhoneEndpoint();
+    }
 
-            return $this->successResponse(
-                data: [
-                    'cookie' => $user->createToken('auth_token')->plainTextToken,
-                    'user_id' => $user->id,
-                    'user_data' => ["phone" => $user->phone, "name" => $user->name],
-                    'registration_method' => $user->registration_method,
-                ],
-                message: $message,
-                code: $code
-            );
-        } catch (\Exception $e) {
-            return $this->failureResponse('Authentication failed: '.$e->getMessage(), 500);
-        }
+    private function retiredPhoneEndpoint()
+    {
+        return response()->json([
+            'success' => false,
+            'code' => 'legacy_phone_auth_retired',
+            'message' => 'This phone sign-in endpoint has been retired. Use the website phone verification flow.',
+        ], 410);
     }
 
     public function register(Request $request)
     {
+        if (! AuthConfig::val('email_login', true)) {
+            return $this->failureResponse('Email registration is disabled. Use an enabled sign-in method.', 403);
+        }
+        if (is_string($request->input('email'))) {
+            $request->merge(['email' => strtolower(trim($request->email))]);
+        }
+        if ($request->filled('phone')) {
+            $phone = is_string($request->phone) ? EgyptianPhoneNumber::normalize($request->phone) : null;
+            if (! $phone) return $this->failureResponse('Please enter a valid Egyptian mobile number.', 422);
+            $request->merge(['phone' => $phone]);
+        }
+        if (is_string($request->input('email')) && User::query()->whereRaw('LOWER(email) = ?', [$request->email])->exists()) {
+            return $this->failureResponse('That email address is already in use.', 422);
+        }
         $validator = Validator::make($request->all(), [
             'user_login' => 'string|max:255',
             'avatar' => 'nullable|string|url',
             'url' => 'nullable|string|url',
             'user_nicename' => 'nullable|string|max:255',
             'display_name' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:20',
+            'phone' => 'nullable|string|max:20|unique:users,phone',
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'name' => 'required|string|max:255',
@@ -239,7 +147,7 @@ class AuthController extends Controller
             $user->last_name = $request->last_name;
             $user->role = json_encode(['customer']); // Default role
             // $user->billing = $request->billing ? json_encode($request->billing) : null;
-            $user->shipping = $request->shipping ? json_encode($request->shipping) : null;
+            $user->shipping = $request->shipping ? json_encode($request->shipping) : '[]';
             $user->capabilities = json_encode(['customer' => true]);
             $user->description = $request->description ?? '';
             $user->lastname = $request->last_name;
@@ -266,6 +174,9 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
+        if (! AuthConfig::val('email_login', true)) {
+            return $this->failureResponse('Email sign-in is disabled. Use an enabled sign-in method.', 403);
+        }
         $validator = Validator::make($request->all(), [
             'email' => 'required|email|max:255',
             'password' => 'required|string|max:255',
@@ -280,6 +191,10 @@ class AuthController extends Controller
 
         if (Auth::attempt($request->only('email', 'password'))) {
             $user = Auth::user();
+            if ($user->is_blocked) {
+                Auth::logout();
+                return $this->failureResponse('This account is unavailable. Please contact support.', 403);
+            }
 
             return $this->successResponse(
                 data: [
@@ -410,7 +325,7 @@ class AuthController extends Controller
     {
         // Validate the request
         $validator = Validator::make($request->all(), [
-            'token' => 'required|max:700',
+            'token' => 'required|string|max:700',
             'email' => 'required|email|max:500',
             'password' => 'required|string|min:8|confirmed|max:50',
             'password_confirmation' => 'required|max:50',
@@ -436,13 +351,15 @@ class AuthController extends Controller
         }
 
         // Attempt to reset the password
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
+        $status = $this->resetWithLockedProof($request,
             function ($user, $password) {
                 $user->forceFill([
                     'password' => Hash::make($password),
                     'remember_token' => Str::random(60),
+                    'email_verified_at' => now(),
+                    'registration_method' => 'email_password',
                 ])->save();
+                $user->tokens()->delete();
 
                 event(new PasswordReset($user));
             }
@@ -461,6 +378,18 @@ class AuthController extends Controller
         // return response()->json([
         //     'errors' => ['email' => [__($status)]],
         // ], 422);
+    }
+
+    private function resetWithLockedProof(Request $request, callable $callback): string
+    {
+        return DB::transaction(function () use ($request, $callback): string {
+            // Match the website recovery lock order before the broker reads proof.
+            User::where('email', $request->email)->lockForUpdate()->first();
+            DB::table('password_reset_tokens')->where('email', $request->email)->lockForUpdate()->first();
+            return Password::reset(
+                $request->only('email', 'password', 'password_confirmation', 'token'), $callback
+            );
+        });
     }
 
     public function forgotPassword(Request $request)
@@ -489,7 +418,7 @@ class AuthController extends Controller
     public function resetPassword(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'token' => 'required|string|',
+            'token' => 'required|string|max:700',
             'email' => 'required|email|exists:users,email',
             'password' => [
                 'required',
@@ -509,11 +438,12 @@ class AuthController extends Controller
         }
 
         try {
-            $status = Password::reset(
-                $request->only('email', 'password', 'password_confirmation', 'token'),
-                function ($user, $password) {
-                    $user->password = bcrypt($password);
-                    $user->save();
+            $status = $this->resetWithLockedProof($request,
+                    function ($user, $password) {
+                    $user->forceFill([
+                        'password' => Hash::make($password), 'remember_token' => Str::random(60),
+                        'email_verified_at' => now(), 'registration_method' => 'email_password',
+                    ])->save();
                     $user->tokens()->delete(); // Invalidate all tokens after password reset
                 }
             );

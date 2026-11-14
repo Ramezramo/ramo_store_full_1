@@ -117,6 +117,13 @@ class AccountController extends Controller
             'name'       => trim($request->first_name.' '.($request->last_name ?? '')),
         ];
 
+        if (strtolower(trim((string) $user->email)) !== strtolower(trim((string) $resolvedEmail))) {
+            $data['email_verified_at'] = null;
+        }
+        if (EgyptianPhoneNumber::normalize((string) $user->phone) !== ($normalizedPhone ?: null)) {
+            $data['is_phone_verified'] = false;
+        }
+
         $isOtpUser = ($user->registration_method === 'phone_otp');
 
         if ($request->filled('new_password')) {

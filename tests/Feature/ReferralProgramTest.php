@@ -593,6 +593,7 @@ class ReferralProgramTest extends TestCase
         ], $attributes));
         $user->role = 'normal_user';
         $user->capabilities = json_encode(['customer' => true]);
+        $user->forceFill(['email_verified_at' => now()]);
         $user->save();
         $this->userIds[] = (int) $user->id;
         return $user->fresh();
@@ -603,6 +604,9 @@ class ReferralProgramTest extends TestCase
         $order = new Order;
         $order->customer_id = $customerId;
         $order->status = $status;
+        $order->payment_status = 'confirmed';
+        $order->platform_payment_verified_at = now();
+        $order->platform_payment_verified_by = 1;
         $order->final_total = $total;
         $order->timeline = [];
         $order->save();

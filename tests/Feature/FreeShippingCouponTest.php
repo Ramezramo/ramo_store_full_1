@@ -39,8 +39,19 @@ class FreeShippingCouponTest extends TestCase
             'meta_data' => '[]',
         ]);
 
+        $productId = $variationId = null;
         try {
+        $productId = DB::table('products_data')->insertGetId([
+            'name' => 'Coupon refresh fixture', 'slug' => 'coupon-refresh-'.Str::uuid(),
+            'search_text' => 'Coupon refresh fixture', 'status' => 'publish',
+            'acceptance_status' => 'approved', 'purchasable' => true,
+        ]);
+        $variationId = DB::table('product_variations')->insertGetId([
+            'product_id' => $productId, 'main_variation' => true, 'status' => 'publish',
+            'stock_status' => 'instock', 'price' => 100, 'regular_price' => 100, 'stock_quantity' => 3, 'attributes' => '{}',
+        ]);
             $this->withSession([
+                'ramo_cart' => [['product_id' => $productId, 'variation_id' => $variationId, 'qty' => 1]],
                 'ramo_coupon' => [
                     'code' => strtolower($code),
                     'amount' => 0,
@@ -52,7 +63,7 @@ class FreeShippingCouponTest extends TestCase
             $controller = app(\App\Http\Controllers\Web\CartController::class);
             $method = new \ReflectionMethod($controller, 'appliedCoupon');
             $method->setAccessible(true);
-            $refreshed = $method->invoke($controller);
+            $refreshed = $method->invoke($controller, 100.0);
 
             $this->assertSame($code, $refreshed['code']);
             $this->assertSame(25.0, (float) $refreshed['amount']);
@@ -61,11 +72,14 @@ class FreeShippingCouponTest extends TestCase
             $this->assertSame(25.0, (float) session('ramo_coupon.amount'));
         } finally {
             DB::table('coupons')->where('id', $couponId)->delete();
+            DB::table('product_variations')->where('id', $variationId)->delete();
+            DB::table('products_data')->where('id', $productId)->delete();
         }
     }
 
     public function test_free_shipping_seeder_is_idempotent_and_offers_page_shows_expiry(): void
     {
+        \Illuminate\Support\Carbon::setTestNow('2026-08-01 12:00:00');
         $codes = ['AC46264BD', 'BK13H16D'];
         DB::table('coupons')->whereIn('code', $codes)->delete();
 
@@ -89,6 +103,7 @@ class FreeShippingCouponTest extends TestCase
                 ->assertSee('31/08/2026')
                 ->assertSee('AC46264BD');
         } finally {
+            \Illuminate\Support\Carbon::setTestNow();
             DB::table('coupons')->whereIn('code', $codes)->delete();
         }
     }
@@ -125,6 +140,7 @@ class FreeShippingCouponTest extends TestCase
                 'search_text' => 'Free shipping test product '.$suffix,
                 'status' => 'publish',
                 'acceptance_status' => 'approved',
+                'purchasable' => true,
                 'purchasable' => true,
                 'manage_stock' => true,
                 'minimum_order_qty' => 1,

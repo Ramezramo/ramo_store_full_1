@@ -116,7 +116,7 @@ class PaymentReviewController extends Controller
                 'updated_at' => $now,
             ]);
 
-            DB::table('orders')->where('id', $lockedOrder->id)->update([
+            $paymentUpdate = [
                 'payment_status' => $newPaymentStatus,
                 'set_paid' => $confirmed,
                 'needs_payment' => !$confirmed,
@@ -128,7 +128,14 @@ class PaymentReviewController extends Controller
                 'timeline' => json_encode($timeline),
                 'date_modified' => $now,
                 'updated_at' => $now,
-            ]);
+            ];
+            // A seller's receipt review permits its fulfillment, but cannot
+            // certify the platform's receipt of funds for referral rewards.
+            if (str_starts_with($reviewer, 'admin:')) {
+                $paymentUpdate['platform_payment_verified_at'] = $confirmed ? $now : null;
+                $paymentUpdate['platform_payment_verified_by'] = $confirmed ? $reviewerId : null;
+            }
+            DB::table('orders')->where('id', $lockedOrder->id)->update($paymentUpdate);
 
             if (!$confirmed) {
                 $lockedOrder->payment_status = $newPaymentStatus;

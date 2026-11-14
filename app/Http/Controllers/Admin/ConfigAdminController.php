@@ -4,6 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Helpers\ShopDisplayConfig;
+use App\Services\ReferralSettingsService;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -85,6 +89,15 @@ class ConfigAdminController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
+        $record = DB::table('app_configs')->where('id', $id)->first(['config_key', 'lang']);
+        if ($record && $record->config_key === 'referral_settings') {
+            if ($record->lang !== null) {
+                throw ValidationException::withMessages(['lang' => 'Referral settings must be shared across languages.']);
+            }
+            app(ReferralSettingsService::class)->save($this->referralPayload($request));
+            return response()->json(['success' => true, 'message' => 'Referral settings updated.']);
+        }
+
         $value    = $request->input('value', '');
         $label    = $request->input('label');
         $isPublic = $request->boolean('is_public', true);
@@ -128,6 +141,15 @@ class ConfigAdminController extends Controller
 
         if ($existing) {
             return response()->json(['success' => false, 'message' => 'Key already exists for this language.'], 422);
+        }
+
+        if ($request->config_key === 'referral_settings') {
+            if ($request->filled('lang')) {
+                throw ValidationException::withMessages(['lang' => 'Referral settings must be shared across languages.']);
+            }
+            app(ReferralSettingsService::class)->save($this->referralPayload($request));
+            $id = DB::table('app_configs')->where('config_key', 'referral_settings')->whereNull('lang')->value('id');
+            return response()->json(['success' => true, 'id' => $id, 'message' => 'Referral settings created.']);
         }
 
         $id = DB::table('app_configs')->insertGetId([
@@ -220,7 +242,31 @@ class ConfigAdminController extends Controller
         if (!$this->isAdmin()) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
+        $key = DB::table('app_configs')->where('id', $id)->value('config_key');
         DB::table('app_configs')->where('id', $id)->delete();
+        if ($key === 'referral_settings') Cache::forget('referral_settings');
         return response()->json(['success' => true, 'message' => 'Config deleted.']);
     }
+    private function referralPayload(Request $request): array
+    {
+        $request->validate(['value' => ['required', 'string', 'json']]);
+        $decoded = json_decode($request->input('value'));
+        if (! is_object($decoded)) {
+            throw ValidationException::withMessages(['value' => 'Referral settings must be a JSON object.']);
+        }
+        $data = (array) $decoded;
+        $known = array_keys(app(ReferralSettingsService::class)->defaults());
+        if (array_diff(array_keys($data), $known)) {
+            throw ValidationException::withMessages(['value' => 'Unknown referral setting.']);
+        }
+        return Validator::make($data, [
+            'referral_enabled' => ['sometimes', 'boolean'],
+            'referral_min_order_amount' => ['sometimes', 'required', 'numeric', 'min:0', 'max:1000000'],
+            'referral_commission_type' => ['sometimes', 'required', 'in:flat,percentage'],
+            'referral_commission_value' => ['sometimes', 'required', 'numeric', 'min:0', 'max:99999999.99'],
+            'referral_commission_scope' => ['sometimes', 'required', 'in:first_order,all_orders'],
+            'referral_expiry_days' => ['sometimes', 'required', 'integer', 'min:1', 'max:3650'],
+        ])->validate();
+    }
+
 }

@@ -4,6 +4,8 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
 class ReferralSettingsService
 {
@@ -81,12 +83,24 @@ class ReferralSettingsService
             ? $value
             : ($finalTotal * $value / 100);
 
-        return round(max(0, $amount), 2);
+        return is_finite($amount) ? round(min(99999999.99, max(0, $amount)), 2) : 0.0;
     }
 
     public function save(array $data): array
     {
-        $settings = $this->normalize(array_merge($this->get(), $data));
+        $merged = array_merge($this->get(), $data);
+        Validator::make($merged, [
+            'referral_enabled' => ['required', 'boolean'],
+            'referral_min_order_amount' => ['required', 'numeric', 'min:0', 'max:1000000'],
+            'referral_commission_type' => ['required', 'in:flat,percentage'],
+            'referral_commission_value' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
+            'referral_commission_scope' => ['required', 'in:first_order,all_orders'],
+            'referral_expiry_days' => ['required', 'integer', 'min:1', 'max:3650'],
+        ])->validate();
+        if ($merged['referral_commission_type'] === 'percentage' && (float) $merged['referral_commission_value'] > 100) {
+            throw ValidationException::withMessages(['referral_commission_value' => 'Percentage must be between 0 and 100.']);
+        }
+        $settings = $this->normalize($merged);
         $payload = [
             'value' => json_encode($settings, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
             'config_group' => 'referral',
@@ -128,9 +142,9 @@ class ReferralSettingsService
 
         return [
             'referral_enabled' => filter_var($settings['referral_enabled'] ?? false, FILTER_VALIDATE_BOOLEAN),
-            'referral_min_order_amount' => round(max(0, (float) ($settings['referral_min_order_amount'] ?? 700)), 2),
+            'referral_min_order_amount' => round(min(1000000, max(0, (float) ($settings['referral_min_order_amount'] ?? 700))), 2),
             'referral_commission_type' => $type,
-            'referral_commission_value' => round(max(0, (float) ($settings['referral_commission_value'] ?? 0)), 2),
+            'referral_commission_value' => round(min($type === 'percentage' ? 100 : 99999999.99, max(0, (float) ($settings['referral_commission_value'] ?? 0))), 2),
             'referral_commission_scope' => $scope,
             'referral_expiry_days' => min(3650, max(1, $expiryDays)),
         ];

@@ -141,6 +141,7 @@ class IdorAuthorizationTest extends TestCase
             'search_text' => 'IDOR coupon validate product',
             'status' => 'publish',
             'acceptance_status' => 'approved',
+                'purchasable' => true,
             'minimum_order_qty' => 1,
             'created_at' => $now,
             'updated_at' => $now,
@@ -215,6 +216,7 @@ class IdorAuthorizationTest extends TestCase
             'search_text' => 'IDOR coupon apply product',
             'status' => 'publish',
             'acceptance_status' => 'approved',
+                'purchasable' => true,
             'minimum_order_qty' => 1,
             'created_at' => $now,
             'updated_at' => $now,
@@ -597,12 +599,12 @@ class IdorAuthorizationTest extends TestCase
 
             $this->actingAs($owner, 'sanctum')
                 ->putJson('/api/cart/' . $cartItemId, ['qty' => 2])
-                ->assertOk();
+                ->assertUnprocessable();
 
             $this->assertDatabaseHas('cart_items', [
                 'id' => $cartItemId,
                 'user_id' => $owner->id,
-                'qty' => 2,
+                'qty' => 1,
             ]);
         } finally {
             DB::table('cart_items')->where('id', $cartItemId)->delete();

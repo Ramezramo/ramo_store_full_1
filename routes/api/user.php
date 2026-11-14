@@ -19,7 +19,7 @@ Route::middleware('auth:sanctum')->prefix('user')->group(function () {
     Route::get('payment-methods', [SippingController::class, 'paymentMethods']);// ✅️
 
     // Orders
-    Route::post('create-order', [OrdersController::class, 'createOrder'])->middleware('throttle:3,1');// ✅️
+    Route::post('create-order', [OrdersController::class, 'createOrder'])->middleware(['throttle:3,1', \App\Http\Middleware\SerializeCart::class]);// ✅️
     Route::get('get-all-user-orders', [OrdersController::class, 'getAllUserOrders']);// ✅️
 
     // Notes

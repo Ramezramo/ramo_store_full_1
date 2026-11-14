@@ -38,6 +38,9 @@ class AuthWebController extends Controller
 
     public function login(Request $r)
     {
+        if (! AuthConfig::val('email_login', true)) {
+            return back()->withErrors(['email' => 'Email sign-in is disabled. Use an enabled sign-in method.']);
+        }
         $r->validate([
             'email'    => 'required|email',
             'password' => 'required|string',
@@ -46,6 +49,12 @@ class AuthWebController extends Controller
         if (Auth::attempt(['email' => $r->email, 'password' => $r->password], $r->boolean('remember'))) {
             $r->session()->regenerate();
             $user = Auth::user();
+            if ($user->is_blocked) {
+                Auth::logout();
+                $r->session()->invalidate();
+                $r->session()->regenerateToken();
+                return back()->withErrors(['email' => 'This account is unavailable. Please contact support.']);
+            }
 
             if (AuthConfig::val('require_email_verification', false) && !$user->email_verified_at && !str_ends_with($user->email, '@ramostore.local')) {
                 return redirect()->route('email.verify.notice');
@@ -119,6 +128,15 @@ class AuthWebController extends Controller
 
     public function register(Request $r)
     {
+        if (! AuthConfig::val('email_login', true)) {
+            return back()->withErrors(['email' => 'Email registration is disabled. Use an enabled sign-in method.']);
+        }
+        if (is_string($r->input('email'))) {
+            $r->merge(['email' => strtolower(trim($r->email))]);
+        }
+        if (is_string($r->input('email')) && User::query()->whereRaw('LOWER(email) = ?', [$r->email])->exists()) {
+            return back()->withErrors(['email' => 'That email address is already in use.'])->withInput($r->except('password', 'password_confirmation'));
+        }
         $r->validate([
             'first_name' => 'required|string|max:100',
             'last_name'  => 'required|string|max:100',
@@ -159,7 +177,7 @@ class AuthWebController extends Controller
             'description'         => '',
             'shipping'            => json_encode([]),
             'registration_method' => 'email_password',
-            'email_verified_at'   => now(),
+            // Verification is granted only after proof of email ownership.
         ]);
         // Customer privileges are assigned by trusted server code, never mass assigned.
         $user->role = 'normal_user';

@@ -68,6 +68,18 @@
             <div class="label">Date Paid</div>
             <div class="val">{{ $order->date_paid ? date('M d, Y H:i', strtotime($order->date_paid)) : 'Not paid' }}</div>
           </div>
+          @if($order->status === 'completed' && empty($order->platform_payment_verified_at))
+          <div class="detail-item" style="grid-column:1/-1">
+            <div class="label">Confirm collected payment</div>
+            <p style="font-size:12px;color:var(--muted);margin:6px 0">Confirm that the platform received the money before a referral commission can be earned.</p>
+            <form method="POST" action="{{ route('admin.orders.payment-collected', $order->id) }}" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+              @csrf
+              <input class="form-input" name="reference" maxlength="255" placeholder="Collection or transfer reference" aria-label="Payment collection reference" required>
+              <label style="font-size:12px"><input type="checkbox" name="payment_received" value="1" required> I verified that payment was received</label>
+              <button class="btn btn-primary" type="submit">Confirm payment collected</button>
+            </form>
+          </div>
+          @endif
           <div class="detail-item">
             <div class="label">Customer Note</div>
             <div class="val">{{ $order->customer_note ?: '—' }}</div>

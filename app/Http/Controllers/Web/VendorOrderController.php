@@ -170,69 +170,16 @@ class VendorOrderController extends Controller
     // ─────────────────────────────────────────────────────────────────────
     public function updateStatus(Request $request, int $id)
     {
-        $vendor = $this->vendor();
-
-        $subOrderResource = SubOrder::find($id);
-        if (! $subOrderResource) abort(404);
-
-        try {
-            Gate::forUser($vendor)->authorize('update', $subOrderResource);
-        } catch (AuthorizationException) {
-            abort(404);
-        }
-
-        $subOrder = DB::table('order_sub_orders')->where('id', $id)->first();
-        if (! $subOrder) abort(404);
-
-        // Keep seller shipment states aligned with the admin order controls.
-        $allowed   = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'returned'];
-        $newStatus = $request->input('status');
-        $newStatus = $newStatus === 'completed' ? 'delivered' : $newStatus;
-        if (! in_array($newStatus, $allowed)) {
-            return back()->with('error', 'Invalid status.');
-        }
-
-        $parentOrder = DB::table('orders')
-            ->where('id', $subOrder->parent_order_id)
-            ->first(['payment_status']);
-        if ($newStatus !== 'cancelled' && ($parentOrder->payment_status ?? null) !== 'confirmed') {
-            return back()->with('error', 'This order cannot be processed until its payment is confirmed.');
-        }
-
-        $now      = now();
-        $timeline = json_decode($subOrder->timeline ?? '[]', true) ?: [];
-        $timeline[] = [
-            'status' => $newStatus,
-            'note'   => $request->input('note', ''),
-            'by'     => 'vendor:'.$vendor->id,
-            'at'     => $now->toDateTimeString(),
-        ];
-
-        $updateData = [
-            'status'     => $newStatus,
-            'vendor_status' => $newStatus,
-            'timeline'   => json_encode($timeline),
-            'updated_at' => $now,
-        ];
-
-        if ($request->filled('tracking_number')) {
-            $updateData['tracking_number'] = $request->tracking_number;
-        }
-        if ($request->filled('tracking_carrier')) {
-            $updateData['tracking_carrier'] = $request->tracking_carrier;
-        }
-
-        DB::table('order_sub_orders')->where('id', $id)->update($updateData);
-
-        app(OrderStatusService::class)->sync($subOrder->parent_order_id);
-
+        $data = $request->validate([
+            'status' => 'required|string|in:pending,processing,packed,shipped,out_for_delivery,delivered,completed,cancelled,returned',
+            'tracking_number' => 'nullable|string|max:100',
+            'tracking_carrier' => 'nullable|string|max:50',
+            'note' => 'nullable|string|max:1000',
+        ]);
+        $shipment = app(\App\Services\VendorShipmentService::class)->update($this->vendor(), $id, $data['status'], $data);
         return redirect()->route('vendor.orders.show', $id)
-            ->with('success', 'Sub-order status updated to "'.ucfirst($newStatus).'".');
+            ->with('success', 'Shipment status updated to "'.ucfirst($shipment->vendor_status).'".');
     }
-
-    // ─────────────────────────────────────────────────────────────────────
-    // REPLY — vendor replies to customer message on sub-order
-    // ─────────────────────────────────────────────────────────────────────
     public function reply(Request $request, int $id)
     {
         $vendor = $this->vendor();

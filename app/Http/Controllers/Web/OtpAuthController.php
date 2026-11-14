@@ -12,6 +12,7 @@ use App\Services\Sms\SmsGateway;
 use App\Support\EgyptianPhoneNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -136,7 +137,7 @@ class OtpAuthController extends Controller
         // The preview is an explicit, default-off development aid. It is never
         // returned for a real SMS provider, and the production template keeps
         // OTP_DEVELOPMENT_PREVIEW disabled even if the log driver is selected.
-        if ($isLogDriver && config('sms.development_preview')) {
+        if ($isLogDriver && config('sms.development_preview') && app()->environment(['local', 'testing'])) {
             $response['dev_otp']  = $otp;
             $response['dev_note'] = 'Development OTP preview — not sent via real SMS.';
         }
@@ -147,92 +148,104 @@ class OtpAuthController extends Controller
     public function verifyOtp(Request $request)
     {
         if (Auth::check()) {
-            return response()->json([
-                'success' => false,
-                'message' => $this->localized('You are already signed in.', 'إنت مسجل دخول بالفعل.'),
-            ], 409);
+            return response()->json(['success' => false, 'message' => $this->localized('You are already signed in.', 'إنت مسجل دخول بالفعل.')], 409);
         }
-
         $cfg = AuthConfig::get();
-
-        $request->validate(['phone' => 'required|string', 'otp' => 'required|string']);
-
-        $phone       = $this->normalizePhone($request->phone);
+        if (! $cfg['phone_otp_login']) {
+            return response()->json(['success' => false, 'message' => $this->localized('Phone OTP login is disabled.', 'تسجيل الدخول بكود الموبايل مش متاح دلوقتي.')], 403);
+        }
+        $request->validate([
+            'phone' => 'required|string|max:30',
+            'otp' => ['required', 'string', 'regex:/\\A[0-9]{4,8}\\z/'],
+        ]);
+        $phone = $this->normalizePhone($request->phone);
         if ($phone === '') {
             return response()->json(['success' => false, 'message' => $this->localized('Please enter a valid Egyptian mobile number.', 'اكتب رقم موبايل مصري صحيح.')], 422);
         }
-        $maxAttempts = (int) $cfg['max_otp_attempts'];
+        $maxAttempts = max(1, (int) $cfg['max_otp_attempts']);
 
-        $record = OtpVerification::where('phone', $phone)->where('verified', false)->latest()->first();
-
-        if (!$record) {
-            return response()->json(['success' => false, 'message' => $this->localized('No OTP found for this phone number. Please request a new one.', 'مش لاقيين كود للرقم ده. اطلب كود جديد.')], 404);
-        }
-
-        if ($record->isExpired()) {
-            $record->delete();
-            return response()->json(['success' => false, 'message' => $this->localized('OTP has expired. Please request a new one.', 'الكود انتهت صلاحيته. اطلب كود جديد.')], 410);
-        }
-
-        if ($record->isExhausted($maxAttempts)) {
-            return response()->json(['success' => false, 'message' => $this->localized('Too many incorrect attempts. Please request a new OTP.', 'محاولات غلط كتير. اطلب كود جديد.')], 429);
-        }
-
-        if ($record->otp_code !== $request->otp) {
-            $record->increment('attempts');
-            $remaining = $maxAttempts - $record->attempts;
-            return response()->json(['success' => false, 'message' => $this->localized("Incorrect OTP. {$remaining} attempt(s) remaining.", "الكود مش صحيح. فاضل {$remaining} محاولة."), 'remaining' => $remaining], 422);
-        }
-
-        $record->update(['verified' => true]);
+        $verification = DB::transaction(function () use ($phone, $request, $maxAttempts) {
+            $record = OtpVerification::where('phone', $phone)->where('verified', false)
+                ->orderByDesc('id')->lockForUpdate()->first();
+            if (! $record) {
+                return response()->json(['success' => false, 'message' => $this->localized('No OTP found for this phone number. Please request a new one.', 'مش لاقيين كود للرقم ده. اطلب كود جديد.')], 404);
+            }
+            if ($record->isExpired()) {
+                $record->delete();
+                return response()->json(['success' => false, 'message' => $this->localized('OTP has expired. Please request a new one.', 'الكود انتهت صلاحيته. اطلب كود جديد.')], 410);
+            }
+            if ($record->isExhausted($maxAttempts)) {
+                return response()->json(['success' => false, 'message' => $this->localized('Too many incorrect attempts. Please request a new OTP.', 'محاولات غلط كتير. اطلب كود جديد.')], 429);
+            }
+            if (! hash_equals((string) $record->otp_code, $request->otp)) {
+                OtpVerification::whereKey($record->id)->where('verified', false)
+                    ->where('attempts', '<', $maxAttempts)->increment('attempts');
+                $remaining = max(0, $maxAttempts - (int) $record->fresh()->attempts);
+                return response()->json(['success' => false, 'message' => $this->localized(
+                    "Incorrect OTP. {$remaining} attempt(s) remaining.", "الكود مش صحيح. فاضل {$remaining} محاولة."
+                ), 'remaining' => $remaining], 422);
+            }
+            // The conditions also protect the consume operation if another writer
+            // changed the challenge between the read and update.
+            $consumed = OtpVerification::whereKey($record->id)->where('verified', false)
+                ->where('attempts', '<', $maxAttempts)->where('expires_at', '>', now())
+                ->update(['verified' => true]);
+            if ($consumed !== 1) {
+                return response()->json(['success' => false, 'message' => $this->localized('This OTP can no longer be used. Please request a new one.', 'الكود ده مبقاش صالح للاستخدام. اطلب كود جديد.')], 429);
+            }
+            return true;
+        });
+        if ($verification !== true) return $verification;
 
         $user = User::where('phone', $phone)->first();
-
         if ($user) {
+            if ($user->is_blocked) {
+                return response()->json(['success' => false, 'message' => $this->localized('This account is unavailable. Please contact support.', 'الحساب ده مش متاح. تواصل مع الدعم.')], 403);
+            }
             $user->update(['is_phone_verified' => true]);
             Auth::login($user);
             $request->session()->regenerate();
             $this->mergeGuestSessionOnLogin($user->id);
-            return response()->json([
-                'success'  => true,
-                'new_user' => false,
-                'redirect' => $request->session()->pull('url.intended', route('home')),
-            ]);
+            return response()->json(['success' => true, 'new_user' => false,
+                'redirect' => $request->session()->pull('url.intended', route('home'))]);
         }
-
-        if (!$cfg['auto_register_otp']) {
+        if (! $cfg['auto_register_otp']) {
             return response()->json(['success' => false, 'message' => $this->localized('No account found with this phone number. Please register first.', 'مفيش حساب بالرقم ده. اعمل حساب الأول.')], 403);
         }
-
-        $tempToken = Str::random(40);
         session([
-            'otp_temp_token' => $tempToken,
-            'otp_temp_phone' => $phone,
+            'otp_temp_token' => Str::random(40), 'otp_temp_phone' => $phone,
+            'otp_temp_expires_at' => now()->addMinutes(max(1, (int) $cfg['otp_expiry_minutes']))->timestamp,
         ]);
-
         if ($cfg['require_name_on_register']) {
-            return response()->json([
-                'success'  => true,
-                'new_user' => true,
-                'redirect' => route('auth.complete-profile'),
-            ]);
+            return response()->json(['success' => true, 'new_user' => true, 'redirect' => route('auth.complete-profile')]);
         }
 
         $user = $this->createUserFromPhone($phone);
+        $this->forgetPendingProfile();
         Auth::login($user);
         $request->session()->regenerate();
         $this->mergeGuestSessionOnLogin($user->id);
+        return response()->json(['success' => true, 'new_user' => true,
+            'redirect' => $request->session()->pull('url.intended', route('home'))]);
+    }
 
-        return response()->json([
-            'success'  => true,
-            'new_user' => true,
-            'redirect' => $request->session()->pull('url.intended', route('home')),
-        ]);
+    private function pendingProfileIsValid(): bool
+    {
+        return AuthConfig::val('phone_otp_login', false) && AuthConfig::val('auto_register_otp', true)
+            && is_string(session('otp_temp_token')) && session('otp_temp_token') !== ''
+            && is_string(session('otp_temp_phone')) && session('otp_temp_phone') !== ''
+            && (int) session('otp_temp_expires_at', 0) > now()->timestamp;
+    }
+
+    private function forgetPendingProfile(): void
+    {
+        session()->forget(['otp_temp_token', 'otp_temp_phone', 'otp_temp_expires_at']);
     }
 
     public function showCompleteProfile(Request $request)
     {
-        if (!session('otp_temp_token') || !session('otp_temp_phone')) {
+        if (! $this->pendingProfileIsValid()) {
+            $this->forgetPendingProfile();
             return redirect()->route('login')->withErrors(['phone' => $this->localized('Session expired. Please start over.', 'الجلسة انتهت. ابدأ من الأول.')]);
         }
         return view('web.auth.complete-profile');
@@ -243,7 +256,9 @@ class OtpAuthController extends Controller
         $tempToken = session('otp_temp_token');
         $phone     = session('otp_temp_phone');
 
-        if (!$tempToken || !$phone || $request->input('temp_token') !== $tempToken) {
+        if (! $this->pendingProfileIsValid() || ! is_string($request->input('temp_token'))
+            || ! hash_equals((string) $tempToken, $request->input('temp_token'))) {
+            $this->forgetPendingProfile();
             return redirect()->route('login')->withErrors(['phone' => $this->localized('Session expired. Please start over.', 'الجلسة انتهت. ابدأ من الأول.')]);
         }
 
@@ -254,7 +269,11 @@ class OtpAuthController extends Controller
 
         $existingUser = User::where('phone', $phone)->first();
         if ($existingUser) {
-            session()->forget(['otp_temp_token', 'otp_temp_phone']);
+            $this->forgetPendingProfile();
+            if ($existingUser->is_blocked) {
+                return redirect()->route('login')->withErrors(['phone' => $this->localized('This account is unavailable. Please contact support.', 'الحساب ده مش متاح. تواصل مع الدعم.')]);
+            }
+            $existingUser->update(['is_phone_verified' => true]);
             Auth::login($existingUser);
             $request->session()->regenerate();
             $this->mergeGuestSessionOnLogin($existingUser->id);
@@ -263,7 +282,7 @@ class OtpAuthController extends Controller
 
         $user = $this->createUserFromPhone($phone, $request->input('name'), $request->input('email'));
 
-        session()->forget(['otp_temp_token', 'otp_temp_phone']);
+        $this->forgetPendingProfile();
         Auth::login($user);
         $request->session()->regenerate();
         $this->mergeGuestSessionOnLogin($user->id);

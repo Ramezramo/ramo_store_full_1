@@ -48,6 +48,7 @@ class CheckoutIdempotencyTest extends TestCase
                 'images' => json_encode(['thumbnail' => 'https://cdn.example.test/products/checkout-idempotency.jpg']),
                 'status' => 'publish',
                 'acceptance_status' => 'approved',
+                'purchasable' => true,
                 'minimum_order_qty' => 1,
                 'created_at' => $now,
                 'updated_at' => $now,

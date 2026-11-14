@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -27,104 +28,68 @@ class PasswordResetController extends Controller
 
     public function sendResetLink(Request $request)
     {
-        $request->validate(['email' => 'required|email']);
-
+        $request->validate(['email' => 'required|email|max:255']);
+        $status = $this->localized('If that email is registered, a reset link has been sent.', 'لو الإيميل ده مسجل، بعتناله لينك لتغيير كلمة السر.');
         $user = User::where('email', $request->email)
-            ->where('email', 'not like', '%@ramostore.local')
-            ->first();
-
-        if (!$user) {
-            return back()->with('status', $this->localized('If that email is registered, a reset link has been sent.', 'لو الإيميل ده مسجل، بعتناله لينك لتغيير كلمة السر.'));
-        }
+            ->where('email', 'not like', '%@ramostore.local')->first();
+        if (! $user) return back()->with('status', $status);
 
         $token = Str::random(64);
-
-        DB::table('password_reset_tokens')->upsert(
-            [
-                'email'      => $user->email,
-                'token'      => Hash::make($token),
-                'created_at' => now(),
-            ],
-            ['email'],
-            ['token', 'created_at']
-        );
-
+        DB::table('password_reset_tokens')->upsert([
+            'email' => $user->email, 'token' => Hash::make($token), 'created_at' => now(),
+        ], ['email'], ['token', 'created_at']);
         $resetUrl = route('password.reset.form', ['token' => $token, 'email' => $user->email]);
-        $isDevMode = config('app.debug') && strtolower((string) config('mail.default', 'smtp')) === 'smtp'
-                     && config('mail.mailers.smtp.host') === 'mailpit';
-
-        if ($isDevMode) {
-            return back()->with([
-                'status'        => $this->localized('Reset link generated (dev mode — no real email sent).', 'لينك تغيير كلمة السر اتجهز (وضع تجريبي — مفيش إيميل حقيقي اتبعت).'),
-                'dev_reset_url' => $resetUrl,
-            ]);
-        }
-
         try {
-            Mail::send('emails.password-reset', ['url' => $resetUrl, 'user' => $user], function ($m) use ($user) {
-                $m->to($user->email, $user->name)
-                  ->subject(session('locale') === 'ar' ? 'غيّر كلمة السر بتاعة Ramo Store' : 'Reset your Ramo Store password');
+            Mail::send('emails.password-reset', ['url' => $resetUrl, 'user' => $user], function ($mail) use ($user) {
+                $mail->to($user->email, $user->name)->subject('Reset your Ramo Store password');
             });
-        } catch (\Throwable $e) {
-            return back()->with([
-                'status'        => $this->localized('Could not send email — showing link for dev use.', 'مش قادرين نبعت الإيميل دلوقتي — بنعرض اللينك للتجربة.'),
-                'dev_reset_url' => $resetUrl,
-            ]);
+        } catch (\Throwable) {
+            // Mail failure must not expose an account-recovery credential.
         }
-
-        return back()->with('status', $this->localized('If that email is registered, a reset link has been sent.', 'لو الإيميل ده مسجل، بعتناله لينك لتغيير كلمة السر.'));
+        return back()->with('status', $status);
     }
 
     public function showResetForm(Request $request)
     {
         $token = $request->query('token');
         $email = $request->query('email');
-
-        if (!$token || !$email) {
+        if (! is_string($token) || $token === '' || strlen($token) > 700
+            || ! is_string($email) || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return redirect()->route('password.forgot')->withErrors(['email' => $this->localized('Invalid or missing reset link.', 'لينك تغيير كلمة السر مش صحيح أو ناقص.')]);
         }
-
         return view('web.auth.reset-password', compact('token', 'email'));
     }
 
     public function resetPassword(Request $request)
     {
         $request->validate([
-            'email'                 => 'required|email',
-            'token'                 => 'required|string',
-            'password'              => ['required', 'confirmed', Password::min(8)],
+            'email' => 'required|email|max:255', 'token' => 'required|string|max:700',
+            'password' => ['required', 'confirmed', Password::min(8)],
         ]);
+        $reset = DB::transaction(function () use ($request): bool {
+            $user = User::where('email', $request->email)->lockForUpdate()->first();
+            $record = DB::table('password_reset_tokens')->where('email', $request->email)->lockForUpdate()->first();
+            if (! $user || ! $record) return false;
+            if (! $record->created_at || Carbon::parse($record->created_at)->isBefore(now()->subMinutes($this->tokenExpiryMinutes))) {
+                DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+                return false;
+            }
+            if (! Hash::check($request->token, $record->token)) return false;
 
-        $record = DB::table('password_reset_tokens')
-            ->where('email', $request->email)
-            ->first();
-
-        if (!$record) {
-            return back()->withErrors(['email' => $this->localized('Invalid or expired reset link. Please request a new one.', 'لينك تغيير كلمة السر مش صحيح أو انتهت صلاحيته. اطلب لينك جديد.')]);
-        }
-
-        $ageMinutes = now()->diffInMinutes($record->created_at);
-        if ($ageMinutes > $this->tokenExpiryMinutes) {
+            $user->forceFill([
+                'password' => Hash::make($request->password), 'remember_token' => Str::random(60),
+                'registration_method' => 'email_password', 'email_verified_at' => now(),
+            ])->save();
+            $user->tokens()->delete();
             DB::table('password_reset_tokens')->where('email', $request->email)->delete();
-            return back()->withErrors(['email' => $this->localized('This reset link has expired. Please request a new one.', 'لينك تغيير كلمة السر انتهت صلاحيته. اطلب لينك جديد.')]);
+            return true;
+        });
+        if (! $reset) {
+            return back()->withErrors(['email' => $this->localized(
+                'Invalid or expired reset link. Please request a new one.',
+                'لينك تغيير كلمة السر مش صحيح أو انتهت صلاحيته. اطلب لينك جديد.'
+            )]);
         }
-
-        if (!Hash::check($request->token, $record->token)) {
-            return back()->withErrors(['email' => $this->localized('Invalid reset link. Please request a new one.', 'لينك تغيير كلمة السر مش صحيح. اطلب لينك جديد.')]);
-        }
-
-        $user = User::where('email', $request->email)->first();
-        if (!$user) {
-            return back()->withErrors(['email' => $this->localized('No account found with this email address.', 'مفيش حساب بالإيميل ده.')]);
-        }
-
-        $user->update([
-            'password'            => Hash::make($request->password),
-            'registration_method' => 'email_password',
-        ]);
-
-        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
-
         return redirect()->route('login')->with('status', $this->localized('Password reset successfully. You can now sign in.', 'كلمة السر اتغيرت بنجاح. تقدر تسجّل دخول دلوقتي.'));
     }
 }

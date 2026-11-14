@@ -46,18 +46,18 @@ Route::get('/offers', [WebController::class, 'offers'])->name('offers');
 Route::get('/product/{id}', [WebController::class, 'product'])->name('product');
 Route::get('/vendor/{id}', [WebController::class, 'vendor'])->name('vendor.store');
 
-Route::get('/cart', [CartController::class, 'index'])->name('cart');
-Route::post('/cart/add', [CartController::class, 'add'])->middleware('throttle:cart-mutation')->name('cart.add');
-Route::post('/cart/add-multiple', [CartController::class, 'addMultiple'])->middleware('throttle:cart-mutation')->name('cart.add-multiple');
-Route::post('/cart/update/{rowId}', [CartController::class, 'update'])->middleware('throttle:cart-mutation')->name('cart.update');
-Route::delete('/cart/remove/{rowId}', [CartController::class, 'remove'])->middleware('throttle:cart-mutation')->name('cart.remove');
-Route::delete('/cart/clear', [CartController::class, 'clear'])->middleware('throttle:cart-mutation')->name('cart.clear');
-Route::post('/cart/coupon', [CartController::class, 'applyCoupon'])->middleware('throttle:coupon-check')->name('cart.coupon');
-Route::delete('/cart/coupon', [CartController::class, 'removeCoupon'])->middleware('throttle:coupon-check')->name('cart.coupon.remove');
-Route::get('/cart/count', [CartController::class, 'count'])->name('cart.count');
+Route::get('/cart', [CartController::class, 'index'])->middleware(\App\Http\Middleware\SerializeCart::class)->block(30, 30)->name('cart');
+Route::post('/cart/add', [CartController::class, 'add'])->middleware('throttle:cart-mutation')->middleware(\App\Http\Middleware\SerializeCart::class)->block(30, 30)->name('cart.add');
+Route::post('/cart/add-multiple', [CartController::class, 'addMultiple'])->middleware('throttle:cart-mutation')->middleware(\App\Http\Middleware\SerializeCart::class)->block(30, 30)->name('cart.add-multiple');
+Route::post('/cart/update/{rowId}', [CartController::class, 'update'])->middleware('throttle:cart-mutation')->middleware(\App\Http\Middleware\SerializeCart::class)->block(30, 30)->name('cart.update');
+Route::delete('/cart/remove/{rowId}', [CartController::class, 'remove'])->middleware('throttle:cart-mutation')->middleware(\App\Http\Middleware\SerializeCart::class)->block(30, 30)->name('cart.remove');
+Route::delete('/cart/clear', [CartController::class, 'clear'])->middleware('throttle:cart-mutation')->middleware(\App\Http\Middleware\SerializeCart::class)->block(30, 30)->name('cart.clear');
+Route::post('/cart/coupon', [CartController::class, 'applyCoupon'])->middleware('throttle:coupon-check')->middleware(\App\Http\Middleware\SerializeCart::class)->block(30, 30)->name('cart.coupon');
+Route::delete('/cart/coupon', [CartController::class, 'removeCoupon'])->middleware('throttle:coupon-check')->middleware(\App\Http\Middleware\SerializeCart::class)->block(30, 30)->name('cart.coupon.remove');
+Route::get('/cart/count', [CartController::class, 'count'])->middleware(\App\Http\Middleware\SerializeCart::class)->block(30, 30)->name('cart.count');
 
-Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
-Route::post('/checkout/place', [CheckoutController::class, 'place'])->middleware('throttle:checkout-place')->name('checkout.place');
+Route::get('/checkout', [CheckoutController::class, 'index'])->middleware(\App\Http\Middleware\SerializeCart::class)->block(30, 30)->name('checkout');
+Route::post('/checkout/place', [CheckoutController::class, 'place'])->middleware('throttle:checkout-place')->middleware(\App\Http\Middleware\SerializeCart::class)->block(30, 30)->name('checkout.place');
 Route::get('/order-success/{id}', [CheckoutController::class, 'success'])->name('order.success');
 
 Route::get('/login', [AuthWebController::class, 'showLogin'])->name('login');
@@ -258,6 +258,7 @@ Route::prefix('admin')->middleware(['auth', 'admin.auth', \App\Http\Middleware\R
     Route::patch('/referral/commissions/{commission}/reject', [ReferralAdminController::class, 'rejectCommission'])->name('admin.referral.commissions.reject');
     Route::patch('/referral/commissions/{commission}', [ReferralAdminController::class, 'updateCommission'])->name('admin.referral.commissions.update');
     Route::post('/orders/{id}/payment-review', [PaymentReviewController::class, 'reviewAsAdmin'])->name('admin.orders.payment-review');
+    Route::post('/orders/{id}/payment-collected', [\App\Http\Controllers\Admin\PaymentSettlementController::class, 'store'])->name('admin.orders.payment-collected');
     Route::get('/category-brand-requests', [AdminCategoryBrandController::class, 'index'])->name('admin.cbr');
     Route::patch('/category-brand-requests/{id}/approve', [AdminCategoryBrandController::class, 'approve'])->name('admin.cbr.approve');
     Route::patch('/category-brand-requests/{id}/reject', [AdminCategoryBrandController::class, 'reject'])->name('admin.cbr.reject');

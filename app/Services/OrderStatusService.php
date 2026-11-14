@@ -44,7 +44,7 @@ class OrderStatusService
      */
     public function compute(?string $paymentStatus, array $vendorStatuses): string
     {
-        if ($paymentStatus === 'expired') {
+        if (in_array($paymentStatus, ['expired', 'refunded'], true)) {
             return 'cancelled';
         }
 
@@ -62,7 +62,7 @@ class OrderStatusService
         }
 
         $total = count($statuses);
-        $cancelled = count(array_filter($statuses, fn ($status) => $status === 'cancelled'));
+        $cancelled = count(array_filter($statuses, fn ($status) => in_array($status, ['cancelled', 'returned'], true)));
         $delivered = count(array_filter($statuses, fn ($status) => $status === 'delivered'));
         $shipped = count(array_filter($statuses, fn ($status) => $status === 'shipped'));
 
@@ -103,9 +103,10 @@ class OrderStatusService
      */
     public function sync(int $orderId): string
     {
+        return DB::transaction(function () use ($orderId): string {
         $order = DB::table('orders')
             ->where('id', $orderId)
-            ->first(['payment_status', 'status']);
+            ->lockForUpdate()->first();
 
         if (!$order) {
             abort(404);
@@ -113,7 +114,7 @@ class OrderStatusService
 
         $vendorStatuses = DB::table('order_sub_orders')
             ->where('parent_order_id', $orderId)
-            ->pluck('vendor_status')
+            ->orderBy('id')->lockForUpdate()->get()->pluck('vendor_status')
             ->map(fn ($status) => $this->normalizeVendorStatus($status))
             ->all();
 
@@ -130,8 +131,11 @@ class OrderStatusService
         $orderOverride = DB::table('orders')
             ->where('id', $orderId)
             ->value('general_order_status_override');
-        $newStatus = $order->payment_status === 'expired' ? $computed : ($orderOverride ?: $computed);
+        $newStatus = $order->payment_status !== 'confirmed' ? $computed : ($orderOverride ?: $computed);
         $update['status'] = $newStatus;
+        if ($computed === 'completed' && empty($order->date_completed)) {
+            $update['date_completed'] = $now;
+        }
 
         DB::table('orders')->where('id', $orderId)->update($update);
         app(ReferralOrderLifecycle::class)->dispatchForTransition(
@@ -141,6 +145,7 @@ class OrderStatusService
         );
 
         return $computed;
+        });
     }
 
     public function normalizeVendorStatus(?string $status): ?string

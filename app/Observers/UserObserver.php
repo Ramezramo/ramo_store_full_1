@@ -4,7 +4,11 @@ namespace App\Observers;
 
 use App\Models\Referral;
 use App\Models\User;
+use App\Models\Order;
+use App\Jobs\ProcessReferralCommission;
 use App\Services\ReferralFraudChecker;
+use App\Services\ReferralSettingsService;
+use App\Support\EgyptianPhoneNumber;
 use Illuminate\Support\Str;
 class UserObserver
 {
@@ -66,6 +70,47 @@ class UserObserver
             'status' => $capture['status'],
             'rejection_reason' => $capture['reason'],
         ]);
+    }
+
+    public function updated(User $user): void
+    {
+        $verifiedPhone = $user->wasChanged('is_phone_verified')
+            && ! (bool) $user->getRawOriginal('is_phone_verified')
+            && (bool) $user->is_phone_verified
+            && EgyptianPhoneNumber::normalize((string) $user->phone);
+        $email = strtolower((string) $user->email);
+        $verifiedEmail = $user->wasChanged('email_verified_at')
+            && ! $user->getRawOriginal('email_verified_at') && $user->email_verified_at
+            && filter_var($email, FILTER_VALIDATE_EMAIL)
+            && ! str_ends_with($email, '@ramostore.local')
+            && ! str_ends_with($email, '@phone.user');
+        if (! $verifiedPhone && ! $verifiedEmail) return;
+
+        $settings = app(ReferralSettingsService::class);
+        if (! $settings->isEnabled() || ! Referral::where('referred_id', $user->id)
+            ->where(function ($query): void {
+                $query->whereIn('status', ['pending', 'qualified'])
+                    ->orWhere(function ($expired): void {
+                        $expired->where('status', 'expired')->where('rejection_reason', 'expired_no_qualifying_order');
+                    });
+            })->exists()) return;
+
+        $orders = Order::where('customer_id', $user->id)
+            ->where('status', 'completed')->where('payment_status', 'confirmed');
+        if (! $settings->isAllOrders()) {
+            $first = $orders->orderByRaw('COALESCE(date_completed, created_at) ASC')->orderBy('id')->value('id');
+            if ($first) ProcessReferralCommission::dispatch((int) $first)->afterCommit();
+            return;
+        }
+
+        // Query in bounded batches. The jobs recheck identity and order facts after
+        // commit; a proof that is subsequently removed cannot release a reward.
+        $orders->whereNotExists(function ($query): void {
+            $query->selectRaw('1')->from('referral_commissions')
+                ->whereColumn('referral_commissions.order_id', 'orders.id');
+        })->select('orders.id')->chunkById(100, function ($batch): void {
+            foreach ($batch as $order) ProcessReferralCommission::dispatch((int) $order->id)->afterCommit();
+        });
     }
 
     private function generateUniqueCode(): string

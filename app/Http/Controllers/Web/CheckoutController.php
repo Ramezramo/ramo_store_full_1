@@ -10,6 +10,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Traits\CartTrait;
 use App\Models\User;
 use App\Services\PricingService;
+use App\Services\CartRules;
+use App\Services\CouponEligibility;
+use App\Models\Coupon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -68,7 +71,7 @@ class CheckoutController extends Controller
             if (! $product || ! $variation || (int) $variation->product_id !== $productId) {
                 return $this->localized('One or more items in your cart are no longer available. Please review your cart.', 'منتج أو أكتر في السلة مبقاش متاح. راجع السلة.');
             }
-            if (($product->status ?? 'publish') !== 'publish' || ($variation->status ?? 'publish') !== 'publish' || ($variation->stock_status ?? 'instock') !== 'instock' || (int) ($variation->stock_quantity ?? 0) < 1) {
+            if (! CartRules::purchasable($product) || ($variation->status ?? 'publish') !== 'publish' || ($variation->stock_status ?? 'instock') !== 'instock' || (int) ($variation->stock_quantity ?? 0) < 1) {
                 return $this->localized('One or more items in your cart are out of stock. Remove them before continuing.', 'فيه منتج أو أكتر في السلة مش متوفر. شيله قبل ما تكمل.');
             }
 
@@ -95,7 +98,7 @@ class CheckoutController extends Controller
 
     public function index()
     {
-        $cart = $this->getCart();
+        $cart = CartRules::canonicalize($this->getCart());
         if (empty($cart)) {
             return redirect()->route('cart')->with('error', $this->localized('Your cart is empty.', 'السلة فاضية.'));
         }
@@ -133,7 +136,8 @@ class CheckoutController extends Controller
             $couponValidation = app(\App\Http\Controllers\CouponController::class)->validateCouponRules(
                 (string) $coupon['code'],
                 (float) $subtotal,
-                Auth::id()
+                Auth::id(),
+                $cart
             );
 
             if (! $couponValidation['valid']) {
@@ -153,6 +157,7 @@ class CheckoutController extends Controller
                 'amount' => $couponRecord->amount ?? 0,
                 'free_shipping' => (bool) ($couponRecord->free_shipping ?? false),
                 'description' => $couponRecord->description ?? '',
+                'verified_discount' => $couponValidation['data']['discount_amount'],
             ];
             session(['ramo_coupon' => $coupon]);
         }
@@ -216,7 +221,7 @@ class CheckoutController extends Controller
             }
         }
 
-        $cart = $this->getCart();
+        $cart = CartRules::canonicalize($this->getCart());
         if (empty($cart)) {
             return redirect()->route('cart')->with('error', $this->localized('Your cart is empty.', 'السلة فاضية.'));
         }
@@ -305,7 +310,7 @@ class CheckoutController extends Controller
 
                 $dbProducts = DB::table('products_data')
                     ->whereIn('id', $cartProductIds)
-                    ->lockForUpdate()
+                    ->orderBy('id')->lockForUpdate()
                     ->get()
                     ->keyBy('id');
 
@@ -313,7 +318,7 @@ class CheckoutController extends Controller
                 // This serializes competing checkouts for the same variation.
                 $dbVariations = DB::table('product_variations')
                     ->whereIn('product_id', $cartProductIds)
-                    ->lockForUpdate()
+                    ->orderBy('id')->lockForUpdate()
                     ->get()
                     ->keyBy('id');
 
@@ -323,7 +328,7 @@ class CheckoutController extends Controller
                     $quantity = (int) ($item['qty'] ?? 0);
                     $product = $dbProducts->get($productId);
 
-                    if (! $product || (($product->status ?? 'publish') !== 'publish')) {
+                    if (! CartRules::purchasable($product)) {
                         throw new \RuntimeException($this->localized("Product \"" . ($item['name'] ?? $productId) . "\" is no longer available.", "المنتج \"" . ($item['name'] ?? $productId) . "\" مبقاش متاح."));
                     }
                     if ($quantity < 1) {
@@ -423,7 +428,13 @@ class CheckoutController extends Controller
                 if ($couponRecord && (float) ($couponRecord->maximum_amount ?? 0) > 0 && $subtotal > (float) $couponRecord->maximum_amount) {
                     throw new \RuntimeException($this->localized('This coupon is not available for this order subtotal.', 'الكوبون ده مش متاح لقيمة الطلب دي.'));
                 }
-                $discount = $this->calcDiscount($subtotal, $appliedCoupon);
+                try {
+                    $discount = $couponRecord ? CouponEligibility::discount(
+                        (new Coupon)->newFromBuilder((array) $couponRecord), (float) $subtotal, $customerId, $verifiedCart
+                    ) : 0.0;
+                } catch (\Illuminate\Validation\ValidationException $e) {
+                    throw new \RuntimeException($this->localized('This coupon is not valid for your account or cart.', 'الكوبون ده مش متاح لحسابك أو للسلة الحالية.'));
+                }
                 $afterDiscount = max(0, $subtotal - $discount);
                 $shippingFee = (bool) ($couponRecord->free_shipping ?? false)
                     ? 0.0
@@ -438,9 +449,11 @@ class CheckoutController extends Controller
 
                 // Stock is decremented only after each locked variation has passed validation.
                 foreach ($verifiedCart as $item) {
-                    DB::table('product_variations')
+                    $affected = DB::table('product_variations')
                         ->where('id', $item['variation_id'])
+                        ->where('stock_quantity', '>=', $item['qty'])
                         ->decrement('stock_quantity', $item['qty']);
+                    if (! $affected) throw new \RuntimeException('Stock changed. Please review your cart.');
                 }
 
                 $lineItems = collect($verifiedCart)->map(fn ($item) => [
@@ -733,9 +746,6 @@ class CheckoutController extends Controller
         if (! $coupon) {
             return 0;
         }
-        if ($coupon['discount_type'] === 'percent') {
-            return round($subtotal * ($coupon['amount'] / 100), 2);
-        }
-        return min((float) $coupon['amount'], $subtotal);
+        return min($subtotal, max(0, (float) ($coupon['verified_discount'] ?? 0)));
     }
 }

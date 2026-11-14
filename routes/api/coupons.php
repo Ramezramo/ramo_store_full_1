@@ -11,7 +11,7 @@ Route::middleware(['auth:sanctum', 'vendor.auth'])->prefix('ramo/coupons')->grou
     Route::delete('remove/{id}', [CouponController::class, 'destroy'])->middleware('throttle:3,1');
 });
 
-Route::middleware('auth:sanctum')->prefix('ramo/coupons')->group(function () {
+Route::middleware(['auth:sanctum', \App\Http\Middleware\SerializeCart::class])->prefix('ramo/coupons')->group(function () {
     Route::post('/validate', [CouponController::class, 'validateCoupon'])->middleware('throttle:10,1');
     Route::post('/apply',    [CouponController::class, 'applyCoupon'])->middleware('throttle:10,1');
 });

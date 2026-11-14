@@ -68,50 +68,30 @@ class RefundRequestController extends Controller
             'description' => 'nullable|string|max:1000',
         ]);
 
-        $order = DB::table('orders')
-            ->where('id', $request->order_id)
-            ->where('customer_id', Auth::id())
-            ->first();
-
-        if (! $order) {
-            return back()->with('error', $this->localized('Order not found.', 'مش لاقيين الطلب ده.'))->withInput();
-        }
-
-        $already = DB::table('refund_requests')
-            ->where('order_id', $request->order_id)
-            ->where('customer_id', Auth::id())
-            ->whereIn('status', ['pending', 'approved'])
-            ->exists();
-
-        if ($already) {
-            return back()->with('error', $this->localized('You already have an open request for this order.', 'عندك طلب مفتوح بالفعل للطلب ده.'))->withInput();
-        }
-
-        $vendorId = null;
-        if ($order->vendor_id ?? null) {
-            $vendorId = $order->vendor_id;
-        } else {
-            $firstItem = DB::table('order_items')->where('order_id', $order->id)->first();
-            if ($firstItem) {
-                $vendorId = DB::table('products_data')->where('id', $firstItem->product_id)->value('vendor_id');
+        return DB::transaction(function () use ($request) {
+            $order = DB::table('orders')->where('id', $request->order_id)->where('customer_id', Auth::id())
+                ->lockForUpdate()->first();
+            if (! $order) {
+                return back()->with('error', $this->localized('Order not found.', 'مش لاقيين الطلب ده.'))->withInput();
             }
-        }
-
-        DB::table('refund_requests')->insert([
-            'order_id'    => $request->order_id,
-            'customer_id' => Auth::id(),
-            'vendor_id'   => $vendorId,
-            'type'        => $request->type,
-            'reason'      => $request->reason,
-            'description' => $request->description,
-            'status'      => 'pending',
-            'created_at'  => now(),
-            'updated_at'  => now(),
-        ]);
-
-        return redirect()->route('account.refunds')->with('success', $this->localized('Your request has been submitted. We will review it shortly.', 'طلبك اتبعت وهنراجعه قريب.'));
+            if (! in_array($order->status, ['completed', 'delivered', 'shipped', 'processing', 'partially_delivered'], true)) {
+                return back()->with('error', $this->localized('This order cannot receive a new refund request.', 'الطلب ده مش متاح لطلب استرجاع جديد.'));
+            }
+            $already = DB::table('refund_requests')->where('order_id', $order->id)
+                ->whereIn('status', ['pending', 'approved', 'completed'])->exists();
+            if ($already) {
+                return back()->with('error', $this->localized('You already have a refund request for this order.', 'عندك طلب استرجاع بالفعل للطلب ده.'))->withInput();
+            }
+            $vendors = DB::table('order_sub_orders')->where('parent_order_id', $order->id)->pluck('vendor_id')->filter()->unique();
+            DB::table('refund_requests')->insert([
+                'order_id' => $order->id, 'customer_id' => Auth::id(),
+                'vendor_id' => $vendors->count() === 1 ? $vendors->first() : null,
+                'type' => $request->type, 'reason' => $request->reason, 'description' => $request->description,
+                'status' => 'pending', 'created_at' => now(), 'updated_at' => now(),
+            ]);
+            return redirect()->route('account.refunds')->with('success', $this->localized('Your request has been submitted. We will review it shortly.', 'طلبك اتبعت وهنراجعه قريب.'));
+        });
     }
-
     public function show(int $id)
     {
         $refund = RefundRequest::findOrFail($id);

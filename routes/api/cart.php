@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->group(function () {
 
     // ── Cart ──
-    Route::prefix('cart')->group(function () {
+    Route::prefix('cart')->middleware(\App\Http\Middleware\SerializeCart::class)->group(function () {
         Route::get('/',        [CartApiController::class, 'index']);   // GET  /api/cart
         Route::post('/add',    [CartApiController::class, 'add'])->middleware('throttle:20,1');     // POST /api/cart/add
         Route::put('/{id}',    [CartApiController::class, 'update'])->middleware('throttle:20,1');  // PUT  /api/cart/{id}
