@@ -18,6 +18,8 @@
   let loadingTimer;
   const connectedDocuments = new WeakSet();
   const productPreviews = new Map();
+  const decodedHeroes = new WeakMap();
+  const pendingHeroes = new WeakMap();
   const isProductPage = url => /^\/product\/[^/]+\/?$/.test(url.pathname);
   const eligible = url => url.origin === location.origin && !url.search && !url.hash && ['/', '/shop'].includes(url.pathname);
 
@@ -33,7 +35,7 @@
       const parsed = source && new URL(source, url.href);
       if (parsed && ['http:', 'https:'].includes(parsed.protocol)) image = parsed.href;
     } catch (_) { /* Missing or invalid photos use the standard placeholder. */ }
-    return name || image ? { name, image, photo, savedAt: Date.now() } : null;
+    return name || image ? { name, image, photo, width: photo?.naturalWidth, height: photo?.naturalHeight, savedAt: Date.now() } : null;
   }
 
   function currentProductPreview(url) {
@@ -48,9 +50,9 @@
     const preview = currentProductPreview(url);
     const name = preview?.name || labels.product;
     const content = document.createElement('div');
-    content.className = 'catalog-product-preview';
+    content.className = 'catalog-product-preview product-page page';
     const breadcrumb = document.createElement('nav');
-    breadcrumb.className = 'catalog-product-breadcrumb';
+    breadcrumb.className = 'catalog-product-breadcrumb breadcrumb';
     breadcrumb.setAttribute('aria-label', labels.breadcrumb);
     for (const [path, label] of [['/', labels.home], ['/shop', labels.shop]]) {
       const link = document.createElement('a');
@@ -65,10 +67,19 @@
     current.textContent = name;
     breadcrumb.appendChild(current);
     const grid = document.createElement('div');
-    grid.className = 'catalog-product-layout';
+    grid.className = 'catalog-product-layout product-layout';
     const gallery = document.createElement('div');
+    gallery.className = 'gallery-wrap';
+    const stage = document.createElement('div');
+    stage.className = 'gallery-stage';
     const media = document.createElement('div');
-    media.className = 'catalog-product-media';
+    media.className = 'gallery-main';
+    const open = document.createElement('div');
+    open.className = 'gallery-open';
+    const expand = document.createElement('span');
+    expand.className = 'gallery-expand';
+    expand.textContent = '⤢';
+    expand.setAttribute('aria-hidden', 'true');
     let photo;
     const fallback = new URL('/images/product-placeholder.svg', location.origin).href;
     if (preview?.image && sourcePhoto?.complete && sourcePhoto.naturalWidth > 0 && sourcePhoto.parentNode) {
@@ -86,16 +97,37 @@
       photo.src = preview?.image || fallback;
       photo.addEventListener('error', () => { if (photo.src !== fallback) photo.src = fallback; }, { once: true });
     }
-    media.appendChild(photo);
+    function sizePreview() {
+      const width = photo.naturalWidth || preview?.width;
+      const height = photo.naturalHeight || preview?.height;
+      if (width && height) gallery.style.setProperty('--gallery-ratio', `${width} / ${height}`);
+    }
+    sizePreview();
+    photo.addEventListener('load', sizePreview, { once: true });
+    open.append(photo, expand);
+    media.appendChild(open);
+    const strip = document.createElement('div');
+    strip.className = 'gallery-thumbs';
     const thumb = document.createElement('div');
-    thumb.className = 'catalog-product-thumb';
+    thumb.className = 'gallery-thumb active';
     thumb.setAttribute('aria-hidden', 'true');
     const thumbPhoto = photo.cloneNode(false);
     thumbPhoto.removeAttribute('id');
     thumbPhoto.alt = '';
     thumbPhoto.addEventListener('error', () => { if (thumbPhoto.src !== fallback) thumbPhoto.src = fallback; }, { once: true });
     thumb.appendChild(thumbPhoto);
-    gallery.append(media, thumb);
+    strip.appendChild(thumb);
+    const controls = document.createElement('div');
+    controls.className = 'gallery-controls';
+    controls.setAttribute('aria-hidden', 'true');
+    for (const symbol of ['‹', '•', '›']) {
+      const control = document.createElement('span');
+      control.className = 'gallery-arrow';
+      control.textContent = symbol;
+      controls.appendChild(control);
+    }
+    stage.append(media, controls);
+    gallery.append(strip, stage);
     const info = document.createElement('div');
     info.className = 'catalog-product-info';
     const heading = document.createElement('h1');
@@ -124,13 +156,17 @@
     document.querySelectorAll('#mob-nav a[href]').forEach(link => {
       link.classList.remove('is-opening');
       const linkPath = new URL(link.href).pathname;
-      const active = linkPath === path || (linkPath === '/account' && path.startsWith('/account/') && !path.startsWith('/account/notifications'));
+      const active = linkPath === path || (linkPath === '/account' && path.startsWith('/account/'));
       link.classList.toggle('on', active);
       if (active) link.setAttribute('aria-current', 'page');
       else link.removeAttribute('aria-current');
     });
-    document.querySelectorAll('.nav-links a[href]').forEach(link => link.classList.toggle('active', new URL(link.href).pathname === path));
-    document.querySelectorAll('.nav-language-btn').forEach(link => {
+    document.querySelectorAll('.nav-links a[href], .storefront-drawer .nav-mobile-links a[href]').forEach(link => link.classList.toggle('active', new URL(link.href).pathname === path));
+    document.querySelectorAll('.nav-notifications-top').forEach(link => {
+      if (path === '/account/notifications') link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
+    document.querySelectorAll('.nav-language-btn, .nav-mobile-language-link').forEach(link => {
       const url = new URL(link.href);
       url.searchParams.set('redirect', new URL(path, location.origin).href);
       link.href = url.href;
@@ -294,7 +330,7 @@
   }
 
   const supportedPage = url => url.origin === location.origin
-    && !/^\/(?:admin|seller|api|auth|login|register|logout|vendor-logout|checkout|order-success|email|forgot-password|reset-password|vendor-register)(?:\/|$)/.test(url.pathname)
+    && !/^\/(?:admin|seller|api|auth|language|login|register|logout|vendor-logout|checkout|order-success|email|forgot-password|reset-password|vendor-register)(?:\/|$)/.test(url.pathname)
     && !/\.[a-z0-9]{2,5}$/i.test(url.pathname);
 
   function presentFrame(requestedFrame) {
@@ -306,6 +342,29 @@
       if (eligible(current)) { history.replaceState(null, '', current.pathname); show(current.pathname, false); return; }
       const doc = requestedFrame.contentDocument;
       if (!doc?.body?.childElementCount) return;
+      // The outer navigation and cached catalog belong to one language. A
+      // redirected page in another language must rebuild that outer document.
+      if (doc.documentElement.lang !== locale) { location.assign(current.href); return; }
+      // Reveal the real gallery only after its hero is decoded. Other page
+      // images keep loading normally without delaying this handoff.
+      const hero = isProductPage(current) ? doc.querySelector?.('#main-img') : null;
+      const heroUrl = hero?.currentSrc || hero?.src;
+      if (heroUrl && hero.style.display !== 'none' && decodedHeroes.get(hero) !== heroUrl) {
+        if (pendingHeroes.get(hero) === heroUrl) return;
+        pendingHeroes.set(hero, heroUrl);
+        const reveal = async () => {
+          try { await hero.decode?.(); } catch (_) { /* Broken photos use the page's fallback. */ }
+          if ((hero.currentSrc || hero.src) === heroUrl) decodedHeroes.set(hero, heroUrl);
+          if (pendingHeroes.get(hero) === heroUrl) pendingHeroes.delete(hero);
+          presentFrame(requestedFrame);
+        };
+        if (hero.complete) reveal();
+        else {
+          hero.addEventListener('load', reveal, { once: true });
+          hero.addEventListener('error', reveal, { once: true });
+        }
+        return;
+      }
       document.title = doc.title;
       history.replaceState(null, '', current.pathname + current.search + current.hash);
       if (!connectedDocuments.has(doc)) {
@@ -339,7 +398,7 @@
     if (preview && isProductPage(url)) {
       // Keep only recent public thumbnail metadata for Back/Forward and retries.
       productPreviews.delete(url.pathname);
-      productPreviews.set(url.pathname, { name: preview.name, image: preview.image, savedAt: preview.savedAt });
+      productPreviews.set(url.pathname, { name: preview.name, image: preview.image, width: preview.width, height: preview.height, savedAt: preview.savedAt });
       if (productPreviews.size > 20) productPreviews.delete(productPreviews.keys().next().value);
     }
     if (push && location.href !== url.href) history.pushState(null, '', url.pathname + url.search + url.hash);

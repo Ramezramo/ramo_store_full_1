@@ -129,7 +129,7 @@
 /* Vendor storefront cards keep a comfortable desktop layout while the phone view
    uses a deliberately compact two-column grid. */
 .vendor-products-grid{align-items:stretch}
-.vendor-products-grid .product-card{min-width:0;border-radius:14px;box-shadow:0 5px 18px rgba(35,25,16,.06)}
+.vendor-products-grid .product-card{min-width:0;border-radius:0;box-shadow:none;background:transparent;border:0}
 .vendor-products-grid .product-card-img{aspect-ratio:1 / 1.08}
 .vendor-products-grid .product-card-body{min-width:0;padding:12px 10px 10px;gap:7px}
 .vendor-products-grid .product-card-name{min-width:0}

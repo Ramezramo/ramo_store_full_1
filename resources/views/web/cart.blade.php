@@ -52,6 +52,7 @@
 .cart-item-thumb img{display:block;width:100%;height:100%;object-fit:cover;}
 .cart-item-placeholder{width:100%;height:100%;display:grid;place-items:center;font-size:26px;color:var(--c-mid);}
 .cart-item-main{min-width:0;}
+.cart-item-references{display:none;}
 .cart-item-name{display:block;margin:0 0 5px;color:var(--c-dark);font-size:14px;font-weight:800;line-height:1.3;text-decoration:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 .cart-item-name:hover{color:var(--c-orange);}
 .cart-item-variants{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:7px;min-height:0;}
@@ -138,13 +139,13 @@
 }
 @media(max-width:600px){
   .cart-screen{min-height:calc(100svh - 58px);background:linear-gradient(180deg,#fafaf9 0%,var(--c-bg) 42%);}
-  .cart-screen-header{position:sticky;top:0;z-index:20;padding:calc(10px + env(safe-area-inset-top)) 14px 11px;border-bottom:1px solid rgba(24,24,24,.08);background:rgba(255,255,255,.96);backdrop-filter:blur(12px);}
+  .cart-screen-header{padding:12px 16px;border-bottom:1px solid var(--c-light);background:var(--c-white);}
   .cart-screen-back{width:44px;height:44px;border-radius:14px;background:#fff;box-shadow:0 3px 12px rgba(24,24,24,.05);}
-  .cart-screen-title{font-size:20px;letter-spacing:-.35px;}
+  .cart-screen-title{font-size:18px;letter-spacing:-.35px;}
   .cart-screen-title span{font-size:12px;}
-  .cart-screen-body{padding:16px 14px calc(128px + env(safe-area-inset-bottom));}
+  .cart-screen-body{padding:12px 12px calc(170px + env(safe-area-inset-bottom));}
   .cart-screen-grid{display:flex;flex-direction:column;align-items:stretch;gap:16px;}
-  .cart-items-panel,.cart-summary-panel{box-sizing:border-box;width:100%;margin:0;border:1px solid rgba(24,24,24,.08);border-radius:20px;box-shadow:0 8px 26px rgba(24,24,24,.055);background:rgba(255,255,255,.98);}
+  .cart-items-panel,.cart-summary-panel{box-sizing:border-box;width:100%;min-width:0;margin:0;border:1px solid var(--c-light);border-radius:16px;box-shadow:0 3px 16px rgba(24,24,24,.04);background:var(--c-white);}
   .cart-items-panel{padding:15px 16px;}
   .cart-summary-panel{padding:16px;}
   .cart-items-heading{margin-bottom:4px;padding:0 0 3px;}
@@ -154,21 +155,25 @@
   .cart-item-card:first-of-type{padding-top:10px;}
   .cart-item-thumb{width:82px;height:82px;border-radius:16px;border:1px solid rgba(24,24,24,.08);box-shadow:0 4px 12px rgba(24,24,24,.06);}
   .cart-item-main{padding-top:1px;}
-  .cart-item-name{font-size:14px;line-height:1.35;padding:0;margin-bottom:7px;}
+  .cart-item-name{font-size:13.5px;line-height:1.35;padding:0;margin-bottom:6px;}
   .cart-item-variants{gap:5px;margin-bottom:8px;}
-  .cart-item-variant{font-size:10px;padding:5px 7px;border-radius:8px;background:#fafafa;}
+  .cart-item-variant{font-size:10px;padding:4px 6px;border-radius:7px;background:var(--c-tag);overflow-wrap:anywhere;}
+  .cart-item-reference{display:none;}
+  .cart-item-references{display:block;margin:6px 0 0;color:var(--c-mid);font-size:11px;overflow-wrap:anywhere;}
+  .cart-item-references summary{min-height:44px;align-content:center;cursor:pointer;}
+  .cart-item-references p{margin:4px 0;}
   .cart-item-pricing{gap:5px;align-items:baseline;}
-  .cart-item-unit{font-size:10px;}
-  .cart-item-line{font-size:15px;color:var(--c-orange);}
-  .cart-item-old{font-size:10px;}
-  .cart-item-controls{grid-column:1 / -1;grid-row:2;flex-direction:row;align-items:center;justify-content:space-between;padding:12px 0 0;margin-top:2px;border-top:1px dashed #ececea;}
+  .cart-item-unit{font-size:11px;color:#606060;}
+  .cart-item-line{font-size:14.5px;color:var(--c-dark);white-space:normal;overflow-wrap:anywhere;}
+  .cart-item-old{font-size:11px;color:#606060;}
+  .cart-item-controls{grid-column:1 / -1;grid-row:2;flex-direction:row;align-items:center;justify-content:space-between;padding:2px 0 0;margin-top:0;}
   .cart-item-limit{font-size:9.5px;text-align:left;}
   .cart-qty-stepper{border-color:#d8d8d5;border-radius:14px;box-shadow:0 3px 10px rgba(24,24,24,.04);}
   .cart-qty-stepper button,.cart-qty-stepper input{width:48px;height:48px;}
   .cart-qty-stepper input{width:38px;font-size:15px;}
   .cart-remove-icon{width:44px;height:44px;border:1px solid #ffd9d9;background:#fff7f7;color:#cf5757;border-radius:13px;}
   .cart-items-actions{display:flex;flex-wrap:nowrap;align-items:stretch;gap:10px;margin-top:2px;padding-top:15px;border-top:1px solid #ededeb;}
-  .cart-items-actions .btn,.cart-items-actions button{min-height:46px;padding:0 10px;font-size:11.5px;white-space:nowrap;border-radius:13px;}
+  .cart-items-actions .btn,.cart-items-actions button{min-height:44px;padding:0 9px;font-size:10.5px;white-space:nowrap;border-radius:11px;}
   .cart-items-actions .btn{flex:1;background:#fff;}
   .cart-items-actions form{flex:1;}
   .cart-items-actions .cart-clear-btn{width:100%;border:1px solid #fecaca;background:#fff7f7;color:#c24141;font:inherit;font-weight:800;cursor:pointer;}
@@ -176,14 +181,16 @@
   .cart-summary-head{margin-bottom:14px;}
   .cart-shipping-progress{margin-bottom:14px;}
   .cart-summary-row{margin-bottom:10px;font-size:12.5px;}
+  .cart-summary-note{font-size:12px;color:#606060;}
   .cart-total-row{padding:14px;border:1px solid rgba(24,24,24,.06);border-radius:15px;background:linear-gradient(135deg,#f7f7f5 0%,#efefec 100%);}
   .cart-total-row strong{font-size:19px;}
   .cart-summary-checkout{display:none;}
-  .cart-checkout-bar{position:fixed;left:10px;right:10px;bottom:calc(58px + 8px + env(safe-area-inset-bottom));z-index:9998;margin:0;padding:10px;border:1px solid rgba(24,24,24,.1);border-radius:18px;box-shadow:0 8px 28px rgba(24,24,24,.16);background:rgba(255,255,255,.98);backdrop-filter:blur(14px);display:flex;flex-wrap:wrap;gap:10px;}
-  .cart-checkout-total{padding:0 3px;gap:2px;}
+  .cart-checkout-bar{position:fixed;inset-inline:0;bottom:calc(58px + env(safe-area-inset-bottom));z-index:9998;margin:0;padding:10px 14px;border:1px solid var(--c-light);border-radius:0;box-shadow:0 -4px 18px rgba(24,24,24,.08);background:var(--c-white);display:grid;grid-template-columns:minmax(0,1fr) minmax(120px,1fr);gap:8px 12px;align-items:center;}
+  .cart-checkout-warning-bar{grid-column:1 / -1;}
+  .cart-checkout-total{padding:0;gap:2px;}
   .cart-checkout-total span{font-size:10px;font-weight:700;}
-  .cart-checkout-total strong{font-size:17px;}
-  .cart-checkout-button{min-width:0;flex:0 0 56%;min-height:48px;font-size:13px;border-radius:13px;box-shadow:0 4px 12px rgba(0,0,0,.12);}
+  .cart-checkout-total strong{font-size:clamp(13px,4vw,17px);white-space:normal;overflow-wrap:anywhere;line-height:1.25;}
+  .cart-checkout-button{min-width:0;min-height:44px;font-size:12.5px;border-radius:11px;box-shadow:none;padding:0 10px;}
   .cart-empty-state{margin:12px auto 0;padding:52px 20px;border-radius:18px;}
 }
 /* Egyptian Arabic / RTL cart layout */
@@ -285,8 +292,8 @@
                   @endif
                   @if(!empty($item['attrs']) || !empty($item['sku']) || !empty($item['model_number']))
                     <div class="cart-item-variants" aria-label="{{ $cartRtl ? 'الاختيارات المحددة' : 'Selected options' }}">
-                      @if(!empty($item['sku']))<span class="cart-item-variant"><strong>{{ $cartRtl ? 'كود المنتج' : 'SKU' }}</strong> {{ $item['sku'] }}</span>@endif
-                      @if(!empty($item['model_number']))<span class="cart-item-variant"><strong>{{ $cartRtl ? 'رقم الموديل' : 'Model number' }}</strong> {{ $item['model_number'] }}</span>@endif
+                      @if(!empty($item['sku']))<span class="cart-item-variant cart-item-reference"><strong>{{ $cartRtl ? 'كود المنتج' : 'SKU' }}</strong> {{ $item['sku'] }}</span>@endif
+                      @if(!empty($item['model_number']))<span class="cart-item-variant cart-item-reference"><strong>{{ $cartRtl ? 'رقم الموديل' : 'Model number' }}</strong> {{ $item['model_number'] }}</span>@endif
                       @foreach($item['attrs'] ?? [] as $k => $v)
                         @php
                           $attributeLabel = $cartRtl ? (['color' => 'اللون', 'size' => 'المقاس'][strtolower($k)] ?? $k) : ucfirst($k);
@@ -301,6 +308,13 @@
                     <strong class="cart-item-line" id="sub-{{ $rowId }}">{{ number_format($item['price'] * $item['qty'], 2) }} EGP</strong>
                     <span class="cart-item-old" id="sub-old-{{ $rowId }}" style="{{ (!empty($item['regular_price']) && $item['regular_price'] > $item['price']) ? '' : 'display:none' }}">{{ !empty($item['regular_price']) ? number_format($item['regular_price'] * $item['qty'], 2) . ' EGP' : '' }}</span>
                   </div>
+                  @if(!empty($item['sku']) || !empty($item['model_number']))
+                    <details class="cart-item-references">
+                      <summary>{{ $cartRtl ? 'تفاصيل المنتج' : 'Product details' }}</summary>
+                      @if(!empty($item['sku']))<p>SKU: {{ $item['sku'] }}</p>@endif
+                      @if(!empty($item['model_number']))<p>{{ $cartRtl ? 'رقم الموديل' : 'Model number' }}: {{ $item['model_number'] }}</p>@endif
+                    </details>
+                  @endif
                 </div>
                 <div class="cart-item-controls">
                   @php

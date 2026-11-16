@@ -174,8 +174,8 @@ button{cursor:pointer;font-family:inherit}
 /* ── PRODUCT GRID ── */
 .product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:20px;align-items:start}
 .product-grid.cols-4{grid-template-columns:repeat(4,1fr)}
-.product-card{background:var(--c-white);border-radius:var(--radius);overflow:hidden;border:1px solid var(--c-light);transition:all .25s ease;display:flex;flex-direction:column}
-.product-card:hover{box-shadow:var(--shadow-md);border-color:var(--c-light);transform:translateY(-2px)}
+.product-card{background:transparent;border-radius:0;overflow:hidden;border:0;box-shadow:none;display:flex;flex-direction:column}
+.product-card:hover{box-shadow:none;transform:none}
 .product-card-img{aspect-ratio:4/5;background:#fafafa;overflow:hidden;position:relative;display:block}
 .product-card-img img{width:100%;height:100%;object-fit:cover;transition:transform .35s}
 .product-card:hover .product-card-img img{transform:scale(1.05)}
@@ -214,9 +214,8 @@ button{cursor:pointer;font-family:inherit}
   container:store-card / inline-size;position:relative;min-inline-size:0;
   --pc-card-limit:max(24rem,var(--pc-card-max-height,34rem));
   align-self:start;
-  transition:box-shadow .2s,border-color .2s;
-  background:var(--pc-surface);border:1px solid var(--pc-border);
-  border-radius:var(--pc-radius,20px);box-shadow:0 6px 20px rgba(17,17,17,.055);
+  background:transparent;border:0;
+  border-radius:0;box-shadow:none;
 }
 .dark .product-card--shared,.product-card--shared.dark{
   --pc-surface:#1b1b1b;--pc-ink:#f5f5f5;--pc-muted:#c4c4c4;--pc-border:#414141;
@@ -224,10 +223,7 @@ button{cursor:pointer;font-family:inherit}
 }
 .product-card--shared .pc-media{
   position:relative;flex:none;min-inline-size:0;
-  inline-size:var(--pc-image-width,100%);max-inline-size:100%;margin-inline:auto;
-  block-size:var(--pc-image-height,auto);
-  max-block-size:min(15rem,calc(var(--pc-card-limit) * .45),max(56px,calc(var(--pc-card-limit) - var(--pc-body-height,0px) - 2px)));
-  aspect-ratio:100 / 92;background:#080808;
+  border-radius:var(--pc-radius,8px);overflow:hidden;
 }
 .product-card.product-card--shared .product-card-img{position:absolute;inset:0;inline-size:auto;block-size:auto;aspect-ratio:auto;background:transparent}
 .product-card--shared .product-card-img img{display:block}
@@ -391,48 +387,6 @@ button{cursor:pointer;font-family:inherit}
     font-size:calc(3.6cqi - .96px);
   }
   .product-card--shared .pc-stock-label{font-size:calc(3.6cqi - .96px)}
-}
-
-/* Make card text and controls easier to read on phones. */
-@media (max-width:600px){
-  .product-card--shared .product-card-name{font-size:clamp(1.168rem,9.34375cqi,1.61725rem)}
-  .product-card--shared .pc-size{min-inline-size:63.25px;min-block-size:63.25px;padding:7.1875px 12.9375px;font-size:1.078125rem}
-  .product-card--shared .price-main{font-size:clamp(1.257875rem,11.2125cqi,1.976625rem)}
-  .product-card--shared .price-old,.product-card--shared .pc-stock-label{font-size:1.078125rem}
-  .product-card--shared :is(.card-add-btn,.card-details-btn){
-    min-block-size:clamp(63.25px,27.3125cqi,74.75px);padding:8.625px;
-    font-size:clamp(.8985rem,6.46875cqi,1.168rem);
-  }
-  .product-card--shared .pc-option-link{min-block-size:63.25px;font-size:1.078125rem}
-
-  @container store-card (width < 240px){
-    .product-card--shared .product-card-name{font-size:clamp(.7475rem,5.98cqi,1.035rem)}
-    .product-card--shared .pc-size{min-inline-size:40.25px;min-block-size:40.25px;padding:4.6px 8.05px;font-size:.69rem}
-    .product-card--shared .price-main{font-size:clamp(.805rem,7.176cqi,1.265rem)}
-    .product-card--shared .price-old,.product-card--shared .pc-stock-label{font-size:.69rem}
-    .product-card--shared :is(.card-add-btn,.card-details-btn){
-      min-block-size:40.25px;padding:5.75px;font-size:clamp(.575rem,4.14cqi,.7475rem);
-    }
-    .product-card--shared .pc-option-link{min-block-size:40.25px;font-size:.69rem}
-  }
-
-  @container store-card (width >= 240px) and (width < 360px){
-    .product-card--shared .product-card-name{font-size:calc(9.6025cqi - 8.71125px)}
-    .product-card--shared .pc-size{
-      min-inline-size:calc(18.975cqi - 5.06px);
-      min-block-size:calc(18.975cqi - 5.06px);
-      padding:calc(2.15625cqi - .575px) calc(4.3125cqi - 1.15px);
-      font-size:calc(5.175cqi - 1.38px);
-    }
-    .product-card--shared .price-main{font-size:calc(12.003125cqi - 11.58625px)}
-    .product-card--shared .price-old,.product-card--shared .pc-stock-label{font-size:calc(5.175cqi - 1.38px)}
-    .product-card--shared :is(.card-add-btn,.card-details-btn){
-      min-block-size:calc(27.3125cqi - 23.60375px);
-      padding:calc(2.5875cqi - .69px);
-      font-size:calc(7.288125cqi - 7.56125px);
-    }
-    .product-card--shared .pc-option-link{min-block-size:calc(18.975cqi - 5.06px);font-size:calc(5.175cqi - 1.38px)}
-  }
 }
 
 /* Keep color choices legible when a wider screen fits more cards per row. */
@@ -901,7 +855,7 @@ button{cursor:pointer;font-family:inherit}
     z-index:9999;
     align-items:stretch;
   }
-  #mob-nav a{
+  #mob-nav :is(a,button){
     flex:1;
     min-height:0;
     display:flex;
@@ -912,6 +866,7 @@ button{cursor:pointer;font-family:inherit}
     color:#888;
     font-size:9px;
     font-weight:600;
+    font-family:inherit;
     text-decoration:none;
     border:none;
     background:none;
@@ -920,10 +875,12 @@ button{cursor:pointer;font-family:inherit}
     touch-action:manipulation;
     cursor:pointer;
   }
-  #mob-nav a.on,#mob-nav a:active{color:var(--c-orange)}
+  #mob-nav a.on,#mob-nav :is(a,button):active{color:var(--c-orange)}
+  #mobile-menu-trigger[aria-expanded="true"]{color:var(--c-orange);background:#fff3ed}
+  #mob-nav button:focus-visible{outline:2px solid var(--c-orange);outline-offset:-4px}
   #mob-nav a.is-opening{color:var(--c-orange);background:var(--c-tag)}
-  #mob-nav a svg{display:block}
-  #mob-nav a span{display:block;line-height:1}
+  #mob-nav :is(a,button) svg{display:block}
+  #mob-nav :is(a,button) span{display:block;line-height:1}
   #mob-nav .mn-badge{
     position:absolute;
     top:6px;right:calc(50% - 20px);
@@ -933,7 +890,7 @@ button{cursor:pointer;font-family:inherit}
     display:flex;align-items:center;justify-content:center;
     padding:0 3px;border:2px solid #fff;pointer-events:none;
   }
-  #mob-nav a{position:relative}
+  #mob-nav :is(a,button){position:relative}
 }
 
 /* ── FOOTER ── */
@@ -1249,31 +1206,19 @@ html.catalog-keep-alive .catalog-view[data-catalog-active="1"]{opacity:1;visibil
 .catalog-transient-loading h1{font-size:22px;margin:0 0 20px;color:var(--c-dark)}
 .catalog-transient-loading>*{width:100%;max-width:720px;margin-inline:auto}
 .catalog-transient-loading .nav-shell-status a{color:inherit;text-decoration:underline}
-.catalog-transient-loading--product{padding:48px 24px 80px}
+.catalog-transient-loading--product{padding:0}
 .catalog-transient-loading--product>.catalog-product-preview{max-inline-size:var(--page-max)}
-.catalog-product-breadcrumb{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px;color:var(--c-mid);font-size:12px;line-height:1.5;margin-block-end:28px}
+.catalog-product-breadcrumb{align-items:baseline}
 .catalog-product-breadcrumb strong{min-inline-size:0;overflow-wrap:anywhere}
 .catalog-product-breadcrumb a:hover{text-decoration:underline}
-.catalog-product-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;align-items:start}
-.catalog-product-media{inline-size:80%;margin-inline:auto;border:1px solid var(--c-light);border-radius:14px;overflow:hidden;background:var(--c-white)}
-.catalog-product-media img{display:block;inline-size:100%;block-size:auto;object-fit:contain}
-.catalog-product-thumb{inline-size:58px;block-size:58px;border:1.5px solid var(--c-orange);border-radius:10px;overflow:hidden;margin-block-start:8px;margin-inline-start:10%}
-.catalog-product-thumb img{inline-size:100%;block-size:100%;object-fit:cover}
+.catalog-product-preview .gallery-arrow{display:grid;place-items:center}
 .catalog-product-info{min-inline-size:0}
 .catalog-product-info h1{font-size:26px;line-height:1.28;overflow-wrap:anywhere;margin-block-end:16px}
 .catalog-product-details{border-block-start:1px solid var(--c-light);padding-block-start:12px}
 .catalog-product-details .nav-shell-block{block-size:12px;margin-block:10px;border-radius:4px}
 .catalog-product-details .nav-shell-block:nth-child(2){inline-size:85%}
 .catalog-product-details .nav-shell-block:nth-child(3){inline-size:55%}
-@media(max-width:900px){
-  .catalog-transient-loading--product{padding:20px 14px 80px}
-  .catalog-product-layout{grid-template-columns:minmax(0,1fr);gap:12px}
-  .catalog-product-media{inline-size:100%;block-size:min(80vw,320px);border-radius:18px}
-  .catalog-product-media img{block-size:100%;object-fit:contain}
-  .catalog-product-thumb{margin-inline-start:2px}
-}
 @media(max-width:600px){
-  .catalog-product-media img{object-fit:cover}
   .catalog-product-info h1{font-size:20px}
 }
 #nav-loading-shell{box-sizing:border-box;width:100%;max-width:1280px;margin:0 auto;padding:28px 16px 96px;min-height:65vh}
@@ -1298,15 +1243,23 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
 @media(prefers-reduced-motion:reduce){.cart-button-spinner{animation:none}}
 </style>
 @stack('styles')
+<link rel="stylesheet" href="{{ asset('css/product-card-sizing.css') }}?v={{ filemtime(public_path('css/product-card-sizing.css')) }}">
+<link rel="stylesheet" href="{{ asset('css/product-gallery.css') }}?v={{ filemtime(public_path('css/product-gallery.css')) }}">
+<link rel="stylesheet" href="{{ asset('css/storefront-header.css') }}?v={{ filemtime(public_path('css/storefront-header.css')) }}">
+<script src="{{ asset('js/storefront-header.js') }}?v={{ filemtime(public_path('js/storefront-header.js')) }}" defer></script>
 </head>
 <body class="{{ trim(($suppressMobileNav ? 'mobile-auth-screen ' : '') . ($isLoginPage ? 'mobile-auth-login ' : '') . ($isAccountPage ? 'account-page' : '')) }}">
 
 <!-- NAV -->
-<nav class="nav{{ $headerIsArabic ? ' nav--rtl' : '' }}" dir="{{ $headerIsArabic ? 'rtl' : 'ltr' }}">
+<nav class="nav storefront-header{{ $headerIsArabic ? ' nav--rtl' : '' }}" aria-label="{{ $headerIsArabic ? 'التنقل الرئيسي' : 'Main navigation' }}" dir="{{ $headerIsArabic ? 'rtl' : 'ltr' }}">
   <div class="nav-inner">
-    <a href="{{ route('home') }}" class="nav-logo">Ramo<span>Store</span></a>
-    <button class="nav-hamburger" id="nav-hamburger" onclick="toggleMobileMenu()" aria-label="{{ $mobileMenuLabel }}">
+    <button type="button" class="nav-hamburger" id="nav-hamburger" onclick="toggleMobileMenu(this)" aria-label="{{ $mobileMenuLabel }}" aria-controls="nav-mobile-menu" aria-expanded="false" aria-haspopup="dialog">
       <span></span><span></span><span></span>
+      <svg class="header-settings-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 3-.6 2.4-2 .9L4 5.6l-2 3.5 1.8 1.7v2.4L2 14.9l2 3.5 2.4-.7 2 .9L9 21h6l.6-2.4 2-.9 2.4.7 2-3.5-1.8-1.7v-2.4L22 9.1l-2-3.5-2.4.7-2-.9L15 3z"/><circle cx="12" cy="12" r="3"/></svg>
+    </button>
+    <a href="{{ route('home') }}" class="nav-logo">Ramo<span>Store</span></a>
+    <button type="button" class="header-search-toggle" aria-label="{{ $headerSearchActionLabel }}" aria-controls="header-product-search" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="7"/><path d="m16 16 5 5"/></svg>
     </button>
     <div class="nav-links">
       <a href="{{ route('home') }}"  class="{{ request()->routeIs('home') ? 'active' : '' }}">{{ $headerHomeLabel }}</a>
@@ -1315,9 +1268,9 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
       <a href="{{ route('order.track') }}" class="{{ request()->routeIs('order.track*') ? 'active' : '' }}">{{ $headerTrackOrderLabel }}</a>
     </div>
     <div class="nav-search">
-      <form action="{{ route('search') }}" method="GET">
+      <form action="{{ route('search') }}" method="GET" role="search" aria-label="{{ $mobileSearchLabel }}">
         <svg class="nav-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="15" height="15"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" name="q" placeholder="{{ $headerSearchPlaceholder }}" value="{{ request('q', request('search')) }}" autocomplete="off">
+        <input id="header-product-search" type="search" name="q" aria-label="{{ $headerSearchPlaceholder }}" placeholder="{{ $headerSearchPlaceholder }}" value="{{ request('q', request('search')) }}" autocomplete="off" enterkeyhint="search">
         <button type="submit" aria-label="{{ $headerSearchActionLabel }}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>
@@ -1327,6 +1280,7 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
       <a
         href="{{ route('language.switch', ['lang' => $timelineNextLocale]) }}?redirect={{ urlencode(request()->fullUrl()) }}"
         class="nav-language-btn"
+        target="_top"
         lang="{{ $timelineNextLocale }}"
         dir="ltr"
         title="{{ $timelineSwitchTitle }}"
@@ -1334,12 +1288,12 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
       >{{ $timelineSwitchLabel }}</a>
 
       {{-- Offers & Coupons --}}
-      <a href="{{ route('offers') }}" class="nav-icon-btn" title="{{ $headerOffersLabel }}" aria-label="{{ $headerOffersLabel }}">
+      <a href="{{ route('offers') }}" class="nav-icon-btn nav-offers-shortcut" title="{{ $headerOffersLabel }}" aria-label="{{ $headerOffersLabel }}">
         <svg class="nav-action-icon nav-offers-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7"/><path d="M2 7h20v5H2z"/><path d="M12 7v14"/><path d="M12 7H8.5a2.5 2.5 0 1 1 2.5-2.5V7Z"/><path d="M12 7h3.5A2.5 2.5 0 1 0 13 4.5V7Z"/></svg>
       </a>
 
       {{-- Wishlist --}}
-      <a href="{{ route('wishlist') }}" class="nav-icon-btn" title="{{ $headerWishlistLabel }}" aria-label="{{ $headerWishlistLabel }}">
+      <a href="{{ route('wishlist') }}" class="nav-icon-btn nav-wishlist-shortcut" title="{{ $headerWishlistLabel }}" aria-label="{{ $headerWishlistLabel }}">
         <svg class="nav-action-icon nav-wishlist-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"/></svg>
         @php
           $wCount = Auth::check()
@@ -1475,65 +1429,8 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
   </div>
 </nav>
 
-<!-- MOBILE MENU -->
-  <div class="nav-mobile-menu{{ $headerIsArabic ? ' nav-mobile-menu--rtl' : '' }}" id="nav-mobile-menu" dir="{{ $headerIsArabic ? 'rtl' : 'ltr' }}">
-  <div class="nav-mobile-backdrop" onclick="closeMobileMenu()"></div>
-  <div class="nav-mobile-panel">
-    <div class="nav-mobile-search-wrap">
-      <label class="nav-mobile-search-label" for="nav-mobile-search-input">{{ $mobileSearchLabel }}</label>
-      <form action="{{ route('search') }}" method="GET" class="nav-mobile-search">
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input id="nav-mobile-search-input" type="text" name="q" placeholder="{{ $mobileSearchPlaceholder }}" value="{{ request('q', request('search')) }}" autocomplete="off">
-        <button type="submit" aria-label="{{ $mobileSearchActionLabel }}">
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </button>
-      </form>
-    </div>
-    <div class="nav-mobile-links">
-      <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}">🏠 {{ $mobileHomeLabel }}</a>
-      <a href="{{ route('shop') }}" class="{{ request()->routeIs('shop') ? 'active' : '' }}">🛍️ {{ $mobileShopLabel }}</a>
-      <a href="{{ route('offers') }}" class="{{ request()->routeIs('offers') ? 'active' : '' }}">🎁 {{ $mobileOffersLabel }}</a>
-      <a href="{{ route('cart') }}" class="{{ request()->routeIs('cart') ? 'active' : '' }}">
-        🛒 {{ $mobileCartLabel }}
-        @if($cCount) <span style="background:var(--c-orange);color:#fff;font-size:11px;font-weight:800;padding:1px 7px;border-radius:50px;margin-{{ $headerIsArabic ? 'right' : 'left' }}:4px">{{ $cCount }}</span> @endif
-      </a>
-      <a href="{{ route('wishlist') }}" class="{{ request()->routeIs('wishlist') ? 'active' : '' }}">♡ {{ $mobileWishlistLabel }}</a>
-      <a href="{{ route('order.track') }}" class="{{ request()->routeIs('order.track*') ? 'active' : '' }}">📦 {{ $mobileTrackOrderLabel }}</a>
-      <a
-        href="{{ route('language.switch', ['lang' => $timelineNextLocale]) }}?redirect={{ urlencode(request()->fullUrl()) }}"
-        class="nav-mobile-language-link"
-        lang="{{ $timelineNextLocale }}"
-        dir="ltr"
-        title="{{ $timelineSwitchTitle }}"
-        aria-label="{{ $timelineSwitchTitle }}"
-      >🌐 {{ $headerIsArabic ? 'English' : 'العربية' }}</a>
-      <hr class="nav-mobile-divider">
-      @auth
-        @php $__mu = Auth::user(); @endphp
-        <a href="{{ route('account.hub') }}">👤 {{ $__mu->first_name ?: $__mu->name }}</a>
-        <a href="{{ route('account.orders') }}">📋 {{ $mobileMyOrdersLabel }}</a>
-        @php $__isAdm = $__mu->email === 'adminramoui@gmail.com' || str_contains((string)$__mu->role,'admin'); @endphp
-        @if($__isAdm)<a href="{{ route('admin.dashboard') }}">⚙️ {{ $mobileAdminPanelLabel }}</a>@endif
-        <form method="POST" action="{{ route('logout') }}">
-          @csrf
-          <button type="submit" class="nav-mobile-signout">🚪 {{ $mobileSignOutLabel }}</button>
-        </form>
-      @else
-        <a href="{{ route('login') }}">👤 {{ $mobileSignInLabel }}</a>
-        <a href="{{ route('register') }}" style="color:var(--c-orange)">✨ {{ $mobileRegisterLabel }}</a>
-      @endauth
-      @if(auth()->guard('vendor_web')->check())
-        @php $__vmu = auth()->guard('vendor_web')->user(); @endphp
-        <hr class="nav-mobile-divider">
-        <a href="{{ route('vendor.dashboard') }}" style="color:var(--c-orange)">🏪 {{ Str::limit($__vmu->shop_name, 20) }}</a>
-        <form method="POST" action="{{ route('vendor.logout') }}">
-          @csrf
-          <button type="submit" class="nav-mobile-signout">🚪 {{ $mobileSignOutLabel }} (Vendor)</button>
-        </form>
-      @endif
-    </div>
-  </div>
-</div>
+<!-- SHARED MENU -->
+@include('web.partials.storefront-menu')
 
 <div id="storefront-content">
 @if($catalogKeepAlive)<div id="catalog-view-initial" class="catalog-view" data-catalog-view="{{ request()->getRequestUri() }}" data-catalog-active="1">@endif
@@ -1606,14 +1503,12 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
     @if($cCount ?? 0)<span class="mn-badge" id="mn-cart-badge">{{ $cCount }}</span>@endif
     <span>{{ $mobileCartLabel }}</span>
   </a>
-  <a href="{{ route('account.notifications') }}" class="{{ request()->routeIs('account.notifications') ? 'on' : '' }}"
-     aria-label="{{ $headerNotificationsLabel }}" data-notifications-link @if(request()->routeIs('account.notifications')) aria-current="page" @endif>
-    @include('web.partials.notification-bell')
-    <span class="mn-badge nav-notifications-badge" data-notifications-count hidden aria-hidden="true"></span>
-    <span class="nav-notifications-label">{{ $headerNotificationsLabel }}</span>
-  </a>
+  <button type="button" id="mobile-menu-trigger" onclick="toggleMobileMenu(this)" aria-label="{{ $mobileMenuLabel }}" aria-controls="nav-mobile-menu" aria-expanded="false" aria-haspopup="dialog">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="24" height="24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    <span>{{ $mobileMenuLabel }}</span>
+  </button>
   @auth
-  <a href="{{ route('account.hub') }}" class="{{ request()->routeIs('account.*') && !request()->routeIs('account.notifications') ? 'on' : '' }}">
+  <a href="{{ route('account.hub') }}" class="{{ request()->routeIs('account.*') ? 'on' : '' }}">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
     <span>{{ $mobileAccountLabel }}</span>
   </a>
@@ -1759,16 +1654,27 @@ if ('serviceWorker' in navigator) {
   sync();
 })();
 
-function toggleMobileMenu() {
+function toggleMobileMenu(opener = null) {
+  if (window.RamoHeader) return window.RamoHeader.toggle(opener);
   const menu = document.getElementById('nav-mobile-menu');
   const btn  = document.getElementById('nav-hamburger');
   const open = menu.classList.toggle('open');
   btn.classList.toggle('open', open);
+  menu.inert = !open;
+  menu.setAttribute('aria-hidden', String(!open));
+  [btn, document.getElementById('mobile-menu-trigger')].filter(Boolean).forEach(button => button.setAttribute('aria-expanded', String(open)));
   document.body.style.overflow = open ? 'hidden' : '';
 }
 function closeMobileMenu() {
-  document.getElementById('nav-mobile-menu').classList.remove('open');
-  document.getElementById('nav-hamburger').classList.remove('open');
+  if (window.RamoHeader) return window.RamoHeader.setOpen(false);
+  const menu = document.getElementById('nav-mobile-menu');
+  menu.classList.remove('open');
+  menu.inert = true;
+  menu.setAttribute('aria-hidden', 'true');
+  [document.getElementById('nav-hamburger'), document.getElementById('mobile-menu-trigger')].filter(Boolean).forEach(button => {
+    button.classList.remove('open');
+    button.setAttribute('aria-expanded', 'false');
+  });
   document.body.style.overflow = '';
 }
 document.getElementById('nav-mobile-menu')?.querySelectorAll('a').forEach(a => a.addEventListener('click', closeMobileMenu));

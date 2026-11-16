@@ -340,12 +340,10 @@
         $title       = $sec['headerText'] ?? $sec['name'] ?? 'Products';
         $catId       = $sec['category'] ?? null;
         $prodWidth   = (int)($sec['productWidth'] ?? 230);
-        $imgHeight   = isset($sec['imageHeight']) ? (int)$sec['imageHeight'] : (isset($sec['imageRatio']) ? round($prodWidth * (float)$sec['imageRatio']) : 230);
         $cardRadius  = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 12;
         $cardHeight  = max(0, (int)($sec['cardHeight'] ?? 0));
-        $imageWidth  = max(0, (int)($sec['imageWidth'] ?? 0));
         $elementSpacing = max(0, min(40, (int)($sec['elementSpacing'] ?? 0)));
-          $cardStyle   = '--pc-card-max-height:var(--tl-product-card-max-h,'.($cardHeight > 0 ? $cardHeight.'px' : '34rem').');--pc-image-width:var(--tl-img-w,'.($imageWidth > 0 ? $imageWidth.'px' : '100%').');--pc-image-height:var(--tl-img-h,'.$imgHeight.'px);--pc-element-spacing:var(--tl-element-spacing,'.$elementSpacing.'px)';
+        $cardStyle   = '--pc-element-spacing:var(--tl-element-spacing,'.$elementSpacing.'px)';
         $secId       = 'sg-'.$si;
         $cardOptions = [
           'idPrefix'      => 'tl-'.$si,
@@ -363,13 +361,10 @@
       @endphp
       @if($products->count())
       <style>
-        #{{ $secId }} .product-card { border-radius: var(--tl-card-r,{{ $cardRadius }}px) }
+        #{{ $secId }} .pc-media { border-radius: var(--tl-card-r,{{ $cardRadius }}px) }
         @media(max-width:600px){
           #{{ $secId }} { grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:10px !important; }
         }
-        @if($imgHeight)
-        #{{ $secId }} .pc-media { block-size:var(--tl-img-h,{{ $imgHeight }}px) }
-        @endif
       </style>
       <div class="sec-head">
         <h2 class="sec-title">{{ $title }}</h2>
@@ -487,6 +482,7 @@
           async function loadNextPage() {
             if (loading || !hasMore || !isActive()) return;
             loading = true;
+            observer?.unobserve(sentinel);
             loader.setAttribute('aria-busy', 'true');
             status.textContent = loader.dataset.loadingLabel;
             button.disabled = true;
@@ -546,7 +542,10 @@
           if (supportsObserver) {
             observer = new IntersectionObserver(entries => {
               if (entries.some(entry => entry.isIntersecting)) loadNextPage();
-            }, { rootMargin: `0px 0px ${Math.min(2400, Math.max(1200, window.innerHeight * 2))}px 0px` });
+            }, {
+              root: catalogView,
+              rootMargin: `0px 0px ${Math.min(2400, Math.max(1200, (catalogView?.clientHeight || window.innerHeight) * 2))}px 0px`
+            });
             observer.observe(sentinel);
             document.addEventListener('catalog:shown', () => {
               if (isActive() && hasMore) { observer.unobserve(sentinel); observer.observe(sentinel); }
@@ -633,12 +632,10 @@
         $title      = $sec['name'] ?? $sec['headerText'] ?? 'Featured';
         $catId      = $sec['category'] ?? null;
         $prodWidth  = (int)($sec['productWidth'] ?? 200);
-        $imgHeight  = isset($sec['imageHeight']) ? (int)$sec['imageHeight'] : (isset($sec['imageRatio']) ? round($prodWidth * (float)$sec['imageRatio']) : 200);
         $cardRadius = isset($sec['cardBorderRadius']) ? (int)$sec['cardBorderRadius'] : 10;
         $cardHeight = max(0, (int)($sec['cardHeight'] ?? 0));
-        $imageWidth = max(0, (int)($sec['imageWidth'] ?? 0));
         $elementSpacing = max(0, min(40, (int)($sec['elementSpacing'] ?? 0)));
-        $cardStyle  = '--pc-card-max-height:var(--tl-product-card-max-h,'.($cardHeight > 0 ? $cardHeight.'px' : '34rem').');--pc-image-width:var(--tl-img-w,'.($imageWidth > 0 ? $imageWidth.'px' : '100%').');--pc-image-height:var(--tl-img-h,'.$imgHeight.'px);--pc-element-spacing:var(--tl-element-spacing,'.$elementSpacing.'px)';
+        $cardStyle  = '--pc-element-spacing:var(--tl-element-spacing,'.$elementSpacing.'px)';
         $secId      = 'sg-'.$si;
         $cardOptions = [
           'idPrefix'      => 'tl-'.$si,
@@ -656,13 +653,10 @@
       @endphp
       @if($products->count())
       <style>
-        #{{ $secId }} .product-card { border-radius: var(--tl-card-r,{{ $cardRadius }}px) }
+        #{{ $secId }} .pc-media { border-radius: var(--tl-card-r,{{ $cardRadius }}px) }
         @media(max-width:600px){
           #{{ $secId }} { grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:10px !important; }
         }
-        @if($imgHeight)
-        #{{ $secId }} .pc-media { block-size:var(--tl-img-h,{{ $imgHeight }}px) }
-        @endif
       </style>
       <div class="sec-head">
         <h2 class="sec-title">{{ $title }}</h2>

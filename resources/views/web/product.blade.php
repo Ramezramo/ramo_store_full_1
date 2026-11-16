@@ -41,19 +41,29 @@
           $product->thumbnail_url ? [$product->thumbnail_url] : [],
           $product->gallery_urls ?? []
         ))));
+        foreach ($variations as $variation) {
+          foreach ($variation->images ?? [] as $path) {
+            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+              $allImages[] = \App\Constants\AppConstants::imageUrl($path);
+            }
+          }
+        }
+        $allImages = array_values(array_unique($allImages));
       @endphp
-      <div class="gallery-wrap">
+      <div class="gallery-wrap" data-product-gallery role="region" aria-label="{{ $isAr ? 'معرض صور المنتج' : 'Product image gallery' }}">
         <div class="gallery-thumbs" id="gallery-thumbs" role="group" aria-label="{{ $isAr ? 'صور المنتج' : 'Product images' }}">
           @foreach($allImages as $i => $url)
-          <div class="gallery-thumb {{ $i === 0 ? 'active' : '' }}" onclick="switchImg(this,'{{ $url }}')">
+          <button type="button" class="gallery-thumb {{ $i === 0 ? 'active' : '' }}" aria-label="{{ $isAr ? 'عرض الصورة' : 'View image' }} {{ $i+1 }}" aria-pressed="{{ $i === 0 ? 'true' : 'false' }}">
             <img src="{{ $url }}" alt="{{ $isAr ? 'صورة' : 'Image' }} {{ $i+1 }}" loading="lazy"
                  onerror="handleThumbError(this)">
-          </div>
+          </button>
           @endforeach
         </div>
+        <div class="gallery-stage">
         <div class="gallery-main" id="gallery-main-wrap">
-          @if($product->thumbnail_url)
-            <img src="{{ $product->thumbnail_url }}" alt="{{ $displayProductName }}" id="main-img"
+          <button type="button" class="gallery-open" aria-label="{{ $isAr ? 'تكبير صورة المنتج' : 'Expand product image' }}">
+          @if(!empty($allImages))
+            <img src="{{ $allImages[0] }}" alt="{{ $displayProductName }}" id="main-img" fetchpriority="high" draggable="false"
                  onerror="handleImgError(this)">
           @else
             <img src="" alt="{{ $displayProductName }}" id="main-img" style="display:none"
@@ -63,8 +73,28 @@
               <span class="img-placeholder-text">{{ $isAr ? 'مفيش صورة' : 'No image' }}</span>
             </div>
           @endif
+          <span class="gallery-expand" aria-hidden="true">⤢</span>
+          </button>
+          <span class="gallery-image-status" role="status" aria-live="polite"></span>
+        </div>
+        <div class="gallery-controls" @if(count($allImages) < 2) hidden @endif>
+          <button type="button" class="gallery-arrow" data-gallery-step="-1" aria-label="{{ $isAr ? 'الصورة السابقة' : 'Previous image' }}">‹</button>
+          <div class="gallery-dots" aria-label="{{ $isAr ? 'اختيار صورة' : 'Choose an image' }}"></div>
+          <button type="button" class="gallery-arrow" data-gallery-step="1" aria-label="{{ $isAr ? 'الصورة التالية' : 'Next image' }}">›</button>
+        </div>
         </div>
       </div>
+      <dialog class="gallery-lightbox" id="product-gallery-dialog" aria-label="{{ $isAr ? 'صور المنتج بالحجم الكامل' : 'Full-size product images' }}">
+        <div class="gallery-lightbox-body">
+          <button type="button" class="gallery-lightbox-close" aria-label="{{ $isAr ? 'إغلاق الصور' : 'Close image viewer' }}">×</button>
+          <img class="gallery-lightbox-image" alt="{{ $displayProductName }}" draggable="false">
+          <div class="gallery-controls">
+            <button type="button" class="gallery-arrow" data-gallery-step="-1" aria-label="{{ $isAr ? 'الصورة السابقة' : 'Previous image' }}">‹</button>
+            <span class="gallery-counter" aria-live="polite"></span>
+            <button type="button" class="gallery-arrow" data-gallery-step="1" aria-label="{{ $isAr ? 'الصورة التالية' : 'Next image' }}">›</button>
+          </div>
+        </div>
+      </dialog>
     </div>
 
     {{-- INFO --}}
@@ -780,66 +810,8 @@
   .sticky-atc-btn { padding: 11px 20px; font-size: 14px; }
 }
 
-/* Gallery image switching */
-#main-img { transition: opacity 0.18s ease; }
-#main-img.img-switching { opacity: 0; }
-#gallery-thumbs:empty { display: none; }
-.product-page .gallery-wrap { flex-direction:column-reverse; align-items:stretch; gap:10px; }
-.product-page .gallery-main {
-  flex:0 0 auto;
-  height:min(80vw, 320px);
-  aspect-ratio:auto;
-}
-.product-page .gallery-main img { object-fit:cover; }
-.product-page .gallery-thumbs {
-  display:flex; flex-direction:row; width:100%; max-height:none;
-  overflow-x:auto; overflow-y:hidden; overscroll-behavior-x:contain;
-  -webkit-overflow-scrolling:touch; touch-action:pan-x;
-  scroll-snap-type:x proximity; scrollbar-width:thin;
-}
-.product-page .gallery-thumb { flex-shrink:0; padding:0; color:inherit; scroll-snap-align:start; }
-
-/* Keep the product photo balanced on tablet portrait screens. */
-@media (min-width:601px) and (max-width:900px) {
-  .product-page .product-layout { gap:6px; }
-  .product-page .gallery-wrap { gap:6px; }
-  .product-page .gallery-wrap { width:100%; max-width:none; margin-inline:0; }
-  .product-page .gallery-main {
-    flex:0 0 auto; width:100%; max-width:none; aspect-ratio:1 / 0.9;
-    margin-inline:auto;
-  }
-  /* The tablet frame is wider than the source photo. Fit the complete photo
-     instead of zooming/cropping it to fill the panoramic frame. */
-  .product-page .gallery-main { background:var(--c-white, #fff); }
-  .product-page .gallery-main img {
-    object-fit:contain;
-    object-position:center;
-    background:var(--c-white, #fff);
-  }
-}
-
-/* Keep the PC gallery at the phone-sized height without cropping or stretching
-   the source photo to fill the wider desktop column. */
+/* Desktop product details remain compact beside the gallery. */
 @media (min-width:901px) {
-  .product-page .product-layout { column-gap:32px; }
-  .product-page .gallery-wrap { align-items:stretch; }
-  .product-page .gallery-main {
-    width:80%;
-    height:auto;
-    max-width:none;
-    aspect-ratio:auto;
-    margin-inline:auto;
-    background:var(--c-white, #fff);
-  }
-  .product-page .gallery-thumbs { width:80%; margin-inline:auto; }
-  .product-page .gallery-main img {
-    display:block;
-    width:100%;
-    height:auto;
-    object-fit:contain;
-    object-position:center;
-    background:var(--c-white, #fff);
-  }
   .product-page .pi-title-row { margin-bottom:6px; }
   .product-page .pi-desc { margin-top:8px; padding-top:8px; }
   .product-page .pi-stock { margin-bottom:4px; }
@@ -935,54 +907,7 @@
   .product-page .product-layout {
     gap:6px;
   }
-  .product-page .gallery-wrap {
-    width:100%;
-    gap:6px;
-  }
-  .product-page .product-info {
-    padding-top:0;
-    margin-top:0;
-  }
-  .product-page .gallery-main {
-    width:100%;
-    aspect-ratio:1 / 0.9;
-    border:1px solid #e8e8e4;
-    border-radius:18px;
-    background:#fafaf8;
-    box-shadow:0 5px 18px rgba(25,25,25,.06);
-  }
-  .product-page .gallery-main img {
-    display:block;
-    width:100%;
-    height:100%;
-    padding:0;
-    object-fit:cover;
-    background:#fff;
-  }
-  .product-page .gallery-thumbs {
-    width:100%;
-    justify-content:flex-start;
-    gap:8px;
-    padding:2px 2px 2px;
-    scroll-snap-type:x proximity;
-  }
-  .product-page .gallery-thumb {
-    width:58px;
-    height:58px;
-    border:1.5px solid #e1e1de;
-    border-radius:10px;
-    scroll-snap-align:start;
-    background:#fafaf8;
-  }
-  .product-page .gallery-thumb.active {
-    border-color:#e85d26;
-    box-shadow:0 0 0 2px rgba(232,93,38,.14);
-  }
-  .product-page .gallery-thumb img,
-  .product-page .gallery-thumb:hover img,
-  .product-page .gallery-thumb.active img {
-    filter:none;
-  }
+  .product-page .product-info { padding-top:0; margin-top:0; }
   .product-page .pi-title-row {
     align-items:flex-start;
     gap:10px;
@@ -1031,6 +956,7 @@
   .product-page .related-products-head .sec-link{font-size:11px;white-space:nowrap}
   .product-page .product-grid--showcase{grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:10px !important}
 }</style>
+<script src="{{ asset('js/product-gallery.js') }}?v={{ filemtime(public_path('js/product-gallery.js')) }}"></script>
 <script>
 // ── Variation Engine ──────────────────────────────────────────────────
 const VAR_DATA  = @json($varData);
@@ -1044,6 +970,7 @@ const PRODUCT_ID = {{ (int) $product->id }};
 let cartQuantities = @json((object) $cartQuantities);
 const ATTR_KEYS = [...new Set(VAR_DATA.flatMap(v => Object.keys(v.attrs)).filter(key => !String(key).startsWith('_')))];
 const INITIAL_GALLERY_HTML = document.getElementById('gallery-thumbs')?.innerHTML || '';
+const INITIAL_PRODUCT_IMAGE_URL = document.getElementById('main-img')?.getAttribute('src') || null;
 let productCartRequestPending = false;
 let selectedAttrs = {};
 let selectedColorValues = new Set();
@@ -1055,6 +982,7 @@ const bulkRows = new Map([...document.querySelectorAll('.bulk-variation-row')]
   .map(row => [row.dataset.variantId, row]));
 let currentVariation = null;
 let _lockedImgUrl = null;
+document.querySelector('[data-product-gallery]')?.addEventListener('gallery:select', event => { _lockedImgUrl = event.detail.url; });
 const COLOR_ATTR_KEY = ATTR_KEYS.find(k => k.toLowerCase() === 'color') || null;
 
 // Returns valid values for `key` considering only selections from keys that come
@@ -1776,28 +1704,7 @@ function handleAddToCart(id, name, basePrice, image) {
 // ── Gallery ───────────────────────────────────────────────────────────
 
 function setMainImg(url, fade) {
-  const img = document.getElementById('main-img');
-  const placeholder = document.getElementById('main-img-placeholder');
-  if (!img || !url) return;
-  if (fade) {
-    img.classList.add('img-switching');
-    setTimeout(() => {
-      img.src = url;
-      img.style.display = '';
-      if (placeholder) placeholder.style.display = 'none';
-      img.classList.remove('img-switching');
-    }, 160);
-  } else {
-    img.src = url;
-    img.style.display = '';
-    if (placeholder) placeholder.style.display = 'none';
-  }
-}
-
-function switchImg(thumb, url) {
-  setMainImg(url, true);
-  document.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
-  thumb.classList.add('active');
+  window.productGallery?.select(url);
 }
 
 // ── Image error / placeholder handlers ───────────────────────────────
@@ -1848,13 +1755,12 @@ function switchImgFromSection(url) {
 // ── Color swatch image preview ────────────────────────────────────────
 
 function getColorImages(attrKey, attrVal) {
-  const v = VAR_DATA.find(v => v.attrs[attrKey] === attrVal);
-  return v ? (v.images || []) : [];
+  return [...new Set(VAR_DATA.filter(v => v.attrs[attrKey] === attrVal).flatMap(v => v.images || []))];
 }
 
 function getColorImage(attrKey, attrVal) {
   const imgs = getColorImages(attrKey, attrVal);
-  return imgs.length > 0 ? imgs[0] : null;
+  return imgs.length > 0 ? imgs[0] : INITIAL_PRODUCT_IMAGE_URL;
 }
 
 function updateVariationThumbs(attrKey, attrVal, selectedImageUrl = null) {
@@ -1878,13 +1784,6 @@ function updateVariationThumbs(attrKey, attrVal, selectedImageUrl = null) {
       thumb.type = 'button';
       thumb.className = 'gallery-thumb';
       thumb.setAttribute('aria-label', `${colorValue || attrVal} image ${index + 1}`);
-      thumb.addEventListener('click', () => {
-        _lockedImgUrl = url;
-        setMainImg(url, true);
-        strip.querySelectorAll('.gallery-thumb').forEach(item => item.classList.remove('active'));
-        thumb.classList.add('active');
-      });
-
       const image = document.createElement('img');
       image.src = url;
       image.alt = `${colorValue || attrVal} ${index + 1}`;
@@ -1903,7 +1802,7 @@ function updateVariationThumbs(attrKey, attrVal, selectedImageUrl = null) {
       return image && new URL(image.src, document.baseURI).href === activeAbsoluteUrl;
     });
     strip.querySelectorAll('.gallery-thumb').forEach(item => item.classList.toggle('active', item === activeThumb));
-    activeThumb?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    window.productGallery?.refresh();
   }
 }
 
