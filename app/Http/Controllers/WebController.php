@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Constants\AppConstants;
 use App\Http\Middleware\SetInitialLocaleFromCountry;
 use App\Http\Traits\CartTrait;
+use App\Services\CartRules;
 use App\Services\FlashSaleService;
 use App\Services\TimelineLayoutService;
 use Illuminate\Http\Request;
@@ -670,6 +671,8 @@ class WebController extends Controller
         $locale = session('locale', 'en');
         $flashSale = FlashSaleService::getActive($locale);
         $raw = $this->baseProductQuery()
+            ->addSelect('p.status', 'p.acceptance_status', 'p.purchasable')
+            ->groupBy('p.status', 'p.acceptance_status', 'p.purchasable')
             ->where('p.id', $id)
             ->first();
 
@@ -686,6 +689,7 @@ class WebController extends Controller
                     'p.id', 'p.name', 'p.slug', 'p.images', 'p.translations',
                     'p.description', 'p.stock_quantity', 'p.unit',
                     'p.minimum_order_qty', 'p.max_orders_per_person', 'p.sold_individually',
+                    'p.status', 'p.acceptance_status', 'p.purchasable',
                     'p.vendor_id', 'p.min_price as price', 'p.min_price as regular_price',
                     'p.min_price as sale_price', 'p.discount_percentage',
                     $this->productCategoryIdsSelect()
@@ -695,6 +699,7 @@ class WebController extends Controller
 
         if (! $raw) abort(404);
 
+        $productCanBePurchased = CartRules::purchasable($raw);
         $product    = $this->localizeTimelineProductText($this->parseProduct($raw, $flashSale), $locale);
         $variations = DB::table('product_variations')
             ->where('product_id', $id)
@@ -738,6 +743,7 @@ class WebController extends Controller
             ->limit(4)
             ->get()
             ->map(fn($p) => $this->localizeTimelineProductText($this->parseProduct($p, $flashSale), $locale));
+        $relatedVariations = $this->loadProductVariations($related->pluck('id')->all());
 
         $reviews = DB::table('product_reviews as r')
             ->leftJoin('users as u', 'u.id', '=', 'r.user_id')
@@ -784,7 +790,7 @@ class WebController extends Controller
         $cartQuantities = $this->cartVariationQuantities($this->getCart(), (int) $id);
 
         return response()->view('web.product', compact(
-            'product', 'variations', 'related',
+            'product', 'productCanBePurchased', 'variations', 'related', 'relatedVariations',
             'vendor', 'vendorProducts',
             'reviews', 'userReviewed', 'userReview',
             'distribution', 'helpfulVoted',
@@ -815,8 +821,9 @@ class WebController extends Controller
 
         $rawProducts = $query->paginate(12)->withQueryString();
         $products    = $rawProducts->through(fn($p) => $this->localizeTimelineProductText($this->parseProduct($p, $flashSale), $locale));
+        $productVariations = $this->loadProductVariations($products->pluck('id')->all());
 
-        return view('web.vendor', compact('vendor', 'products'));
+        return view('web.vendor', compact('vendor', 'products', 'productVariations'));
     }
 
     private function homeTimelineSections(string $lang): array

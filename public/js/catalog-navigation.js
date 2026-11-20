@@ -1,4 +1,4 @@
-/* Home and Shop stay mounted in separate scrolling views for five minutes. */
+/* Home and Shop stay mounted in separate scrolling views for twelve minutes. */
 (() => {
   'use strict';
   if (window !== window.top) return;
@@ -6,7 +6,8 @@
   const first = host?.querySelector('[data-catalog-view]');
   const scope = document.querySelector('meta[name="catalog-session"]')?.content;
   if (!host || !first || !scope) return;
-  const lifetime = 300000;
+  const catalogLifetime = 12 * 60 * 1000;
+  const productPreviewLifetime = 5 * 60 * 1000;
   const locale = document.documentElement.lang;
   const initialPath = location.pathname + location.search;
   const views = new Map([[initialPath, { element: first, title: document.title, loadedAt: Date.now(), initialized: true }]]);
@@ -40,7 +41,7 @@
 
   function currentProductPreview(url) {
     const preview = productPreviews.get(url.pathname);
-    if (preview && Date.now() - preview.savedAt < lifetime) return preview;
+    if (preview && Date.now() - preview.savedAt < productPreviewLifetime) return preview;
     productPreviews.delete(url.pathname);
     return null;
   }
@@ -274,7 +275,7 @@
       views.delete(initialPath);
     }
     const existing = views.get(path);
-    if (existing && Date.now() - existing.loadedAt >= lifetime) {
+    if (existing && Date.now() - existing.loadedAt >= catalogLifetime) {
       location.assign(path);
       return;
     }
@@ -440,7 +441,7 @@
     }
     event.preventDefault();
     if (eligible(url)) {
-      if (url.pathname !== activePath || !views.has(activePath) || Date.now() - views.get(activePath).loadedAt >= lifetime) show(url.pathname);
+      if (url.pathname !== activePath || !views.has(activePath) || Date.now() - views.get(activePath).loadedAt >= catalogLifetime) show(url.pathname);
     } else visit(url, true, readProductPreview(link, url));
   }
   function handleSubmit(event, base = new URL(location.href)) {

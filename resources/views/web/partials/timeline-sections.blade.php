@@ -277,7 +277,9 @@
           <a href="{{ $href }}" class="tl-cat-item">
             <div class="tl-cat-img-wrap" style="border-color:{{ $color }}22">
               @if($img)
-                <img src="{{ $img }}" alt="{{ $displayLabel }}" class="tl-cat-img" loading="lazy" onerror="this.onerror=null;this.style.display='none';var fallback=this.parentElement.querySelector('.tl-cat-chip');if(fallback)fallback.style.display='flex';">
+                <img src="{{ $img }}" alt="{{ $displayLabel }}" class="tl-cat-img" loading="lazy" decoding="async" data-photo-pending
+                     onload="this.removeAttribute('data-photo-pending')"
+                     onerror="this.removeAttribute('data-photo-pending');this.style.display='none';var fallback=this.parentElement.querySelector('.tl-cat-chip');if(fallback)fallback.style.display='flex';">
                 <div class="tl-cat-chip" style="background:{{ $color }}22;display:none">🛍️</div>
               @else
                 <div class="tl-cat-chip" style="background:{{ $color }}22">🛍️</div>
@@ -316,7 +318,9 @@
              class="cc-card"
              style="border-radius:var(--tl-card-r,{{ $radius }}px);height:var(--tl-card-h,{{ $cardHeight }}px);background:{{ $bg ? '#111' : $fallColor }}">
             @if($bg)
-              <img src="{{ $bg }}" alt="{{ \App\Support\StorefrontLabels::category($cat->name, $timelineRtl) }}" loading="lazy" class="cc-img" onerror="this.onerror=null;this.style.display='none';var fallback=this.parentElement.querySelector('.cc-placeholder');if(fallback)fallback.style.display='flex';">
+              <img src="{{ $bg }}" alt="{{ \App\Support\StorefrontLabels::category($cat->name, $timelineRtl) }}" class="cc-img" loading="lazy" decoding="async" data-photo-pending
+                   onload="this.removeAttribute('data-photo-pending')"
+                   onerror="this.removeAttribute('data-photo-pending');this.style.display='none';var fallback=this.parentElement.querySelector('.cc-placeholder');if(fallback)fallback.style.display='flex';">
               <div class="cc-placeholder" style="background:linear-gradient(135deg,{{ $fallColor }},{{ $fallColor }}99);display:none">🛍️</div>
             @else
               <div class="cc-placeholder" style="background:linear-gradient(135deg,{{ $fallColor }},{{ $fallColor }}99)">🛍️</div>
@@ -898,7 +902,15 @@
             @foreach($products as $p)
             @php $arrivalName = $p->timeline_name ?? $p->name; @endphp
             <a href="{{ route('product', $p->id) }}" class="tl-arrival-card">
-              @if($p->thumbnail_url)<img src="{{ $p->thumbnail_url }}" alt="{{ $arrivalName }}" class="tl-arrival-img">@else<div class="tl-arrival-placeholder">🛍️</div>@endif
+              @if($p->thumbnail_url)
+                @include('web.partials.product-photo', [
+                  'photoSrc' => $p->thumbnail_url,
+                  'photoAlt' => $arrivalName,
+                  'photoClass' => 'tl-arrival-img',
+                ])
+              @else
+                <div class="tl-arrival-placeholder">🛍️</div>
+              @endif
               <div class="tl-arrival-body">
                 @if($sec['showCategoryChip'] ?? false)<span class="tl-arrival-tag">{{ $tag }}</span>@endif
                 <div class="tl-arrival-name">{{ Str::limit($arrivalName, 22) }}</div>
@@ -1251,7 +1263,11 @@
         <div class="pcw-card" style="margin-bottom:44px">
           <a href="{{ route('product', $fp->id) }}" class="pcw-img-wrap">
             @if($fp->thumbnail_url)
-              <img src="{{ $fp->thumbnail_url }}" alt="{{ $pcwName }}" class="pcw-img" loading="lazy">
+              @include('web.partials.product-photo', [
+                'photoSrc' => $fp->thumbnail_url,
+                'photoAlt' => $pcwName,
+                'photoClass' => 'pcw-img',
+              ])
             @else
               <div class="pcw-img-placeholder">🛍️</div>
             @endif

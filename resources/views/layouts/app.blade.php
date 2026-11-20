@@ -52,7 +52,7 @@
     && !(request()->routeIs('home', 'shop') && count(request()->query()) > 0);
 @endphp
 <!DOCTYPE html>
-<html lang="{{ $timelineLocale }}" dir="{{ $headerIsArabic ? 'rtl' : 'ltr' }}">
+<html lang="{{ $timelineLocale }}" dir="{{ $headerIsArabic ? 'rtl' : 'ltr' }}" @class(['catalog-page' => request()->routeIs('home', 'shop')])>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -432,6 +432,8 @@ button{cursor:pointer;font-family:inherit}
 .pagination-wrap a,.pagination-wrap span{display:inline-flex;align-items:center;justify-content:center;min-width:38px;height:38px;padding:0 10px;border-radius:8px;font-size:13px;font-weight:500;border:1.5px solid var(--c-light);background:var(--c-white);color:var(--c-mid);transition:all .12s}
 .pagination-wrap a:hover{border-color:#999;color:var(--c-dark)}
 .pagination-wrap span.active-page{background:var(--c-dark);border-color:var(--c-dark);color:#fff}
+.storefront-pagination [aria-disabled="true"]{opacity:.45}
+.storefront-pagination a:focus-visible{outline:2px solid var(--c-orange);outline-offset:2px}
 
 /* ── PRODUCT DETAIL ── */
 .product-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:start}
@@ -1243,9 +1245,11 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
 @media(prefers-reduced-motion:reduce){.cart-button-spinner{animation:none}}
 </style>
 @stack('styles')
+<link rel="stylesheet" href="{{ asset('css/shop-product-card.css') }}?v={{ filemtime(public_path('css/shop-product-card.css')) }}">
 <link rel="stylesheet" href="{{ asset('css/product-card-sizing.css') }}?v={{ filemtime(public_path('css/product-card-sizing.css')) }}">
 <link rel="stylesheet" href="{{ asset('css/product-gallery.css') }}?v={{ filemtime(public_path('css/product-gallery.css')) }}">
 <link rel="stylesheet" href="{{ asset('css/storefront-header.css') }}?v={{ filemtime(public_path('css/storefront-header.css')) }}">
+<link rel="stylesheet" href="{{ asset('css/page-loading.css') }}?v={{ filemtime(public_path('css/page-loading.css')) }}">
 <script src="{{ asset('js/storefront-header.js') }}?v={{ filemtime(public_path('js/storefront-header.js')) }}" defer></script>
 </head>
 <body class="{{ trim(($suppressMobileNav ? 'mobile-auth-screen ' : '') . ($isLoginPage ? 'mobile-auth-login ' : '') . ($isAccountPage ? 'account-page' : '')) }}">
@@ -1270,7 +1274,7 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
     <div class="nav-search">
       <form action="{{ route('search') }}" method="GET" role="search" aria-label="{{ $mobileSearchLabel }}">
         <svg class="nav-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="15" height="15"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input id="header-product-search" type="search" name="q" aria-label="{{ $headerSearchPlaceholder }}" placeholder="{{ $headerSearchPlaceholder }}" value="{{ request('q', request('search')) }}" autocomplete="off" enterkeyhint="search">
+        <input id="header-product-search" type="search" name="q" aria-label="{{ $headerSearchPlaceholder }}" placeholder="{{ $headerSearchPlaceholder }}" value="{{ request('q', request('search')) }}" autocomplete="off" enterkeyhint="search" required pattern=".*\S.*">
         <button type="submit" aria-label="{{ $headerSearchActionLabel }}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>
@@ -2146,7 +2150,10 @@ function _pcUpdatePrice(pid, source = null) {
     const source = match?.img || selectedSwatch?.dataset.img || card.dataset.baseImg || img.dataset.fallback;
     if (img.dataset.requestedSrc !== source) {
       img.dataset.requestedSrc = source;
-      if (img.getAttribute('src') !== source) img.src = source;
+      if (img.getAttribute('src') !== source) {
+        img.setAttribute('data-photo-pending', '');
+        img.src = source;
+      }
     }
   }
   if (addControl) addControl.disabled = !selectionAvailable || addControl.dataset.adding === 'true';

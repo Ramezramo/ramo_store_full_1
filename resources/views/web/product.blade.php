@@ -168,7 +168,9 @@
 
       {{-- Stock badge --}}
       <div id="stock-display" class="pi-stock">
-        @if($product->stock_quantity > 0)
+        @if(!$productCanBePurchased)
+          <span class="badge-stock-no">{{ $isAr ? 'المنتج مش متاح للشراء دلوقتي' : 'This product is currently unavailable to order' }}</span>
+        @elseif($product->stock_quantity > 0)
           <span class="badge-stock-ok">✓ {{ $isAr ? 'متوفر' : 'In Stock' }} ({{ number_format($product->stock_quantity) }} {{ $isAr ? 'متاح' : 'available' }})</span>
         @else
           <span class="badge-stock-no">{{ $isAr ? 'مش متوفر' : 'Out of Stock' }}</span>
@@ -255,12 +257,12 @@
           ? min($initialStockQty, $configuredMaximumOrderQty)
           : $initialStockQty;
         if ($product->sold_individually ?? false) $maximumOrderQty = min($maximumOrderQty, 1);
-        $quantityIsOrderable = $maximumOrderQty >= $minimumOrderQty;
+        $quantityIsOrderable = $productCanBePurchased && $maximumOrderQty >= $minimumOrderQty;
         $colorAttrKey = collect(array_keys($attrMap))->first(fn ($key) => strtolower($key) === 'color');
         $bulkVariations = $varData->filter(fn ($variant) => array_intersect_key($variant['attrs'], $attrMap))
           ->sortBy(fn ($variant) => $colorAttrKey ? (string) ($variant['attrs'][$colorAttrKey] ?? '') : '');
       @endphp
-      @if($bulkVariations->count() > 1)
+      @if($productCanBePurchased && $bulkVariations->count() > 1)
         <div class="product-order-switch">
           <button type="button" id="bulk-variant-toggle" class="bulk-variant-toggle" aria-expanded="false"
                   aria-controls="bulk-variations-panel"
@@ -312,7 +314,7 @@
 
       <div id="selected-model-number" class="selected-model-number" hidden aria-live="polite"></div>
 
-      @if($bulkVariations->count() > 1)
+      @if($productCanBePurchased && $bulkVariations->count() > 1)
       <div id="bulk-variations-panel" class="bulk-variations-panel" hidden>
         <p>{{ $isAr ? 'اختار التركيبات اللي عايزها وحدد الكمية لكل اختيار.' : 'Select the combinations you want and set a quantity for each.' }}</p>
         <div class="bulk-variation-list">
@@ -373,7 +375,7 @@
         <div id="single-qty-controls">
           <div class="qty-input" role="group" aria-label="{{ $productText['quantity'] }}">
             <button type="button" aria-label="{{ $isAr ? 'قلل الكمية' : 'Decrease quantity' }}" onclick="changeQty(-1)">−</button>
-            <input type="number" id="qty" inputmode="numeric" aria-label="{{ $productText['quantity'] }}"
+            <input type="number" id="qty" inputmode="numeric" aria-label="{{ $productText['quantity'] }}" @disabled(!$productCanBePurchased)
                    value="{{ $quantityIsOrderable ? $minimumOrderQty : 1 }}"
                    min="{{ $minimumOrderQty }}" max="{{ max(1, $maximumOrderQty) }}" onchange="changeQty(0)">
             <button type="button" aria-label="{{ $isAr ? 'زود الكمية' : 'Increase quantity' }}"
@@ -732,15 +734,20 @@
       <h2 class="sec-title">{{ $isAr ? 'ممكن يعجبك كمان' : 'You may also like' }}</h2>
       <a href="{{ route('shop') }}" class="sec-link">{{ $isAr ? 'شوف أكتر ←' : 'See all →' }}</a>
     </div>
-    <div class="product-grid cols-4 product-grid--showcase">
+    <div class="shop-results-grid related-products-grid">
       @foreach($related as $p)
-        @include('web.partials.product-card', ['p' => $p, 'cardVariations' => []])
+        @include('web.partials.product-card', [
+          'p' => $p,
+          'cardVariations' => $relatedVariations[$p->id] ?? [],
+          'cardOptions' => ['variant' => 'shop', 'idPrefix' => 'related'],
+        ])
       @endforeach
     </div>
   </div>
   @endif
 
 {{-- ── Sticky Add-to-Cart bar ── --}}
+@if($productCanBePurchased)
 <div id="sticky-atc-bar" class="sticky-atc-bar" aria-hidden="true">
   <div class="sticky-atc-inner">
     <div class="sticky-atc-info">
@@ -758,6 +765,7 @@
     </button>
   </div>
 </div>
+@endif
 
 </div>
 @endsection
@@ -954,7 +962,6 @@
   .product-page .related-products-head{align-items:center;margin-bottom:12px !important}
   .product-page .related-products-head .sec-title{font-size:18px;line-height:1.25}
   .product-page .related-products-head .sec-link{font-size:11px;white-space:nowrap}
-  .product-page .product-grid--showcase{grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:10px !important}
 }</style>
 <script src="{{ asset('js/product-gallery.js') }}?v={{ filemtime(public_path('js/product-gallery.js')) }}"></script>
 <script>
@@ -963,6 +970,7 @@ const VAR_DATA  = @json($varData);
 const DISC_PCT  = {{ (float)($product->discount_percentage ?? 0) }};
 const MIN_ORDER_QTY = {{ $minimumOrderQty }};
 const CONFIGURED_MAX_ORDER_QTY = {{ $configuredMaximumOrderQty }};
+const PRODUCT_CAN_BE_PURCHASED = @json($productCanBePurchased);
 const SOLD_INDIVIDUALLY = {{ ($product->sold_individually ?? false) ? 'true' : 'false' }};
 const PRODUCT_STOCK_QTY = {{ $initialStockQty }};
 const PRODUCT_TEXT = @json($productText);
@@ -1237,6 +1245,7 @@ function renderSelectedModelNumber() {
 }
 
 function maximumOrderQuantity(stock) {
+  if (!PRODUCT_CAN_BE_PURCHASED) return 0;
   let maximum = Math.max(0, Number(stock) || 0);
   if (CONFIGURED_MAX_ORDER_QTY > 0) maximum = Math.min(maximum, CONFIGURED_MAX_ORDER_QTY);
   if (SOLD_INDIVIDUALLY) maximum = Math.min(maximum, 1);
@@ -1337,10 +1346,10 @@ function renderPriceStock(v) {
   }
 
   if (singleQty) singleQty.hidden = multiVariantMode;
-  if (stockEl) stockEl.hidden = multiVariantMode || (!v && ATTR_KEYS.length > 0);
+  if (stockEl && PRODUCT_CAN_BE_PURCHASED) stockEl.hidden = multiVariantMode || (!v && ATTR_KEYS.length > 0);
   if (v) {
     showDiscount(effectivePrice(v), v.reg > 0 ? v.reg : v.price);
-    if (stockEl) stockEl.innerHTML = v.stock > 0
+    if (stockEl && PRODUCT_CAN_BE_PURCHASED) stockEl.innerHTML = v.can_sell && v.stock > 0
       ? `<span class="badge-stock-ok">✓ ${PRODUCT_TEXT.inStock} (${v.stock.toLocaleString()} ${PRODUCT_TEXT.available})</span>`
       : `<span class="badge-stock-no">${PRODUCT_TEXT.outOfStock}</span>`;
   } else {
@@ -1498,6 +1507,7 @@ function selectionPrompt(key = missingSelectionKey()) {
 }
 
 function requiredSelectionControl() {
+  if (!PRODUCT_CAN_BE_PURCHASED) return null;
   if (multiVariantMode) {
     return bulkSelection.size ? null : document.querySelector('#bulk-variations-panel input[type="checkbox"]:enabled');
   }
@@ -1662,7 +1672,7 @@ window.showProductCartErrors = function (messages) {
 
 // ── Cart integration ──────────────────────────────────────────────────
 function handleAddToCart(id, name, basePrice, image) {
-  if (productCartRequestPending) return;
+  if (!PRODUCT_CAN_BE_PURCHASED || productCartRequestPending) return;
   clearProductCartErrors();
   if (guideToRequiredSelection()) return;
   if (multiVariantMode) {

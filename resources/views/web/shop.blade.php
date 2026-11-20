@@ -4,7 +4,7 @@
 @php
   $shopRtl = session('locale', 'en') === 'ar';
   $shopCopy = $shopRtl ? [
-    'home' => 'الرئيسية', 'shop' => 'تسوّق', 'search' => 'دوّر على منتجات…',
+    'search' => 'دوّر على منتجات…',
     'filters' => 'الفلاتر والتصنيفات', 'closeFilters' => 'اقفل الفلاتر',
     'loadingProducts' => 'بنحمّل المنتجات…', 'noProducts' => 'ملقيناش منتجات',
     'noProductsHint' => 'جرّب تدوّر بكلمة تانية أو اتصفح كل التصنيفات.',
@@ -12,121 +12,22 @@
     'allSeen' => 'شفت كل المنتجات', 'categories' => 'التصنيفات',
     'allProducts' => 'كل المنتجات', 'brands' => 'الماركات', 'sortBy' => 'ترتيب حسب',
     'latest' => 'الأحدث', 'lowHigh' => 'السعر: من الأقل للأعلى',
-    'highLow' => 'السعر: من الأعلى للأقل', 'products' => 'منتج',
+    'highLow' => 'السعر: من الأعلى للأقل',
     'loadError' => 'حصلت مشكلة وإحنا بنحمّل المنتجات. حدّث الصفحة وجرب تاني.',
-    'unavailable' => 'المنتجات مش متاحة دلوقتي',
   ] : [];
   $shopJsCopy = $shopRtl ? $shopCopy : [
     'filters' => 'Filters & Categories', 'closeFilters' => 'Close Filters',
-    'products' => 'product', 'productsPlural' => 'products',
     'loadError' => 'Products could not be loaded. Please refresh and try again.',
-    'unavailable' => 'Products unavailable',
   ];
 @endphp
 
 @push('styles')
 <style>
-/* Shop results use their own presentation for the shared product markup. */
-.shop-results-grid{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(min(220px,100%),1fr));
-  align-items:start;gap:16px;min-inline-size:0;
-}
-.shop-product-card.product-card{
-  display:grid;grid-template-columns:minmax(0,1fr);min-inline-size:0;
-  border:0;border-radius:0;background:transparent;
-  box-shadow:none;
-}
-.shop-product-card .pc-media{
-  position:relative;isolation:isolate;min-inline-size:0;
-  border-radius:8px;overflow:hidden;
-}
-.shop-product-card .product-card-img{position:absolute;inset:0;aspect-ratio:auto;background:transparent}
-.shop-product-card .product-card-img img{display:block;inline-size:100%;block-size:100%;object-fit:cover}
-.shop-product-card.pc-out-of-stock img{opacity:.55}
-.shop-product-card .badge-sale{
-  position:absolute;z-index:1;inset-block-start:10px;inset-inline-start:8px;
-  padding:3px 7px;border-radius:999px;background:#e8541e;color:#fff;
-  font-size:.6875rem;font-weight:800;line-height:1.2;
-}
-.shop-product-card .badge-flash{background:#bf4519}
-.shop-product-card .wish-btn{
-  inset:auto;inset-block-start:2px;inset-inline-end:2px;
-  inline-size:44px;block-size:44px;background:transparent;
-  color:#111;font-size:18px;isolation:isolate;transform:none;
-}
-.shop-product-card .wish-btn::before{
-  content:"";position:absolute;inset:6px;z-index:-1;
-  background:#fff;border:1px solid #e9e9e9;border-radius:50%;box-shadow:0 1px 4px #1112;
-}
-.shop-product-card .wish-btn.wished{color:#c82333}
-.shop-product-card .product-card-body{min-inline-size:0;padding:12px;gap:6px;text-align:start}
-.shop-product-card .product-card-name{
-  color:var(--c-dark);font-size:.875rem;font-weight:750;line-height:1.35;overflow-wrap:anywhere;
-}
-.shop-product-card .pc-option-area{min-inline-size:0;display:grid}
-.shop-product-card :is(.pc-swatches,.pc-sizes){
-  display:flex;flex-wrap:nowrap;overflow-x:auto;align-items:center;
-  margin:0;padding:2px;gap:4px;scrollbar-width:thin;
-}
-.shop-product-card :is(.pc-option-area,.pc-swatches,.pc-sizes):not(:has(button:not([hidden]))){display:none}
-.shop-product-card .pc-swatch{
-  display:grid;place-items:center;inline-size:44px;block-size:44px;
-  border:0;outline:0;background:none;
-}
-.shop-product-card .pc-swatch::before{
-  content:"";inline-size:26px;block-size:26px;border-radius:50%;
-  background:var(--pc-swatch-color);box-shadow:inset 0 0 0 1px #1113;
-  outline:1.5px solid transparent;outline-offset:2px;
-}
-.shop-product-card .pc-swatch.selected::before{outline-color:var(--c-orange)}
-.shop-product-card .pc-size{
-  flex:none;min-block-size:36px;padding:4px 8px;border-radius:8px;
-  background:#f5f5f4;font-size:.6875rem;white-space:nowrap;
-}
-.shop-product-card .pc-size.selected{background:var(--c-dark);color:#fff}
-.shop-product-card .unavail{opacity:.45;cursor:not-allowed}
-.shop-product-card .pc-selected{
-  position:absolute;inline-size:1px;block-size:1px;margin:-1px;padding:0;
-  overflow:hidden;clip-path:inset(50%);white-space:nowrap;
-}
-.shop-product-card .pc-option-link{display:none}
-.shop-product-card .product-card-price{padding:0;align-items:baseline;gap:2px 6px}
-.shop-product-card :is(.price-main,.price-old){min-inline-size:0;white-space:normal;overflow-wrap:anywhere}
-.shop-product-card .price-main{font-size:1rem;font-weight:800}
-.shop-product-card .price-old,.shop-product-card .pc-stock-label{font-size:.75rem;color:var(--c-mid)}
-.shop-product-card .pc-actions{display:flex;flex-wrap:wrap;gap:6px;padding-block-start:2px}
-.shop-product-card .pc-add-row{display:flex}
-.shop-product-card .pc-actions > *{flex:1 1 88px}
-.shop-product-card :is(.card-add-btn,.card-details-btn){
-  display:flex;align-items:center;justify-content:center;
-  min-block-size:44px;min-inline-size:0;margin:0;padding:6px;
-  border-radius:8px;font-size:.6875rem;font-weight:750;line-height:1.2;text-align:center;
-  letter-spacing:.02em;overflow-wrap:anywhere;
-}
-.shop-product-card .card-add-btn:disabled{opacity:.5;cursor:not-allowed}
-.shop-product-card :is(button,a):focus-visible{outline:2px solid var(--c-orange);outline-offset:-2px}
-.shop-product-card .pc-coupon-bar{margin:0;flex-wrap:wrap;line-height:1.25}
-.shop-product-card :is(.pc-coupon-left,.pc-coupon-right){min-inline-size:0;white-space:normal;flex-wrap:wrap;overflow-wrap:anywhere}
-.shop-product-card [hidden]{display:none!important}
-
-@media(max-width:1100px){
-  .shop-results-grid{grid-template-columns:repeat(auto-fill,minmax(min(190px,100%),1fr))}
-}
-@media(max-width:600px){
-  .shop-results-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-}
+/* Shared card and grid styles live in css/shop-product-card.css. */
 @media(max-width:480px){
   .shop-toolbar .search-bar{display:none}
   .shop-toolbar{flex-wrap:wrap;gap:6px;margin-bottom:12px}
-  .shop-results-grid.shop-mobile-layout-horizontal{grid-template-columns:minmax(0,1fr)}
-  .shop-mobile-layout-horizontal .shop-product-card{grid-template-columns:minmax(0,43.2fr) minmax(0,56.8fr)}
-  .shop-mobile-layout-horizontal .shop-product-card .pc-media{aspect-ratio:auto;min-block-size:120px}
-  .shop-mobile-layout-horizontal .shop-product-card .product-card-body{padding:8px 10px;gap:4px}
-  .shop-mobile-layout-horizontal .shop-product-card :is(.pc-swatches,.pc-sizes){padding-block:1px}
-  .shop-mobile-layout-horizontal .shop-product-card .pc-swatch{block-size:42px}
-  .shop-mobile-layout-horizontal .shop-product-card .pc-size{min-block-size:38px}
-  .shop-mobile-layout-horizontal .shop-product-card .pc-actions{padding-block-start:0}
-  .shop-mobile-layout-horizontal .shop-product-card .pc-actions > *{flex:1 1 0;min-inline-size:0}
+  .shop-toolbar:not(:has(.shop-toolbar-filters > *)){display:none}
 }
 
 /* ══════════════════════════════════════════════
@@ -458,7 +359,7 @@ body.shop-filter-open{overflow:hidden}
 /* ── Arabic RTL shop page and phone search ────────────────── */
 .shop-mobile-search{display:none;}
 .shop-page[dir="rtl"]{direction:rtl;text-align:right;}
-.shop-page[dir="rtl"] .breadcrumb,.shop-page[dir="rtl"] .shop-toolbar{direction:rtl;}
+.shop-page[dir="rtl"] .shop-toolbar{direction:rtl;}
 .shop-page[dir="rtl"] .cat-parent-btn{text-align:right;}
 .shop-page[dir="rtl"] .cat-children-inner{padding:3px 12px 6px 0;margin-left:0;margin-right:13px;border-left:0;border-right:2px solid var(--c-light);}
 .shop-page[dir="rtl"] .active-cat-strip{padding:4px 8px 4px 10px;}
@@ -467,6 +368,7 @@ body.shop-filter-open{overflow:hidden}
 @media (max-width: 860px) {
   .shop-mobile-search{display:block;margin:0 0 12px;}
   .shop-mobile-search form{display:flex;align-items:center;gap:8px;width:100%;padding:7px 8px 7px 12px;border:1.5px solid var(--c-light);border-radius:13px;background:#fff;box-sizing:border-box;box-shadow:0 3px 12px rgba(24,24,24,.04);}
+  .shop-mobile-search form:focus-within{border-color:var(--c-orange);}
   .shop-mobile-search input{min-width:0;flex:1;border:0;outline:0;background:transparent;font:inherit;font-size:14px;color:var(--c-dark);padding:7px 3px;}
   .shop-mobile-search button{width:38px;height:38px;border:0;border-radius:10px;background:var(--c-dark);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;}
   .shop-page[dir="rtl"] .shop-mobile-search form{direction:rtl;}
@@ -482,6 +384,8 @@ body.shop-filter-open{overflow:hidden}
     $shopDisplay['filter_price'] || $shopDisplay['filter_categories']
     || ($shopDisplay['filter_brands'] && $allBrands->isNotEmpty()) || $shopDisplay['filter_sort']
   );
+  $activeCategory = $activeCategoryId ? $parentCats->merge($childCats->flatten())->firstWhere('id', $activeCategoryId) : null;
+  $activeCatName = $activeCategory ? \App\Support\StorefrontLabels::category($activeCategory->name, $shopRtl) : '';
 @endphp
 <div class="page shop-page" @if($shopRtl) lang="ar" dir="rtl" @endif
   data-filter-price="{{ (int) $shopDisplay['filter_price'] }}"
@@ -489,35 +393,13 @@ body.shop-filter-open{overflow:hidden}
   data-filter-brands="{{ (int) $shopDisplay['filter_brands'] }}"
   data-filter-sort="{{ (int) $shopDisplay['filter_sort'] }}">
 
-  {{-- Breadcrumb --}}
-  <div class="breadcrumb">
-    <a href="{{ route('home') }}">{{ $shopRtl ? $shopCopy['home'] : 'Home' }}</a><span>/</span>
-    <a href="{{ route('shop') }}">{{ $shopRtl ? $shopCopy['shop'] : 'Shop' }}</a>
-    @if($activeCategoryId)
-      @php
-        $allCatsFlat  = $parentCats->merge($childCats->flatten());
-        $activeCatObj = $allCatsFlat->firstWhere('id', $activeCategoryId);
-        $activeCatName = \App\Support\StorefrontLabels::category($activeCatObj->name ?? '', $shopRtl);
-        $isChildActive = $activeCatObj && $activeCatObj->parent > 0;
-        if ($isChildActive) { $parentCatObj = $parentCats->firstWhere('id', $activeCatObj->parent); }
-      @endphp
-      @if($isChildActive && isset($parentCatObj))
-        <span>/</span>
-        <a href="{{ route('shop', ['category' => $parentCatObj->id]) }}">{{ \App\Support\StorefrontLabels::category($parentCatObj->name, $shopRtl) }}</a>
-      @endif
-      <span>/</span><strong>{{ $activeCatName }}</strong>
-    @endif
-    @if($activeBrandName ?? false)<span>/</span><strong>{{ $activeBrandName }}</strong>@endif
-    @if(request('search'))<span>/</span><span>"{{ request('search') }}"</span>@endif
-  </div>
-
   <div class="shop-mobile-search">
-    <form method="GET" action="{{ route('shop') }}">
+    <form method="GET" action="{{ route('shop') }}" role="search" aria-label="{{ $shopRtl ? $shopCopy['search'] : 'Search products' }}">
       @foreach(request()->except(['search', 'page', 'category', 'categories']) as $key => $value)
         <input type="hidden" name="{{ $key }}" value="{{ $value }}">
       @endforeach
       @foreach($selectedCategoryIds ?? [] as $selectedCategoryId)<input type="hidden" name="categories[]" value="{{ $selectedCategoryId }}">@endforeach
-      <input type="search" name="search" value="{{ request('search') }}" placeholder="{{ $shopRtl ? $shopCopy['search'] : 'Search products…' }}" aria-label="{{ $shopRtl ? $shopCopy['search'] : 'Search products' }}">
+      <input type="search" name="search" value="{{ request('search') }}" placeholder="{{ $shopRtl ? $shopCopy['search'] : 'Search products…' }}" aria-label="{{ $shopRtl ? $shopCopy['search'] : 'Search products' }}" required pattern=".*\S.*" enterkeyhint="search">
       <button type="submit" aria-label="{{ $shopRtl ? 'دوّر' : 'Search' }}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="17" height="17"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16" y2="16"/></svg>
       </button>
@@ -669,7 +551,6 @@ body.shop-filter-open{overflow:hidden}
           <a href="{{ route('shop', array_filter(request()->except('category','page'))) }}"
              class="cat-all-pill {{ !$activeCategoryId ? 'active' : '' }}">
             <span>{{ $shopRtl ? $shopCopy['allProducts'] : 'All Products' }}</span>
-            <span class="cat-count-badge" id="shop-total-sidebar">…</span>
           </a>
 
           <hr class="widget-divider" style="margin:8px 0">
@@ -814,9 +695,11 @@ body.shop-filter-open{overflow:hidden}
     {{-- ══ MAIN ════════════════════════════════════════════════ --}}
     <div>
       <div class="shop-toolbar">
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <span class="result-count" id="shop-result-count" aria-live="polite" aria-atomic="true"></span>
-          @if($activeCategoryId && isset($activeCatName) && $activeCatName)
+        <div class="shop-toolbar-filters" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          @if(request()->filled('search'))
+            <a class="sec-link" href="{{ route('shop', request()->except(['search', 'page'])) }}">{{ $shopRtl ? 'امسح البحث' : 'Clear search' }}</a>
+          @endif
+          @if($activeCatName)
             <span class="active-cat-strip">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
               {{ $activeCatName }}
@@ -847,10 +730,10 @@ body.shop-filter-open{overflow:hidden}
           @endif
         </div>
         <div class="search-bar">
-          <form method="GET" action="{{ route('shop') }}" style="display:contents">
+          <form method="GET" action="{{ route('shop') }}" role="search" aria-label="{{ $shopRtl ? $shopCopy['search'] : 'Search products' }}" style="display:contents">
             @if($activeCategoryId)<input type="hidden" name="category" value="{{ $activeCategoryId }}">@endif
-            <input type="text" name="search" placeholder="{{ $shopRtl ? $shopCopy['search'] : 'Search products…' }}" value="{{ request('search') }}">
-            <button type="submit">
+            <input type="search" name="search" placeholder="{{ $shopRtl ? $shopCopy['search'] : 'Search products…' }}" aria-label="{{ $shopRtl ? $shopCopy['search'] : 'Search products' }}" value="{{ request('search') }}" required pattern=".*\S.*" enterkeyhint="search">
+            <button type="submit" aria-label="{{ $shopRtl ? 'دوّر' : 'Search' }}">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             </button>
           </form>
@@ -858,11 +741,17 @@ body.shop-filter-open{overflow:hidden}
       </div>
 
       <div class="shop-results-grid shop-mobile-layout-{{ $shopMobileLayout }}" id="infinite-product-grid" aria-live="polite">
-        <div id="product-loading-state" style="grid-column:1/-1;text-align:center;padding:48px 20px;color:var(--c-mid)">
-          <span style="display:inline-flex;align-items:center;gap:8px;font-size:13px">
-            <svg style="animation:spin .8s linear infinite" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
-            {{ $shopRtl ? $shopCopy['loadingProducts'] : 'Loading products…' }}
-          </span>
+        <div id="product-loading-state" style="grid-column:1/-1" role="status" aria-label="{{ $shopRtl ? $shopCopy['loadingProducts'] : 'Loading products' }}">
+          <div class="page-loading-products" aria-hidden="true">
+            @for($skeletonIndex = 0; $skeletonIndex < 4; $skeletonIndex++)
+              <div class="page-loading-card">
+                <span class="page-loading-photo"></span>
+                <span class="page-loading-line"></span>
+                <span class="page-loading-line page-loading-line--short"></span>
+                <span class="page-loading-action"></span>
+              </div>
+            @endfor
+          </div>
         </div>
       </div>
       <div id="product-empty-state" class="empty" style="display:none">
@@ -1098,10 +987,8 @@ document.addEventListener('keydown', function (event) {
 
   let nextPage    = null;
   let loading     = false;
-  const cacheLifetime = 5 * 60 * 1000;
+  const cacheLifetime = 12 * 60 * 1000;
   let lastRefresh = Date.now();
-  const resultCount = document.getElementById('shop-result-count');
-  const sidebarTotal = document.getElementById('shop-total-sidebar');
   const loadingState = document.getElementById('product-loading-state');
   const emptyState = document.getElementById('product-empty-state');
 
@@ -1118,7 +1005,7 @@ document.addEventListener('keydown', function (event) {
     if (!replace) loader.style.display = 'block';
 
     try {
-      const cacheKey = 'ramo-shop-products-v1:' + (shopRtl ? 'ar:' : 'en:') + buildUrl(page);
+      const cacheKey = 'ramo-shop-products-v3:' + (shopRtl ? 'ar:' : 'en:') + buildUrl(page);
       let data = null;
       let dataSavedAt = Date.now();
       if (!forceRefresh) {
@@ -1146,12 +1033,6 @@ document.addEventListener('keydown', function (event) {
       }
       if (replace) {
         grid.replaceChildren(batch.content);
-        if (resultCount) {
-          resultCount.textContent = shopRtl
-            ? `${data.total} ${shopI18n.products}`
-            : `${data.total} ${data.total !== 1 ? shopI18n.productsPlural : shopI18n.products}`;
-        }
-        if (sidebarTotal) sidebarTotal.textContent = data.total;
         if (emptyState) emptyState.style.display = data.html ? 'none' : 'block';
       } else {
         grid.append(batch.content);
@@ -1172,7 +1053,6 @@ document.addEventListener('keydown', function (event) {
     } catch {
       if (replace) {
         if (loadingState) loadingState.innerHTML = '<span style="color:var(--c-mid)">' + shopI18n.loadError + '</span>';
-        if (resultCount) resultCount.textContent = shopI18n.unavailable;
       }
     } finally {
       loader.style.display = 'none';
@@ -1187,7 +1067,7 @@ document.addEventListener('keydown', function (event) {
   // Fetch products only after the complete page shell is available to the user.
   loadPage(1, true);
   observer.observe(sentinel);
-  // Refresh the catalog after five minutes, including when a background tab returns.
+  // Refresh expired results when the visible Shop view becomes active again.
   function refreshExpiredProducts() {
     if (!document.hidden && isActive() && Date.now() - lastRefresh >= cacheLifetime && !loading) loadPage(1, true, true);
   }

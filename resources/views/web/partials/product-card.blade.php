@@ -100,7 +100,6 @@
 
   $baseImg = $displayImg;
   $displayImg = $initialVariation['img'] ?? $baseImg;
-  $fallbackImg = asset('images/product-placeholder.svg');
   $basePrice = $p->on_sale ? $p->sale_price : $p->price;
   $regularPrice = (float) ($initialVariation['price'] ?? $p->price);
   $salePrice = (float) ($initialVariation['sale'] ?? $p->sale_price ?? 0);
@@ -165,9 +164,11 @@
 
   <div class="pc-media">
     <a href="{{ route('product', $pid) }}" class="product-card-img">
-      <img src="{{ $displayImg ?: $fallbackImg }}" alt="{{ $productDisplayName }}" loading="lazy"
-           id="{{ $domPrefix }}-img-{{ $pid }}" data-fallback="{{ $fallbackImg }}"
-           onerror="if (this.getAttribute('src') !== this.dataset.fallback) this.src = this.dataset.fallback">
+      @include('web.partials.product-photo', [
+        'photoSrc' => $displayImg,
+        'photoAlt' => $productDisplayName,
+        'photoId' => $domPrefix.'-img-'.$pid,
+      ])
     </a>
     @if($coShowBadge)
       @if(!empty($p->flash_sale))

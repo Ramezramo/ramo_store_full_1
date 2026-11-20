@@ -6,6 +6,17 @@
    Equal padding and overlap also preserve cached scroll distances. */
 html.catalog-keep-alive #storefront-content{margin-block-start:calc(-1 * var(--storefront-header-height))}
 html.catalog-keep-alive .catalog-view{padding-block-start:var(--storefront-header-height);scroll-padding-block-start:calc(var(--storefront-header-height) + 12px)}
+@media(max-width:600px){
+  /* Cached Home and Shop scroll inside a panel. Filtered pages use the document. */
+  html.catalog-page:not(.catalog-keep-alive),
+  .catalog-view:is([data-catalog-view="/"],[data-catalog-view="/shop"]){
+    scrollbar-width:none;
+  }
+  html.catalog-page:not(.catalog-keep-alive)::-webkit-scrollbar,
+  .catalog-view:is([data-catalog-view="/"],[data-catalog-view="/shop"])::-webkit-scrollbar{
+    display:none;
+  }
+}
 html.catalog-keep-alive .catalog-transient-loading{padding-block-start:calc(var(--storefront-header-height) + 28px)}
 html.catalog-keep-alive .catalog-transient-loading--product{padding-block-start:var(--storefront-header-height)}
 .storefront-header .nav-inner{height:80px;gap:18px;padding-inline:24px;max-width:var(--page-max);width:100%}

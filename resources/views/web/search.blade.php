@@ -22,7 +22,7 @@
   <div class="search-hero">
     <form method="GET" action="{{ route('search') }}" id="search-form">
       <div class="search-hero-bar">
-        <input type="text" name="q" value="{{ $q }}" placeholder="{{ $searchRtl ? 'دوّر على منتجات…' : 'Search products…' }}" id="search-q" autocomplete="off">
+        <input type="search" name="q" value="{{ $q }}" placeholder="{{ $searchRtl ? 'دوّر على منتجات…' : 'Search products…' }}" aria-label="{{ $searchRtl ? 'دوّر على منتجات' : 'Search products' }}" id="search-q" autocomplete="off" enterkeyhint="search" required pattern=".*\S.*">
         <button type="submit">{{ $searchRtl ? 'بحث' : 'Search' }}</button>
       </div>
       {{-- Preserve other filters on search --}}

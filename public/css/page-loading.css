@@ -1,0 +1,82 @@
+/* Text-free page-opening placeholders; status labels remain accessible. */
+:root{--page-shimmer:linear-gradient(100deg,#edf0f2 20%,#fafbfc 43%,#edf0f2 66%)}
+:is(#nav-loading-shell,.catalog-view-loading,.catalog-transient-loading,.catalog-product-info)>h1,
+.catalog-product-breadcrumb{
+  color:transparent;font-size:0;line-height:1;block-size:22px;min-block-size:22px;
+  inline-size:46%;max-inline-size:260px;border-radius:6px;
+  background:var(--page-shimmer);background-size:220% 100%;animation:page-shimmer 1.5s linear infinite;
+}
+.catalog-product-breadcrumb{block-size:14px;min-block-size:14px;inline-size:55%;max-inline-size:320px;pointer-events:none}
+.catalog-product-breadcrumb>*{visibility:hidden}
+:is(#nav-loading-shell,.catalog-transient-loading) .catalog-product-info>h1{inline-size:80%;max-inline-size:none}
+:is(#nav-loading-shell,.catalog-view-loading,.catalog-transient-loading) .nav-shell-status:not(:has(a,button)),
+#timeline-loader[aria-busy="true"] [data-timeline-status]{
+  position:absolute;inline-size:1px;block-size:1px;padding:0;margin:-1px;
+  overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0;
+}
+:is(#nav-loading-shell,.catalog-view-loading,.catalog-transient-loading) .nav-shell-status:has(a,button){
+  display:flex;justify-content:center;gap:12px;font-size:0;line-height:0;color:transparent;
+}
+:is(#nav-loading-shell,.catalog-view-loading,.catalog-transient-loading) .nav-shell-status :is(a,button){
+  display:grid;place-items:center;inline-size:44px;block-size:44px;
+  border:1px solid #e3e6e8;border-radius:50%;background:#fff;font-size:0;text-decoration:none;
+}
+:is(#nav-loading-shell,.catalog-view-loading,.catalog-transient-loading) .nav-shell-status :is(a,button)::before{font-size:24px;line-height:1;color:#444}
+:is(#nav-loading-shell,.catalog-view-loading,.catalog-transient-loading) .nav-shell-status a::before{content:'↻'}
+:is(#nav-loading-shell,.catalog-view-loading,.catalog-transient-loading) .nav-shell-status button::before{content:'←'}
+:is(#nav-loading-shell,.catalog-view-loading,.catalog-transient-loading) .nav-shell-status :is(a,button):focus-visible{outline:2px solid var(--c-orange);outline-offset:3px}
+
+:is(#nav-loading-shell,.catalog-view-loading,.catalog-transient-loading) .nav-shell-block,
+.page-loading-photo,.page-loading-line,.page-loading-action,
+img[data-photo-pending],
+.catalog-product-preview .gallery-main,.catalog-product-preview .gallery-thumb{
+  background:var(--page-shimmer);background-size:220% 100%;animation:page-shimmer 1.5s linear infinite;
+}
+:is(#nav-loading-shell,.catalog-view-loading,.catalog-transient-loading) .nav-shell-shapes{gap:18px}
+:is(#nav-loading-shell,.catalog-view-loading,.catalog-transient-loading) :is(.nav-shell-shapes--home,.nav-shell-shapes--shop) .nav-shell-block:first-child{height:48px;border-radius:12px;margin-block-end:6px}
+:is(#nav-loading-shell,.catalog-view-loading,.catalog-transient-loading) :is(.nav-shell-shapes--home,.nav-shell-shapes--shop) .nav-shell-block:not(:first-child){height:220px;border-radius:12px}
+
+/* List-shaped placeholders for Cart, Account, Notifications and other pages. */
+:is(#nav-loading-shell,.catalog-view-loading,.catalog-transient-loading) .nav-shell-shapes:not(.nav-shell-shapes--home):not(.nav-shell-shapes--shop) .nav-shell-block{
+  --loader-thumb:56px;position:relative;height:96px;border:0;border-radius:0;background:transparent;animation:none;
+}
+:is(#nav-loading-shell,.catalog-view-loading,.catalog-transient-loading) .nav-shell-shapes--cart .nav-shell-block{--loader-thumb:80px;height:112px}
+:is(#nav-loading-shell,.catalog-view-loading,.catalog-transient-loading) .nav-shell-shapes--notifications .nav-shell-block{--loader-thumb:40px}
+:is(#nav-loading-shell,.catalog-view-loading,.catalog-transient-loading) .nav-shell-shapes:not(.nav-shell-shapes--home):not(.nav-shell-shapes--shop) .nav-shell-block::before{
+  content:'';position:absolute;inset-block-start:8px;inset-block-end:auto;inset-inline-start:0;
+  inline-size:var(--loader-thumb);block-size:var(--loader-thumb);border-radius:12px;
+  background:var(--page-shimmer);background-size:220% 100%;animation:page-shimmer 1.5s linear infinite;
+}
+:is(#nav-loading-shell,.catalog-view-loading,.catalog-transient-loading) .nav-shell-shapes--notifications .nav-shell-block::before{border-radius:50%}
+:is(#nav-loading-shell,.catalog-view-loading,.catalog-transient-loading) .nav-shell-shapes:not(.nav-shell-shapes--home):not(.nav-shell-shapes--shop) .nav-shell-block::after{
+  content:'';position:absolute;inset-block-start:14px;inset-inline-start:calc(var(--loader-thumb) + 18px);inset-inline-end:0;height:70px;
+  background:var(--page-shimmer);background-size:220% 100%;animation:page-shimmer 1.5s linear infinite;
+  -webkit-mask:linear-gradient(#000 0 0) 0 0/92% 12px no-repeat,linear-gradient(#000 0 0) 0 25px/70% 9px no-repeat,linear-gradient(#000 0 0) 0 48px/40% 11px no-repeat;
+  mask:linear-gradient(#000 0 0) 0 0/92% 12px no-repeat,linear-gradient(#000 0 0) 0 25px/70% 9px no-repeat,linear-gradient(#000 0 0) 0 48px/40% 11px no-repeat;
+}
+.catalog-product-preview .gallery-open{background:transparent}
+.catalog-product-preview :is(.gallery-expand,.gallery-controls){visibility:hidden}
+/* Keep the clicked photo visible and stationary until the real gallery is ready. */
+.catalog-transient-loading--product{overflow:hidden;overflow:clip;overscroll-behavior:none;touch-action:pinch-zoom}
+/* Slow-request recovery must stay reachable while the preview cannot scroll. */
+.catalog-transient-loading--product .nav-shell-status:has(a,button){position:absolute;inset-inline:16px;inset-block-end:16px;z-index:3;margin:0}
+
+/* Shop reuses its real grid width while the first product batch arrives. */
+.page-loading-products{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 12px;width:100%}
+.page-loading-card{min-inline-size:0;text-align:start}
+.page-loading-photo{display:block;aspect-ratio:118 / 112;border-radius:8px;margin-block-end:12px}
+.page-loading-line{display:block;block-size:10px;inline-size:88%;border-radius:4px;margin-block-end:9px}
+.page-loading-line--short{inline-size:48%}
+.page-loading-action{display:block;block-size:32px;border-radius:8px;margin-block-start:14px}
+@keyframes page-shimmer{from{background-position:150% 0}to{background-position:-150% 0}}
+@media(min-width:900px){
+  .page-loading-products{grid-template-columns:repeat(3,minmax(0,1fr));gap:20px 16px}
+  :is(#nav-loading-shell,.catalog-view-loading,.catalog-transient-loading) :is(.nav-shell-shapes--home,.nav-shell-shapes--shop){grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media(prefers-reduced-motion:reduce){
+  :is(#nav-loading-shell,.catalog-view-loading,.catalog-transient-loading,.catalog-product-info)>h1,
+  .catalog-product-breadcrumb,.nav-shell-block,.nav-shell-block::before,.nav-shell-block::after,
+  .page-loading-photo,.page-loading-line,.page-loading-action,
+  img[data-photo-pending],
+  .catalog-product-preview .gallery-main,.catalog-product-preview .gallery-thumb{animation:none!important}
+}

@@ -31,7 +31,8 @@
 @media(min-width:768px) and (max-width:900px){.product-page .gallery-wrap{max-width:766px;margin-inline:auto}.product-page .product-layout{gap:20px}}
 @media(max-width:767px){
   .product-page .gallery-wrap{grid-template-columns:minmax(0,1fr);gap:8px}
-  .product-page .gallery-thumbs{display:flex;order:1;flex-direction:row;gap:8px;width:100%;min-width:0;box-sizing:border-box;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;touch-action:pan-x;overscroll-behavior-x:contain}
+  /* Let vertical swipes over the horizontal thumbnail rail scroll the page. */
+  .product-page .gallery-thumbs{display:flex;order:1;flex-direction:row;gap:8px;width:100%;min-width:0;box-sizing:border-box;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;touch-action:auto;overscroll-behavior-x:contain}
   .product-page .gallery-thumb{width:58px;height:58px}
   .product-page .gallery-main{width:100%;height:auto;aspect-ratio:var(--gallery-ratio,3 / 2);max-height:none;border:0;border-radius:14px;box-shadow:none}
   .product-page .gallery-stage{width:100%;min-width:0}
