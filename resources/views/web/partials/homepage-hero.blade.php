@@ -1,3 +1,9 @@
+@php
+  $headline = $isAr ? $hero->headline_ar : $hero->headline;
+  $subtext = $isAr ? $hero->subtext_ar : $hero->subtext;
+  $buttonLabel = $isAr ? $hero->button_label_ar : $hero->button_label;
+  $showButton = filled($buttonLabel) && filled($hero->button_link);
+@endphp
 <ramo-home-hero dir="{{ $isAr ? 'rtl' : 'ltr' }}">
   @if($hero->media_type === 'video')
     <video class="home-hero-media" muted loop playsinline preload="{{ $hero->poster_path ? 'none' : 'metadata' }}" src="{{ $hero->mediaUrl() }}" @if($hero->poster_path) poster="{{ $hero->posterUrl() }}" @endif aria-hidden="true"></video>
@@ -5,13 +11,15 @@
             data-pause="{{ $isAr ? 'إيقاف الفيديو مؤقتًا' : 'Pause video' }}"
             data-play="{{ $isAr ? 'تشغيل الفيديو' : 'Play video' }}"></button>
   @else
-    <img class="home-hero-media" src="{{ $hero->mediaUrl() }}" alt="" fetchpriority="high">
+    <div class="home-hero-image-track">
+      <img class="home-hero-media" src="{{ $hero->mediaUrl() }}" alt="" fetchpriority="high">
+    </div>
   @endif
-  @if($hero->headline || $hero->subtext || ($hero->button_label && $hero->button_link))
+  @if(filled($headline) || filled($subtext) || $showButton)
     <div class="home-hero-copy">
-      @if($hero->headline)<h1>{{ $hero->headline }}</h1>@endif
-      @if($hero->subtext)<p>{{ $hero->subtext }}</p>@endif
-      @if($hero->button_label && $hero->button_link)<a href="{{ $hero->button_link }}">{{ $hero->button_label }}</a>@endif
+      @if(filled($headline))<h1>{{ $headline }}</h1>@endif
+      @if(filled($subtext))<p>{{ $subtext }}</p>@endif
+      @if($showButton)<a href="{{ $hero->button_link }}">{{ $buttonLabel }}</a>@endif
     </div>
   @endif
 </ramo-home-hero>

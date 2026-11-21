@@ -51,37 +51,12 @@
       <h1 id="order-inbox-title">{{ $pageTitle }}</h1>
       <p>{{ $isAr ? 'تابع طلباتك وتحديثات حساب البائع.' : 'Updates about your orders and seller application.' }}</p>
     </div>
-    @if($unread)
-      <form action="{{ route('account.notifications.read-all') }}" method="POST">
-        @csrf
-        <button type="submit" class="order-inbox-mark">{{ $isAr ? 'علّم الكل كمقروء' : 'Mark all as read' }}</button>
-      </form>
-    @endif
+    <form action="{{ route('account.notifications.read-all') }}" method="POST" data-notifications-read-all @if(!$unread) hidden @endif>
+      @csrf
+      <button type="submit" class="order-inbox-mark">{{ $isAr ? 'علّم الكل كمقروء' : 'Mark all as read' }}</button>
+    </form>
   </header>
 
-  @if($vendorNotifications->isNotEmpty())
-    <ul class="order-inbox-list" style="margin-bottom:8px">
-      @foreach($vendorNotifications as $notice)
-        <li>
-          <form action="{{ route('account.notifications.vendor.open', $notice->id) }}" method="POST">
-            @csrf
-            <button type="submit" class="order-inbox-row{{ $notice->read_at ? '' : ' is-unread' }}">
-              <span class="order-inbox-icon">@include('web.partials.notification-bell')</span>
-              <span class="order-inbox-copy">
-                <strong>{{ match ($notice->status) {
-                  'approved' => $isAr ? 'تمت الموافقة على طلب البائع' : 'Your vendor application was approved',
-                  'on_hold' => $isAr ? 'طلب البائع مؤجل للمراجعة لاحقًا' : 'Your vendor application is on hold',
-                  default => $isAr ? 'تم رفض طلب البائع' : 'Your vendor application was declined',
-                } }}</strong>
-                <small>{{ \Illuminate\Support\Carbon::parse($notice->created_at)->locale($isAr ? 'ar' : 'en')->diffForHumans() }}</small>
-              </span>
-              @if(!$notice->read_at)<span class="order-inbox-new">{{ $isAr ? 'جديد' : 'New' }}</span>@endif
-            </button>
-          </form>
-        </li>
-      @endforeach
-    </ul>
-  @endif
   @if($notifications->isNotEmpty())
     <ul class="order-inbox-list">
       @foreach($notifications as $notification)
@@ -89,21 +64,36 @@
           $status = (string) $notification->status;
           $statusLabels = $notification->event === 'payment_status' ? $paymentStatusesAr : $orderStatusesAr;
           $label = $isAr ? ($statusLabels[$status] ?? str_replace(['_', '-'], ' ', $status)) : \Illuminate\Support\Str::headline($status);
+          $isVendor = $notification->event === 'vendor_application';
           $title = match ($notification->event) {
+              'vendor_application' => match ($status) {
+                  'approved' => $isAr ? 'تمت الموافقة على طلب البائع' : 'Your vendor application was approved',
+                  'on_hold' => $isAr ? 'طلب البائع مؤجل للمراجعة لاحقًا' : 'Your vendor application is on hold',
+                  default => $isAr ? 'تم رفض طلب البائع' : 'Your vendor application was declined',
+              },
               'placed' => $isAr ? 'تم تسجيل طلبك' : 'Your order has been placed',
               'payment_status' => $isAr ? 'الدفع: '.$label : 'Payment: '.$label,
               default => $isAr ? 'حالة الطلب: '.$label : 'Order status: '.$label,
           };
-          $created = \Illuminate\Support\Carbon::parse($notification->created_at)->locale($isAr ? 'ar' : 'en');
+          $created = $notification->created_at
+              ? \Illuminate\Support\Carbon::parse($notification->created_at)->setTimezone('Africa/Cairo')->locale($isAr ? 'ar' : 'en')
+              : null;
         @endphp
         <li>
-          <form action="{{ route('account.notifications.open', $notification->id) }}" method="POST">
+          <form action="{{ route($isVendor ? 'account.notifications.vendor.open' : 'account.notifications.open', $notification->id) }}" method="POST">
             @csrf
             <button type="submit" class="order-inbox-row{{ $notification->read_at ? '' : ' is-unread' }}">
               <span class="order-inbox-icon">@include('web.partials.notification-bell')</span>
               <span class="order-inbox-copy">
                 <strong>{{ $title }}</strong>
-                <small>{{ $isAr ? 'طلب' : 'Order' }} <bdi>#{{ $notification->order_id }}</bdi> · <time datetime="{{ $created->toIso8601String() }}">{{ $created->diffForHumans() }}</time></small>
+                <small>
+                  @unless($isVendor)
+                    {{ $isAr ? 'طلب' : 'Order' }} <bdi>#{{ $notification->order_id }}</bdi>@if($created) · @endif
+                  @endunless
+                  @if($created)
+                    <time datetime="{{ $created->toIso8601String() }}" title="{{ $isAr ? 'بتوقيت القاهرة' : 'Cairo time' }}">{{ $created->translatedFormat($isAr ? 'j M Y، g:i A' : 'j M Y, g:i A') }}</time>
+                  @endif
+                </small>
               </span>
               @if(!$notification->read_at)<span class="order-inbox-new">{{ $isAr ? 'جديد' : 'New' }}</span>@endif
             </button>
@@ -111,7 +101,7 @@
         </li>
       @endforeach
     </ul>
-  @elseif($vendorNotifications->isEmpty())
+  @elseif($notifications->total() === 0)
     <div class="order-inbox-empty">
       <strong>{{ $isAr ? 'لسه مفيش إشعارات' : 'No notifications yet' }}</strong>
       <p>{{ $isAr ? 'هتلاقي تحديثات طلباتك هنا.' : 'Updates will appear here after you place an order.' }}</p>
@@ -128,3 +118,57 @@
   @endif
 </section>
 @endsection
+
+@push('scripts')
+<script>
+(() => {
+  const form = document.querySelector('[data-notifications-read-all]');
+  const frame = window.frameElement;
+  const catalogFrame = frame?.matches('.catalog-transient-frame') ? frame : null;
+  let marked = form.hidden;
+  let marking = false;
+
+  async function markWhenVisible() {
+    if (marked || marking || document.hidden || (catalogFrame && catalogFrame.dataset.ready !== '1')) return;
+    marking = true;
+    try {
+      const response = await fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: { Accept: 'application/json' },
+      });
+      if (!response.ok) return;
+      const { unread } = await response.json();
+      marked = true;
+      form.hidden = unread === 0;
+      document.querySelectorAll('.order-inbox-row.is-unread').forEach(row => row.classList.remove('is-unread'));
+      document.querySelectorAll('.order-inbox-new').forEach(label => label.remove());
+      document.dispatchEvent(new CustomEvent('notifications:read', { detail: unread }));
+      if (catalogFrame?.isConnected) {
+        window.parent.document.dispatchEvent(new CustomEvent('notifications:read', { detail: unread }));
+      }
+    } catch {
+      // The form stays available if the automatic update fails.
+    } finally {
+      marking = false;
+    }
+  }
+
+  if (catalogFrame && catalogFrame.dataset.ready !== '1') {
+    const observer = new MutationObserver(() => {
+      if (catalogFrame.dataset.ready !== '1') return;
+      observer.disconnect();
+      markWhenVisible();
+    });
+    observer.observe(catalogFrame, { attributes: true, attributeFilter: ['data-ready'] });
+    window.addEventListener('pagehide', () => observer.disconnect(), { once: true });
+  }
+  document.addEventListener('visibilitychange', markWhenVisible);
+  window.addEventListener('pageshow', event => {
+    if (event.persisted) marked = false;
+    markWhenVisible();
+  });
+  markWhenVisible();
+})();
+</script>
+@endpush

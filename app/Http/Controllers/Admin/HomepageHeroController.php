@@ -43,7 +43,7 @@ class HomepageHeroController extends Controller
                     throw ValidationException::withMessages(['media' => 'The saved file is missing. Upload a replacement.']);
                 }
 
-                $hero->fill($request->safe()->only(['enabled', 'media_type', 'headline', 'subtext', 'button_label', 'button_link']));
+                $hero->fill($request->safe()->only($hero->getFillable()));
                 $hero->media_path = $media;
                 $hero->poster_path = $type === 'video'
                     ? ($newFiles['poster'] ?? ($request->boolean('remove_poster') ? null : $hero->poster_path))

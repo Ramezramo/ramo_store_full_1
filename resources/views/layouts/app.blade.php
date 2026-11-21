@@ -852,21 +852,21 @@ button{cursor:pointer;font-family:inherit}
     overflow:hidden;
     padding:0 !important;
     background:#fff;
-    border-top:1.5px solid var(--c-light);
-    box-shadow:0 -2px 10px rgba(0,0,0,.07);
+    border-top:1px solid var(--c-light);
+    box-shadow:0 -3px 12px rgba(0,0,0,.05);
     z-index:9999;
     align-items:stretch;
   }
-  #mob-nav :is(a,button){
+  #mob-nav > :is(a,button){
     flex:1;
-    min-height:0;
+    min-inline-size:0;
     display:flex;
     flex-direction:column;
     align-items:center;
     justify-content:center;
     gap:3px;
-    color:#888;
-    font-size:9px;
+    color:#555;
+    font-size:.6875rem;
     font-weight:600;
     font-family:inherit;
     text-decoration:none;
@@ -877,22 +877,47 @@ button{cursor:pointer;font-family:inherit}
     touch-action:manipulation;
     cursor:pointer;
   }
-  #mob-nav a.on,#mob-nav :is(a,button):active{color:var(--c-orange)}
-  #mobile-menu-trigger[aria-expanded="true"]{color:var(--c-orange);background:#fff3ed}
-  #mob-nav button:focus-visible{outline:2px solid var(--c-orange);outline-offset:-4px}
-  #mob-nav a.is-opening{color:var(--c-orange);background:var(--c-tag)}
-  #mob-nav :is(a,button) svg{display:block}
-  #mob-nav :is(a,button) span{display:block;line-height:1}
+  #mob-nav .mn-icon{
+    position:relative;
+    display:grid;
+    place-items:center;
+    inline-size:44px;
+    block-size:28px;
+    border-radius:999px;
+    transition:background-color .16s ease,transform .16s ease;
+  }
+  #mob-nav .mn-icon svg{
+    inline-size:22px;
+    block-size:22px;
+    fill:none;
+    stroke:currentColor;
+    stroke-width:1.75;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+  }
+  #mob-nav .mn-label{line-height:1.15;white-space:nowrap}
+  #mob-nav > :is(.on,.is-opening,[aria-expanded="true"]){
+    color:#a53612;
+    font-weight:750;
+  }
+  #mob-nav > :is(.on,.is-opening,[aria-expanded="true"]) .mn-icon{background:#fff0e7}
+  #mob-nav > :is(a,button):active .mn-icon{transform:scale(.94);background:#f4eee9}
+  #mob-nav > :is(a,button):focus-visible{outline:2px solid var(--c-orange);outline-offset:-4px;border-radius:10px}
   #mob-nav .mn-badge{
     position:absolute;
-    top:6px;right:calc(50% - 20px);
-    background:var(--c-orange);color:#fff;
+    inset-block-start:-1px;
+    inset-inline-end:-1px;
+    background:#b43a15;color:#fff;
     font-size:9px;font-weight:800;
-    min-width:15px;height:15px;border-radius:50px;
+    min-inline-size:17px;block-size:17px;border-radius:999px;
     display:flex;align-items:center;justify-content:center;
     padding:0 3px;border:2px solid #fff;pointer-events:none;
   }
-  #mob-nav :is(a,button){position:relative}
+  #mob-nav .mn-badge[hidden]{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  #mob-nav .mn-icon{transition:none}
+  #mob-nav > :is(a,button):active .mn-icon{transform:none}
 }
 
 /* ── FOOTER ── */
@@ -1493,33 +1518,46 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
 </div>
 
 <!-- MOBILE BOTTOM NAV -->
-<nav id="mob-nav" class="{{ $headerIsArabic ? 'mob-nav--rtl' : '' }}" style="display:none" dir="{{ $headerIsArabic ? 'rtl' : 'ltr' }}">
-  <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'on' : '' }}">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>
-    <span>{{ $mobileHomeLabel }}</span>
+<nav id="mob-nav" class="{{ $headerIsArabic ? 'mob-nav--rtl' : '' }}" style="display:none" dir="{{ $headerIsArabic ? 'rtl' : 'ltr' }}"
+     aria-label="{{ $headerIsArabic ? 'التنقل السفلي' : 'Bottom navigation' }}">
+  <a href="{{ route('home') }}" @if(request()->routeIs('home')) class="on" aria-current="page" @endif>
+    <span class="mn-icon">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="m3 10 9-7 9 7M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 20v-6h4v6"/></svg>
+    </span>
+    <span class="mn-label">{{ $mobileHomeLabel }}</span>
   </a>
-  <a href="{{ route('shop') }}" class="{{ request()->routeIs('shop') ? 'on' : '' }}">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-    <span>{{ $mobileShopLabel }}</span>
+  <a href="{{ route('shop') }}" @if(request()->routeIs('shop')) class="on" aria-current="page" @endif>
+    <span class="mn-icon">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 10v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-9M9 20v-6h6v6M3 8l2-4h14l2 4v2H3zM9 4l-1 6m7-6 1 6"/></svg>
+    </span>
+    <span class="mn-label">{{ $mobileShopLabel }}</span>
   </a>
-  <a href="{{ route('cart') }}" class="{{ request()->routeIs('cart') ? 'on' : '' }}">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 001.95-1.57l1.65-8.42H6"/></svg>
-    @if($cCount ?? 0)<span class="mn-badge" id="mn-cart-badge">{{ $cCount }}</span>@endif
-    <span>{{ $mobileCartLabel }}</span>
+  <a href="{{ route('cart') }}" @if(request()->routeIs('cart')) class="on" aria-current="page" @endif>
+    <span class="mn-icon">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 4h2l2.6 10.4A2 2 0 0 0 9.5 16h8.8a2 2 0 0 0 1.9-1.5L22 8H6"/><circle cx="9.5" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
+      <span class="mn-badge" id="mn-cart-badge" @if(!($cCount ?? 0)) hidden @endif>{{ $cCount ?? 0 }}</span>
+    </span>
+    <span class="mn-label">{{ $mobileCartLabel }}</span>
   </a>
   <button type="button" id="mobile-menu-trigger" onclick="toggleMobileMenu(this)" aria-label="{{ $mobileMenuLabel }}" aria-controls="nav-mobile-menu" aria-expanded="false" aria-haspopup="dialog">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" width="24" height="24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-    <span>{{ $mobileMenuLabel }}</span>
+    <span class="mn-icon">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 6.5h16M4 12h16M4 17.5h16"/></svg>
+    </span>
+    <span class="mn-label">{{ $mobileMenuLabel }}</span>
   </button>
   @auth
-  <a href="{{ route('account.hub') }}" class="{{ request()->routeIs('account.*') ? 'on' : '' }}">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-    <span>{{ $mobileAccountLabel }}</span>
+  <a href="{{ route('account.hub') }}" @if(request()->routeIs('account.*')) class="on" aria-current="page" @endif>
+    <span class="mn-icon">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="9" r="2.75"/><path d="M6.5 19a6 6 0 0 1 11 0"/></svg>
+    </span>
+    <span class="mn-label">{{ $mobileAccountLabel }}</span>
   </a>
   @else
-  <a href="{{ route('login') }}" class="{{ request()->routeIs('login') ? 'on' : '' }}">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-    <span>{{ $mobileSignInLabel }}</span>
+  <a href="{{ route('login') }}" @if(request()->routeIs('login')) class="on" aria-current="page" @endif>
+    <span class="mn-icon">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M13 4h5a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-5M3 12h12m-4-4 4 4-4 4"/></svg>
+    </span>
+    <span class="mn-label">{{ $mobileSignInLabel }}</span>
   </a>
   @endauth
 </nav>
@@ -1530,22 +1568,28 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
   const label = @json($headerNotificationsLabel);
   const unreadLabel = @json($headerIsArabic ? 'غير مقروء' : 'unread');
   let loading = false;
+  let readVersion = 0;
+
+  function showUnreadCount(unread) {
+    document.querySelectorAll('[data-notifications-link]').forEach(link => {
+      const badge = link.querySelector('[data-notifications-count]');
+      badge.hidden = !unread;
+      badge.textContent = unread > 99 ? '99+' : unread;
+      link.setAttribute('aria-label', unread ? label + ', ' + unread + ' ' + unreadLabel : label);
+    });
+  }
 
   async function refreshUnreadCount() {
     if (document.hidden || loading) return;
     loading = true;
+    const version = readVersion;
     try {
       const response = await fetch(@json(route('account.notifications.unread')), {
         cache: 'no-store', headers: { Accept: 'application/json' },
       });
       if (!response.ok) return;
       const { unread } = await response.json();
-      document.querySelectorAll('[data-notifications-link]').forEach(link => {
-        const badge = link.querySelector('[data-notifications-count]');
-        badge.hidden = !unread;
-        badge.textContent = unread > 99 ? '99+' : unread;
-        link.setAttribute('aria-label', unread ? label + ', ' + unread + ' ' + unreadLabel : label);
-      });
+      if (version === readVersion) showUnreadCount(unread);
     } catch {
       // The inbox link remains available if the unread count cannot be loaded.
     } finally {
@@ -1554,6 +1598,10 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
   }
 
   refreshUnreadCount();
+  document.addEventListener('notifications:read', event => {
+    readVersion++;
+    showUnreadCount(event.detail);
+  });
   window.addEventListener('pageshow', event => { if (event.persisted) refreshUnreadCount(); });
   document.addEventListener('catalog:shown', refreshUnreadCount);
   document.addEventListener('visibilitychange', refreshUnreadCount);
@@ -1731,12 +1779,11 @@ function updateCartBadge(count) {
   }
   if (badge) { badge.textContent = count; badge.style.display = count > 0 ? 'flex' : 'none'; }
   // Mobile bottom-nav cart badge
-  let mnBadge = document.getElementById('mn-cart-badge');
-  if (!mnBadge && count > 0) {
-    const mobileCart = document.querySelector('#mob-nav a[href="{{ route("cart") }}"]');
-    if (mobileCart) { mnBadge = document.createElement('span'); mnBadge.id='mn-cart-badge'; mnBadge.className='mn-badge'; mobileCart.appendChild(mnBadge); }
+  const mnBadge = document.getElementById('mn-cart-badge');
+  if (mnBadge) {
+    mnBadge.textContent = count;
+    mnBadge.hidden = count <= 0;
   }
-  if (mnBadge) { mnBadge.textContent = count; mnBadge.style.display = count > 0 ? 'flex' : 'none'; }
 }
 
 function showCartErrors(messages) {

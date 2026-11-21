@@ -11,28 +11,37 @@ class OrderNotificationController extends Controller
 {
     public function index(Request $request)
     {
-        $inbox = $this->inbox($request);
-        $unread = (clone $inbox)->whereNull('read_at')->count() + $this->vendorInbox($request)->whereNull('read_at')->count();
-        $notifications = $inbox->orderByDesc('created_at')->orderByDesc('id')->paginate(20);
-        $vendorNotifications = $this->vendorInbox($request)->orderByDesc('created_at')->orderByDesc('id')->limit(20)->get();
+        $orders = $this->inbox($request)->select('id', 'status', 'read_at', 'event', 'order_id', 'created_at');
+        $vendor = $this->vendorInbox($request)->select('id', 'status', 'read_at')
+            ->selectRaw("'vendor_application' as event, null as order_id, created_at AT TIME ZONE 'UTC' as created_at");
+        $notifications = DB::query()->fromSub($orders->unionAll($vendor), 'inbox')
+            ->orderByRaw('created_at DESC NULLS LAST')->orderByDesc('id')->orderBy('event')->paginate(20);
+        $unread = $this->unreadCount($request);
 
-        return response()->view('web.account.notifications', compact('notifications', 'vendorNotifications', 'unread'))
+        return response()->view('web.account.notifications', compact('notifications', 'unread'))
             ->header('Cache-Control', 'private, no-store');
     }
 
     public function unread(Request $request)
     {
-        $unread = $this->inbox($request)->whereNull('read_at')->count() + $this->vendorInbox($request)->whereNull('read_at')->count();
-
-        return response()->json(['unread' => $unread])->header('Cache-Control', 'private, no-store');
+        return response()->json(['unread' => $this->unreadCount($request)])->header('Cache-Control', 'private, no-store');
     }
 
     public function markAllRead(Request $request)
     {
-        $this->inbox($request)->whereNull('read_at')->update(['read_at' => now()]);
-        $this->vendorInbox($request)->whereNull('read_at')->update(['read_at' => now()]);
+        DB::transaction(function () use ($request) {
+            $readAt = now();
+            $this->inbox($request)->whereNull('read_at')->update(['read_at' => $readAt]);
+            $this->vendorInbox($request)->whereNull('read_at')->update(['read_at' => $readAt]);
+        });
 
-        return redirect()->route('account.notifications');
+        return $request->expectsJson() ? $this->unread($request) : redirect()->route('account.notifications');
+    }
+
+    private function unreadCount(Request $request): int
+    {
+        return $this->inbox($request)->whereNull('read_at')->count()
+            + $this->vendorInbox($request)->whereNull('read_at')->count();
     }
 
     public function openVendor(Request $request, int $notification)

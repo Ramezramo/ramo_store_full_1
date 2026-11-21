@@ -10,7 +10,11 @@ class HomepageHero extends Model
     public const SETTINGS_ID = 1;
 
     public $incrementing = false;
-    protected $fillable = ['enabled', 'media_type', 'headline', 'subtext', 'button_label', 'button_link'];
+    protected $fillable = [
+        'enabled', 'media_type',
+        'headline', 'subtext', 'button_label', 'button_link',
+        'headline_ar', 'subtext_ar', 'button_label_ar',
+    ];
     protected $casts = ['enabled' => 'boolean'];
 
     public static function active(): ?self

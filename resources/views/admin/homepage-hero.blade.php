@@ -59,11 +59,20 @@
     </div>
   </fieldset>
   <fieldset>
-    <legend>Banner content (optional)</legend>
+    <legend>English banner text (optional)</legend>
     <div class="form-group"><label for="hero-headline">Headline</label><input type="text" id="hero-headline" name="headline" maxlength="160" value="{{ old('headline', $hero->headline) }}"></div>
     <div class="form-group"><label for="hero-subtext">Subtext</label><textarea id="hero-subtext" name="subtext" maxlength="600" rows="3">{{ old('subtext', $hero->subtext) }}</textarea></div>
     <div class="form-group"><label for="hero-button">Button label</label><input type="text" id="hero-button" name="button_label" maxlength="60" value="{{ old('button_label', $hero->button_label) }}"></div>
-    <div class="form-group"><label for="hero-link">Button link</label><input type="text" id="hero-link" name="button_link" maxlength="2048" placeholder="/shop" value="{{ old('button_link', $hero->button_link) }}"><small>Enter both a label and a link to show the button.</small></div>
+  </fieldset>
+  <fieldset>
+    <legend>Arabic banner text (optional)</legend>
+    <div class="form-group"><label for="hero-headline-ar">Headline</label><input type="text" id="hero-headline-ar" name="headline_ar" maxlength="160" lang="ar" dir="rtl" value="{{ old('headline_ar', $hero->headline_ar) }}"></div>
+    <div class="form-group"><label for="hero-subtext-ar">Subtext</label><textarea id="hero-subtext-ar" name="subtext_ar" maxlength="600" rows="3" lang="ar" dir="rtl">{{ old('subtext_ar', $hero->subtext_ar) }}</textarea></div>
+    <div class="form-group"><label for="hero-button-ar">Button label</label><input type="text" id="hero-button-ar" name="button_label_ar" maxlength="60" lang="ar" dir="rtl" value="{{ old('button_label_ar', $hero->button_label_ar) }}"></div>
+  </fieldset>
+  <fieldset>
+    <legend>Button destination</legend>
+    <div class="form-group"><label for="hero-link">Button link</label><input type="text" id="hero-link" name="button_link" maxlength="2048" placeholder="/shop" value="{{ old('button_link', $hero->button_link) }}"><small>This link is shared by both languages. The button appears when its label and link are filled in.</small></div>
   </fieldset>
   <button class="btn btn-primary" type="submit">Save hero</button>
 </form>

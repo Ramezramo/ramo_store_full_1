@@ -63,6 +63,48 @@ class HomepageHeroTest extends TestCase
         $this->get('/')->assertOk()->assertDontSee('<ramo-home-hero', false);
     }
 
+    public function test_home_uses_the_selected_language_for_banner_text(): void
+    {
+        $this->signIn(true);
+        Storage::fake('public');
+        $save = route('admin.homepage-hero.update');
+        $english = [
+            'enabled' => '1',
+            'media_type' => 'image',
+            'headline' => 'Browse the latest collections',
+            'subtext' => 'Find a new favorite at Ramo Store.',
+            'button_label' => 'Shop the collection',
+            'button_link' => '/shop',
+        ];
+        $arabic = [
+            'headline_ar' => 'اكتشف أحدث التشكيلات',
+            'subtext_ar' => 'اعثر على ما تحبه في رامو ستور.',
+            'button_label_ar' => 'تسوّق التشكيلة',
+        ];
+
+        $this->put($save, $english + $arabic + ['media' => UploadedFile::fake()->image('banner.jpg')])
+            ->assertSessionHasNoErrors();
+        $this->get(route('admin.homepage-hero'))->assertOk()
+            ->assertSee('English banner text')
+            ->assertSee('Arabic banner text')
+            ->assertSee($arabic['headline_ar']);
+
+        $this->get(route('language.switch', ['lang' => 'en']))->assertSessionHas('locale', 'en');
+        $this->get('/')->assertOk()->assertSee('<ramo-home-hero dir="ltr">', false)
+            ->assertSee($english['headline'])->assertSee($english['subtext'])->assertSee($english['button_label'])
+            ->assertDontSee($arabic['headline_ar']);
+
+        $this->get(route('language.switch', ['lang' => 'ar']))->assertSessionHas('locale', 'ar');
+        $this->get('/')->assertOk()->assertSee('<ramo-home-hero dir="rtl">', false)
+            ->assertSee($arabic['headline_ar'])->assertSee($arabic['subtext_ar'])
+            ->assertSee('<a href="/shop">'.$arabic['button_label_ar'].'</a>', false)
+            ->assertDontSee($english['headline']);
+
+        $this->put($save, $english + array_fill_keys(array_keys($arabic), ''))->assertSessionHasNoErrors();
+        $this->get('/')->assertOk()->assertSee('<ramo-home-hero dir="rtl">', false)
+            ->assertDontSee('<div class="home-hero-copy">', false);
+    }
+
     public function test_invalid_uploads_and_links_are_rejected(): void
     {
         $this->signIn(true);

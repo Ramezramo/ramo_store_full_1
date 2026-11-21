@@ -25,12 +25,11 @@
 
 @push('styles')
 <style>
-  /* The global 360px fallback is intentionally single-column for general grids.
-     Wishlist cards stay compact so one saved product does not fill the phone viewport. */
+  /* Keep two wishlist columns even at the storefront's single-column breakpoint. */
   @media (max-width: 600px) {
-    .wishlist-grid {
+    .product-grid.wishlist-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-      gap: 12px;
+      gap: 10px;
     }
   }
 

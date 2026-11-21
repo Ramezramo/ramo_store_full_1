@@ -1,7 +1,14 @@
 /* Shared search-first storefront header. */
 :root{--storefront-header-height:81px}
 .nav.storefront-header{background:#fff;backdrop-filter:none;-webkit-backdrop-filter:none;border-bottom:1px solid #ebebeb;box-shadow:none;padding-block-start:env(safe-area-inset-top,0px);flex:none;transition:background .2s,backdrop-filter .2s,border-color .2s}
-.nav.storefront-header.is-scrolled:not(.is-search-open):not(.is-menu-open){background:rgba(255,255,255,.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom-color:rgba(17,17,17,.06)}
+.nav.storefront-header.is-scrolled:not(.is-search-open):not(.is-menu-open),
+body:has(#storefront-content > ramo-home-hero[data-scrolled], .catalog-view[data-catalog-active="1"] > ramo-home-hero[data-scrolled])
+> .nav.storefront-header:not(.is-search-open):not(.is-menu-open) {
+  background: rgb(255 255 255 / 60%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom-color: rgb(17 17 17 / 6%);
+}
 /* Keep content at the same initial position, then let it scroll behind the bar.
    Equal padding and overlap also preserve cached scroll distances. */
 html.catalog-keep-alive #storefront-content{margin-block-start:calc(-1 * var(--storefront-header-height))}
@@ -83,7 +90,7 @@ html.catalog-keep-alive .catalog-transient-loading--product{padding-block-start:
   .storefront-header.nav--rtl .nav-logo{margin-right:0;margin-left:auto}
   .storefront-header .nav-actions{display:flex;order:3;gap:0;margin:0}
   .storefront-header .nav-actions>*{display:none}
-  .storefront-header .nav-actions .nav-notifications-top{display:flex;width:40px;height:40px;background:transparent;border:0}
+  .storefront-header .nav-actions :is(.nav-wishlist-shortcut,.nav-notifications-top){display:flex;width:40px;height:40px;background:transparent;border:0}
   .storefront-header .nav-notifications-top[aria-current="page"]{color:var(--c-orange)}
   .storefront-header .header-search-toggle{display:grid;place-items:center;order:2;width:40px;height:40px;flex:none;border:0;background:transparent;color:#292929;border-radius:10px;cursor:pointer}
   .storefront-header .header-search-toggle svg{width:22px;height:22px}
@@ -91,6 +98,7 @@ html.catalog-keep-alive .catalog-transient-loading--product{padding-block-start:
   .storefront-header .nav-search{display:none;order:2;margin:0;flex:1;max-width:none;min-width:0}
   .storefront-header.is-search-open .nav-search{display:block}
   .storefront-header.is-search-open .header-search-toggle{display:none}
+  .storefront-header.is-search-open .nav-actions .nav-wishlist-shortcut{display:none}
   .storefront-header.is-search-open .nav-logo{font-size:16px;margin-inline-end:0}
   .storefront-header.nav--rtl.is-search-open .nav-logo{margin-left:0}
   .storefront-header .nav-search form{height:40px;padding:0 3px 0 10px;border-radius:10px;gap:4px}
@@ -121,7 +129,8 @@ body:has(#storefront-content > ramo-home-hero, .catalog-view[data-catalog-active
   inset: 0 0 auto;
   color: #171717;
   box-shadow: 0 3px 14px rgb(0 0 0 / 9%);
-  transition: background-color 300ms, color 300ms, border-color 300ms, box-shadow 300ms;
+  transition: background-color 300ms, backdrop-filter 300ms, -webkit-backdrop-filter 300ms,
+    color 300ms, border-color 300ms, box-shadow 300ms;
 }
 html.catalog-keep-alive #storefront-content:has(> .catalog-view[data-catalog-active="1"] > ramo-home-hero) {
   margin-block-start: 0;
@@ -147,10 +156,11 @@ body:has(#storefront-content > ramo-home-hero:not([data-scrolled]), .catalog-vie
 ramo-home-hero {
   position: relative;
   isolation: isolate;
+  overflow: clip;
   display: grid;
   align-items: end;
-  min-height: 85vh;
-  min-height: 85svh;
+  min-height: clamp(280px, 58vh, 460px);
+  min-height: clamp(280px, 58svh, 460px);
   background: #222;
   color: white;
 }
@@ -161,6 +171,26 @@ ramo-home-hero .home-hero-media, ramo-home-hero::before {
   height: 100%;
   object-fit: cover;
   z-index: -2;
+}
+.home-hero-image-track {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+}
+@media (prefers-reduced-motion: no-preference) {
+  html:not(.catalog-keep-alive) body:has(#storefront-content > ramo-home-hero) {
+    overflow-x: clip;
+  }
+  .home-hero-image-track {
+    /* Give the photo room to stick until the clipped banner leaves view. */
+    inset-block-end: -100%;
+  }
+  ramo-home-hero .home-hero-image-track .home-hero-media {
+    position: sticky;
+    inset: 0 auto auto;
+    display: block;
+    height: 50%;
+  }
 }
 ramo-home-hero::before {
   content: '';
@@ -179,5 +209,9 @@ ramo-home-hero::before {
 .home-hero-copy a { margin-block-start: 20px; max-width: 100%; padding: 10px 20px; background: white; color: #161616; }
 .home-hero-playback { position: absolute; inset-block-start: calc(var(--storefront-header-height) + 12px); inset-inline-end: 16px; padding: 6px 14px; background: rgb(0 0 0 / 65%); color: white; border: 1px solid #ffffff80; cursor: pointer; }
 .home-hero-playback[hidden] { display: none; }
+@media (max-width: 768px) {
+  .home-hero-copy { padding-block: calc(var(--storefront-header-height) + 56px) 24px; }
+  .home-hero-copy a { margin-block-start: 16px; }
+}
 @media (min-width: 769px) { ramo-home-hero { min-height: clamp(440px,77vh,850px); } }
 @media (prefers-reduced-motion: reduce) { body:has(ramo-home-hero) > .nav.storefront-header { transition: none !important; } }

@@ -21,6 +21,9 @@ class UpdateHomepageHeroRequest extends FormRequest
             'headline' => ['nullable', 'string', 'max:160'],
             'subtext' => ['nullable', 'string', 'max:600'],
             'button_label' => ['nullable', 'string', 'max:60'],
+            'headline_ar' => ['nullable', 'string', 'max:160'],
+            'subtext_ar' => ['nullable', 'string', 'max:600'],
+            'button_label_ar' => ['nullable', 'string', 'max:60'],
             'button_link' => ['bail', 'nullable', 'string', 'max:2048', function ($attribute, $value, $fail) {
                 $relative = str_starts_with($value, '/') && !str_starts_with($value, '//');
                 $absolute = in_array(strtolower((string) parse_url($value, PHP_URL_SCHEME)), ['https', 'http'], true)
