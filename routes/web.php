@@ -218,6 +218,8 @@ Route::prefix('admin')->middleware(['auth', 'admin.auth', \App\Http\Middleware\R
     Route::patch('/devices/{id}/unblock', [AdminDashboardController::class, 'unblockDevice'])->name('admin.devices.unblock');
     Route::delete('/devices/{id}', [AdminDashboardController::class, 'deleteDevice'])->name('admin.devices.delete');
     Route::post('/devices/block-by-id', [AdminDashboardController::class, 'blockDeviceByDeviceId'])->name('admin.devices.block-by-id');
+    Route::get('/homepage-hero', [\App\Http\Controllers\Admin\HomepageHeroController::class, 'edit'])->name('admin.homepage-hero');
+    Route::put('/homepage-hero', [\App\Http\Controllers\Admin\HomepageHeroController::class, 'update'])->name('admin.homepage-hero.update');
     Route::get('/timeline', [AdminTimelineController::class, 'index'])->name('admin.timeline');
     Route::get('/image-gallery', [ImageGalleryController::class, 'index'])->name('admin.image-gallery');
     Route::post('/image-gallery', [ImageGalleryController::class, 'store'])->name('admin.image-gallery.store');

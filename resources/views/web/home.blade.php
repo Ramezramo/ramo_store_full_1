@@ -35,6 +35,9 @@
     return $image;
   };
 @endphp
+@if($hero ?? null)
+  @include('web.partials.homepage-hero')
+@endif
 <div class="timeline-widgets{{ $timelineRtl ? ' timeline-widgets--rtl' : '' }}" @if($timelineRtl) dir="rtl" @endif>
 {{-- ── ANNOUNCEMENT BARS (full-width, outside page) ── --}}
 @foreach($announcements as $si => $sec)

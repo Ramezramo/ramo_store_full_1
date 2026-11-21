@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Constants\AppConstants;
 use App\Http\Middleware\SetInitialLocaleFromCountry;
 use App\Http\Traits\CartTrait;
+use App\Models\HomepageHero;
 use App\Services\CartRules;
 use App\Services\FlashSaleService;
 use App\Services\TimelineLayoutService;
@@ -50,7 +51,8 @@ class WebController extends Controller
         $sections = $preview ? $allSections : array_slice($visible, ($page - 1) * self::TIMELINE_SECTIONS_PER_PAGE, self::TIMELINE_SECTIONS_PER_PAGE, true);
         $hasMoreSections = !$preview && $page * self::TIMELINE_SECTIONS_PER_PAGE < count($visible);
 
-        return $this->renderHomeTimeline($sections, $lang, 'web.home', compact('announcements', 'hasMoreSections', 'page', 'preview'));
+        $hero = !$preview && $page === 1 ? HomepageHero::active() : null;
+        return $this->renderHomeTimeline($sections, $lang, 'web.home', compact('announcements', 'hasMoreSections', 'page', 'preview', 'hero'));
     }
 
     public function homeSections(Request $request)

@@ -181,6 +181,10 @@ select option{background:var(--card)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="4" rx="1"/><rect x="3" y="10" width="11" height="4" rx="1"/><rect x="3" y="17" width="14" height="4" rx="1"/></svg>
       Homepage Builder
     </a>
+    <a href="{{ route('admin.homepage-hero') }}" class="nav-item {{ request()->routeIs('admin.homepage-hero') ? 'active' : '' }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18m-14 6h7"/></svg>
+      Homepage Hero
+    </a>
     <a href="{{ route('admin.image-gallery') }}" class="nav-item {{ request()->routeIs('admin.image-gallery*') ? 'active' : '' }}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
       Image Gallery
