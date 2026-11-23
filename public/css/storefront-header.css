@@ -1,9 +1,9 @@
 /* Shared search-first storefront header. */
 :root{--storefront-header-height:81px}
-.nav.storefront-header{background:#fff;backdrop-filter:none;-webkit-backdrop-filter:none;border-bottom:1px solid #ebebeb;box-shadow:none;padding-block-start:env(safe-area-inset-top,0px);flex:none;transition:background .2s,backdrop-filter .2s,border-color .2s}
-.nav.storefront-header.is-scrolled:not(.is-search-open):not(.is-menu-open),
+.nav.storefront-header{background:#fff;backdrop-filter:none;-webkit-backdrop-filter:none;border-bottom:1px solid #ebebeb;box-shadow:none;flex:none;transition:background .2s,backdrop-filter .2s,border-color .2s}
+.nav.storefront-header.is-scrolled:not(.is-menu-open),
 body:has(#storefront-content > ramo-home-hero[data-scrolled], .catalog-view[data-catalog-active="1"] > ramo-home-hero[data-scrolled])
-> .nav.storefront-header:not(.is-search-open):not(.is-menu-open) {
+> .nav.storefront-header:not(.is-menu-open) {
   background: rgb(255 255 255 / 60%);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -29,18 +29,15 @@ html.catalog-keep-alive .catalog-transient-loading--product{padding-block-start:
 .storefront-header .nav-inner{height:80px;gap:18px;padding-inline:24px;max-width:var(--page-max);width:100%}
 .storefront-header .nav-hamburger{display:flex;width:44px;height:44px;padding:11px;gap:5px;border:1px solid #ebebeb;border-radius:12px;background:#fafafa;transform:none}
 .storefront-header .nav-hamburger span{width:20px;height:2px}
-.header-settings-icon,.header-search-toggle{display:none}
+.header-settings-icon{display:none}
 .storefront-header .nav-logo{font-size:21px;letter-spacing:-.6px;font-weight:800;line-height:1;padding:0;border-radius:0}
 .storefront-header .nav-links{gap:0}
 .storefront-header .nav-links a{padding:9px 10px;font-size:13px;border-radius:8px}
 .storefront-header .nav-links a:last-child{display:none}
-.storefront-header .nav-search{display:block;flex:1;max-width:none;min-width:160px}
-.storefront-header .nav-search form{height:46px;padding:0 4px 0 14px;gap:8px;border:1px solid #e5e5e5;background:#f7f7f7;border-radius:12px;transition:border-color .18s,box-shadow .18s,background .18s}
-.storefront-header .nav-search form:focus-within{border-color:var(--c-orange);background:#fff;box-shadow:0 0 0 3px #e85d2614}
-.storefront-header .nav-search-icon{width:18px;height:18px;color:#777}
-.storefront-header .nav-search input{height:100%;padding:0;line-height:1.4;font-size:14px}
-.storefront-header .nav-search button{height:36px;width:36px;margin:0;border-radius:9px;transition:background .18s,transform .12s}
-.storefront-header .nav-search button:active{transform:scale(.94)}
+.storefront-header .header-search-link{display:flex;flex:1;align-items:center;gap:10px;min-height:44px;padding-inline:14px;border:1px solid #e5e5e5;border-radius:12px;background:#f7f7f7;color:#292929;font-size:14px;font-weight:600;transition:background .18s,border-color .18s}
+.storefront-header .header-search-link svg{width:20px;height:20px;flex:none}
+.storefront-header .header-search-link:hover{background:#efefef;border-color:#d8d8d8}
+.storefront-header .header-search-link[aria-current="page"]{color:#b74217}
 .storefront-header .nav-actions{gap:6px;margin-inline-start:0}
 .storefront-header .nav-actions .nav-icon-btn{width:42px;height:42px;border-radius:11px;color:#292929;transform:none}
 .storefront-header .nav-action-icon{width:21px;height:21px;stroke-width:1.7}
@@ -48,8 +45,6 @@ html.catalog-keep-alive .catalog-transient-loading--product{padding-block-start:
 .storefront-header .nav-user-btn{border:1px solid #e8e8e8;border-radius:10px;min-height:42px;padding:8px 12px;color:#292929;font-size:13px}
 .storefront-header .nav-hamburger:hover,.storefront-header .nav-icon-btn:hover{background:#f3f3f3;border-color:#dedede}
 .storefront-header :is(a,button,input):focus-visible{outline:2px solid var(--c-orange);outline-offset:3px}
-.storefront-header .nav-search input:focus-visible{outline:none}
-.storefront-header.nav--rtl .nav-search form{padding:0 14px 0 4px}
 
 /* Drawer uses the measured header edge on every page and screen width. */
 .nav-mobile-menu.storefront-drawer{display:block;position:fixed;inset-block-start:var(--storefront-header-height);inset-inline:0;inset-block-end:0;z-index:490;visibility:hidden;pointer-events:none;opacity:0;transition:opacity .2s,visibility .2s}
@@ -92,21 +87,10 @@ html.catalog-keep-alive .catalog-transient-loading--product{padding-block-start:
   .storefront-header .nav-actions>*{display:none}
   .storefront-header .nav-actions :is(.nav-wishlist-shortcut,.nav-notifications-top){display:flex;width:40px;height:40px;background:transparent;border:0}
   .storefront-header .nav-notifications-top[aria-current="page"]{color:var(--c-orange)}
-  .storefront-header .header-search-toggle{display:grid;place-items:center;order:2;width:40px;height:40px;flex:none;border:0;background:transparent;color:#292929;border-radius:10px;cursor:pointer}
-  .storefront-header .header-search-toggle svg{width:22px;height:22px}
-  .storefront-header .header-search-toggle:hover{background:#f5f5f5}
-  .storefront-header .nav-search{display:none;order:2;margin:0;flex:1;max-width:none;min-width:0}
-  .storefront-header.is-search-open .nav-search{display:block}
-  .storefront-header.is-search-open .header-search-toggle{display:none}
-  .storefront-header.is-search-open .nav-actions .nav-wishlist-shortcut{display:none}
-  .storefront-header.is-search-open .nav-logo{font-size:16px;margin-inline-end:0}
-  .storefront-header.nav--rtl.is-search-open .nav-logo{margin-left:0}
-  .storefront-header .nav-search form{height:40px;padding:0 3px 0 10px;border-radius:10px;gap:4px}
-  .storefront-header .nav-search-icon{display:none}
-  .storefront-header .nav-search input{font-size:16px}
-  .storefront-header .nav-search input::placeholder{font-size:14px}
-  .storefront-header .nav-search button{width:32px;height:32px;border-radius:7px}
-  .storefront-header.nav--rtl .nav-search form{padding:0 10px 0 3px}
+  .storefront-header .header-search-link{display:grid;place-items:center;order:2;flex:none;width:40px;min-height:40px;padding:0;border:0;border-radius:10px;background:transparent}
+  .storefront-header .header-search-link svg{width:22px;height:22px}
+  .storefront-header .header-search-link span{display:none}
+  .storefront-header .header-search-link:hover{background:#f5f5f5}
   .nav-mobile-menu.storefront-drawer{bottom:calc(var(--mobile-nav-height,58px) + var(--mobile-nav-viewport-offset,0px))}
   .nav-mobile-menu.storefront-drawer .nav-mobile-panel{position:absolute;inset-inline:0;bottom:0;width:100%;height:auto;min-height:0;max-height:100%;border-radius:18px 18px 0 0;border:0;padding:20px 16px 24px;transform:translateY(20px)}
   .nav-mobile-menu.storefront-drawer.open .nav-mobile-panel{transform:translateY(0)}
@@ -138,20 +122,18 @@ html.catalog-keep-alive #storefront-content:has(> .catalog-view[data-catalog-act
 html.catalog-keep-alive .catalog-view:has(> ramo-home-hero) { padding-block-start: 0; }
 
 body:has(#storefront-content > ramo-home-hero:not([data-scrolled]), .catalog-view[data-catalog-active="1"] > ramo-home-hero:not([data-scrolled]))
-> .nav.storefront-header:not(.is-search-open):not(.is-menu-open) {
+> .nav.storefront-header:not(.is-menu-open) {
   color: white;
   background: transparent;
   border-color: transparent;
   box-shadow: none;
-  & :is(.nav-logo, .nav-logo span, .nav-links a, .nav-user-btn, .nav-icon-btn, .nav-hamburger, .header-search-toggle, .nav-search-icon, .nav-search input, .nav-search button) { color: currentColor; }
+  & :is(.nav-logo, .nav-logo span, .nav-links a, .nav-user-btn, .nav-icon-btn, .nav-hamburger, .header-search-link) { color: currentColor; }
   & .nav-hamburger span { background: currentColor; }
-  & :is(.nav-hamburger, .nav-search form, .nav-user-btn, .nav-links a.active) {
+  & :is(.nav-hamburger, .header-search-link, .nav-user-btn, .nav-links a.active) {
     background: rgb(0 0 0 / 18%);
     border-color: rgb(255 255 255 / 48%);
   }
-  & .nav-search button { background: transparent; }
-  & .nav-search input::placeholder { color: currentColor; opacity: .92; }
-  & :is(.header-search-toggle, .nav-icon-btn, .nav-user-btn, .nav-links a):hover { background: rgb(255 255 255 / 18%); }
+  & :is(.header-search-link, .nav-icon-btn, .nav-user-btn, .nav-links a):hover { background: rgb(255 255 255 / 18%); }
 }
 ramo-home-hero {
   position: relative;

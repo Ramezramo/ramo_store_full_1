@@ -3,14 +3,44 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class SearchController extends Controller
 {
+    public function suggestions(Request $request): JsonResponse
+    {
+        $q = $request->query('q');
+        $q = is_string($q) ? trim($q) : '';
+        if (mb_strlen($q) < 2 || mb_strlen($q) > 120) {
+            return response()->json([]);
+        }
+
+        $locale = strtolower((string) session('locale', 'en'));
+        $query = $this->searchableProducts();
+        $this->matchProductName($query, $q);
+
+        $suggestions = $query->orderByRaw(
+            'CASE WHEN p.name ILIKE ? THEN 0 WHEN p.name ILIKE ? THEN 1 ELSE 2 END',
+            [$this->escapeSearchTerm($q), $this->escapeSearchTerm($q) . '%']
+        )
+            ->orderByDesc('p.id')
+            ->limit(6)
+            ->get(['p.id', 'p.name', 'p.translations'])
+            ->map(fn ($product) => [
+                'name' => $this->localizeSearchProductText($product, $locale)->tl_display_name,
+                'url' => route('product', ['id' => $product->id], false),
+            ]);
+
+        return response()->json($suggestions);
+    }
+
     public function index(Request $request)
     {
-        $q          = trim($request->input('q', ''));
+        $q          = $request->query('q');
+        $q          = is_string($q) ? trim($q) : '';
         $locale     = strtolower((string) session('locale', 'en'));
         $minPrice   = $request->input('min_price') !== null && $request->input('min_price') !== '' ? (float) $request->input('min_price') : null;
         $maxPrice   = $request->input('max_price') !== null && $request->input('max_price') !== '' ? (float) $request->input('max_price') : null;
@@ -20,6 +50,10 @@ class SearchController extends Controller
             'options' => ['min_range' => 1],
         ]);
         $categoryId = $categoryId === false ? null : $categoryId;
+        if ($q === '' && $categoryId === null && $minPrice === null && $maxPrice === null && !$inStock && $sort === 'relevance') {
+            return view('web.search-entry');
+        }
+
         $perPage = 12;
 
         // Global price range for products that are actually sellable on the storefront.
@@ -33,51 +67,25 @@ class SearchController extends Controller
 
         // Base query. Discovery surfaces must never leak a draft, rejected, or
         // unpriced product even when it remains in a legacy search index.
-        $query = DB::table('products_data as p')
+        $query = $this->searchableProducts()
             ->select(
                 'p.id', 'p.name', 'p.slug', 'p.images', 'p.translations',
                 'p.description', 'p.stock_quantity', 'p.unit',
-                'p.minimum_order_qty', 'p.max_orders_per_person', 'p.sold_individually',
+                'p.minimum_order_qty', 'p.max_orders_per_person', 'p.sold_individually', 'p.button_mode',
                 DB::raw('MIN(CAST(pv.price AS DECIMAL)) as price'),
                 DB::raw('MIN(CAST(pv.regular_price AS DECIMAL)) as regular_price'),
                 DB::raw('MIN(CAST(pv.sale_price AS DECIMAL)) as sale_price'),
                 DB::raw('MAX(p.discount_percentage) as discount_percentage')
             )
             ->join('product_variations as pv', 'pv.product_id', '=', 'p.id')
-            ->where('p.status', 'publish')
-            ->where('p.acceptance_status', 'approved')
-            ->whereExists(function ($variations) {
-                $variations->selectRaw('1')
-                    ->from('product_variations as sellable_pv')
-                    ->whereColumn('sellable_pv.product_id', 'p.id')
-                    ->where('sellable_pv.regular_price', '>', 0);
-            })
             ->groupBy(
                 'p.id', 'p.name', 'p.slug', 'p.images', 'p.translations',
                 'p.description', 'p.stock_quantity', 'p.unit',
-                'p.minimum_order_qty', 'p.max_orders_per_person', 'p.sold_individually'
+                'p.minimum_order_qty', 'p.max_orders_per_person', 'p.sold_individually', 'p.button_mode'
             );
 
-        // Precision-first customer search: a product must match its own name,
-        // URL slug, or one of its localized *names*. `search_text`, descriptions,
-        // and translated descriptions are intentionally excluded because incidental
-        // phrases (for example, a sneaker description mentioning "jeans") are not
-        // product identity and should not surface unrelated merchandise.
         if ($q !== '') {
-            $needle = '%' . $q . '%';
-            $query->where(function ($sub) use ($needle) {
-                $sub->where('p.name', 'ILIKE', $needle)
-                    ->orWhere('p.slug', 'ILIKE', $needle)
-                    ->orWhereRaw(<<<'SQL'
-                        EXISTS (
-                            SELECT 1
-                            FROM jsonb_array_elements(
-                                COALESCE(NULLIF(p.translations, '')::jsonb, '[]'::jsonb)
-                            ) AS translation
-                            WHERE COALESCE(translation->>'name', '') ILIKE ?
-                        )
-                    SQL, [$needle]);
-            });
+            $this->matchProductName($query, $q);
         }
 
         // Category filter
@@ -115,13 +123,13 @@ class SearchController extends Controller
                 if ($q !== '') {
                     $query->orderByRaw(
                         'CASE WHEN p.name ILIKE ? THEN 0 WHEN p.name ILIKE ? THEN 1 ELSE 2 END',
-                        [$q, '%' . $q . '%']
+                        [$this->escapeSearchTerm($q), '%' . $this->escapeSearchTerm($q) . '%']
                     );
                 }
                 $query->orderBy('p.id', 'desc');
         }
 
-        $raw      = $query->paginate($perPage);
+        $raw      = $query->paginate($perPage)->withQueryString();
         $products = $raw->through(fn($p) => $this->localizeSearchProductText($this->parseProduct($p), $locale));
         $productIds = $products->pluck('id')->all();
         $cardVariations = [];
@@ -148,10 +156,13 @@ class SearchController extends Controller
 
         // Active filters for display chips
         $activeFilters = [];
-        if ($q)          $activeFilters[] = ['type' => 'q',        'label' => "\"$q\"",      'remove' => 'q'];
         if ($categoryId) {
             $cat = $categories->firstWhere('id', $categoryId);
-            $activeFilters[] = ['type' => 'category', 'label' => $cat?->name ?? "#$categoryId", 'remove' => 'category'];
+            $activeFilters[] = [
+                'type' => 'category',
+                'label' => \App\Support\StorefrontLabels::category($cat?->name ?? "#$categoryId", $locale === 'ar'),
+                'remove' => 'category',
+            ];
         }
         if ($minPrice !== null || $maxPrice !== null) {
             $pLabel = ($minPrice !== null ? number_format($minPrice) : '0') . ' – ' . ($maxPrice !== null ? number_format($maxPrice) : number_format($priceRange->max_price ?? 0)) . ' EGP';
@@ -163,6 +174,43 @@ class SearchController extends Controller
             'products', 'q', 'minPrice', 'maxPrice', 'inStock', 'sort',
             'categoryId', 'categories', 'priceRange', 'activeFilters', 'cardVariations'
         ));
+    }
+
+    private function searchableProducts(): Builder
+    {
+        return DB::table('products_data as p')
+            ->where('p.status', 'publish')
+            ->where('p.acceptance_status', 'approved')
+            ->whereExists(function ($variations) {
+                $variations->selectRaw('1')
+                    ->from('product_variations as sellable_pv')
+                    ->whereColumn('sellable_pv.product_id', 'p.id')
+                    ->where('sellable_pv.regular_price', '>', 0);
+            });
+    }
+
+    private function escapeSearchTerm(string $q): string
+    {
+        return addcslashes($q, '\\%_');
+    }
+
+    private function matchProductName(Builder $query, string $q): void
+    {
+        // Match product identity, including localized names, without incidental mentions in descriptions.
+        $needle = '%' . $this->escapeSearchTerm($q) . '%';
+        $query->where(function ($sub) use ($needle) {
+            $sub->where('p.name', 'ILIKE', $needle)
+                ->orWhere('p.slug', 'ILIKE', $needle)
+                ->orWhereRaw(<<<'SQL'
+                    EXISTS (
+                        SELECT 1
+                        FROM jsonb_array_elements(
+                            COALESCE(NULLIF(p.translations, '')::jsonb, '[]'::jsonb)
+                        ) AS translation
+                        WHERE COALESCE(translation->>'name', '') ILIKE ?
+                    )
+                SQL, [$needle]);
+        });
     }
 
     private function localizeSearchProductText($product, string $locale)

@@ -125,50 +125,50 @@
   const form = document.querySelector('[data-notifications-read-all]');
   const frame = window.frameElement;
   const catalogFrame = frame?.matches('.catalog-transient-frame') ? frame : null;
-  let marked = form.hidden;
-  let marking = false;
+  if (!form) return;
 
-  async function markWhenVisible() {
-    if (marked || marking || document.hidden || (catalogFrame && catalogFrame.dataset.ready !== '1')) return;
+  const parentDocument = catalogFrame ? window.parent.document : null;
+  let shouldMark = @json($unread > 0);
+  let marking = false;
+  let wasShown = !catalogFrame || catalogFrame.dataset.ready === '1';
+  if (!wasShown) {
+    const observer = new MutationObserver(() => {
+      if (catalogFrame.dataset.ready !== '1') return;
+      wasShown = true;
+      observer.disconnect();
+    });
+    observer.observe(catalogFrame, { attributes: true, attributeFilter: ['data-ready'] });
+    window.addEventListener('pagehide', () => observer.disconnect(), { once: true });
+  }
+
+  async function markOnExit() {
+    if (!shouldMark || marking || (!wasShown && catalogFrame?.dataset.ready !== '1')) return;
     marking = true;
     try {
       const response = await fetch(form.action, {
         method: 'POST',
         body: new FormData(form),
         headers: { Accept: 'application/json' },
+        keepalive: true,
       });
       if (!response.ok) return;
       const { unread } = await response.json();
-      marked = true;
+      shouldMark = unread > 0;
       form.hidden = unread === 0;
       document.querySelectorAll('.order-inbox-row.is-unread').forEach(row => row.classList.remove('is-unread'));
       document.querySelectorAll('.order-inbox-new').forEach(label => label.remove());
-      document.dispatchEvent(new CustomEvent('notifications:read', { detail: unread }));
-      if (catalogFrame?.isConnected) {
-        window.parent.document.dispatchEvent(new CustomEvent('notifications:read', { detail: unread }));
+      for (const target of [document, parentDocument]) {
+        target?.dispatchEvent(new CustomEvent('notifications:read', { detail: unread }));
       }
     } catch {
-      // The form stays available if the automatic update fails.
+      // The next visit can still show any notifications the server did not mark.
     } finally {
       marking = false;
     }
   }
 
-  if (catalogFrame && catalogFrame.dataset.ready !== '1') {
-    const observer = new MutationObserver(() => {
-      if (catalogFrame.dataset.ready !== '1') return;
-      observer.disconnect();
-      markWhenVisible();
-    });
-    observer.observe(catalogFrame, { attributes: true, attributeFilter: ['data-ready'] });
-    window.addEventListener('pagehide', () => observer.disconnect(), { once: true });
-  }
-  document.addEventListener('visibilitychange', markWhenVisible);
-  window.addEventListener('pageshow', event => {
-    if (event.persisted) marked = false;
-    markWhenVisible();
-  });
-  markWhenVisible();
+  window.addEventListener('pagehide', markOnExit);
+  document.addEventListener('catalog:leaving', markOnExit);
 })();
 </script>
 @endpush

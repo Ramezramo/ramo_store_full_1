@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class OrderNotificationController extends Controller
@@ -24,7 +25,12 @@ class OrderNotificationController extends Controller
 
     public function unread(Request $request)
     {
-        return response()->json(['unread' => $this->unreadCount($request)])->header('Cache-Control', 'private, no-store');
+        $count = fn () => $this->unreadCount($request);
+        $unread = DB::transactionLevel() > 0
+            ? $count()
+            : Cache::remember($this->unreadCacheKey($request), now()->addSeconds(25), $count);
+
+        return response()->json(['unread' => $unread])->header('Cache-Control', 'private, no-store');
     }
 
     public function markAllRead(Request $request)
@@ -35,7 +41,14 @@ class OrderNotificationController extends Controller
             $this->vendorInbox($request)->whereNull('read_at')->update(['read_at' => $readAt]);
         });
 
+        Cache::forget($this->unreadCacheKey($request));
+
         return $request->expectsJson() ? $this->unread($request) : redirect()->route('account.notifications');
+    }
+
+    private function unreadCacheKey(Request $request): string
+    {
+        return 'notifications:unread:'.$request->user()->getAuthIdentifier();
     }
 
     private function unreadCount(Request $request): int
@@ -49,6 +62,7 @@ class OrderNotificationController extends Controller
         $entry = $this->vendorInbox($request)->where('id', $notification);
         abort_unless((clone $entry)->exists(), 404);
         $entry->whereNull('read_at')->update(['read_at' => now()]);
+        Cache::forget($this->unreadCacheKey($request));
         return redirect()->route('vendor.register');
     }
 
@@ -64,6 +78,7 @@ class OrderNotificationController extends Controller
         abort_if($orderId === null, 404);
 
         $entry->whereNull('read_at')->update(['read_at' => now()]);
+        Cache::forget($this->unreadCacheKey($request));
 
         return redirect()->route('account.order', $orderId);
     }

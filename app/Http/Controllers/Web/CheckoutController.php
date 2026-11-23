@@ -456,6 +456,8 @@ class CheckoutController extends Controller
                     if (! $affected) throw new \RuntimeException('Stock changed. Please review your cart.');
                 }
 
+                DB::afterCommit([\App\Services\StorefrontDataCache::class, 'invalidateProducts']);
+
                 $lineItems = collect($verifiedCart)->map(fn ($item) => [
                     'product_id'   => $item['product_id'],
                     'variation_id' => $item['variation_id'],

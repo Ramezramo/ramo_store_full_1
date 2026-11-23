@@ -8,14 +8,12 @@
   $headerShopLabel = $headerIsArabic ? 'تسوّق' : 'Shop';
   $headerOffersLabel = $headerIsArabic ? 'العروض والكوبونات' : 'Offers & Coupons';
   $headerTrackOrderLabel = $headerIsArabic ? 'تتبّع طلبك' : 'Track Order';
-  $headerSearchPlaceholder = $headerIsArabic ? 'دوّر على منتجات…' : 'Search products…';
   $headerSearchActionLabel = $headerIsArabic ? 'بحث' : 'Search';
   $headerAdminPanelLabel = $headerIsArabic ? 'لوحة التحكم' : 'Admin Panel';
   $headerWishlistLabel = $headerIsArabic ? 'المفضلة' : 'Wishlist';
   $headerCartLabel = $headerIsArabic ? 'السلة' : 'Cart';
   $headerNotificationsLabel = $headerIsArabic ? 'الإشعارات' : 'Notifications';
   $mobileMenuLabel = $headerIsArabic ? 'القائمة' : 'Menu';
-  $mobileSearchLabel = $headerIsArabic ? 'دوّر في رامو ستور' : 'Search Ramo Store';
   $mobileSearchPlaceholder = $headerIsArabic ? 'دوّر على منتجات…' : 'What are you looking for?';
   $mobileSearchActionLabel = $headerIsArabic ? 'بحث' : 'Search products';
   $mobileHomeLabel = $headerIsArabic ? 'الرئيسية' : 'Home';
@@ -1047,7 +1045,7 @@ footer{background:var(--c-dark);color:rgba(255,255,255,.6);padding:40px 24px;mar
   .nav-portal{display:none}
 }
 @media(max-width:360px){
-  .product-grid:not(.all-products-grid),.product-grid.cols-4:not(.all-products-grid){grid-template-columns:1fr !important;gap:10px}
+  .product-grid:not(.all-products-grid,.search-product-grid),.product-grid.cols-4:not(.all-products-grid,.search-product-grid){grid-template-columns:1fr !important;gap:10px}
 }
 @media(max-width:600px){
   /* On phones, cart belongs in the bottom navigation; keep the wishlist heart in the header. */
@@ -1274,8 +1272,10 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
 <link rel="stylesheet" href="{{ asset('css/product-card-sizing.css') }}?v={{ filemtime(public_path('css/product-card-sizing.css')) }}">
 <link rel="stylesheet" href="{{ asset('css/product-gallery.css') }}?v={{ filemtime(public_path('css/product-gallery.css')) }}">
 <link rel="stylesheet" href="{{ asset('css/storefront-header.css') }}?v={{ filemtime(public_path('css/storefront-header.css')) }}">
+<link rel="stylesheet" href="{{ asset('css/storefront-search.css') }}?v={{ filemtime(public_path('css/storefront-search.css')) }}">
 <link rel="stylesheet" href="{{ asset('css/page-loading.css') }}?v={{ filemtime(public_path('css/page-loading.css')) }}">
 <script src="{{ asset('js/storefront-header.js') }}?v={{ filemtime(public_path('js/storefront-header.js')) }}" defer></script>
+<script src="{{ asset('js/storefront-search.js') }}?v={{ filemtime(public_path('js/storefront-search.js')) }}" defer></script>
 </head>
 <body class="{{ trim(($suppressMobileNav ? 'mobile-auth-screen ' : '') . ($isLoginPage ? 'mobile-auth-login ' : '') . ($isAccountPage ? 'account-page' : '')) }}">
 
@@ -1287,24 +1287,16 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
       <svg class="header-settings-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 3-.6 2.4-2 .9L4 5.6l-2 3.5 1.8 1.7v2.4L2 14.9l2 3.5 2.4-.7 2 .9L9 21h6l.6-2.4 2-.9 2.4.7 2-3.5-1.8-1.7v-2.4L22 9.1l-2-3.5-2.4.7-2-.9L15 3z"/><circle cx="12" cy="12" r="3"/></svg>
     </button>
     <a href="{{ route('home') }}" class="nav-logo">Ramo<span>Store</span></a>
-    <button type="button" class="header-search-toggle" aria-label="{{ $headerSearchActionLabel }}" aria-controls="header-product-search" aria-expanded="false">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="7"/><path d="m16 16 5 5"/></svg>
-    </button>
     <div class="nav-links">
       <a href="{{ route('home') }}"  class="{{ request()->routeIs('home') ? 'active' : '' }}">{{ $headerHomeLabel }}</a>
       <a href="{{ route('shop') }}"  class="{{ request()->routeIs('shop') ? 'active' : '' }}">{{ $headerShopLabel }}</a>
       <a href="{{ route('offers') }}" class="{{ request()->routeIs('offers') ? 'active' : '' }}">{{ $headerOffersLabel }}</a>
       <a href="{{ route('order.track') }}" class="{{ request()->routeIs('order.track*') ? 'active' : '' }}">{{ $headerTrackOrderLabel }}</a>
     </div>
-    <div class="nav-search">
-      <form action="{{ route('search') }}" method="GET" role="search" aria-label="{{ $mobileSearchLabel }}">
-        <svg class="nav-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="15" height="15"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input id="header-product-search" type="search" name="q" aria-label="{{ $headerSearchPlaceholder }}" placeholder="{{ $headerSearchPlaceholder }}" value="{{ request('q', request('search')) }}" autocomplete="off" enterkeyhint="search" required pattern=".*\S.*">
-        <button type="submit" aria-label="{{ $headerSearchActionLabel }}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </button>
-      </form>
-    </div>
+    <a class="header-search-link" href="{{ route('search') }}" aria-label="{{ $headerSearchActionLabel }}" @if(request()->routeIs('search')) aria-current="page" @endif>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="7"/><path d="m16 16 5 5"/></svg>
+      <span>{{ $headerSearchActionLabel }}</span>
+    </a>
     <div class="nav-actions">
       <a
         href="{{ route('language.switch', ['lang' => $timelineNextLocale]) }}?redirect={{ urlencode(request()->fullUrl()) }}"
@@ -1461,6 +1453,14 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
 <!-- SHARED MENU -->
 @include('web.partials.storefront-menu')
 
+@if($catalogKeepAlive)
+  <template id="storefront-search-entry" data-title="{{ $headerIsArabic ? 'البحث' : 'Search' }} — Ramo Store">
+    <div class="page search-page search-entry-page" dir="{{ $headerIsArabic ? 'rtl' : 'ltr' }}">
+      @include('web.partials.search-form', ['searchRtl' => $headerIsArabic, 'q' => '', 'filters' => [], 'searchFormId' => 'search-entry'])
+    </div>
+  </template>
+@endif
+
 <div id="storefront-content">
 @if($catalogKeepAlive)<div id="catalog-view-initial" class="catalog-view" data-catalog-view="{{ request()->getRequestUri() }}" data-catalog-active="1">@endif
 @yield('content')
@@ -1567,8 +1567,20 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
 (() => {
   const label = @json($headerNotificationsLabel);
   const unreadLabel = @json($headerIsArabic ? 'غير مقروء' : 'unread');
+  if (window.frameElement?.classList.contains('catalog-transient-frame')) return;
+
+  const storageKey = @json('notifications:unread:' . auth()->id());
   let loading = false;
   let readVersion = 0;
+  let snapshot = null;
+
+  try { snapshot = JSON.parse(sessionStorage.getItem(storageKey)); } catch {}
+
+  function rememberUnreadCount(unread) {
+    snapshot = { unread, expiresAt: Date.now() + 25000 };
+    try { sessionStorage.setItem(storageKey, JSON.stringify(snapshot)); } catch {}
+    showUnreadCount(unread);
+  }
 
   function showUnreadCount(unread) {
     document.querySelectorAll('[data-notifications-link]').forEach(link => {
@@ -1581,6 +1593,10 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
 
   async function refreshUnreadCount() {
     if (document.hidden || loading) return;
+    if (snapshot && Date.now() < snapshot.expiresAt) {
+      showUnreadCount(snapshot.unread);
+      return;
+    }
     loading = true;
     const version = readVersion;
     try {
@@ -1589,7 +1605,7 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
       });
       if (!response.ok) return;
       const { unread } = await response.json();
-      if (version === readVersion) showUnreadCount(unread);
+      if (version === readVersion) rememberUnreadCount(unread);
     } catch {
       // The inbox link remains available if the unread count cannot be loaded.
     } finally {
@@ -1600,7 +1616,7 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
   refreshUnreadCount();
   document.addEventListener('notifications:read', event => {
     readVersion++;
-    showUnreadCount(event.detail);
+    rememberUnreadCount(event.detail);
   });
   window.addEventListener('pageshow', event => { if (event.persisted) refreshUnreadCount(); });
   document.addEventListener('catalog:shown', refreshUnreadCount);
@@ -2323,19 +2339,36 @@ function renderWishlistState(productIds, count = null) {
   updateWishlistBadge(count === null ? ids.size : count);
 }
 
+let wishlistStateRequest = null;
+let wishlistState = null;
+let wishlistStateExpiresAt = 0;
+
 function refreshWishlistState() {
-  const requestVersion = ++wishlistStateVersion;
-  fetch('/wishlist/state', {
+  if (wishlistState && Date.now() < wishlistStateExpiresAt) {
+    renderWishlistState(wishlistState.product_ids, wishlistState.count);
+    return;
+  }
+  if (wishlistStateRequest) return wishlistStateRequest;
+
+  const requestVersion = wishlistStateVersion;
+  const request = fetch('/wishlist/state', {
     headers: {'Accept': 'application/json'},
     cache: 'no-store'
   })
     .then((response) => (response.ok ? response.json() : null))
     .then((data) => {
-      if (data && requestVersion === wishlistStateVersion) {
+      if (data && requestVersion === wishlistStateVersion && wishlistStateRequest === request) {
+        wishlistState = data;
+        wishlistStateExpiresAt = Date.now() + 30000;
         renderWishlistState(data.product_ids, data.count);
       }
     })
-    .catch(() => {});
+    .catch(() => {})
+    .finally(() => {
+      if (wishlistStateRequest === request) wishlistStateRequest = null;
+    });
+  wishlistStateRequest = request;
+  return request;
 }
 
 // Toggle wishlist and update every visible button for this product, not only
@@ -2350,6 +2383,8 @@ async function toggleWishlist(btn, productId) {
     });
     const data = await res.json();
     if (data.success && requestVersion === wishlistStateVersion) {
+      wishlistState = null;
+      wishlistStateRequest = null;
       const wished = data.action === 'added';
       document.querySelectorAll('[data-wishlist-product-id]').forEach((button) => {
         if (Number(button.dataset.wishlistProductId) === Number(productId)) {

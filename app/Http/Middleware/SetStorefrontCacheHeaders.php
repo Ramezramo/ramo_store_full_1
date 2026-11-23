@@ -62,7 +62,7 @@ class SetStorefrontCacheHeaders
         if ($request->is([
             'cart', 'cart/*', 'checkout', 'checkout/*', 'account', 'account/*',
             'wishlist', 'wishlist/*', 'shop', 'login', 'register', 'forgot-password',
-            'reset-password', 'order-success/*', 'my-order', 'track', 'auth/*',
+            'reset-password', 'order-success/*', 'my-order', 'track', 'auth/*', 'seller/*', 'vendor-login',
         ])) {
             return true;
         }

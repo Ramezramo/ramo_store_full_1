@@ -6,6 +6,7 @@
   const first = host?.querySelector('[data-catalog-view]');
   const scope = document.querySelector('meta[name="catalog-session"]')?.content;
   if (!host || !first || !scope) return;
+  const searchEntry = document.getElementById('storefront-search-entry');
   const catalogLifetime = 12 * 60 * 1000;
   const productPreviewLifetime = 5 * 60 * 1000;
   const locale = document.documentElement.lang;
@@ -23,6 +24,7 @@
   const pendingHeroes = new WeakMap();
   const isProductPage = url => /^\/product\/[^/]+\/?$/.test(url.pathname);
   const eligible = url => url.origin === location.origin && !url.search && !url.hash && ['/', '/shop'].includes(url.pathname);
+  const isLocalSearchEntry = url => searchEntry && url.origin === location.origin && url.pathname === '/search' && !url.search && !url.hash;
 
   function readProductPreview(link, url) {
     if (!isProductPage(url)) return null;
@@ -167,6 +169,10 @@
       if (path === '/account/notifications') link.setAttribute('aria-current', 'page');
       else link.removeAttribute('aria-current');
     });
+    document.querySelectorAll('.header-search-link').forEach(link => {
+      if (path === '/search') link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
     document.querySelectorAll('.nav-language-btn, .nav-mobile-language-link').forEach(link => {
       const url = new URL(link.href);
       url.searchParams.set('redirect', new URL(path, location.origin).href);
@@ -189,6 +195,9 @@
   function discardFrame() {
     const previous = frame;
     frame = null;
+    if (previous?.dataset.ready === '1') {
+      previous.contentDocument?.dispatchEvent(new Event('catalog:leaving'));
+    }
     previous?.remove();
     clearTransientLoading();
   }
@@ -264,12 +273,29 @@
     }
     if (view.initialized) {
       document.dispatchEvent(new CustomEvent('catalog:shown', { detail: { path, element: view.element } }));
-      window.refreshWishlistState?.();
+      if (path !== '/search') window.refreshWishlistState?.();
     }
   }
 
+  function showSearchEntry(url, push) {
+    const path = url.pathname;
+    if (push && location.href !== url.href) history.pushState(null, '', path);
+    let view = views.get(path);
+    if (!view) {
+      const element = document.createElement('div');
+      element.className = 'catalog-view';
+      element.dataset.catalogView = path;
+      element.appendChild(searchEntry.content.cloneNode(true));
+      view = { element, title: searchEntry.dataset.title, initialized: true };
+      views.set(path, view);
+      host.appendChild(element);
+    }
+    activate(path, view);
+    if (push) view.element.querySelector('input[name="q"]')?.focus({ preventScroll: true });
+  }
+
   async function show(path, push = true) {
-    if (!['/', '/shop'].includes(initialPath) && views.has(initialPath)) {
+    if (!['/', '/shop', '/search'].includes(initialPath) && views.has(initialPath)) {
       first.remove();
       initialStyles.forEach(style => style.remove());
       views.delete(initialPath);
@@ -394,6 +420,7 @@
   }
 
   function visit(url, push = true, preview = null) {
+    if (isLocalSearchEntry(url)) { showSearchEntry(url, push); return; }
     if (eligible(url)) { show(url.pathname, push); return; }
     if (!supportedPage(url)) { location.assign(url.href); return; }
     if (preview && isProductPage(url)) {

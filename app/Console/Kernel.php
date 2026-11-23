@@ -12,6 +12,10 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
+        if ($this->app->environment('local') && config('telescope.enabled') && class_exists(\Laravel\Telescope\Telescope::class)) {
+            $schedule->command('telescope:prune --hours=24')->hourly()->withoutOverlapping();
+        }
+
         // Remove idempotency keys older than 24 hours — runs once a day at midnight.
         $schedule->command('idempotency:prune --hours=24')->dailyAt('00:00');
         $schedule->command('orders:expire-unpaid')->everyMinute()->withoutOverlapping();

@@ -80,6 +80,7 @@ input.err{border-color:var(--red)}
   </form>
 
   <div class="links">
+    <div><a href="{{ route(app(\App\Services\VendorWorkspace::class)->hasIntendedPage() ? 'login' : 'vendor.dashboard') }}">{{ session('locale') === 'ar' ? 'كمّل بحساب رامو ستور' : 'Continue with your Ramo Store account' }}</a></div>
     <div>New seller? <a href="{{ route('vendor.register') }}" target="_blank" rel="noopener noreferrer" onclick="event.preventDefault(); window.open(this.href, '_blank', 'noopener,noreferrer');">Apply now</a></div>
     <div><a href="{{ route('home') }}">← Back to store</a></div>
   </div>

@@ -86,19 +86,18 @@ tr.row-selected > td{background:#fff8f5}
 .var-alert.backorder{background:#fef9c3;color:#854d0e}
 .var-alert.disabled{background:#f3f4f6;color:#6b7280}
 </style>
+<link rel="stylesheet" href="{{ asset('css/vendor-product-mobile.css') }}?v={{ filemtime(public_path('css/vendor-product-mobile.css')) }}">
 @endpush
 
 @section('content')
 
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+<div class="vendor-products-index">
+<div class="product-list-heading">
   <div>
-    <div style="font-size:22px;font-weight:800">Products</div>
-    <div style="font-size:13px;color:var(--mid);margin-top:2px">
+    <h1>Products</h1>
+    <p>
       {{ $products->count() }} product{{ $products->count() === 1 ? '' : 's' }} in your store
-      @if($products->count() > 0)
-        <span style="margin-left:10px;font-size:11px;color:var(--orange);font-weight:600;cursor:pointer" onclick="toggleSelectAll()">Select All</span>
-      @endif
-    </div>
+    </p>
   </div>
   <a href="{{ route('vendor.products.create') }}" class="vs-btn vs-btn-primary">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -114,12 +113,15 @@ tr.row-selected > td{background:#fff8f5}
     <a href="{{ route('vendor.products.create') }}" class="vs-btn vs-btn-primary">Add Your First Product</a>
   </div>
 @else
-  <div class="vs-table-wrap">
-    <table class="vs-table" id="products-table">
+  <div class="product-list-controls">
+    <button type="button" class="vs-btn vs-btn-ghost vs-btn-sm" id="product-select-all" onclick="toggleSelectAll()" aria-controls="products-table" aria-pressed="false">Select all</button>
+  </div>
+  <div class="vs-table-wrap product-list-table">
+    <table class="vs-table" id="products-table" role="table" aria-label="Your products">
       <thead>
         <tr>
           <th class="chk-col">
-            <input type="checkbox" id="select-all-chk" class="prod-check" title="Select all" onchange="toggleAll(this.checked)">
+            <input type="checkbox" id="select-all-chk" class="prod-check" aria-label="Select all products" onchange="toggleAll(this.checked)">
           </th>
           <th>Product</th>
           <th>Price</th>
@@ -131,35 +133,35 @@ tr.row-selected > td{background:#fff8f5}
           <th></th>
         </tr>
       </thead>
-      <tbody>
+      <tbody role="rowgroup">
         @foreach($products as $p)
           @php
-            $imgs     = json_decode($p->images ?? '{}', true);
-            $thumb    = $imgs['thumbnail'] ?? null;
-            $thumbUrl = $thumb ? \Illuminate\Support\Facades\Storage::url($thumb) : null;
+            $thumbUrl = \App\Constants\AppConstants::productThumbnailUrl($p->images);
             $pr       = $priceRanges[$p->id] ?? null;
             $discPct  = (float)($p->discount_percentage ?? 0);
           @endphp
-          <tr data-id="{{ $p->id }}">
-            <td class="chk-col">
-              <input type="checkbox" class="prod-check row-check" value="{{ $p->id }}" onchange="onRowCheck(this)">
+          <tr data-id="{{ $p->id }}" role="row">
+            <td class="chk-col product-select-cell" role="cell">
+              <label class="product-select-touch">
+                <input type="checkbox" class="prod-check row-check" value="{{ $p->id }}" aria-label="Select {{ $p->name }}" onchange="onRowCheck(this)">
+              </label>
             </td>
-            <td>
-              <div style="display:flex;align-items:center;gap:10px">
+            <td class="product-identity-cell" role="cell">
+              <div class="product-list-identity">
                 @if($thumbUrl)
-                  <img src="{{ $thumbUrl }}" class="prod-thumb" alt="">
+                  <img src="{{ $thumbUrl }}" class="prod-thumb" alt="" loading="lazy" onerror="this.onerror=null;this.src='{{ asset('images/product-placeholder.svg') }}'">
                 @else
                   <div class="prod-thumb-ph">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                   </div>
                 @endif
-                <div>
-                  <div style="font-weight:600;font-size:13px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ $p->name }}</div>
-                  @if($p->sku)<div style="font-size:11px;color:var(--mid)">SKU: {{ $p->sku }}</div>@endif
+                <div class="product-list-text">
+                  <a href="{{ route('vendor.products.show', $p->id) }}" class="product-list-name">{{ $p->name }}</a>
+                  @if($p->sku)<div class="product-list-sku">SKU: {{ $p->sku }}</div>@endif
                 </div>
               </div>
             </td>
-            <td>
+            <td role="cell" data-label="Price">
               <div class="price-cell" data-id="{{ $p->id }}">
                 @if($pr)
                   <div style="font-weight:700">
@@ -177,7 +179,7 @@ tr.row-selected > td{background:#fff8f5}
                 @endif
               </div>
             </td>
-            <td>
+            <td role="cell" data-label="Stock">
               @php
                 $qty     = $pr?->total_stock ?? 0;
                 $alerts  = $varAlerts[$p->id] ?? null;
@@ -205,7 +207,7 @@ tr.row-selected > td{background:#fff8f5}
                 @endif
               </div>
             </td>
-            <td>
+            <td role="cell" data-label="Variations">
               @php $vc = $pr?->var_count ?? 0; @endphp
               <div>
                 @if($vc > 1)
@@ -220,15 +222,15 @@ tr.row-selected > td{background:#fff8f5}
                 @endif
               </div>
             </td>
-            <td><span class="badge-{{ $p->status }}">{{ ucfirst($p->status) }}</span></td>
-            <td><span class="badge-{{ $p->acceptance_status ?? 'pending' }}">{{ ucfirst($p->acceptance_status ?? 'pending') }}</span></td>
-            <td style="color:var(--mid);font-size:12px;white-space:nowrap">
+            <td role="cell" data-label="Status"><span class="badge-{{ $p->status }}">{{ ucfirst($p->status) }}</span></td>
+            <td role="cell" data-label="Approval"><span class="badge-{{ $p->acceptance_status ?? 'pending' }}">{{ ucfirst($p->acceptance_status ?? 'pending') }}</span></td>
+            <td role="cell" data-label="Added" class="product-added-cell">
               {{ $p->created_at ? \Carbon\Carbon::parse($p->created_at)->format('d M Y') : '—' }}
             </td>
-            <td>
-              <div style="display:flex;align-items:center;gap:14px">
+            <td role="cell" class="product-actions-cell">
+              <div class="product-list-actions">
                 <a href="{{ route('vendor.products.show', $p->id) }}" class="action-link">View</a>
-                <a href="{{ route('vendor.products.edit', $p->id) }}" class="action-link" style="color:var(--mid)">Edit All</a>
+                <a href="{{ route('vendor.products.edit', $p->id) }}" class="action-link product-edit-link">Edit</a>
                 <form method="POST" action="{{ route('vendor.products.destroy', $p->id) }}" onsubmit="return confirm('Delete this product? This cannot be undone.')">
                   @csrf @method('DELETE')
                   <button type="submit" class="action-link danger" style="background:none;border:none;padding:0">Delete</button>
@@ -252,7 +254,7 @@ tr.row-selected > td{background:#fff8f5}
   <div class="bulk-divider"></div>
 
   {{-- Action selector --}}
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+  <div class="bulk-action-controls">
     <select class="bulk-select" id="bulk-action" onchange="onActionChange()">
       <option value="">— Choose action —</option>
       <option value="set_discount">Set Discount %</option>
@@ -277,9 +279,10 @@ tr.row-selected > td{background:#fff8f5}
   {{-- Feedback message --}}
   <div class="bulk-feedback" id="bulk-feedback"></div>
 
-  <div style="flex:1"></div>
+  <div class="bulk-spacer"></div>
 
   <button class="bulk-clear" onclick="clearSelection()">✕ Clear</button>
+</div>
 </div>
 
 <script>
@@ -333,6 +336,15 @@ function updateBar() {
   document.getElementById('bulk-count').textContent = n;
   if (n > 0) bar.classList.add('open');
   else        bar.classList.remove('open');
+  const selectAll = document.getElementById('select-all-chk');
+  const selectButton = document.getElementById('product-select-all');
+  if (selectAll && selectButton) {
+    const total = document.querySelectorAll('.row-check').length;
+    selectAll.checked = n === total;
+    selectAll.indeterminate = n > 0 && n < total;
+    selectButton.textContent = selectAll.checked ? 'Deselect all' : 'Select all';
+    selectButton.setAttribute('aria-pressed', String(selectAll.checked));
+  }
   hideFeedback();
   updateApplyBtn();
 }

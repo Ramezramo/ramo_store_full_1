@@ -30,12 +30,16 @@ class HomeTimelinePaginationTest extends TestCase
                 ->assertSee('timeline-loader');
             $queries = array_column(DB::getQueryLog(), 'query');
             $this->assertFalse(collect($queries)->contains(fn ($sql) => str_contains(strtolower($sql), 'count(*)') && str_contains(strtolower($sql), '"orders"')));
-            DB::disableQueryLog();
+            DB::flushQueryLog();
 
             $this->getJson(route('home.sections', ['page' => 2]))->assertOk()
                 ->assertJsonPath('hasMore', false)->assertJsonPath('nextPage', null)
                 ->assertJsonFragment(['hasMore' => false])
                 ->assertSee('Batch orders')->assertSee('Final products test')->assertDontSee('Hidden test widget');
+            $layoutQueries = collect(DB::getQueryLog())->filter(fn ($query) =>
+                in_array('horizon_layout', $query['bindings'], true));
+            $this->assertCount(0, $layoutQueries);
+            DB::disableQueryLog();
             $this->get(route('home', ['timeline_page' => 2]))->assertOk()->assertSee('Final products test');
             $this->get(route('home', ['tl_preview' => 1]))->assertOk()->assertSee('First batch widget')->assertSee('Final products test');
             $this->getJson(route('home.sections', ['page' => 0]))->assertUnprocessable();

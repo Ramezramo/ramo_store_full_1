@@ -6,8 +6,6 @@
   const triggers = [trigger, bottomTrigger].filter(Boolean);
   if (!header || !menu || !triggers.length) return;
   const panel = menu.querySelector('.nav-mobile-panel');
-  const searchToggle = header.querySelector('.header-search-toggle');
-  const searchInput = header.querySelector('input[name="q"]');
   let previousOverflow = '';
   const locked = new Map();
   let openerTrigger = trigger || bottomTrigger;
@@ -28,17 +26,9 @@
     document.documentElement.style.setProperty('--storefront-header-height', Math.ceil(header.getBoundingClientRect().height) + 'px');
     updateScrollState();
   }
-  function setSearchOpen(open, restoreFocus = true) {
-    if (!searchToggle || !searchInput) return;
-    header.classList.toggle('is-search-open', open);
-    searchToggle.setAttribute('aria-expanded', String(open));
-    if (open) searchInput.focus({ preventScroll: true });
-    else if (restoreFocus) searchToggle.focus({ preventScroll: true });
-  }
   function setOpen(open, restoreFocus = true, opener = null) {
     if (opener && triggers.includes(opener)) openerTrigger = opener;
     if (open === menu.classList.contains('open')) return;
-    if (open) setSearchOpen(false, false);
     measure();
     menu.classList.toggle('open', open);
     header.classList.toggle('is-menu-open', open);
@@ -76,8 +66,7 @@
       if (restoreFocus) visibleTrigger(openerTrigger)?.focus({ preventScroll: true });
     }
   }
-  window.RamoHeader = { setOpen, setSearchOpen, toggle: opener => setOpen(!menu.classList.contains('open'), true, opener) };
-  searchToggle?.addEventListener('click', () => setSearchOpen(true));
+  window.RamoHeader = { setOpen, toggle: opener => setOpen(!menu.classList.contains('open'), true, opener) };
   menu.inert = true;
   menu.addEventListener('keydown', event => {
     if (event.key !== 'Tab' || !menu.classList.contains('open')) return;
@@ -93,15 +82,13 @@
   });
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape' && menu.classList.contains('open')) { event.preventDefault(); setOpen(false); }
-    else if (event.key === 'Escape' && header.classList.contains('is-search-open')) { event.preventDefault(); setSearchOpen(false); }
   });
-  function reset() { setOpen(false, false); setSearchOpen(false, false); updateScrollState(); }
+  function reset() { setOpen(false, false); updateScrollState(); }
   document.addEventListener('catalog:shown', reset);
   window.addEventListener('popstate', reset);
   document.addEventListener('scroll', updateScrollState, { capture: true, passive: true });
   window.addEventListener('scroll', updateScrollState, { passive: true });
   document.addEventListener('click', event => {
-    if (!header.contains(event.target)) setSearchOpen(false, false);
     // A newly mounted catalog placeholder is already at its own scroll position,
     // before its content is ready to announce catalog:shown.
     if (event.target.closest('a[href]')) updateScrollState();
@@ -109,7 +96,6 @@
   header.addEventListener('click', event => {
     if (event.target.closest('a[href]')) setOpen(false, false);
   });
-  header.addEventListener('submit', () => { setOpen(false, false); updateScrollState(); });
   if (typeof ResizeObserver === 'function') new ResizeObserver(measure).observe(header);
   window.addEventListener('resize', measure, { passive: true });
   window.addEventListener('pageshow', () => { reset(); measure(); });

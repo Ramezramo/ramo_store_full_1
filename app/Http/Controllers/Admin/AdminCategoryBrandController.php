@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\ShopBrandList;
+use App\Services\ShopCategoryList;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -88,6 +90,7 @@ class AdminCategoryBrandController extends Controller
             $exists = DB::table('brands')->whereRaw('LOWER(name) = ?', [strtolower($req->name)])->exists();
             if (!$exists) {
                 DB::table('brands')->insert(['name' => $req->name]);
+                ShopBrandList::forget();
             }
         }
 
@@ -96,6 +99,10 @@ class AdminCategoryBrandController extends Controller
             'admin_note' => $note,
             'updated_at' => now(),
         ]);
+
+        if ($req->type === 'category') {
+            ShopCategoryList::forget();
+        }
 
         return back()->with('success', ucfirst($req->type) . ' "' . $req->name . '" approved and added.');
     }
@@ -150,6 +157,8 @@ class AdminCategoryBrandController extends Controller
             DB::table('categories2')->where('id', $parentId)->update(['has_children' => 1]);
         }
 
+        ShopCategoryList::forget();
+
         return back()->with('success', "Category \"$name\" created.")->with('tab', 'categories');
     }
 
@@ -194,6 +203,8 @@ class AdminCategoryBrandController extends Controller
             DB::table('categories2')->where('id', $parentId)->update(['has_children' => 1]);
         }
 
+        ShopCategoryList::forget();
+
         return back()->with('success', 'Category updated.')->with('tab', 'categories');
     }
 
@@ -219,6 +230,8 @@ class AdminCategoryBrandController extends Controller
             }
         }
 
+        ShopCategoryList::forget();
+
         return back()->with('success', "Category \"{$cat->name}\" deleted.")->with('tab', 'categories');
     }
 
@@ -240,6 +253,7 @@ class AdminCategoryBrandController extends Controller
         }
 
         DB::table('brands')->insert(['name' => $name, 'image' => $imagePath]);
+        ShopBrandList::forget();
         return back()->with('success', "Brand \"$name\" created.")->with('tab', 'brands');
     }
 
@@ -264,6 +278,7 @@ class AdminCategoryBrandController extends Controller
         }
 
         DB::table('brands')->where('id', $id)->update(['name' => trim($request->name), 'image' => $imagePath]);
+        ShopBrandList::forget();
         return back()->with('success', 'Brand updated.')->with('tab', 'brands');
     }
 
@@ -274,6 +289,7 @@ class AdminCategoryBrandController extends Controller
         if (!$brand) return back()->with('error', 'Brand not found.')->with('tab', 'brands');
         if ($brand->image ?? null) Storage::disk('public')->delete($brand->image);
         DB::table('brands')->where('id', $id)->delete();
+        ShopBrandList::forget();
         return back()->with('success', "Brand \"{$brand->name}\" deleted.")->with('tab', 'brands');
     }
 }

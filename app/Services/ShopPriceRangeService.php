@@ -2,10 +2,37 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class ShopPriceRangeService
 {
+    private const CACHE_KEY = 'shop:price-ranges';
+
+    /** @param list<int> $categoryIds */
+    public function forCategories(array $categoryIds): ?object
+    {
+        $load = fn () => DB::table('storefront_price_ranges')
+            ->get(['scope', 'min_price', 'max_price'])
+            ->keyBy('scope');
+
+        // A request inside a transaction can see values that are not yet committed.
+        $ranges = DB::transactionLevel() > 0
+            ? $load()
+            : Cache::remember(self::CACHE_KEY, now()->addMinutes(12), $load);
+
+        $categoryScopes = array_map(fn (int $id) => 'category:'.$id, $categoryIds);
+        $categoryRanges = $ranges->only($categoryScopes);
+        if ($categoryRanges->isEmpty()) {
+            return $ranges->get('global');
+        }
+
+        return (object) [
+            'min_price' => $categoryRanges->min('min_price'),
+            'max_price' => $categoryRanges->max('max_price'),
+        ];
+    }
+
     /** Rebuild the cached bounds used by the storefront price slider. */
     public function refreshGlobal(): void
     {
@@ -56,6 +83,7 @@ class ShopPriceRangeService
             foreach (array_chunk($rows, 500) as $chunk) {
                 DB::table('storefront_price_ranges')->insert($chunk);
             }
+            DB::afterCommit(fn () => Cache::forget(self::CACHE_KEY));
         });
     }
 }

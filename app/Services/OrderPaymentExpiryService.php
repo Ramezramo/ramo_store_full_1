@@ -80,6 +80,10 @@ class OrderPaymentExpiryService
                 ]);
         }
 
+        if ($stockReturns !== []) {
+            DB::afterCommit([StorefrontDataCache::class, 'invalidateProducts']);
+        }
+
         // Release coupon usage because the unpaid order will no longer consume it.
         if (!empty($order->coupon_applied) && !empty($order->coupon_code)) {
             $coupon = DB::table('coupons')->where('code', $order->coupon_code)->first(['id']);

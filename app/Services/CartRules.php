@@ -7,15 +7,15 @@ use Illuminate\Support\Facades\DB;
 /** Authoritative purchase rules shared by website, API and checkout. */
 class CartRules
 {
-    public static function purchasable(?object $product): bool
+    public static function purchasable(?object $product, ?bool $vendorApproved = null): bool
     {
         if (! $product || $product->status !== 'publish' || $product->acceptance_status !== 'approved'
             || ! (bool) ($product->purchasable ?? false)) {
             return false;
         }
 
-        return empty($product->vendor_id) || DB::table('vendor_users')
-            ->where('id', $product->vendor_id)->where('status', 'approved')->exists();
+        return empty($product->vendor_id) || ($vendorApproved ?? DB::table('vendor_users')
+            ->where('id', $product->vendor_id)->where('status', 'approved')->exists());
     }
 
     public static function variation(int $productId, ?int $variationId): ?object
@@ -45,6 +45,10 @@ class CartRules
     /** Resolve legacy default rows and combine duplicates before validating stock. */
     public static function canonicalize(array $cart): array
     {
+        if ($cart === []) {
+            return [];
+        }
+
         $products = collect($cart)->pluck('product_id')->unique()->all();
         $variations = DB::table('product_variations')->whereIn('product_id', $products)->orderBy('id')->get()->keyBy('id');
         $result = [];

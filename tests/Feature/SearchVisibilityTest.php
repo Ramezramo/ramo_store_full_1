@@ -33,6 +33,13 @@ class SearchVisibilityTest extends TestCase
             $response->assertSee($visibleName);
             $response->assertDontSee($draftName);
             $response->assertDontSee($rejectedName);
+
+            $this->getJson(route('search.suggestions', ['q' => $suffix]))
+                ->assertOk()
+                ->assertExactJson([[
+                    'name' => $visibleName,
+                    'url' => route('product', ['id' => $productIds[0]], false),
+                ]]);
         } finally {
             foreach ($productIds as $productId) {
                 DB::table('product_variations')->where('product_id', $productId)->delete();
@@ -130,6 +137,13 @@ class SearchVisibilityTest extends TestCase
             $response->assertOk();
             $response->assertSee($matchingArabicName);
             $response->assertDontSee($incidentalArabicName);
+
+            $this->getJson(route('search.suggestions', ['q' => $needle]))
+                ->assertOk()
+                ->assertExactJson([[
+                    'name' => $matchingArabicName,
+                    'url' => route('product', ['id' => $matchingProductId], false),
+                ]]);
         } finally {
             foreach ($productIds as $productId) {
                 DB::table('product_variations')->where('product_id', $productId)->delete();

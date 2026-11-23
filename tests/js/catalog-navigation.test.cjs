@@ -71,23 +71,37 @@ function navigation(locale = 'en') {
   notificationLink.href = new URL('/account/notifications', location).href;
   notificationLink.classList.add('nav-notifications-top');
   notificationLink.setAttribute('data-notifications-link', '');
-  document.getElementById = id => id === 'storefront-content' ? host : null;
+  const searchEntry = new Element('template');
+  searchEntry.dataset.title = 'Search — Ramo Store';
+  searchEntry.content = {
+    cloneNode() {
+      const content = new Element();
+      const input = new Element('input');
+      input.name = 'q';
+      input.focus = () => { document.activeElement = input; };
+      content.appendChild(input);
+      return content;
+    },
+  };
+  document.getElementById = id => ({ 'storefront-content': host, 'storefront-search-entry': searchEntry }[id] || null);
   document.querySelector = selector => selector.includes('catalog-session') ? { content: 'session-scope' } : null;
   document.querySelectorAll = selector => selector === '#mob-nav a[href]' ? links
     : selector === '.nav-notifications-top' || selector === '[data-notifications-link]' ? [notificationLink] : [];
   document.createElement = tag => {
     const element = new Element(tag);
+    element.querySelector = selector => selector === 'input[name="q"]' ? find(element, child => child.name === 'q') : null;
     if (tag === 'iframe') element.contentWindow = new Element('window');
     return element;
   };
   document.createComment = () => new Element('comment');
   const timers = new Set();
+  const requests = [];
   runInNewContext(readFileSync(resolve(__dirname, '../../public/js/catalog-navigation.js'), 'utf8'), {
     window, document, location, history, URL,
     setTimeout: callback => { timers.add(callback); return callback; },
     clearTimeout: callback => timers.delete(callback),
     CustomEvent: class { constructor(type, options) { this.type = type; this.detail = options.detail; } },
-    fetch: () => new Promise(() => {}),
+    fetch: path => { requests.push(path); return new Promise(() => {}); },
   });
   const click = (path, source = document, card = null) => {
     const link = new Element('a');
@@ -129,7 +143,7 @@ function navigation(locale = 'en') {
     return { photo, imageParent, querySelector: selector => selector === 'img' ? photo : title };
   };
   return { document, window, host, home, links, menuButton, notificationLink,
-    click, frame, loading, ready, timers, location, productCard };
+    click, frame, loading, ready, timers, location, productCard, requests };
 }
 
 function find(element, predicate) {
@@ -144,6 +158,24 @@ function previewPhoto(app) {
   const media = find(app.loading(), node => node.className === 'gallery-main');
   return find(media, node => node.tagName === 'img');
 }
+
+test('opening search mounts and focuses the local form without waiting for a page request', () => {
+  const app = navigation();
+  app.click('/search');
+
+  assert.equal(app.location.pathname, '/search');
+  assert.equal(app.frame(), undefined);
+  assert.equal(app.loading(), undefined);
+  assert.deepEqual(app.requests, []);
+  const searchView = find(app.host, node => node.dataset.catalogView === '/search');
+  assert.equal(searchView.dataset.catalogActive, '1');
+  assert.equal(app.document.activeElement, searchView.querySelector('input[name="q"]'));
+  assert.equal(app.home.scrollTop, 456);
+
+  app.click('/search?q=Graphics');
+  assert.equal(new URL(app.frame().src).searchParams.get('q'), 'Graphics');
+  assert.equal(searchView.inert, true);
+});
 
 test('language links bypass cached navigation from both the outer page and a child page', () => {
   const app = navigation();

@@ -66,10 +66,17 @@ class VendorApplicationFlowTest extends TestCase
                 'seller_email' => $vendor->email, 'seller_password' => 'seller-password',
             ])->assertSessionHasNoErrors()->assertRedirect(route('vendor.register'));
             $this->assertDatabaseHas('vendor_applications', ['user_id' => $customer->id, 'vendor_id' => $vendor->id, 'status' => 'approved']);
+            $this->get(route('account.hub'))->assertOk()
+                ->assertSee('action="'.route('vendor.marketplace.switch').'" target="_top"', false);
             $this->post(route('vendor.marketplace.switch'))->assertRedirect(route('vendor.dashboard'));
-            $this->get(route('vendor.dashboard'))->assertOk()->assertSee('Existing shop');
+            $this->withSession(['locale' => 'ar'])->get(route('vendor.dashboard'))->assertOk()
+                ->assertSee('Existing shop')
+                ->assertSee('lang="ar" dir="rtl"', false)
+                ->assertSee('class="vs-mobile-menu"', false);
             DB::table('vendor_users')->where('id', $vendor->id)->update(['status' => 'blocked']);
             $this->get(route('vendor.products'))->assertRedirect(route('vendor.register'));
+            $this->get(route('account.hub'))->assertOk()
+                ->assertDontSee('action="'.route('vendor.marketplace.switch').'"', false);
         } finally {
             DB::rollBack();
         }

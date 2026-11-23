@@ -116,6 +116,8 @@ class AdminTimelineController extends Controller
             ]);
         }
 
+        TimelineLayoutService::forgetCachedLayouts();
+
         return response()->json(['success' => true, 'message' => 'Timeline saved for '.$lang]);
     }
 }

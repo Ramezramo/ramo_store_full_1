@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Services\VendorWorkspace;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -88,7 +89,7 @@ class VendorWebController extends Controller
     public function showLogin()
     {
         if (Auth::guard($this->guard)->check()) {
-            return redirect()->route('vendor.dashboard');
+            return $this->redirectAfterSignIn();
         }
         return view('web.vendor.login');
     }
@@ -137,7 +138,14 @@ class VendorWebController extends Controller
         Auth::guard($this->guard)->login($vendor, $request->boolean('remember'));
         $request->session()->save();
 
-        return redirect()->route('vendor.dashboard');
+        return $this->redirectAfterSignIn();
+    }
+
+    private function redirectAfterSignIn()
+    {
+        return app(VendorWorkspace::class)->hasIntendedPage()
+            ? redirect()->intended(route('vendor.dashboard'))
+            : redirect()->route('vendor.dashboard');
     }
 
     public function logout(Request $request)

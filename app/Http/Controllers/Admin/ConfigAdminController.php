@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Helpers\ShopDisplayConfig;
 use App\Services\ReferralSettingsService;
+use App\Services\TimelineLayoutService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -61,17 +62,7 @@ class ConfigAdminController extends Controller
             ->orderByRaw('CASE WHEN lang IS NULL THEN 0 ELSE 1 END, lang')
             ->get();
 
-        $rawMobileLayout = DB::table('app_configs')
-            ->where('config_key', 'shop_mobile_product_layout')
-            ->whereNull('lang')
-            ->value('value');
-        $decodedMobileLayout = is_string($rawMobileLayout) ? json_decode($rawMobileLayout, true) : null;
-        $shopMobileLayout = is_string($decodedMobileLayout)
-            ? $decodedMobileLayout
-            : trim((string) $rawMobileLayout, " \t\n\r\0\x0B\"");
-        if (!in_array($shopMobileLayout, ['grid', 'horizontal'], true)) {
-            $shopMobileLayout = 'horizontal';
-        }
+        $shopMobileLayout = ShopDisplayConfig::mobileLayout();
 
         return view('admin.configs.index', compact(
             'configs', 'groups', 'langs', 'group', 'lang', 'search', 'shopMobileLayout'
@@ -117,6 +108,14 @@ class ConfigAdminController extends Controller
             'is_public'  => $isPublic,
             'updated_at' => now(),
         ]);
+
+        if ($record?->config_key === 'horizon_layout') {
+            TimelineLayoutService::forgetCachedLayouts();
+        }
+
+        if (in_array($record?->config_key, [ShopDisplayConfig::KEY, ShopDisplayConfig::MOBILE_LAYOUT_KEY], true)) {
+            ShopDisplayConfig::forget();
+        }
 
         return response()->json(['success' => true, 'message' => 'Config updated.']);
     }
@@ -164,6 +163,14 @@ class ConfigAdminController extends Controller
             'updated_at'   => now(),
         ]);
 
+        if ($request->config_key === 'horizon_layout') {
+            TimelineLayoutService::forgetCachedLayouts();
+        }
+
+        if (in_array($request->config_key, [ShopDisplayConfig::KEY, ShopDisplayConfig::MOBILE_LAYOUT_KEY], true)) {
+            ShopDisplayConfig::forget();
+        }
+
         return response()->json(['success' => true, 'id' => $id, 'message' => 'Config created.']);
     }
 
@@ -179,7 +186,7 @@ class ConfigAdminController extends Controller
 
         DB::table('app_configs')->updateOrInsert(
             [
-                'config_key' => 'shop_mobile_product_layout',
+                'config_key' => ShopDisplayConfig::MOBILE_LAYOUT_KEY,
                 'lang' => null,
             ],
             [
@@ -192,6 +199,8 @@ class ConfigAdminController extends Controller
                 'updated_at' => now(),
             ]
         );
+
+        ShopDisplayConfig::forget();
 
         return redirect()->route('admin.configs', ['group' => 'layout'])
             ->with('success', 'Shop mobile layout saved.');
@@ -233,6 +242,8 @@ class ConfigAdminController extends Controller
             ]
         );
 
+        ShopDisplayConfig::forget();
+
         return redirect()->route('admin.configs', ['group' => 'layout'])
             ->with('success', 'Shop category and filter settings saved.');
     }
@@ -245,6 +256,13 @@ class ConfigAdminController extends Controller
         $key = DB::table('app_configs')->where('id', $id)->value('config_key');
         DB::table('app_configs')->where('id', $id)->delete();
         if ($key === 'referral_settings') Cache::forget('referral_settings');
+        if ($key === 'horizon_layout') {
+            TimelineLayoutService::forgetCachedLayouts();
+        }
+        if (in_array($key, [ShopDisplayConfig::KEY, ShopDisplayConfig::MOBILE_LAYOUT_KEY], true)) {
+            ShopDisplayConfig::forget();
+        }
+
         return response()->json(['success' => true, 'message' => 'Config deleted.']);
     }
     private function referralPayload(Request $request): array

@@ -6,7 +6,7 @@ use App\Http\Controllers\ShopRegistrationController;
 use App\Http\Controllers\SimulationController1;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', 'vendor.auth'])->group(function () {
+Route::middleware(['auth:sanctum', 'vendor.auth', \App\Http\Middleware\InvalidateStorefrontData::class])->group(function () {
 
     // Products CRUD
     Route::prefix('vendor')->group(function () {

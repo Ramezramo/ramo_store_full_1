@@ -625,6 +625,8 @@ class OrdersController extends Controller
                     ];
                 }
 
+                DB::afterCommit([\App\Services\StorefrontDataCache::class, 'invalidateProducts']);
+
                 // ──────── Coupon Logic ────────
                 $couponController = app(CouponController::class);
                 $discountTotal        = '0.00';

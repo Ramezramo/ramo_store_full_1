@@ -27,7 +27,7 @@
 .method-divider::before,.method-divider::after { content:''; flex:1; height:1px; background:#e5e7eb; }
 .otp-phone-row { display:flex; gap:8px; }
 .otp-phone-row .country-prefix { display:flex; align-items:center; gap:6px; background:#f9f9f9; border:1.5px solid #e5e7eb; border-radius:10px; padding:0 12px; font-size:14px; font-weight:600; white-space:nowrap; color:#333; }
-.otp-phone-row input { flex:1; min-inline-size:0; }
+.otp-phone-row input { flex:1; min-inline-size:0; font-size:14px; }
 .checkout-cart-link { display:block; margin-block-start:18px; text-align:center; color:var(--c-mid); text-decoration:underline; }
 .google-btn { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:13px; border-radius:10px; border:1.5px solid #e5e7eb; background:#fff; color:#333; font-size:14px; font-weight:600; cursor:pointer; transition:.15s; text-decoration:none; }
 .google-btn:hover { border-color:#aaa; background:#fafafa; }
@@ -52,6 +52,13 @@
 .auth-page[dir="rtl"] .form-check-row{direction:rtl;}
 .auth-page[dir="rtl"] #otp-msg{text-align:right !important;}
 .auth-page[dir="rtl"] .auth-register-copy{text-align:right !important;}
+
+@media (max-width:768px) {
+  body.mobile-auth-login .auth-card{margin-block-start:16px;padding:28px 20px}
+  .auth-page :is(input[type="tel"],input[type="email"],input[type="password"]){font-size:16px}
+  body.mobile-auth-login.auth-keyboard-open{padding-bottom:var(--auth-keyboard-inset,0px)}
+  body.mobile-auth-login.auth-keyboard-open #mob-nav{display:none !important}
+}
 </style>
 @endpush
 
@@ -62,6 +69,7 @@
 
     @php
       $fromCheckout  = request()->boolean('checkout') || session('url.intended') === route('checkout');
+      $fromSeller    = !$fromCheckout && app(\App\Services\VendorWorkspace::class)->hasIntendedPage();
       $guestAllowed  = $authConfig['guest_checkout'] ?? false;
       $phoneEnabled  = $authConfig['phone_otp_login'] ?? false;
     @endphp
@@ -71,6 +79,9 @@
       <p class="auth-sub">{{ $phoneEnabled
           ? ($loginRtl ? $loginCopy['checkoutHint'] : 'Verify your mobile number to continue to checkout.')
           : ($loginRtl ? 'سجّل دخول عشان تكمّل طلبك.' : 'Sign in to complete your order.') }}</p>
+    @elseif($fromSeller)
+      <h1 class="auth-title">{{ $loginRtl ? 'كمّل للوحة البائع' : 'Continue to your seller dashboard' }}</h1>
+      <p class="auth-sub">{{ $loginRtl ? 'سجّل بحسابك على رامو ستور عشان ترجع للصفحة اللي فتحتها.' : 'Sign in with your Ramo Store account to return to the page you opened.' }}</p>
     @else
       <h2 class="auth-title">{{ $loginRtl ? $loginCopy['welcome'] : 'Welcome back' }}</h2>
       <p class="auth-sub">{{ $loginRtl ? $loginCopy['accountHint'] : 'Sign in to your account' }}</p>
@@ -99,7 +110,7 @@
         <label class="form-label" for="otp-phone">{{ $loginRtl ? 'رقم الموبايل' : 'Mobile number' }}</label>
         <div class="otp-phone-row">
           <div class="country-prefix">🇪🇬 +20</div>
-          <input type="tel" id="otp-phone" autocomplete="tel-national" inputmode="numeric" placeholder="01xxxxxxxxx" maxlength="11" style="border-radius:10px;border:1.5px solid #e5e7eb;padding:13px 14px;font-size:14px;outline:none;width:100%;transition:.15s" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+          <input type="tel" id="otp-phone" autocomplete="tel-national" inputmode="numeric" placeholder="01xxxxxxxxx" maxlength="11" style="border-radius:10px;border:1.5px solid #e5e7eb;padding:13px 14px;outline:none;width:100%;transition:.15s" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
         </div>
         <button type="submit" id="send-otp-btn" class="btn btn-dark" style="width:100%;justify-content:center;border-radius:10px;padding:13px;margin-top:10px;font-size:14px" aria-busy="false">
           <span class="otp-btn-label">{{ $loginRtl ? $loginCopy['sendOtp'] : 'Send OTP Code' }}</span>
@@ -159,6 +170,10 @@
     <a class="checkout-cart-link" href="{{ route('cart') }}">{{ $loginRtl ? 'ارجع للسلة' : 'Back to cart' }}</a>
     @endif
 
+    @if($fromSeller)
+    <a class="checkout-cart-link" href="{{ route('vendor.login') }}">{{ $loginRtl ? 'سجّل بحساب بائع منفصل' : 'Use a separate seller account' }}</a>
+    @endif
+
     @if(!$loginRtl && (!$fromCheckout || !$phoneEnabled))
     <p class="auth-register-copy" style="text-align:center;font-size:13px;color:#888;margin-top:18px">
       Don't have an account? <a href="{{ route('register') }}" style="color:#1a1a1a;font-weight:600">Sign up</a>
@@ -209,19 +224,66 @@ async function sendOtp() {
   }
 }
 
-function syncAuthInputState() {
-  const active = document.activeElement;
-  const focused = window.innerWidth <= 768 && active && active.closest('.auth-page input, .auth-page select, .auth-page textarea');
-  document.body.classList.toggle('auth-input-focused', Boolean(focused));
-  if (focused) {
-    window.setTimeout(() => active.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 120);
+(() => {
+  const root = document.documentElement;
+  const page = document.querySelector('.auth-page');
+  const header = document.querySelector('.storefront-header');
+  const mobile = window.matchMedia('(max-width:768px)');
+  const viewport = window.visualViewport;
+  let viewportWidth = root.clientWidth;
+  let restingHeight = root.clientHeight;
+  let frame = null;
+
+  function keepFieldVisible(field, visibleHeight) {
+    const viewportTop = viewport?.offsetTop ?? 0;
+    const topEdge = Math.max(viewportTop, header?.getBoundingClientRect().bottom ?? 0) + 12;
+    const bottomEdge = viewportTop + visibleHeight - 12;
+    const available = bottomEdge - topEdge;
+    const box = field.getBoundingClientRect();
+    const group = field.closest('.form-group') || field.form?.querySelector('label');
+    const submit = field.form?.querySelector('button[type="submit"]');
+    let top = group?.getBoundingClientRect().top ?? box.top;
+    let bottom = submit?.getBoundingClientRect().bottom ?? box.bottom;
+
+    if (bottom - top > available) bottom = box.bottom;
+    if (bottom - top > available) top = box.top;
+    const distance = bottom > bottomEdge ? bottom - bottomEdge : Math.min(0, top - topEdge);
+    if (distance) window.scrollBy({ top: distance, behavior: 'instant' });
   }
-}
-document.addEventListener('focusin', syncAuthInputState);
-document.addEventListener('focusout', () => window.setTimeout(syncAuthInputState, 80));
-window.addEventListener('resize', syncAuthInputState);
-window.visualViewport?.addEventListener('resize', syncAuthInputState);
-syncAuthInputState();
+
+  function syncKeyboardLayout() {
+    frame = null;
+    const layoutHeight = root.clientHeight;
+    const visibleHeight = viewport?.height ?? layoutHeight;
+    const active = document.activeElement;
+    const editing = page.contains(active) && active.matches('input[type="tel"],input[type="email"],input[type="password"]');
+    const wasOpen = document.body.classList.contains('auth-keyboard-open');
+    if (viewportWidth !== root.clientWidth || (!editing && !wasOpen)) {
+      viewportWidth = root.clientWidth;
+      restingHeight = layoutHeight;
+    } else {
+      restingHeight = Math.max(restingHeight, visibleHeight);
+    }
+
+    const keyboardOpen = mobile.matches && (editing || wasOpen)
+      && Math.abs((viewport?.scale ?? 1) - 1) < 0.05
+      && Math.max(layoutHeight, restingHeight) - visibleHeight >= 100;
+    document.body.classList.toggle('auth-keyboard-open', keyboardOpen);
+    document.body.style.setProperty('--auth-keyboard-inset', keyboardOpen ? Math.max(0, layoutHeight - visibleHeight) + 'px' : '0px');
+    if (keyboardOpen && editing) keepFieldVisible(active, visibleHeight);
+  }
+
+  function scheduleKeyboardLayout() {
+    if (frame === null) frame = requestAnimationFrame(syncKeyboardLayout);
+  }
+
+  page.addEventListener('focusin', scheduleKeyboardLayout);
+  page.addEventListener('focusout', scheduleKeyboardLayout);
+  window.addEventListener('resize', scheduleKeyboardLayout, { passive:true });
+  window.addEventListener('pageshow', scheduleKeyboardLayout);
+  viewport?.addEventListener('resize', scheduleKeyboardLayout, { passive:true });
+  scheduleKeyboardLayout();
+})();
 </script>
 @if(!empty($referralInviterName))
 <script>

@@ -3,7 +3,7 @@
 use App\Http\Controllers\CouponController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', 'vendor.auth'])->prefix('ramo/coupons')->group(function () {
+Route::middleware(['auth:sanctum', 'vendor.auth', \App\Http\Middleware\InvalidateStorefrontData::class])->prefix('ramo/coupons')->group(function () {
     Route::get('show', [CouponController::class, 'index']);
     Route::post('store', [CouponController::class, 'store'])->middleware('throttle:3,1');
     Route::get('get/{id}', [CouponController::class, 'show']);

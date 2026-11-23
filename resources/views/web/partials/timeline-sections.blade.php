@@ -592,8 +592,6 @@
           align-items:flex-start;
           gap:16px;
           padding:4px 14px 12px;
-          scroll-snap-type:inline proximity;
-          scroll-padding-inline:14px;
         }
         #{{ $secId }} .tl-scroll-card {
           display:grid;
@@ -602,8 +600,15 @@
           scroll-snap-align:start;
         }
         @media(max-width:720px){
+          .tl-product-scroll:has(> #{{ $secId }}) {
+            scroll-snap-type:inline mandatory;
+            scroll-padding-inline:14px;
+          }
           #{{ $secId }} { gap:14px; }
-          #{{ $secId }} .tl-scroll-card { flex-basis:clamp(180px, 67%, 256px); }
+          #{{ $secId }} .tl-scroll-card {
+            flex-basis:clamp(180px, 67%, 256px);
+            scroll-snap-stop:always;
+          }
         }
       </style>
       <div class="sec-head">
@@ -612,7 +617,7 @@
       </div>
       <div class="tl-scroll-wrap" style="margin-bottom:36px">
         <button type="button" class="tl-scroll-arrow prev" aria-label="Scroll left" onclick="scrollProducts('{{ $secId }}', -1)">&#8249;</button>
-        <div class="tl-scroll-section">
+        <div class="tl-scroll-section tl-product-scroll">
           <div class="tl-scroll-track" id="{{ $secId }}">
             @foreach($products as $p)
             <div class="tl-scroll-card">

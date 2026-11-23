@@ -84,15 +84,7 @@
 }
 .cat-all-pill:hover { background: var(--c-tag); }
 .cat-all-pill.active { background: var(--c-dark); color: #fff; }
-.cat-all-pill.active .cat-count-badge { background: rgba(255,255,255,.18); color: #fff; }
 
-.cat-count-badge {
-  font-size: 10px; font-weight: 700;
-  background: var(--c-bg); color: var(--c-mid);
-  padding: 2px 7px; border-radius: 20px;
-  border: 1px solid var(--c-light);
-  min-width: 24px; text-align: center; flex-shrink: 0;
-}
 
 .cat-parent-item { margin-bottom: 2px; }
 
@@ -105,7 +97,6 @@
 }
 .cat-parent-btn:hover { background: var(--c-tag); }
 .cat-parent-btn.active { background: var(--c-orange); color: #fff; }
-.cat-parent-btn.active .cat-count-badge { background: rgba(255,255,255,.25); color: #fff; border-color: transparent; }
 .cat-parent-btn.parent-open:not(.active) { background: var(--c-tag); }
 
 .cat-parent-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -144,7 +135,6 @@
   border: 1px solid #fde0d5;
 }
 .cat-child-link.active::before { background: var(--c-orange); }
-.cat-child-link.active .cat-count-badge { background: #fde0d5; color: var(--c-orange); border-color: transparent; }
 
 /* ── Divider ──────────────────────────────────────────────── */
 .widget-divider { border: none; border-top: 1.5px solid var(--c-light); margin: 8px 0; }
@@ -562,10 +552,6 @@ body.shop-filter-open{overflow:hidden}
               $isActive      = $activeCategoryId == $parent->id;
               $isOpen        = $activeParentId == $parent->id;
               $parentUrl     = route('shop', array_merge(request()->except('category','page'), ['category' => $parent->id]));
-              $ownCount      = $catCounts[$parent->id] ?? 0;
-              $childrenCount = 0;
-              if ($hasChildren) foreach ($childCats[$parent->id] as $ch) $childrenCount += ($catCounts[$ch->id] ?? 0);
-              $totalCount    = $ownCount + $childrenCount;
             @endphp
 
             <div class="cat-parent-item">
@@ -574,9 +560,6 @@ body.shop-filter-open{overflow:hidden}
                   <a href="{{ $parentUrl }}"
                      style="flex:1;display:flex;align-items:center;gap:8px;padding:9px 0 9px 13px;color:{{ $isActive ? '#fff' : 'var(--c-dark)' }};text-decoration:none;min-width:0;font-size:13.5px;font-weight:600;">
                     <span class="cat-parent-name">{{ \App\Support\StorefrontLabels::category($parent->name, $shopRtl) }}</span>
-                    @if($totalCount > 0)
-                      <span class="cat-count-badge" style="{{ $isActive ? 'background:rgba(255,255,255,.25);color:#fff;border-color:transparent;' : '' }}">{{ $totalCount }}</span>
-                    @endif
                   </a>
                   <button onclick="toggleCatChildren('cc-{{ $parent->id }}', this)"
                           style="background:none;border:none;cursor:pointer;padding:9px 13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:{{ $isActive ? 'rgba(255,255,255,.7)' : 'var(--c-mid)' }};"
@@ -591,7 +574,6 @@ body.shop-filter-open{overflow:hidden}
               @else
                 <a href="{{ $parentUrl }}" class="cat-parent-btn {{ $isActive ? 'active' : '' }}">
                   <span class="cat-parent-name">{{ \App\Support\StorefrontLabels::category($parent->name, $shopRtl) }}</span>
-                  @if($totalCount > 0)<span class="cat-count-badge">{{ $totalCount }}</span>@endif
                 </a>
               @endif
 
@@ -601,12 +583,10 @@ body.shop-filter-open{overflow:hidden}
                     @foreach($childCats[$parent->id] as $child)
                       @php
                         $childActive = $activeCategoryId == $child->id;
-                        $childCount  = $catCounts[$child->id] ?? 0;
                         $childUrl    = route('shop', array_merge(request()->except('category','page'), ['category' => $child->id]));
                       @endphp
                       <a href="{{ $childUrl }}" class="cat-child-link {{ $childActive ? 'active' : '' }}">
                         <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ \App\Support\StorefrontLabels::category($child->name, $shopRtl) }}</span>
-                        @if($childCount > 0)<span class="cat-count-badge">{{ $childCount }}</span>@endif
                       </a>
                     @endforeach
                   </div>

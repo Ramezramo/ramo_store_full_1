@@ -80,3 +80,4 @@ Thumbs.db
 /database-backup-*.sql
 /database-restore.sql
 /storage/app/private/*
+/storage/app/telescope.sqlite*

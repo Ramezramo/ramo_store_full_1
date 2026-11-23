@@ -15,7 +15,7 @@ Route::prefix('user')->group(function () {
     Route::post('login', [AuthController::class, 'login'])->middleware('throttle:3,1');// ✅️
     Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:3,1');// ✅️
     Route::get('reset-password-page', [AuthController::class, 'showResetPasswordFormHTML'])
-        ->name('password.reset.form');// ✅️
+        ->name('api.password.reset.form');
     Route::post('reset-password', [AuthController::class, 'recievingNewPassMod'])->middleware('throttle:3,1')->name('password.reset.getter');// ✅️
 });
 

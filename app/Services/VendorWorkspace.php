@@ -10,6 +10,11 @@ class VendorWorkspace
 {
     public const SESSION_KEY = 'admin_vendor_workspace_id';
 
+    public function hasIntendedPage(): bool
+    {
+        return str_starts_with((string) session('url.intended'), url('/seller').'/');
+    }
+
     public function isAdminManaging(): bool
     {
         return Auth::guard('web')->check()

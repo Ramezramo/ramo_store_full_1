@@ -46,13 +46,15 @@ class BindSessionCredentials
             // persisted browser authentication. Never invent a baseline for them.
             if ($storedId === null && ! $hasRecaller) continue;
 
+            // The first guard lookup already reads the account from its provider.
+            $wasResolved = $guard->hasUser();
             $user = $guard->user();
             if (! $user && $storedId === null) {
                 $guard->logoutCurrentDevice();
                 $request->session()->forget(self::sessionKey($name));
                 continue;
             }
-            $fresh = $user?->fresh();
+            $fresh = $wasResolved ? $user?->fresh() : $user;
             $binding = $request->session()->get(self::sessionKey($name));
             $currentId = $request->session()->get($guard->getName());
             if (! $fresh || (string) $currentId !== (string) $fresh->getAuthIdentifier()
@@ -88,6 +90,10 @@ class BindSessionCredentials
         $target = route($name === 'vendor_web' ? 'vendor.login' : 'login');
         if ($request->expectsJson()) {
             return response()->json(['success' => false, 'message' => $message, 'redirect' => $target], 401);
+        }
+
+        if ($request->isMethodSafe() && in_array('vendor.web.auth', $request->route()?->gatherMiddleware() ?? [], true)) {
+            return VendorWebAuth::redirectToAccountSignIn($request)->withErrors(['email' => $message]);
         }
 
         return redirect()->to($target)->withErrors(['email' => $message]);

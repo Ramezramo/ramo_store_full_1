@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Services\TimelineLayoutService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -12,6 +13,8 @@ class AdminTimelinePinnedAllProductsTest extends TestCase
 
     public function test_saving_timeline_keeps_exactly_one_visible_all_products_widget_at_the_end(): void
     {
+        TimelineLayoutService::sections('zz');
+
         $this->withoutMiddleware()
             ->postJson(route('admin.timeline.save'), [
                 'lang' => 'zz',
@@ -33,6 +36,7 @@ class AdminTimelinePinnedAllProductsTest extends TestCase
 
         self::assertSame(['bannerImage', 'divider', 'allProducts'], array_column($sections, 'layout'));
         self::assertSame(24, $sections[2]['productsPerPage']);
+        self::assertSame($sections, TimelineLayoutService::sections('zz'));
         self::assertArrayNotHasKey('hidden', $sections[2]);
     }
 }

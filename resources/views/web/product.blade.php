@@ -41,12 +41,14 @@
           $product->thumbnail_url ? [$product->thumbnail_url] : [],
           $product->gallery_urls ?? []
         ))));
+        $variationImageUrls = [];
         foreach ($variations as $variation) {
-          foreach ($variation->images ?? [] as $path) {
-            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
-              $allImages[] = \App\Constants\AppConstants::imageUrl($path);
-            }
-          }
+          $urls = array_values(array_filter(array_map(
+            fn ($path) => is_string($path) ? \App\Constants\AppConstants::imageUrl($path) : null,
+            $variation->images ?? []
+          )));
+          $variationImageUrls[$variation->id] = $urls;
+          array_push($allImages, ...$urls);
         }
         $allImages = array_values(array_unique($allImages));
       @endphp
@@ -228,10 +230,7 @@
           'can_sell' => ($v->status ?? 'publish') === 'publish' && ($v->stock_status ?? 'instock') === 'instock',
           'attrs'  => is_array($v->attributes) ? $v->attributes : [],
           'main'   => (bool)$v->main_variation,
-          'images' => array_values(array_map(
-              fn($p) => \App\Constants\AppConstants::imageUrl($p),
-              array_filter($v->images ?? [], fn($p) => \Illuminate\Support\Facades\Storage::disk('public')->exists($p))
-          )),
+          'images' => $variationImageUrls[$v->id] ?? [],
         ])->values();
 
         $attrMap = [];
@@ -536,7 +535,7 @@
 
       <div class="rv-distribution">
         @foreach([5,4,3,2,1] as $star)
-          @php $cnt = $distribution->get($star)?->cnt ?? 0; $pct = $totalReviews ? round($cnt / $totalReviews * 100) : 0; @endphp
+          @php $cnt = $distribution->get($star, 0); $pct = $totalReviews ? round($cnt / $totalReviews * 100) : 0; @endphp
           <div class="dist-row">
             <span class="dist-label">{{ $star }} ★</span>
             <div class="dist-bar-wrap"><div class="dist-bar-fill" style="width:{{ $pct }}%"></div></div>

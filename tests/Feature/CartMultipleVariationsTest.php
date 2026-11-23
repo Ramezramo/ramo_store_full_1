@@ -7,6 +7,22 @@ use Tests\TestCase;
 
 class CartMultipleVariationsTest extends TestCase
 {
+    public function test_empty_guest_cart_count_skips_variation_queries(): void
+    {
+        $variationQueries = [];
+        DB::listen(function ($query) use (&$variationQueries) {
+            if (str_contains($query->sql, 'product_variations')) {
+                $variationQueries[] = $query->sql;
+            }
+        });
+
+        $this->getJson(route('cart.count', ['product_id' => 1]))
+            ->assertOk()
+            ->assertExactJson(['count' => 0, 'quantities' => []]);
+
+        $this->assertSame([], $variationQueries);
+    }
+
     public function test_guest_can_add_multiple_color_variations_with_independent_quantities(): void
     {
         $productId = null;

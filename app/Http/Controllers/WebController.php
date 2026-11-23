@@ -3,11 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Constants\AppConstants;
+use App\Helpers\ShopDisplayConfig;
 use App\Http\Middleware\SetInitialLocaleFromCountry;
 use App\Http\Traits\CartTrait;
 use App\Models\HomepageHero;
 use App\Services\CartRules;
 use App\Services\FlashSaleService;
+use App\Services\StorefrontDataCache;
+use App\Services\ShopBrandList;
+use App\Services\ShopCategoryList;
+use App\Services\ShopPriceRangeService;
 use App\Services\TimelineLayoutService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -64,8 +69,18 @@ class WebController extends Controller
         $sections = array_slice($visible, ($page - 1) * self::TIMELINE_SECTIONS_PER_PAGE, self::TIMELINE_SECTIONS_PER_PAGE, true);
         $hasMore = $page * self::TIMELINE_SECTIONS_PER_PAGE < count($visible);
 
+        $html = '';
+        if ($sections) {
+            $flashSale = FlashSaleService::getActive($lang);
+            $load = fn () => $this->homeTimelineData($sections, $lang, $flashSale);
+            $data = array_diff(array_keys($request->query()), ['page'])
+                ? $load()
+                : StorefrontDataCache::rememberTimeline($lang, $page, $flashSale, $load);
+            $html = view('web.partials.timeline-sections', $data)->render();
+        }
+
         return response()->json([
-            'html' => $sections ? $this->renderHomeTimeline($sections, $lang, 'web.partials.timeline-sections')->render() : '',
+            'html' => $html,
             'hasMore' => $hasMore,
             'nextPage' => $hasMore ? $page + 1 : null,
         ]);
@@ -73,7 +88,14 @@ class WebController extends Controller
 
     private function renderHomeTimeline(array $sections, string $lang, string $view, array $extra = [])
     {
-        $flashSale = FlashSaleService::getActive($lang);
+        return view($view, array_merge(
+            $this->homeTimelineData($sections, $lang, FlashSaleService::getActive($lang)),
+            $extra
+        ));
+    }
+
+    private function homeTimelineData(array $sections, string $lang, ?object $flashSale): array
+    {
 
         // ── Pre-load product data for each section ────────────────
         $sectionProducts        = [];
@@ -337,13 +359,13 @@ class WebController extends Controller
         // ── Brands ───────────────────────────────────────────────
         $brands = array_intersect($layouts, ['brands', 'brandLogos']) ? DB::table('brands')->orderBy('name')->get() : collect();
 
-        return view($view, array_merge(compact(
+        return compact(
             'sections', 'sectionProducts', 'sectionProductPaginators', 'sectionVariations',
             'sectionVendors', 'allCategories', 'brands',
             'sectionTestimonials', 'sectionStats', 'sectionCoupons',
             'sectionTrending', 'sectionArrivals', 'sectionActivity', 'sectionReviewsCarousel',
             'sectionCategoryCards', 'sectionFeaturedProduct', 'sectionFeaturedVariations'
-        ), $extra));
+        );
     }
 
     public function homeProducts(Request $request)
@@ -438,7 +460,7 @@ class WebController extends Controller
         $query = $this->baseProductQuery();
 
         // Build category hierarchy for sidebar
-        $allCats = DB::table('categories2')->orderBy('menu_order')->orderBy('name')->get();
+        $allCats = ShopCategoryList::get();
 
         $childCats  = $allCats->filter(fn($c) => $c->parent > 0)->groupBy('parent');
 
@@ -468,27 +490,7 @@ class WebController extends Controller
         $filterCategoryIds = array_values(array_unique($filterCategoryIds));
 
         if (! $isProductRequest) {
-            // Each category's range is precomputed when the catalog changes.
-            // For multi-select, combine cached ranges for the same category
-            // union used by the product query; no variation aggregation runs here.
-            if ($filterCategoryIds) {
-                $categoryScopes = array_map(fn ($id) => 'category:'.(int) $id, $filterCategoryIds);
-                $categoryRanges = DB::table('storefront_price_ranges')
-                    ->whereIn('scope', $categoryScopes)
-                    ->get(['min_price', 'max_price']);
-
-                if ($categoryRanges->isNotEmpty()) {
-                    $priceRange = (object) [
-                        'min_price' => $categoryRanges->min('min_price'),
-                        'max_price' => $categoryRanges->max('max_price'),
-                    ];
-                }
-            }
-
-            $priceRange ??= DB::table('storefront_price_ranges')
-                ->where('scope', 'global')
-                ->first();
-
+            $priceRange = app(ShopPriceRangeService::class)->forCategories($filterCategoryIds);
             $rangeMin = max(0, (float) ($priceRange->min_price ?? 0));
             $rangeMax = max($rangeMin, (float) ($priceRange->max_price ?? $rangeMin));
 
@@ -596,30 +598,6 @@ class WebController extends Controller
 
         $parentCats = $allCats->filter(fn($c) => $c->parent == 0 || $c->parent === null)->values();
 
-        // Direct counts for child-category badges. Parent badges below are
-        // computed over the same parent + child ID set used by the filter.
-        $catCounts = DB::table('product_category as pc')
-            ->join('products_data as p', 'p.id', '=', 'pc.product_id')
-            ->where('p.status', 'publish')
-            ->where('p.acceptance_status', 'approved')
-            ->select('pc.category_id', DB::raw('count(distinct pc.product_id) as cnt'))
-            ->groupBy('pc.category_id')
-            ->pluck('cnt', 'category_id');
-
-        foreach ($parentCats as $parentCategory) {
-            $categoryIds = [(int) $parentCategory->id];
-            foreach ($childCats[$parentCategory->id] ?? [] as $childCategory) {
-                $categoryIds[] = (int) $childCategory->id;
-            }
-            $catCounts[$parentCategory->id] = DB::table('product_category as pc')
-                ->join('products_data as p', 'p.id', '=', 'pc.product_id')
-                ->whereIn('pc.category_id', $categoryIds)
-                ->where('p.status', 'publish')
-                ->where('p.acceptance_status', 'approved')
-                ->distinct('pc.product_id')
-                ->count('pc.product_id');
-        }
-
         // Find active parent: if a child is selected, its parent is considered "open"
         $activeParentId = null;
         if ($activeCategoryId) {
@@ -632,22 +610,12 @@ class WebController extends Controller
         }
 
         $activeBrandName = $request->filled('brand') ? $request->brand : null;
-        $allBrands = DB::table('brands')->orderBy('name')->get();
+        $allBrands = ShopBrandList::get();
 
         // This setting changes only the narrow-phone card layout. The desktop and
         // tablet grid remain unchanged, and an invalid/missing value safely keeps
         // the existing horizontal mobile presentation.
-        $rawMobileLayout = DB::table('app_configs')
-            ->where('config_key', 'shop_mobile_product_layout')
-            ->whereNull('lang')
-            ->value('value');
-        $decodedMobileLayout = is_string($rawMobileLayout) ? json_decode($rawMobileLayout, true) : null;
-        $shopMobileLayout = is_string($decodedMobileLayout)
-            ? $decodedMobileLayout
-            : trim((string) $rawMobileLayout, " \t\n\r\0\x0B\"");
-        if (!in_array($shopMobileLayout, ['grid', 'horizontal'], true)) {
-            $shopMobileLayout = 'horizontal';
-        }
+        $shopMobileLayout = ShopDisplayConfig::mobileLayout();
         // Arabic shop mode uses the compact two-column phone grid so localized
         // product cards remain consistent with the Arabic storefront direction.
         if ($locale === 'ar') {
@@ -661,17 +629,46 @@ class WebController extends Controller
         return response()
             ->view('web.shop', compact(
                 'products', 'parentCats', 'childCats',
-                'activeCategoryId', 'selectedCategoryIds', 'activeParentId', 'catCounts',
+                'activeCategoryId', 'selectedCategoryIds', 'activeParentId',
                 'activeBrandName', 'allBrands', 'shopMobileLayout',
                 'priceRange', 'minPrice', 'maxPrice'
-            ) + ['shopDisplay' => \App\Helpers\ShopDisplayConfig::get()])
+            ) + ['shopDisplay' => ShopDisplayConfig::get()])
             ->header('Cache-Control', 'private, no-cache');
     }
 
     public function product($id)
     {
-        $locale = session('locale', 'en');
+        $locale = (string) session('locale', 'en');
         $flashSale = FlashSaleService::getActive($locale);
+        $data = StorefrontDataCache::rememberProduct(
+            $locale, (string) $id, $flashSale,
+            fn () => $this->productPageData($id, $locale, $flashSale)
+        );
+
+        $userReview = Auth::check()
+            ? DB::table('product_reviews')
+                ->where('user_id', Auth::id())
+                ->where('product_id', $id)
+                ->first()
+            : null;
+        $userReviewed = (bool) $userReview;
+
+        $helpfulVoted = session('review_helpful_voted', []);
+
+        // Check wishlist state from DB (logged-in) or session (guest)
+        $inWishlist = Auth::check()
+            ? DB::table('wishlists')->where('user_id', Auth::id())->where('product_id', $id)->exists()
+            : in_array((int)$id, session('ramo_wishlist', []));
+
+        $cartQuantities = $this->cartVariationQuantities($this->getCart(), (int) $id);
+
+        return response()->view('web.product', $data + compact(
+            'userReviewed', 'userReview', 'helpfulVoted', 'inWishlist', 'cartQuantities'
+        ))->header('Cache-Control', 'private, no-cache');
+    }
+
+    private function productPageData($id, string $locale, ?object $flashSale): array
+    {
         $raw = $this->baseProductQuery()
             ->addSelect('p.status', 'p.acceptance_status', 'p.purchasable')
             ->groupBy('p.status', 'p.acceptance_status', 'p.purchasable')
@@ -701,7 +698,6 @@ class WebController extends Controller
 
         if (! $raw) abort(404);
 
-        $productCanBePurchased = CartRules::purchasable($raw);
         $product    = $this->localizeTimelineProductText($this->parseProduct($raw, $flashSale), $locale);
         $variations = DB::table('product_variations')
             ->where('product_id', $id)
@@ -739,6 +735,8 @@ class WebController extends Controller
             }
         }
 
+        $productCanBePurchased = CartRules::purchasable($raw, $vendor?->status === 'approved');
+
         $related = $this->baseProductQuery()
             ->where('p.id', '!=', $id)
             ->orderByRaw('RANDOM()')
@@ -766,38 +764,12 @@ class WebController extends Controller
             ->get();
 
         // Rating distribution (5 down to 1)
-        $distribution = DB::table('product_reviews')
-            ->where('product_id', $id)
-            ->where('approved', true)
-            ->select('rating', DB::raw('COUNT(*) as cnt'))
-            ->groupBy('rating')
-            ->get()
-            ->keyBy('rating');
+        $distribution = $reviews->countBy('rating');
 
-        $userReview = Auth::check()
-            ? DB::table('product_reviews')
-                ->where('user_id', Auth::id())
-                ->where('product_id', $id)
-                ->first()
-            : null;
-        $userReviewed = (bool) $userReview;
-
-        $helpfulVoted = session('review_helpful_voted', []);
-
-        // Check wishlist state from DB (logged-in) or session (guest)
-        $inWishlist = Auth::check()
-            ? DB::table('wishlists')->where('user_id', Auth::id())->where('product_id', $id)->exists()
-            : in_array((int)$id, session('ramo_wishlist', []));
-
-        $cartQuantities = $this->cartVariationQuantities($this->getCart(), (int) $id);
-
-        return response()->view('web.product', compact(
+        return compact(
             'product', 'productCanBePurchased', 'variations', 'related', 'relatedVariations',
-            'vendor', 'vendorProducts',
-            'reviews', 'userReviewed', 'userReview',
-            'distribution', 'helpfulVoted',
-            'inWishlist', 'cartQuantities'
-        ))->header('Cache-Control', 'private, no-cache');
+            'vendor', 'vendorProducts', 'reviews', 'distribution'
+        );
     }
 
     public function vendor($id)
@@ -830,23 +802,7 @@ class WebController extends Controller
 
     private function homeTimelineSections(string $lang): array
     {
-        $configRow = DB::table('app_configs')
-            ->where('config_key', 'horizon_layout')
-            ->where('lang', $lang)
-            ->first();
-
-        if (! $configRow) {
-            $configRow = DB::table('app_configs')
-                ->where('config_key', 'horizon_layout')
-                ->first();
-        }
-
-        $sections = $configRow ? json_decode($configRow->value, true) : [];
-
-        return TimelineLayoutService::ensureAllProductsLast(
-            is_array($sections) ? $sections : [],
-            $lang
-        );
+        return TimelineLayoutService::ensureAllProductsLast(TimelineLayoutService::sections($lang), $lang);
     }
 
     private function loadProductVariations(array $productIds): array

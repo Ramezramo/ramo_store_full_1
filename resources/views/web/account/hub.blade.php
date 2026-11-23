@@ -18,9 +18,11 @@
   $vendorDescription = match ($vendorApplication?->status) {
     'pending' => $isAr ? 'طلبك تحت المراجعة' : 'Application under review',
     'on_hold' => $isAr ? 'طلبك مؤجل للمراجعة لاحقًا' : 'Application on hold',
-    'approved' => $hasMarketplace
-      ? ($isAr ? 'افتح لوحة البائع' : 'Open your seller dashboard')
-      : ($isAr ? 'أنشئ متجرك' : 'Create your marketplace'),
+    'approved' => match (true) {
+      $marketplaceReady => $isAr ? 'افتح لوحة البائع' : 'Open your seller dashboard',
+      $hasMarketplace => $isAr ? 'راجع حالة متجرك' : 'View your store status',
+      default => $isAr ? 'أنشئ متجرك' : 'Create your marketplace',
+    },
     'rejected' => $isAr ? 'راجع حالة طلبك' : 'View your application',
     default => $isAr ? 'ابدأ طلبك' : 'Start your application',
   };
@@ -37,7 +39,8 @@
     'selling' => [
       'heading' => $isAr ? 'البيع والمكافآت' : 'Selling & rewards',
       'links' => [
-        ['route' => 'vendor.register', 'icon' => 'shop', 'label' => $vendorTitle, 'detail' => $vendorDescription],
+        ['route' => $marketplaceReady ? 'vendor.marketplace.switch' : 'vendor.register',
+          'post' => $marketplaceReady, 'icon' => 'shop', 'label' => $vendorTitle, 'detail' => $vendorDescription],
         ['route' => 'account.referral', 'icon' => 'referral', 'label' => $isAr ? 'شارك واربح' : 'Refer & earn',
           'detail' => $isAr ? 'شارك رابطك مع أصحابك' : 'Share your referral link'],
       ],
@@ -82,7 +85,13 @@
         <h2 id="acc-hub-{{ $groupKey }}">{{ $group['heading'] }}</h2>
         <div class="acc-hub-links">
           @foreach($group['links'] as $link)
-            <a href="{{ route($link['route']) }}" class="acc-hub-item">
+            @if($link['post'] ?? false)
+              <form method="POST" action="{{ route($link['route']) }}" target="_top">
+                @csrf
+                <button type="submit" class="acc-hub-item">
+            @else
+              <a href="{{ route($link['route']) }}" class="acc-hub-item">
+            @endif
               <span class="acc-hub-item-icon">@include('web.partials.header-icon', ['icon' => $link['icon']])</span>
               <span class="acc-hub-item-copy">
                 <span class="acc-hub-item-label">{{ $link['label'] }}</span>
@@ -91,7 +100,12 @@
                 @endif
               </span>
               <svg class="acc-hub-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
-            </a>
+            @if($link['post'] ?? false)
+                </button>
+              </form>
+            @else
+              </a>
+            @endif
           @endforeach
 
           @if($groupKey === 'settings')

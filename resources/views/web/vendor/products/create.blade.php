@@ -3,6 +3,9 @@
 @section('page-title', isset($product) ? 'Edit Product' : 'Add Product')
 
 @push('styles')
+@unless(isset($product))
+<link rel="stylesheet" href="{{ asset('css/vendor-product-wizard.css') }}?v={{ filemtime(public_path('css/vendor-product-wizard.css')) }}">
+@endunless
 <style>
 /* ── Layout ──────────────────────────────────────────── */
 .section-card{background:#fff;border:1px solid var(--light);border-radius:12px;padding:24px;margin-bottom:20px}
@@ -10,14 +13,6 @@
 .vs-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 20px}
 .vs-form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 20px}
 .col-span-2{grid-column:span 2}
-
-/* ── Categories ──────────────────────────────────────── */
-.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:6px}
-.cat-label{display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:7px;border:1px solid var(--light);cursor:pointer;font-size:13px;transition:.12s}
-.cat-label:hover{border-color:var(--orange);background:#fff8f5}
-.cat-label input[type=checkbox]{accent-color:var(--orange);width:14px;height:14px;flex-shrink:0}
-.cat-label input[type=checkbox]:checked + span{color:var(--orange);font-weight:600}
-.cat-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mid);margin:12px 0 6px;grid-column:1/-1}
 
 /* ── Images ──────────────────────────────────────────── */
 .img-drop{border:2px dashed var(--light);border-radius:10px;background:#fafaf8;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;padding:20px;cursor:pointer;transition:.15s;min-height:120px;text-align:center}
@@ -125,6 +120,9 @@ textarea.vs-input{resize:vertical;min-height:100px}
 .color-row.has-error{border-color:var(--red)!important;background:#fff8f8}
 .color-row.has-error .color-row-header{border-color:var(--red)}
 </style>
+@if(isset($product))
+<link rel="stylesheet" href="{{ asset('css/vendor-product-mobile.css') }}?v={{ filemtime(public_path('css/vendor-product-mobile.css')) }}">
+@endif
 @endpush
 
 @section('content')
@@ -138,24 +136,32 @@ textarea.vs-input{resize:vertical;min-height:100px}
   $relatedProds  = $relatedProds ?? collect();
   $variation     = $variation ?? null;
   $dbVariations  = $dbVariations ?? collect();
-  $hasVariations = $hasVariations ?? false;
-  $imgBase       = \Illuminate\Support\Facades\Storage::url('');
+  $hasVariations = (bool) old('has_variations', $hasVariations ?? false);
+  $mediaUrl      = fn ($path) => \App\Constants\AppConstants::imageUrl($path) ?? asset('images/product-placeholder.svg');
   $translations  = $translations ?? [];
   $tags          = $tags ?? [];
   $attributes    = $attributes ?? [];
   $whatsappData  = $whatsappData ?? [];
   $unitType      = $unitType ?? 'piece';
   $unitAmount    = $unitAmount ?? 1;
+  $restoringWizard = !$isEdit && session()->hasOldInput();
+  if ($restoringWizard) {
+    $hasVariations = (bool) old('has_variations', false);
+    $translations = array_filter((array) old('translations', []), fn ($entry) =>
+      is_array($entry) && in_array($entry['locale'] ?? null, ['ar', 'fr', 'de', 'es', 'it'], true));
+    $attributes = array_values(array_filter((array) old('prod_attributes', []), 'is_array'));
+    $tags = array_filter(array_map('trim', explode(',', (string) old('tags_input', ''))));
+  }
 @endphp
 
-<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
-  <a href="{{ route('vendor.products') }}" style="color:var(--mid);font-size:13px">← Back to Products</a>
-  <span style="color:var(--light)">|</span>
-  <div style="font-size:22px;font-weight:800">{{ $isEdit ? 'Edit: '.$product->name : 'Add New Product' }}</div>
+<div @if($isEdit) class="product-edit-heading" @else style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap" @endif>
+  <a href="{{ route('vendor.products') }}" class="product-back-link" style="color:var(--mid);font-size:13px">← Back to Products</a>
   @if($isEdit)
+  <h1 class="product-edit-title">{{ $product->name }}</h1>
   <a href="{{ route('product', $product->id) }}" target="_blank" rel="noopener noreferrer"
      onclick="event.preventDefault(); window.open(this.href, '_blank', 'noopener,noreferrer');"
      aria-label="View {{ $product->name }} on the main website"
+     class="product-website-link"
      style="margin-inline-start:auto;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 14px;border:1px solid var(--light);border-radius:8px;background:#fff;color:var(--dark);font-size:13px;font-weight:700;white-space:nowrap">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h6"/></svg>
     View on website
@@ -225,30 +231,75 @@ textarea.vs-input{resize:vertical;min-height:100px}
   // Detect which sections have errors
   $sectionErrors = [];
   foreach ($errors->keys() as $k) {
-    if (in_array($k, ['name','status','short_description','description','sku','brand_id','unit','unit_amount','product_type'])) $sectionErrors['basic'] = true;
+    if (in_array($k, ['name','short_description','description','unit','unit_amount','product_type'])) $sectionErrors['basic'] = true;
+    if (str_starts_with($k, 'categories')) $sectionErrors['categories'] = true;
+    if (in_array($k, ['brand_id','sku'])) $sectionErrors['pricing'] = true;
+    if (in_array($k, ['tags_input','related_ids','whatsapp_available','whatsapp_number'])) $sectionErrors['extras'] = true;
+    if ($k === 'status') $sectionErrors[$isEdit ? 'basic' : 'review'] = true;
     if (str_starts_with($k,'translations')) $sectionErrors['translations'] = true;
     if (in_array($k, ['regular_price','sale_price','stock_quantity','discount_percentage','minimum_order_qty','max_orders_per_person']) || str_starts_with($k,'colors')) $sectionErrors['pricing'] = true;
     if (str_starts_with($k,'prod_attributes')) $sectionErrors['attributes'] = true;
-    if (in_array($k, ['thumbnail','other_images','natural_images'])) $sectionErrors['images'] = true;
+    if (in_array(Str::before($k, '.'), ['thumbnail','thumbnail_url','other_images','other_image_urls','natural_images','natural_image_urls'])) $sectionErrors['images'] = true;
+    if (str_starts_with($k, 'variation_image')) $sectionErrors['pricing'] = true;
   }
 @endphp
-  <div class="vs-alert vs-alert-error" id="error-summary" style="margin-bottom:16px">
+  <div class="vs-alert vs-alert-error" id="error-summary" role="alert" tabindex="-1" style="margin-bottom:16px">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
     <div style="flex:1">
       <strong>{{ count($friendlyErrors) }} problem{{ count($friendlyErrors) !== 1 ? 's' : '' }} need{{ count($friendlyErrors) === 1 ? 's' : '' }} fixing before you can save:</strong>
       <ul style="margin:6px 0 0 16px;font-size:12px;line-height:1.7">
         @foreach($friendlyErrors as $fe)<li>{{ $fe }}</li>@endforeach
       </ul>
+      @unless($isEdit)<p style="margin-top:6px">If you selected any new photos, attach them again before saving.</p>@endunless
     </div>
   </div>
 @endif
-@php $sectionErrors = $sectionErrors ?? []; @endphp
+@php
+  $sectionErrors = $sectionErrors ?? [];
+  $productSteps = [
+    'details' => ['Details', 'Give the product a name and describe what shoppers will get.'],
+    'photos' => ['Photos', 'Choose a main photo for product cards, then add any other views.'],
+    'pricing' => ['Pricing & stock', 'Set a price and stock quantity, or add variations with their own prices.'],
+    'categories' => ['Categories', 'Pick the categories where shoppers should find this product.'],
+    'extras' => ['Extras', 'Add translations, specifications, or other optional listing details.'],
+    'review' => ['Review', 'Check the listing before you save it.'],
+  ];
+  $initialStep = match (true) {
+    !empty($sectionErrors['basic']) => 'details',
+    !empty($sectionErrors['images']) => 'photos',
+    !empty($sectionErrors['pricing']) => 'pricing',
+    !empty($sectionErrors['categories']) => 'categories',
+    !empty($sectionErrors['translations']) || !empty($sectionErrors['attributes']) || !empty($sectionErrors['extras']) => 'extras',
+    !empty($sectionErrors['review']) => 'review',
+    default => 'details',
+  };
+@endphp
 
-<form method="POST" action="{{ $formAction }}" enctype="multipart/form-data" id="product-form" class="product-editor-form">
+<form method="POST" action="{{ $formAction }}" enctype="multipart/form-data" id="product-form" class="product-editor-form{{ $isEdit ? ' product-editor-form--edit' : '' }}"
+      @unless($isEdit)
+        data-product-wizard data-initial-step="{{ $initialStep }}"
+        data-wizard-error-field="{{ $errors->keys()[0] ?? '' }}" data-wizard-error-message="{{ $errors->first() }}"
+      @endunless>
   @csrf
+  @unless($isEdit)
+  <header class="product-wizard-header" data-wizard-header hidden>
+    <p class="product-step-count" data-wizard-count></p>
+    <ol class="product-step-rail" aria-label="Product listing progress">
+      @foreach($productSteps as $key => [$title, $hint])
+        <li>
+          <button type="button" data-wizard-jump="{{ $key }}" data-step-title="{{ $title }}" data-step-hint="{{ $hint }}"
+                  aria-label="{{ $title }}" title="{{ $title }}"><span>{{ $title }}</span></button>
+        </li>
+      @endforeach
+    </ol>
+    <h1 data-wizard-title tabindex="-1"></h1>
+    <p class="product-step-hint" data-wizard-hint></p>
+    <ul class="vs-alert vs-alert-error product-step-errors" data-wizard-errors role="alert" hidden></ul>
+  </header>
+  @endunless
 
 {{-- ── BASIC INFO ──────────────────────────────────────────────────── --}}
-<div class="section-card {{ !empty($sectionErrors['basic']) ? 'section-has-error' : '' }}" id="section-basic">
+<div class="section-card {{ !empty($sectionErrors['basic']) ? 'section-has-error' : '' }}" id="section-basic" data-product-step="details">
   <h2>
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
     Basic Information
@@ -256,20 +307,33 @@ textarea.vs-input{resize:vertical;min-height:100px}
   </h2>
 
   <div class="vs-form-group">
-    <label class="vs-label">Product Name (English) <span style="color:var(--red)">*</span></label>
-    <input type="text" name="name"
+    <label class="vs-label" for="product-name">Product Name (English) <span style="color:var(--red)">*</span></label>
+    <input type="text" name="name" id="product-name"
            value="{{ old('name', $product->name ?? '') }}"
            class="vs-input {{ $errors->has('name') ? 'err' : '' }}"
            placeholder="Enter product name in English" required maxlength="500">
     @error('name')<div class="vs-err">{{ $message }}</div>@enderror
   </div>
 
+  <div class="vs-form-group">
+    <label class="vs-label" for="product-short-description">Short Description (English)</label>
+    <textarea name="short_description" id="product-short-description" class="vs-input" style="min-height:72px" maxlength="1000"
+              placeholder="Brief summary shown on listing cards">{{ old('short_description', $product->short_description ?? '') }}</textarea>
+    @error('short_description')<div class="vs-err">{{ $message }}</div>@enderror
+  </div>
+
+  <div class="vs-form-group">
+    <label class="vs-label" for="product-description">Full Description (English)</label>
+    <textarea name="description" id="product-description" class="vs-input" style="min-height:140px"
+              placeholder="Detailed product description">{{ old('description', $product->description ?? '') }}</textarea>
+  </div>
+
   <div class="vs-form-grid">
-    <div class="vs-form-group">
-      <label class="vs-label">Status</label>
-      <select name="status" class="vs-input">
+    <div class="vs-form-group" data-wizard-status-field>
+      <label class="vs-label" for="product-status">Status</label>
+      <select name="status" id="product-status" class="vs-input">
         <option value="draft"   {{ old('status', $product->status ?? 'draft') === 'draft'   ? 'selected' : '' }}>Draft (hidden)</option>
-        <option value="publish" {{ old('status', $product->status ?? 'draft') === 'publish' ? 'selected' : '' }}>Published</option>
+        <option value="publish" {{ old('status', $product->status ?? 'draft') === 'publish' ? 'selected' : '' }}>{{ $isEdit ? 'Published' : 'Publish after approval' }}</option>
       </select>
     </div>
     <div class="vs-form-group">
@@ -282,12 +346,12 @@ textarea.vs-input{resize:vertical;min-height:100px}
   </div>
 
   <div class="vs-form-grid">
-    <div class="vs-form-group" style="grid-column:span 2">
+    <div class="vs-form-group col-span-2">
       <label class="vs-label">Product Card Buttons</label>
       <select name="button_mode" class="vs-input">
-        <option value="both"         {{ old('button_mode', $product->button_mode ?? 'both') === 'both'         ? 'selected' : '' }}>Show both "Add to Cart" and "See Details"</option>
-        <option value="cart_only"    {{ old('button_mode', $product->button_mode ?? 'both') === 'cart_only'    ? 'selected' : '' }}>Show "Add to Cart" only</option>
-        <option value="details_only" {{ old('button_mode', $product->button_mode ?? 'both') === 'details_only' ? 'selected' : '' }}>Show "See Details" only</option>
+        <option value="both"         {{ old('button_mode', $product->button_mode ?? 'both') === 'both'         ? 'selected' : '' }}>Both buttons</option>
+        <option value="cart_only"    {{ old('button_mode', $product->button_mode ?? 'both') === 'cart_only'    ? 'selected' : '' }}>Add to Cart only</option>
+        <option value="details_only" {{ old('button_mode', $product->button_mode ?? 'both') === 'details_only' ? 'selected' : '' }}>See Details only</option>
       </select>
       <div style="font-size:11px;color:var(--mid);margin-top:4px">Controls which action buttons appear on the product listing card.</div>
     </div>
@@ -310,22 +374,10 @@ textarea.vs-input{resize:vertical;min-height:100px}
     </div>
   </div>
 
-  <div class="vs-form-group">
-    <label class="vs-label">Short Description (English)</label>
-    <textarea name="short_description" class="vs-input" style="min-height:72px" maxlength="1000"
-              placeholder="Brief summary shown on listing cards">{{ old('short_description', $product->short_description ?? '') }}</textarea>
-    @error('short_description')<div class="vs-err">{{ $message }}</div>@enderror
-  </div>
-
-  <div class="vs-form-group">
-    <label class="vs-label">Full Description (English)</label>
-    <textarea name="description" class="vs-input" style="min-height:140px"
-              placeholder="Detailed product description">{{ old('description', $product->description ?? '') }}</textarea>
-  </div>
 </div>
 
 {{-- ── TRANSLATIONS ────────────────────────────────────────────────── --}}
-<div class="section-card {{ !empty($sectionErrors['translations']) ? 'section-has-error' : '' }}" id="section-translations">
+<div class="section-card {{ !empty($sectionErrors['translations']) ? 'section-has-error' : '' }}" id="section-translations" data-product-step="extras">
   <h2>
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8l6 6"/><path d="M4 14l6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="M22 22l-5-10-5 10"/><path d="M14 18h6"/></svg>
     Translations
@@ -359,7 +411,7 @@ textarea.vs-input{resize:vertical;min-height:100px}
   {{-- English panel (main, not stored in translations array) --}}
   <div class="translation-panel active" id="tr-panel-en">
     <div style="font-size:12px;color:var(--mid);padding:10px 14px;background:#f9fafb;border-radius:8px">
-      English content is entered in the Basic Information section above.
+      English content comes from Basic Information.
     </div>
   </div>
 
@@ -371,7 +423,7 @@ textarea.vs-input{resize:vertical;min-height:100px}
         <div class="vs-form-group">
           <label class="vs-label">Product Name ({{ strtoupper($tr['locale']) }}) <span style="color:var(--red)">*</span></label>
           <input type="text" name="translations[{{ $i }}][name]"
-                 value="{{ old("translations.$i.name", $tr['name']) }}"
+                 value="{{ old("translations.$i.name", $tr['name'] ?? '') }}"
                  class="vs-input" placeholder="Product name in {{ strtoupper($tr['locale']) }}" maxlength="500">
         </div>
         <div class="vs-form-group">
@@ -384,7 +436,7 @@ textarea.vs-input{resize:vertical;min-height:100px}
           <label class="vs-label">Full Description ({{ strtoupper($tr['locale']) }})</label>
           <textarea name="translations[{{ $i }}][description]"
                     class="vs-input" style="min-height:120px"
-                    placeholder="Full description in {{ strtoupper($tr['locale']) }}">{{ old("translations.$i.description", $tr['description']) }}</textarea>
+                    placeholder="Full description in {{ strtoupper($tr['locale']) }}">{{ old("translations.$i.description", $tr['description'] ?? '') }}</textarea>
         </div>
       </div>
     @endforeach
@@ -392,13 +444,14 @@ textarea.vs-input{resize:vertical;min-height:100px}
 </div>
 
 {{-- ── PRICING & VARIATIONS ────────────────────────────────────────── --}}
-<div class="section-card {{ !empty($sectionErrors['pricing']) ? 'section-has-error' : '' }}" id="section-pricing">
+<div class="section-card {{ !empty($sectionErrors['pricing']) ? 'section-has-error' : '' }}" id="section-pricing" data-product-step="pricing">
   <h2>
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
     Pricing, Stock & Variations
     @if(!empty($sectionErrors['pricing']))<span class="section-err-badge">!</span>@endif
   </h2>
 
+  <div data-pricing-settings>
   {{-- SKU & Brand --}}
   <div class="vs-form-grid" style="margin-bottom:4px">
     <div class="vs-form-group">
@@ -451,6 +504,8 @@ textarea.vs-input{resize:vertical;min-height:100px}
     <div></div>
   </div>
 
+  </div>
+
   {{-- Has-variations toggle --}}
   <label class="var-toggle-row">
     <input type="checkbox" name="has_variations" id="has-variations-toggle" value="1"
@@ -466,8 +521,8 @@ textarea.vs-input{resize:vertical;min-height:100px}
   <div id="simple-panel">
     <div class="vs-form-grid-3">
       <div class="vs-form-group">
-        <label class="vs-label">Regular Price (EGP) <span style="color:var(--red)">*</span></label>
-        <input type="number" name="regular_price" id="simple-regular-price" step="0.01" min="0"
+        <label class="vs-label" for="simple-regular-price">Regular Price (EGP) <span style="color:var(--red)">*</span></label>
+        <input type="number" name="regular_price" id="simple-regular-price" step="0.01" min="0.01"
                value="{{ old('regular_price', $variation->regular_price ?? '') }}"
                class="vs-input {{ $errors->has('regular_price') ? 'err' : '' }}"
                placeholder="0.00" oninput="updateSimpleEffectivePrice()">
@@ -481,7 +536,7 @@ textarea.vs-input{resize:vertical;min-height:100px}
                oninput="updateSimpleEffectivePrice()">
       </div>
       <div class="vs-form-group">
-        <label class="vs-label">Stock Quantity <span style="color:var(--red)">*</span></label>
+        <label class="vs-label" for="simple-stock">Stock Quantity <span style="color:var(--red)">*</span></label>
         <input type="number" name="stock_quantity" id="simple-stock" min="0"
                value="{{ old('stock_quantity', $variation->stock_quantity ?? 0) }}"
                class="vs-input {{ $errors->has('stock_quantity') ? 'err' : '' }}"
@@ -509,7 +564,7 @@ textarea.vs-input{resize:vertical;min-height:100px}
 </div>
 
 {{-- ── PRODUCT ATTRIBUTES ──────────────────────────────────────────── --}}
-<div class="section-card {{ !empty($sectionErrors['attributes']) ? 'section-has-error' : '' }}" id="section-attributes">
+<div class="section-card {{ !empty($sectionErrors['attributes']) ? 'section-has-error' : '' }}" id="section-attributes" data-product-step="extras">
   <h2>
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
     Product Attributes
@@ -522,7 +577,7 @@ textarea.vs-input{resize:vertical;min-height:100px}
       <div class="attr-row" id="attr-row-{{ $ai }}">
         <div style="flex:1">
           <input type="text" name="prod_attributes[{{ $ai }}][name]"
-                 value="{{ $attr['name'] }}"
+                 value="{{ $attr['name'] ?? '' }}"
                  class="vs-input" placeholder="Attribute name (e.g. Material)" style="margin-bottom:6px">
           <input type="text" name="prod_attributes[{{ $ai }}][values]"
                  value="{{ implode(', ', (array)($attr['values'] ?? [])) }}"
@@ -540,7 +595,7 @@ textarea.vs-input{resize:vertical;min-height:100px}
 </div>
 
 {{-- ── TAGS ────────────────────────────────────────────────────────── --}}
-<div class="section-card">
+<div class="section-card" data-product-step="extras">
   <h2>
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
     Tags
@@ -552,7 +607,7 @@ textarea.vs-input{resize:vertical;min-height:100px}
     @foreach($tags as $tag)
       <span class="tag-pill" data-tag="{{ $tag }}">
         {{ $tag }}
-        <button type="button" class="tag-pill-remove" onclick="removeTag('{{ $tag }}')">×</button>
+        <button type="button" class="tag-pill-remove" onclick="removeTag(this.closest('.tag-pill').dataset.tag)">×</button>
       </span>
     @endforeach
     <input type="text" id="tag-input" placeholder="Type and press Enter or comma" style="border:none;outline:none;font-size:13px;flex:1;min-width:140px;padding:4px"
@@ -562,64 +617,30 @@ textarea.vs-input{resize:vertical;min-height:100px}
 </div>
 
 {{-- ── CATEGORIES ─────────────────────────────────────────────────── --}}
-<div class="section-card">
+<div class="section-card {{ !empty($sectionErrors['categories']) ? 'section-has-error' : '' }}" data-product-step="categories">
   <h2>
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
     Categories
   </h2>
 
-  @php
-    $topLevel = $categories->where('parent', 0)->values();
-    $children = $categories->where('parent', '!=', 0)->groupBy('parent');
-  @endphp
-
-  <div class="cat-grid">
-    @foreach($topLevel as $parent)
-      <div class="cat-section-title">{{ $parent->name }}</div>
-      <label class="cat-label">
-        <input type="checkbox" name="categories[]" value="{{ $parent->id }}"
-               {{ in_array($parent->id, old('categories', $selectedCats)) ? 'checked' : '' }}>
-        <span>{{ $parent->name }}</span>
-      </label>
-      @foreach($children->get($parent->id, collect()) as $child)
-        <label class="cat-label">
-          <input type="checkbox" name="categories[]" value="{{ $child->id }}"
-                 {{ in_array($child->id, old('categories', $selectedCats)) ? 'checked' : '' }}>
-          <span>{{ $child->name }}</span>
-        </label>
-      @endforeach
-    @endforeach
-    @php
-      $listedParentIds = $topLevel->pluck('id')->toArray();
-      $orphaned = $categories->where('parent', '!=', 0)->filter(fn($c) => !in_array($c->parent, $listedParentIds));
-    @endphp
-    @if($orphaned->count())
-      <div class="cat-section-title">Other</div>
-      @foreach($orphaned as $cat)
-        <label class="cat-label">
-          <input type="checkbox" name="categories[]" value="{{ $cat->id }}"
-                 {{ in_array($cat->id, old('categories', $selectedCats)) ? 'checked' : '' }}>
-          <span>{{ $cat->name }}</span>
-        </label>
-      @endforeach
-    @endif
-  </div>
+  @include('web.vendor.products.category-picker')
 </div>
 
 {{-- ── IMAGES ─────────────────────────────────────────────────────── --}}
-<div class="section-card {{ !empty($sectionErrors['images']) ? 'section-has-error' : '' }}" id="section-images">
+<div class="section-card {{ !empty($sectionErrors['images']) ? 'section-has-error' : '' }}" id="section-images" data-product-step="photos">
   <h2>
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
     Product Images
     @if(!empty($sectionErrors['images']))<span class="section-err-badge">!</span>@endif
   </h2>
+  <p style="color:var(--mid);font-size:13px;margin-bottom:14px">Upload an image or paste a public HTTPS link to an image hosted elsewhere.</p>
 
   <div class="vs-form-group">
     <label class="vs-label">Main Thumbnail <span style="color:var(--mid);font-weight:400;text-transform:none">— shown on listing cards</span></label>
     @if(!empty($images['thumbnail']))
       <div style="margin-bottom:8px">
-        <img src="{{ $imgBase . ltrim($images['thumbnail'],'/') }}" style="width:100px;height:100px;object-fit:cover;border-radius:8px;border:1px solid var(--light)">
-        <div style="font-size:11px;color:var(--mid);margin-top:4px">Upload a new image to replace</div>
+        <img src="{{ $mediaUrl($images['thumbnail']) }}" alt="Current thumbnail" loading="lazy" style="width:100px;height:100px;object-fit:cover;border-radius:8px;border:1px solid var(--light)">
+        <label style="display:block"><input type="checkbox" name="delete_thumbnail" value="1" @checked(old('delete_thumbnail'))> Remove thumbnail on save</label>
       </div>
     @endif
     <label for="thumbnail-input" class="img-drop" id="thumb-drop">
@@ -629,17 +650,25 @@ textarea.vs-input{resize:vertical;min-height:100px}
     <input type="file" id="thumbnail-input" name="thumbnail" accept="image/jpeg,image/png,image/webp" style="display:none"
            onchange="previewSingle(this,'thumb-drop','thumb-label')">
     @error('thumbnail')<div class="vs-err">{{ $message }}</div>@enderror
+    @include('web.vendor.products.image-link-field', ['id' => 'thumbnail-url', 'name' => 'thumbnail_url', 'label' => 'Thumbnail URL'])
   </div>
 
   <div class="vs-form-group">
     <label class="vs-label">Gallery Images <span style="color:var(--mid);font-weight:400;text-transform:none">— multiple allowed</span></label>
-    @if(!empty($images['other_images']))
+    @php
+      $galleryImages = array_unique(array_merge($images['others'] ?? [], $images['other_images'] ?? []));
+    @endphp
+    @if($galleryImages)
       <div class="img-preview-row" style="margin-bottom:8px">
-        @foreach($images['other_images'] as $oi)
-          <div class="img-preview-item"><img src="{{ $imgBase . ltrim($oi,'/') }}" alt=""></div>
+        @foreach($galleryImages as $oi)
+          <label class="img-preview-item">
+            <img src="{{ $mediaUrl($oi) }}" alt="" loading="lazy">
+            <input type="checkbox" name="delete_other_images[]" value="{{ $oi }}" aria-label="Remove gallery image {{ $loop->iteration }}" title="Remove image on save"
+                   style="position:absolute;inset-block-start:5px;inset-inline-end:5px;width:16px;height:16px" @checked(in_array($oi, (array) old('delete_other_images', [])))>
+          </label>
         @endforeach
       </div>
-      <div style="font-size:11px;color:var(--mid);margin-bottom:6px">Upload new images to replace existing gallery</div>
+      <div style="font-size:12px;color:var(--mid);margin-bottom:6px">Check a photo to remove it on save.</div>
     @endif
     <label for="other-input" class="img-drop" id="other-drop">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -648,14 +677,22 @@ textarea.vs-input{resize:vertical;min-height:100px}
     <input type="file" id="other-input" name="other_images[]" accept="image/jpeg,image/png,image/webp" multiple style="display:none"
            onchange="previewMulti(this,'other-drop','other-label','other-previews')">
     <div class="img-preview-row" id="other-previews"></div>
+    @include('web.vendor.products.image-link-field', ['id' => 'gallery-urls', 'name' => 'other_image_urls', 'label' => 'Gallery image URLs', 'multiple' => true])
   </div>
 
   <div class="vs-form-group">
     <label class="vs-label">Lifestyle / Natural Images</label>
-    @if(!empty($images['natural_images']))
+    @php
+      $lifestyleImages = array_unique(array_merge($images['natural'] ?? [], $images['natural_images'] ?? []));
+    @endphp
+    @if($lifestyleImages)
       <div class="img-preview-row" style="margin-bottom:8px">
-        @foreach($images['natural_images'] as $ni)
-          <div class="img-preview-item"><img src="{{ $imgBase . ltrim($ni,'/') }}" alt=""></div>
+        @foreach($lifestyleImages as $ni)
+          <label class="img-preview-item">
+            <img src="{{ $mediaUrl($ni) }}" alt="" loading="lazy">
+            <input type="checkbox" name="delete_natural_images[]" value="{{ $ni }}" aria-label="Remove lifestyle image {{ $loop->iteration }}" title="Remove image on save"
+                   style="position:absolute;inset-block-start:5px;inset-inline-end:5px;width:16px;height:16px" @checked(in_array($ni, (array) old('delete_natural_images', [])))>
+          </label>
         @endforeach
       </div>
     @endif
@@ -666,11 +703,12 @@ textarea.vs-input{resize:vertical;min-height:100px}
     <input type="file" id="natural-input" name="natural_images[]" accept="image/jpeg,image/png,image/webp" multiple style="display:none"
            onchange="previewMulti(this,'natural-drop','natural-label','natural-previews')">
     <div class="img-preview-row" id="natural-previews"></div>
+    @include('web.vendor.products.image-link-field', ['id' => 'lifestyle-urls', 'name' => 'natural_image_urls', 'label' => 'Lifestyle image URLs', 'multiple' => true])
   </div>
 </div>
 
 {{-- ── WHATSAPP ─────────────────────────────────────────────────────── --}}
-<div class="section-card">
+<div class="section-card" data-product-step="extras">
   <h2>
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
     WhatsApp Contact
@@ -699,7 +737,7 @@ textarea.vs-input{resize:vertical;min-height:100px}
 </div>
 
 {{-- ── RELATED PRODUCTS ────────────────────────────────────────────── --}}
-<div class="section-card">
+<div class="section-card" data-product-step="extras">
   <h2>
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
     Related Products
@@ -724,9 +762,30 @@ textarea.vs-input{resize:vertical;min-height:100px}
   </div>
 </div>
 
+@unless($isEdit)
+<section class="section-card product-wizard-review" data-product-step="review" hidden>
+  <div class="product-review-overview">
+    <img alt="" data-review-thumbnail hidden>
+    <div><h2 data-review-name></h2><p data-review-description></p></div>
+    <button type="button" data-review-edit="details" aria-label="Edit product details">Edit</button>
+  </div>
+  <dl class="product-review-list">
+    <div><div><dt>Photos</dt><dd data-review-photos></dd></div><button type="button" data-review-edit="photos" aria-label="Edit photos">Edit</button></div>
+    <div><div><dt>Pricing &amp; stock</dt><dd data-review-price></dd></div><button type="button" data-review-edit="pricing" aria-label="Edit pricing and stock">Edit</button></div>
+    <div><div><dt>Categories</dt><dd data-review-categories></dd></div><button type="button" data-review-edit="categories" aria-label="Edit categories">Edit</button></div>
+  </dl>
+  <div data-review-status></div>
+  <p class="product-review-note">Drafts stay hidden. Listings must be approved before shoppers can see them.</p>
+</section>
+@endunless
+
 {{-- ── SAVE ─────────────────────────────────────────────────────────── --}}
 <div class="product-save-dock">
-  <a href="{{ route('vendor.products') }}" class="vs-btn vs-btn-ghost">Cancel</a>
+  <a href="{{ route('vendor.products') }}" class="vs-btn vs-btn-ghost" data-wizard-cancel>Cancel</a>
+  @unless($isEdit)
+    <button type="button" class="vs-btn vs-btn-ghost" data-wizard-back hidden>Back</button>
+    <button type="button" class="vs-btn vs-btn-primary" data-wizard-next hidden>Next</button>
+  @endunless
   @if($isEdit)
   <button type="submit" name="save_action" value="save_and_view" formtarget="_blank" class="vs-btn vs-btn-ghost">
     Save &amp; View Website
@@ -734,7 +793,7 @@ textarea.vs-input{resize:vertical;min-height:100px}
   @endif
   <button type="submit" name="save_action" value="save" id="product-submit-btn" class="vs-btn vs-btn-primary">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-    {{ $isEdit ? 'Save Changes' : 'Add Product' }}
+    <span data-wizard-save-label>{{ $isEdit ? 'Save Changes' : 'Save Product' }}</span>
   </button>
 </div>
 
@@ -797,6 +856,7 @@ textarea.vs-input{resize:vertical;min-height:100px}
                   'status_map'       => [],
                   'sale_price'       => '',
                   'images'           => [],
+                  'existing_variations' => [],
               ];
           }
 
@@ -807,6 +867,7 @@ textarea.vs-input{resize:vertical;min-height:100px}
           }
 
           $editColorRows[$rowKey]['sizes'][]                 = $size;
+          $editColorRows[$rowKey]['existing_variations'][$size] = $dv->id;
           $editColorRows[$rowKey]['price_map'][$size]        = $dv->regular_price ?? 0;
           $editColorRows[$rowKey]['stock'][$size]             = $dv->stock_quantity ?? 0;
           $editColorRows[$rowKey]['stock_status_map'][$size]  = $dv->stock_status ?? 'instock';
@@ -819,10 +880,19 @@ textarea.vs-input{resize:vertical;min-height:100px}
       }
   }
   $editColorRows = array_values($editColorRows);
+  if (is_array(old('colors'))) {
+    $editColorRows = [];
+    foreach (array_filter(old('colors'), 'is_array') as $index => $row) {
+      $row['images'] = $row['existing_images'] ?? [];
+      $row['image_urls'] = old('variation_image_urls')[$index] ?? '';
+      $editColorRows[] = $row;
+    }
+  }
+  $editProductData = ['colors' => $editColorRows, 'translations' => $translations];
 @endphp
 
 {{-- Safe JSON transport: JSON_HEX_* prevents script-tag breakouts; the payload is read via textContent + JSON.parse below. --}}
-<script type="application/json" id="vendor-edit-product-data">@json(['colors' => $editColorRows, 'translations' => $translations])</script>
+<script type="application/json" id="vendor-edit-product-data">@json($editProductData)</script>
 <script>
 const EDIT_HAS_VARIATIONS = {{ $hasVariations ? 'true' : 'false' }};
 const EDIT_PRODUCT_DATA   = JSON.parse(document.getElementById('vendor-edit-product-data').textContent);
@@ -832,7 +902,9 @@ const PRODUCT_IMAGE_BASE  = @json(\App\Constants\AppConstants::imageBase());
 const EXISTING_TRANSLATIONS = EDIT_PRODUCT_DATA.translations;
 
 function variationImageUrl(path) {
-  const clean = String(path || '').replace(/\\/g, '/').replace(/^\/?storage\//, '').replace(/^\/+/, '');
+  const raw = String(path || '').trim();
+  if (/^https?:\/\//i.test(raw)) return raw;
+  const clean = raw.replace(/\\/g, '/').replace(/^\/?storage\//, '').replace(/^\/+/, '');
   return PRODUCT_IMAGE_BASE + clean;
 }
 
@@ -859,8 +931,8 @@ function recalcEffective(idx, size) {
   const container = document.getElementById(`size-pricing-${idx}`);
   if (!container) return;
   const effCell = container.querySelector(`.eff-price-cell[data-size-key="${CSS.escape(size)}"]`);
-  const regInput  = container.querySelector(`input[data-role="regular"][data-size="${size}"]`);
-  const saleInput = container.querySelector(`input[data-role="sale"][data-size="${size}"]`);
+  const regInput  = container.querySelector(`input[data-role="regular"][data-size="${CSS.escape(size)}"]`);
+  const saleInput = container.querySelector(`input[data-role="sale"][data-size="${CSS.escape(size)}"]`);
   if (!effCell || !regInput) return;
 
   const reg     = parseFloat(regInput.value) || 0;
@@ -1187,7 +1259,7 @@ function checkUploadSize() {
   }
   const parts = [];
   if (tooBigFiles.length) {
-    parts.push(`<li>${tooBigFiles.map(f => `"${f.name}" is ${(f.size/(1024*1024)).toFixed(1)} MB`).join(', ')} — each must be under ${MAX_SINGLE_FILE_MB} MB.</li>`);
+    parts.push(`<li>${tooBigFiles.map(f => `"${escHtml(f.name)}" is ${(f.size/(1024*1024)).toFixed(1)} MB`).join(', ')} — each must be under ${MAX_SINGLE_FILE_MB} MB.</li>`);
   }
   if (totalMB > MAX_TOTAL_UPLOAD_MB) {
     parts.push(`<li>Total selected images are ${totalMB.toFixed(1)} MB — please keep the combined size under ${MAX_TOTAL_UPLOAD_MB} MB.</li>`);
@@ -1382,7 +1454,7 @@ function addColorRow(colorData) {
   colorData = colorData || {};
   const idx     = colorSeq++;
   const isFirst = document.getElementById('color-rows').children.length === 0;
-  const sizes        = colorData.sizes || [];
+  const sizes        = Array.isArray(colorData.sizes) ? colorData.sizes.filter(size => typeof size === 'string') : [];
   const priceMap        = colorData.price_map || {};
   const modelNumberMap  = colorData.model_number_map || {};
   colorModelNumberMaps[idx] = modelNumberMap;
@@ -1396,6 +1468,8 @@ function addColorRow(colorData) {
   const colorCode       = /^#[0-9a-f]{6}$/i.test(String(colorData.color_code || '')) ? String(colorData.color_code) : '#999999';
   const salePriceVal    = colorData.sale_price || '';
   const existingImages  = Array.isArray(colorData.images) ? colorData.images : [];
+  const savedVariations = colorData.existing_variations || {};
+  const imageLinks      = typeof colorData.image_urls === 'string' ? colorData.image_urls : '';
 
   const row = document.createElement('div');
   row.className = 'color-row' + (isFirst ? ' is-main' : '');
@@ -1403,6 +1477,8 @@ function addColorRow(colorData) {
   row.dataset.colorIdx = idx;
 
   row.innerHTML = `
+    <input type="hidden" name="colors[${idx}][retain_existing_images]" value="1">
+    ${Object.entries(savedVariations).map(([size, id]) => `<input type="hidden" name="colors[${idx}][existing_variations][${escHtml(size)}]" value="${escHtml(id)}">`).join('')}
     <div class="color-row-header">
       <span class="color-row-badge">${isFirst ? '★ Main Variation' : 'Variation #' + (document.getElementById('color-rows').children.length + 1)}</span>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -1448,12 +1524,12 @@ function addColorRow(colorData) {
     <div class="vs-form-group">
       <label class="vs-label">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-        Color Images
-        <span style="color:var(--mid);font-weight:400;text-transform:none">— photos shown when this color is selected (multiple allowed)</span>
+        Variation images
+        <span style="color:var(--mid);font-weight:400;text-transform:none">— new images apply to all sizes in this option</span>
       </label>
       <label for="color-img-${idx}" class="img-drop" id="color-img-drop-${idx}" style="min-height:80px;padding:14px">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <span id="color-img-label-${idx}">Click to upload images for this color · JPG / PNG / WebP</span>
+        <span id="color-img-label-${idx}">Upload variation images · JPG / PNG / WebP</span>
       </label>
       <input type="file" id="color-img-${idx}" name="variation_images[${idx}][]"
              accept="image/jpeg,image/png,image/webp" multiple style="display:none"
@@ -1467,6 +1543,12 @@ function addColorRow(colorData) {
           </div>`).join('')}
       </div>
       <div class="img-preview-row" id="color-img-previews-${idx}" style="margin-top:8px"></div>
+      <details style="margin-top:10px" ${imageLinks ? 'open' : ''}>
+        <summary style="cursor:pointer;font-weight:600">Use image links</summary>
+        <label class="vs-label" for="variation-image-urls-${idx}" style="display:block;margin:8px 0 4px">Variation image URLs</label>
+        <textarea class="vs-input" id="variation-image-urls-${idx}" name="variation_image_urls[${idx}]" rows="2" maxlength="65535"
+                  placeholder="One HTTPS image link per line">${escHtml(imageLinks)}</textarea>
+      </details>
     </div>
 
     <div class="vs-form-group">
@@ -1566,7 +1648,7 @@ function addSize(idx, size, price, salePrice, stock, stockStatus, status) {
   const tag  = document.createElement('span');
   tag.className = 'size-tag';
   tag.dataset.size = size;
-  tag.innerHTML = `${escHtml(size)}<button type="button" class="size-tag-remove" onclick="removeSize(${idx}, '${escJs(size)}')">×</button>`;
+  tag.innerHTML = `${escHtml(size)}<button type="button" class="size-tag-remove" onclick="removeSize(${idx}, this.closest('.size-tag').dataset.size)">×</button>`;
   wrap.insertBefore(tag, document.getElementById(`size-input-${idx}`));
 
   refreshSizePricingTable(idx);
@@ -1577,7 +1659,7 @@ function removeSize(idx, size) {
   colorSizes[idx] = colorSizes[idx].filter(s => s.size !== size);
 
   const wrap = document.getElementById(`size-tags-${idx}`);
-  const tag  = wrap.querySelector(`[data-size="${size}"]`);
+  const tag  = wrap.querySelector(`[data-size="${CSS.escape(size)}"]`);
   if (tag) tag.remove();
 
   refreshSizePricingTable(idx);
@@ -1595,7 +1677,7 @@ function refreshSizePricingTable(idx) {
   }
 
   let html = `<label class="vs-label" style="margin-bottom:6px">Per-Size Pricing & Stock</label>
-    <table class="price-map-table">
+    <table class="price-map-table seller-variation-table seller-variation-editor" role="table" aria-label="Pricing and stock by size">
       <thead><tr>
         <th>Size</th>
         <th>Model Number</th>
@@ -1606,43 +1688,43 @@ function refreshSizePricingTable(idx) {
         <th>Availability</th>
         <th style="background:#fff8f5;color:var(--orange);min-width:100px">Effective Price</th>
       </tr></thead>
-      <tbody>`;
+      <tbody role="rowgroup">`;
 
   sizes.forEach(({ size, price, salePrice, stock, stockStatus, status }) => {
     const ss = stockStatus || 'instock';
     const st = status || 'publish';
-    html += `<tr>
-      <td><strong>${escHtml(size)}</strong></td>
-      <td><input type="text" name="colors[${idx}][model_number_map][${escHtml(size)}]"
+    html += `<tr role="row">
+      <td role="cell" class="seller-variation-name"><strong>${escHtml(size)}</strong></td>
+      <td role="cell" data-label="Model number"><input type="text" aria-label="Model number" name="colors[${idx}][model_number_map][${escHtml(size)}]"
                  value="${escHtml(String(modelNumberMap[size] || ''))}" maxlength="120" placeholder="Optional"
                  class="vs-input" style="border:none;padding:2px 4px;width:130px"></td>
-      <td><input type="number" name="colors[${idx}][price_map][${escHtml(size)}]"
+      <td role="cell" data-label="Price (EGP)"><input type="number" aria-label="Regular price (EGP)" name="colors[${idx}][price_map][${escHtml(size)}]"
                  value="${escHtml(String(price || ''))}" step="0.01" min="0" placeholder="0.00"
                  data-role="regular" data-size="${escHtml(size)}"
-                 oninput="recalcEffective(${idx}, '${escJs(size)}')"
+                 oninput="recalcEffective(${idx}, this.dataset.size)"
                  class="vs-input" style="border:none;padding:2px 4px;width:100px"></td>
-      <td><input type="number" name="colors[${idx}][sale_price_map][${escHtml(size)}]"
+      <td role="cell" data-label="Sale price (EGP)"><input type="number" aria-label="Sale price (EGP)" name="colors[${idx}][sale_price_map][${escHtml(size)}]"
                  value="${salePrice ? escHtml(String(salePrice)) : ''}" step="0.01" min="0" placeholder="leave blank"
                  data-role="sale" data-size="${escHtml(size)}"
-                 oninput="recalcEffective(${idx}, '${escJs(size)}')"
+                 oninput="recalcEffective(${idx}, this.dataset.size)"
                  class="vs-input" style="border:none;padding:2px 4px;width:100px"></td>
-      <td><input type="number" name="colors[${idx}][stock][${escHtml(size)}]"
+      <td role="cell" data-label="Stock quantity"><input type="number" aria-label="Stock quantity" name="colors[${idx}][stock][${escHtml(size)}]"
                  value="${escHtml(String(stock || 0))}" min="0" placeholder="0"
                  class="vs-input" style="border:none;padding:2px 4px;width:80px"></td>
-      <td>
-        <select name="colors[${idx}][stock_status_map][${escHtml(size)}]" class="vs-input" style="border:none;padding:2px 4px;font-size:12px">
+      <td role="cell" data-label="Stock status">
+        <select aria-label="Stock status" name="colors[${idx}][stock_status_map][${escHtml(size)}]" class="vs-input" style="border:none;padding:2px 4px;font-size:12px">
           <option value="instock"     ${ss==='instock'     ? 'selected' : ''}>In Stock</option>
           <option value="outofstock"  ${ss==='outofstock'  ? 'selected' : ''}>Out of Stock</option>
           <option value="onbackorder" ${ss==='onbackorder' ? 'selected' : ''}>On Backorder</option>
         </select>
       </td>
-      <td>
-        <select name="colors[${idx}][status_map][${escHtml(size)}]" class="vs-input" style="border:none;padding:2px 4px;font-size:12px">
+      <td role="cell" data-label="Availability">
+        <select aria-label="Availability" name="colors[${idx}][status_map][${escHtml(size)}]" class="vs-input" style="border:none;padding:2px 4px;font-size:12px">
           <option value="publish" ${st==='publish' ? 'selected' : ''}>Active</option>
           <option value="draft"   ${st==='draft'   ? 'selected' : ''}>Disabled</option>
         </select>
       </td>
-      <td class="eff-price-cell" data-size-key="${escHtml(size)}" style="font-weight:600;font-size:13px">—</td>
+      <td role="cell" class="eff-price-cell" data-label="Effective price" data-size-key="${escHtml(size)}" style="font-weight:600;font-size:13px">—</td>
     </tr>`;
   });
 
@@ -1709,7 +1791,7 @@ function addTagPill(tag) {
   const pill = document.createElement('span');
   pill.className = 'tag-pill';
   pill.dataset.tag = tag;
-  pill.innerHTML = `${escHtml(tag)}<button type="button" class="tag-pill-remove" onclick="removeTag('${escJs(tag)}')">×</button>`;
+  pill.innerHTML = `${escHtml(tag)}<button type="button" class="tag-pill-remove" onclick="removeTag(this.closest('.tag-pill').dataset.tag)">×</button>`;
   tagsVisual.insertBefore(pill, document.getElementById('tag-input'));
 }
 function removeTag(tag) {
@@ -1792,8 +1874,42 @@ function removeLangTab(event, lang) {
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-function escJs(s) {
-  return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+function productStepIssues(step) {
+  const issues = [];
+  if (step === 'details' && !document.getElementById('product-name').value.trim()) {
+    issues.push('Enter a product name in English.');
+  }
+  if (step === 'pricing') {
+    commitPendingSizes();
+    const rows = document.querySelectorAll('.color-row');
+    rows.forEach(row => row.classList.remove('has-error'));
+    if (document.getElementById('has-variations-toggle').checked) {
+      if (!rows.length) issues.push('Add at least one variation.');
+      rows.forEach((row, index) => {
+        const name = row.querySelector('[name$="[name]"]')?.value.trim();
+        const type = row.querySelector('[name$="[type]"]')?.value;
+        const rowIssues = [];
+        if (type === 'attribute' && !name) rowIssues.push('enter an attribute value');
+        if (!row.querySelector('.size-tag')) rowIssues.push('add at least one size');
+        if ([...row.querySelectorAll('input[name*="[price_map]"]')].some(input => Number(input.value) <= 0)) {
+          rowIssues.push('enter a price for each size');
+        }
+        if (rowIssues.length) {
+          row.classList.add('has-error');
+          issues.push('Variation ' + (index + 1) + ': ' + rowIssues.join(', ') + '.');
+        }
+      });
+    } else {
+      if (Number(document.getElementById('simple-regular-price').value) <= 0) {
+        issues.push('Enter a regular price greater than zero.');
+      }
+      if (document.getElementById('simple-stock').value === '') issues.push('Enter the stock quantity.');
+    }
+  }
+  if ((step === 'photos' || step === 'pricing') && checkUploadSize()) {
+    issues.push('Reduce images to under ' + MAX_SINGLE_FILE_MB + ' MB each and ' + MAX_TOTAL_UPLOAD_MB + ' MB total.');
+  }
+  return issues;
 }
 
 // ─── Init (page load) ──────────────────────────────────────────────
@@ -1814,7 +1930,9 @@ document.addEventListener('DOMContentLoaded', function () {
   // ── Auto-scroll to error summary + highlight bad color rows ──────
   const summary = document.getElementById('error-summary');
   if (summary) {
-    setTimeout(() => summary.scrollIntoView({ behavior: 'smooth', block: 'center' }), 120);
+    if (!document.querySelector('[data-product-wizard].is-guided')) {
+      setTimeout(() => summary.scrollIntoView({ behavior: 'smooth', block: 'center' }), 120);
+    }
     // Mark attribute rows missing a value or any variation row missing sizes.
     document.querySelectorAll('.color-row').forEach(row => {
       const isAttribute = row.querySelector('[name$="[type]"]')?.value === 'attribute';
@@ -1826,42 +1944,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // ── Client-side pre-validation on submit ─────────────────────────
   document.getElementById('product-form').addEventListener('submit', function (e) {
-    commitPendingSizes();
-    const issues = [];
-
-    // Clear previous has-error on color rows
-    document.querySelectorAll('.color-row').forEach(r => r.classList.remove('has-error'));
-
-    // Product name
-    if (!(document.querySelector('[name="name"]')?.value?.trim())) {
-      issues.push('Product name (English) is required.');
-    }
-
-    const hasVars = document.getElementById('has-variations-toggle')?.checked;
-    if (hasVars) {
-      const colorRows = document.querySelectorAll('.color-row');
-      if (colorRows.length === 0) {
-        issues.push('Add at least one color variation.');
-      } else {
-        colorRows.forEach((row, i) => {
-          const n   = i + 1;
-          const isAttribute = row.querySelector('[name$="[type]"]')?.value === 'attribute';
-          const nm  = row.querySelector('[name$="[name]"]')?.value?.trim() || '';
-          const sz  = row.querySelectorAll('.size-tag').length;
-          if (isAttribute && !nm) { issues.push(`Attribute #${n}: value is required.`); row.classList.add('has-error'); }
-          if (sz===0){ issues.push(`Variation #${n}${nm ? ` "${nm}"` : ''}: add at least one size.`); row.classList.add('has-error'); }
-        });
-      }
-    } else {
-      const rp = parseFloat(document.querySelector('[name="regular_price"]')?.value || '0');
-      if (!rp || rp <= 0) issues.push('Regular price is required and must be greater than 0.');
-      const sq = document.querySelector('[name="stock_quantity"]')?.value;
-      if (sq === '' || sq === null || sq === undefined) issues.push('Stock quantity is required.');
-    }
-
-    if (checkUploadSize()) {
-      issues.push(`Some images are too large — reduce them to under ${MAX_SINGLE_FILE_MB} MB each and ${MAX_TOTAL_UPLOAD_MB} MB total before saving.`);
-    }
+    const issues = [...new Set(['details', 'pricing', 'photos'].flatMap(productStepIssues))];
 
     if (issues.length === 0) {
       // Inject hidden sizes[] inputs from the colorSizes object so the server receives them
@@ -1896,7 +1979,7 @@ document.addEventListener('DOMContentLoaded', function () {
       `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
        <div style="flex:1">
          <strong>${issues.length} problem${issues.length!==1?'s':''} need${issues.length===1?'s':''} fixing before you can save:</strong>
-         <ul style="margin:6px 0 0 16px;font-size:12px;line-height:1.7">${issues.map(i=>`<li>${i}</li>`).join('')}</ul>
+         <ul style="margin:6px 0 0 16px;font-size:12px;line-height:1.7">${issues.map(i=>`<li>${escHtml(i)}</li>`).join('')}</ul>
        </div>`;
     setTimeout(() => box.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
   });
@@ -1968,7 +2051,11 @@ function fillFakeData() {
 
   // Pick a random category checkbox
   const catBoxes = document.querySelectorAll('[name="categories[]"]');
-  if (catBoxes.length) catBoxes[rand(0, catBoxes.length-1)].checked = true;
+  if (catBoxes.length) {
+    const category = catBoxes[rand(0, catBoxes.length - 1)];
+    category.checked = true;
+    category.dispatchEvent(new Event('change', { bubbles: true }));
+  }
 
   // Translations — add Arabic with fake data
   const arNames  = ['قميص قطني كلاسيكي','بنطلون جينز أنيق','جاكيت عصري فاخر','فستان صيفي خفيف','بلوزة كاجوال مريحة'];
@@ -2000,5 +2087,9 @@ function fillFakeData() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 </script>
+
+@unless($isEdit)
+<script src="{{ asset('js/vendor-product-wizard.js') }}?v={{ filemtime(public_path('js/vendor-product-wizard.js')) }}" defer></script>
+@endunless
 
 @endsection

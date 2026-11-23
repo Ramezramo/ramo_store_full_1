@@ -353,23 +353,7 @@ class VendorProductController extends Controller
             ]);
         }
 
-        $variationImageMap = $this->uploadVariationImages($request);
-
-        foreach ($variations as $i => $v) {
-            $color = $v['_color'] ?? null;
-            $varImages = ($color && isset($variationImageMap[$color]))
-                ? json_encode($variationImageMap[$color])
-                : '[]';
-            unset($v['_color']);
-
-            DB::table('product_variations')->insert(array_merge($v, [
-                'product_id'     => $productId,
-                'main_variation' => $i === 0,
-                'images'         => $varImages,
-                'created_at'     => $now,
-                'updated_at'     => $now,
-            ]));
-        }
+        $this->saveVariationRows($request, $productId, $variations, $now);
 
         app(\App\Services\ShopPriceRangeService::class)->refreshGlobal();
 
@@ -415,7 +399,6 @@ class VendorProductController extends Controller
         $unitType     = $unit ? array_key_first($unit) : 'piece';
         $unitAmount   = $unit ? ($unit[$unitType] ?? 1) : 1;
         $whatsappData = $whatsapp['whatsapp'] ?? [];
-        $imgBase      = \Illuminate\Support\Facades\Storage::url('');
 
         $allCoupons = DB::table('coupons')->where('status', 'publish')->orderBy('code')->get(['id', 'code', 'amount', 'discount_type']);
         $attachedCoupon = null;
@@ -428,7 +411,7 @@ class VendorProductController extends Controller
             'product', 'variation', 'dbVariations', 'hasVariations',
             'categories', 'brands', 'selectedCats', 'relatedIds', 'relatedProds',
             'images', 'translations', 'tags', 'attributes', 'whatsappData',
-            'unitType', 'unitAmount', 'imgBase',
+            'unitType', 'unitAmount',
             'allCoupons', 'attachedCoupon'
         ));
     }
@@ -521,18 +504,12 @@ class VendorProductController extends Controller
 
             case 'variations':
                 $hasVariations = $request->boolean('has_variations');
+                $request->validate($this->variationImageRules());
                 [$variations, $totalStock] = $this->buildVariations($request, $hasVariations);
-                $variationImageMap = $this->uploadVariationImages($request);
-                DB::table('product_variations')->where('product_id', $id)->delete();
-                foreach ($variations as $i => $v) {
-                    $color     = $v['_color'] ?? null;
-                    $varImages = ($color && isset($variationImageMap[$color])) ? json_encode($variationImageMap[$color]) : '[]';
-                    unset($v['_color']);
-                    DB::table('product_variations')->insert(array_merge($v, [
-                        'product_id' => $id, 'main_variation' => $i === 0,
-                        'images' => $varImages, 'created_at' => $now, 'updated_at' => $now,
-                    ]));
+                if ($variations === []) {
+                    return back()->withErrors(['colors' => 'Add at least one variation before saving.'])->withInput();
                 }
+                $this->saveVariationRows($request, $id, $variations, $now, replace: true);
                 DB::table('products_data')->where('id', $id)->update([
                     'has_variations' => $hasVariations,
                     'stock_quantity' => $totalStock,
@@ -565,38 +542,24 @@ class VendorProductController extends Controller
                 break;
 
             case 'images':
+                $request->validate($this->productImageRules());
                 $existingImages = json_decode($product->images ?? '{}', true) ?: [];
-
-                // Delete thumbnail if requested
-                if ($request->boolean('delete_thumbnail') && !empty($existingImages['thumbnail'])) {
-                    Storage::disk('public')->delete($existingImages['thumbnail']);
-                    unset($existingImages['thumbnail']);
-                }
-
-                // Delete individual other_images
-                foreach ((array) $request->input('delete_other_images', []) as $delPath) {
-                    Storage::disk('public')->delete($delPath);
-                    $existingImages['other_images'] = array_values(
-                        array_filter($existingImages['other_images'] ?? [], fn($p) => $p !== $delPath)
-                    );
-                }
-
-                // Delete individual natural_images
-                foreach ((array) $request->input('delete_natural_images', []) as $delPath) {
-                    Storage::disk('public')->delete($delPath);
-                    $existingImages['natural_images'] = array_values(
-                        array_filter($existingImages['natural_images'] ?? [], fn($p) => $p !== $delPath)
-                    );
-                }
-
                 $imagesJson = $this->buildImagesJson($request, $existingImages);
                 DB::table('products_data')->where('id', $id)->update([
                     'images'     => $imagesJson,
                     'updated_at' => $now,
                 ]);
+                $this->deleteReplacedProductUploads($existingImages, $imagesJson);
                 break;
 
             case 'var_images':
+                $request->validate([
+                    'new_images' => 'nullable|array',
+                    'new_images.*' => 'nullable|image|mimes:jpeg,png,webp|max:5120',
+                    'new_image_urls' => $this->imageLinkRules(multiple: true),
+                    'delete_images' => 'nullable|array',
+                    'delete_images.*' => 'string|max:2048',
+                ]);
                 $varId = (int) $request->input('variation_id');
                 $variation = DB::table('product_variations')
                     ->where('id', $varId)
@@ -608,10 +571,9 @@ class VendorProductController extends Controller
                     ? (json_decode($variation->images, true) ?? [])
                     : (array) ($variation->images ?? []);
 
-                foreach ((array) $request->input('delete_images', []) as $delPath) {
-                    Storage::disk('public')->delete($delPath);
-                    $varImgs = array_values(array_filter($varImgs, fn($p) => $p !== $delPath));
-                }
+                // A file may also be used by other sizes. Detach it from this variation only.
+                $varImgs = array_diff($varImgs, (array) $request->input('delete_images', []));
+                $varImgs = array_merge($varImgs, $this->imageLinks($request->input('new_image_urls')));
 
                 if ($request->hasFile('new_images')) {
                     $varAttrs  = is_string($variation->attributes)
@@ -628,7 +590,7 @@ class VendorProductController extends Controller
                 }
 
                 DB::table('product_variations')->where('id', $varId)->update([
-                    'images'     => json_encode(array_values($varImgs)),
+                    'images'     => json_encode(array_values(array_unique($varImgs))),
                     'updated_at' => $now,
                 ]);
                 break;
@@ -695,10 +657,6 @@ class VendorProductController extends Controller
                 $v->images = is_string($v->images)
                     ? (json_decode($v->images, true) ?? [])
                     : (array) ($v->images ?? []);
-                $v->images = array_values(array_filter(array_map(function ($path) {
-                    $path = ltrim(str_replace('\\', '/', (string) $path), '/');
-                    return preg_replace('#^storage/#', '', $path);
-                }, $v->images), fn ($path) => $path !== '' && Storage::disk('public')->exists($path)));
                 return $v;
             });
 
@@ -814,62 +772,8 @@ class VendorProductController extends Controller
             DB::table('product_category')->insert(['product_id' => $id, 'category_id' => (int) $catId]);
         }
 
-        $variationImageMap = $this->uploadVariationImages($request);
-        $existingVariationImagesByColor = [];
-        foreach (DB::table('product_variations')->where('product_id', $id)->get() as $existingVariation) {
-            $existingAttrs = is_string($existingVariation->attributes)
-                ? (json_decode($existingVariation->attributes, true) ?? [])
-                : (array) ($existingVariation->attributes ?? []);
-            $existingColor = trim((string) ($existingAttrs['Color'] ?? ''));
-            if ($existingColor === '') continue;
-
-            $existingPaths = is_string($existingVariation->images)
-                ? (json_decode($existingVariation->images, true) ?? [])
-                : (array) ($existingVariation->images ?? []);
-            foreach ($existingPaths as $path) {
-                $path = ltrim(str_replace('\\', '/', (string) $path), '/');
-                $path = preg_replace('#^storage/#', '', $path);
-                if ($path !== '' && Storage::disk('public')->exists($path)) {
-                    $existingVariationImagesByColor[$existingColor][$path] = $path;
-                }
-            }
-        }
-
-        foreach ((array) $request->input('colors', []) as $colorIndex => $colorData) {
-            if (! is_array($colorData)) continue;
-            $colorName = trim($this->sanitizeProductText($colorData['name'] ?? ''));
-            if ($colorName === '' && ($colorData['type'] ?? 'color') === 'color') {
-                $colorName = 'Color ' . ((int) $colorIndex + 1);
-            }
-            if ($colorName === '') continue;
-
-            $allowedExisting = $existingVariationImagesByColor[$colorName] ?? [];
-            $keep = [];
-            foreach ((array) ($colorData['existing_images'] ?? []) as $path) {
-                $path = ltrim(str_replace('\\', '/', (string) $path), '/');
-                $path = preg_replace('#^storage/#', '', $path);
-                if (isset($allowedExisting[$path])) $keep[$path] = $path;
-            }
-            $new = $variationImageMap[$colorName] ?? [];
-            $variationImageMap[$colorName] = array_values(array_unique(array_merge(array_values($keep), $new)));
-        }
-
-        DB::table('product_variations')->where('product_id', $id)->delete();
-        foreach ($variations as $i => $v) {
-            $color = $v['_color'] ?? null;
-            $varImages = ($color && isset($variationImageMap[$color]))
-                ? json_encode($variationImageMap[$color])
-                : '[]';
-            unset($v['_color']);
-
-            DB::table('product_variations')->insert(array_merge($v, [
-                'product_id'     => $id,
-                'main_variation' => $i === 0,
-                'images'         => $varImages,
-                'created_at'     => $now,
-                'updated_at'     => $now,
-            ]));
-        }
+        $this->saveVariationRows($request, $id, $variations, $now, replace: true);
+        $this->deleteReplacedProductUploads($existingImages, $imagesJson);
 
         app(\App\Services\ShopPriceRangeService::class)->refreshGlobal();
 
@@ -980,9 +884,6 @@ class VendorProductController extends Controller
             'discount_percentage'   => 'nullable|numeric|min:0|max:80.99',
             'minimum_order_qty'     => 'nullable|integer|min:1|max:100',
             'max_orders_per_person' => 'nullable|integer|min:0|max:100',
-            'thumbnail'             => 'nullable|image|mimes:jpeg,png,webp|max:5120',
-            'other_images.*'        => 'nullable|image|mimes:jpeg,png,webp|max:5120',
-            'natural_images.*'      => 'nullable|image|mimes:jpeg,png,webp|max:5120',
             'whatsapp_available'    => 'nullable|boolean',
             'whatsapp_number'       => 'nullable|string|max:20',
             // Translations
@@ -997,6 +898,7 @@ class VendorProductController extends Controller
             // Tags
             'tags_input'            => 'nullable|string|max:500',
         ];
+        $base += $this->productImageRules();
 
         if (! $hasVariations) {
             $base['regular_price']  = 'required|numeric|min:0';
@@ -1019,10 +921,9 @@ class VendorProductController extends Controller
             $base['colors.*.model_number_map.*']      = 'nullable|string|max:120';
             $base['colors.*.sale_price_map']         = 'nullable|array';
             $base['colors.*.sale_price_map.*']       = 'nullable|numeric|min:0';
-            $base['colors.*.existing_images']         = 'nullable|array';
-            $base['colors.*.existing_images.*']       = 'string|max:1024';
             $base['colors.*.regular_price']          = 'nullable|numeric|min:0';
             $base['colors.*.sale_price']             = 'nullable|numeric|min:0';
+            $base += $this->variationImageRules();
         }
 
         return $base;
@@ -1061,7 +962,7 @@ class VendorProductController extends Controller
             $totalStock = $stock;
 
             $rows[] = [
-                '_color'         => null,
+                '_option_index'  => null,
                 'attributes'     => '{}',
                 'price'          => $price,
                 'regular_price'  => $regularPrice,
@@ -1075,15 +976,17 @@ class VendorProductController extends Controller
         }
 
         // Variable product: Color + Sizes structure
-        $colorsInput = array_values((array) $request->input('colors', []));
+        $colorsInput = (array) $request->input('colors', []);
         $discountPct = (float) $request->input('discount_percentage', 0);
+        $optionNumber = 0;
 
         foreach ($colorsInput as $colorIndex => $colorData) {
+            $optionNumber++;
             $variationType = ($colorData['type'] ?? 'color') === 'attribute' ? 'attribute' : 'color';
             $optionName = trim($this->sanitizeProductText($colorData['name'] ?? ''));
 
             if ($variationType === 'color') {
-                $optionName = $optionName !== '' ? $optionName : 'Color '.((int) $colorIndex + 1);
+                $optionName = $optionName !== '' ? $optionName : 'Color '.$optionNumber;
                 $attributeName = 'Color';
                 $colorCode = strtoupper(trim((string)($colorData['color_code'] ?? '')));
                 if (! preg_match('/^#[0-9A-F]{6}$/', $colorCode)) {
@@ -1148,7 +1051,8 @@ class VendorProductController extends Controller
                 }
 
                 $rows[] = [
-                    '_color'         => $optionName,
+                    '_option_index'  => $colorIndex,
+                    '_size'          => $size,
                     'attributes'     => json_encode($attributes),
                     'model_number'   => trim((string) ($modelNumberMap[$size] ?? '')) ?: null,
                     'price'          => $price,
@@ -1286,78 +1190,175 @@ class VendorProductController extends Controller
         return $slug . '-' . $i;
     }
 
-    /**
-     * Upload variation images per color.
-     * Files come in as: variation_images[{colorIdx}][] => files
-     * Color names are resolved from: colors[{colorIdx}][name]
-     * Returns map keyed by color name (ucfirst).
-     */
-    private function uploadVariationImages(Request $request): array
+    private function productImageRules(): array
     {
-        $map      = [];
-        $allFiles = $request->allFiles();
+        $upload = 'nullable|image|mimes:jpeg,png,webp|max:5120';
 
-        if (! isset($allFiles['variation_images']) || ! is_array($allFiles['variation_images'])) {
-            return $map;
-        }
+        return [
+            'thumbnail' => $upload,
+            'thumbnail_url' => [...$this->imageLinkRules(), 'prohibits:thumbnail'],
+            'other_images' => 'nullable|array',
+            'other_images.*' => $upload,
+            'other_image_urls' => $this->imageLinkRules(multiple: true),
+            'natural_images' => 'nullable|array',
+            'natural_images.*' => $upload,
+            'natural_image_urls' => $this->imageLinkRules(multiple: true),
+            'delete_thumbnail' => 'nullable|boolean',
+            'delete_other_images' => 'nullable|array',
+            'delete_other_images.*' => 'string|max:2048',
+            'delete_natural_images' => 'nullable|array',
+            'delete_natural_images.*' => 'string|max:2048',
+        ];
+    }
 
-        // Build index → color name lookup from the submitted colors array
-        $colorsByIndex = [];
-        foreach ((array) $request->input('colors', []) as $idx => $colorData) {
-            $name = ucfirst($this->sanitizeProductText($colorData['name'] ?? ''));
-            if ($name) $colorsByIndex[(string) $idx] = $name;
-        }
+    private function variationImageRules(): array
+    {
+        return [
+            'variation_images' => 'nullable|array',
+            'variation_images.*' => 'array',
+            'variation_images.*.*' => 'nullable|image|mimes:jpeg,png,webp|max:5120',
+            'variation_image_urls' => 'nullable|array',
+            'variation_image_urls.*' => $this->imageLinkRules(multiple: true),
+            'colors.*.existing_images' => 'nullable|array',
+            'colors.*.existing_images.*' => 'string|max:2048',
+            'colors.*.existing_variations' => 'nullable|array',
+            'colors.*.existing_variations.*' => 'integer',
+            'colors.*.retain_existing_images' => 'nullable|boolean',
+        ];
+    }
 
-        foreach ($allFiles['variation_images'] as $idx => $files) {
-            // Resolve color name either from the index lookup or use idx directly as name
-            $colorName  = $colorsByIndex[(string) $idx] ?? ucfirst(trim((string) $idx));
-            if (! $colorName) continue;
-
-            $safeFolder = 'products/variations/' . Str::slug($colorName);
-            Storage::disk('public')->makeDirectory($safeFolder);
-
-            $paths = [];
-            foreach ((array) $files as $file) {
-                if ($file && $file->isValid()) {
-                    $paths[] = $this->storeImage($file, $safeFolder, 1200, 1200);
+    private function imageLinkRules(bool $multiple = false): array
+    {
+        return [
+            'bail', 'nullable', 'string', $multiple ? 'max:65535' : 'max:2048',
+            function ($attribute, string $value, $fail) use ($multiple): void {
+                foreach ($multiple ? $this->imageLinks($value) : [$value] as $link) {
+                    $parts = filter_var($link, FILTER_VALIDATE_URL) ? parse_url($link) : [];
+                    $host = trim(strtolower($parts['host'] ?? ''), '[].');
+                    $publicHost = filter_var($host, FILTER_VALIDATE_IP)
+                        ? filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)
+                        : str_contains($host, '.') && !str_ends_with($host, '.localhost') && !str_ends_with($host, '.local');
+                    if (strlen($link) > 2048 || strtolower($parts['scheme'] ?? '') !== 'https'
+                        || !$publicHost || isset($parts['user']) || isset($parts['pass'])) {
+                        $fail($multiple ? 'Enter one public HTTPS image link per line.' : 'Enter a public HTTPS image link.');
+                        return;
+                    }
                 }
+            },
+        ];
+    }
+
+    private function imageLinks(?string $value): array
+    {
+        return array_values(array_filter(array_map(
+            fn ($line) => preg_replace('/^https:/i', 'https:', trim($line)),
+            preg_split('/\R/', $value ?? '')
+        )));
+    }
+
+    private function saveVariationRows(Request $request, int $productId, array $variations, $now, bool $replace = false): void
+    {
+        $existing = $replace ? DB::table('product_variations')->where('product_id', $productId)->get() : collect();
+        $byId = $existing->keyBy('id');
+        $byAttributes = $existing->keyBy(fn ($row) => $this->variationImageKey($row->attributes));
+        $colors = (array) $request->input('colors', []);
+        $links = (array) $request->input('variation_image_urls', []);
+        $files = (array) $request->file('variation_images', []);
+        $added = [];
+        $rows = [];
+
+        foreach ($variations as $i => $variation) {
+            $index = $variation['_option_index'];
+            $size = $variation['_size'] ?? null;
+            $option = $index === null ? [] : ($colors[$index] ?? []);
+            $source = $byId->get($option['existing_variations'][$size] ?? null)
+                ?? $byAttributes->get($this->variationImageKey($variation['attributes']));
+            $current = array_filter((array) json_decode($source->images ?? '[]', true), 'is_string');
+
+            if (!empty($option['retain_existing_images']) || isset($option['existing_images'])) {
+                $current = array_intersect($current, $option['existing_images'] ?? []);
             }
-            if ($paths) $map[$colorName] = $paths;
+            if ($index !== null && ! isset($added[$index])) {
+                $folder = 'products/variations/' . (Str::slug((string) ($option['name'] ?? '')) ?: 'option');
+                $added[$index] = $this->collectImages($files[$index] ?? [], $links[$index] ?? null, $folder);
+            }
+            unset($variation['_option_index'], $variation['_size']);
+            $rows[] = array_merge($variation, [
+                'product_id' => $productId,
+                'main_variation' => $i === 0,
+                'images' => json_encode(array_values(array_unique(array_merge($current, $added[$index] ?? [])))),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
         }
 
-        return $map;
+        DB::transaction(function () use ($replace, $productId, $rows): void {
+            if ($replace) DB::table('product_variations')->where('product_id', $productId)->delete();
+            foreach ($rows as $row) DB::table('product_variations')->insert($row);
+        });
+    }
+
+    private function variationImageKey(?string $attributes): string
+    {
+        $attributes = (array) json_decode($attributes ?? '{}', true);
+        unset($attributes['_color_code']);
+        ksort($attributes);
+
+        return json_encode($attributes);
+    }
+
+    private function collectImages(array $files, ?string $links, string $folder): array
+    {
+        $paths = [];
+        foreach ($files as $file) {
+            if ($file && $file->isValid()) {
+                $paths[] = $this->storeImage($file, $folder, 1200, 1200);
+            }
+        }
+
+        return array_merge($paths, $this->imageLinks($links));
     }
 
     private function buildImagesJson(Request $request, array $existing = []): string
     {
         $images = $existing;
 
+        if ($request->boolean('delete_thumbnail')) {
+            unset($images['thumbnail']);
+        }
         if ($request->hasFile('thumbnail')) {
-            if (! empty($images['thumbnail'])) {
-                Storage::disk('public')->delete($images['thumbnail']);
-            }
             $images['thumbnail'] = $this->storeImage($request->file('thumbnail'), 'products/thumbnails', 800, 800);
+        } elseif ($request->filled('thumbnail_url')) {
+            $images['thumbnail'] = $this->imageLinks($request->input('thumbnail_url'))[0];
         }
 
-        if ($request->hasFile('other_images')) {
-            if (! isset($images['other_images'])) $images['other_images'] = [];
-            foreach ($request->file('other_images') as $file) {
-                if ($file && $file->isValid()) {
-                    $images['other_images'][] = $this->storeImage($file, 'products/other_images', 1200, 1200);
-                }
+        foreach (['other' => 'others', 'natural' => 'natural'] as $type => $legacy) {
+            $key = $type.'_images';
+            $remove = (array) $request->input('delete_'.$key, []);
+            $added = $this->collectImages((array) $request->file($key, []), $request->input($type.'_image_urls'), 'products/'.$key);
+            if ($remove && isset($images[$legacy])) {
+                $images[$legacy] = array_values(array_diff((array) $images[$legacy], $remove));
             }
-        }
-
-        if ($request->hasFile('natural_images')) {
-            if (! isset($images['natural_images'])) $images['natural_images'] = [];
-            foreach ($request->file('natural_images') as $file) {
-                if ($file && $file->isValid()) {
-                    $images['natural_images'][] = $this->storeImage($file, 'products/natural_images', 1200, 1200);
-                }
+            if ($remove || $added) {
+                $kept = array_diff((array) ($images[$key] ?? []), $remove);
+                $images[$key] = array_values(array_unique(array_merge($kept, $added)));
             }
         }
 
         return json_encode($images);
+    }
+
+    private function deleteReplacedProductUploads(array $previous, string $updated): void
+    {
+        $paths = static fn (array $images): array => array_merge(
+            [$images['thumbnail'] ?? null], (array) ($images['other_images'] ?? []), (array) ($images['natural_images'] ?? []),
+            (array) ($images['others'] ?? []), (array) ($images['natural'] ?? []),
+        );
+        foreach (array_diff($paths($previous), $paths(json_decode($updated, true) ?: [])) as $path) {
+            if (is_string($path) && preg_match('#^products/(thumbnails|other_images|natural_images)/[a-zA-Z0-9_.-]+$#D', $path)) {
+                Storage::disk('public')->delete($path);
+            }
+        }
     }
 
     private function storeImage($file, string $dir, int $maxW, int $maxH): string

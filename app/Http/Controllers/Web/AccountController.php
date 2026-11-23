@@ -32,7 +32,10 @@ class AccountController extends Controller
     {
         $user = Auth::user();
         $vendorApplication = \App\Models\VendorApplication::where('user_id', $user->id)->first();
-        return view('web.account.hub', compact('user', 'vendorApplication'));
+        $marketplaceReady = $vendorApplication?->status === 'approved' && $vendorApplication->vendor_id
+            && \App\Models\VendorUser::whereKey($vendorApplication->vendor_id)->where('status', 'approved')->exists();
+
+        return view('web.account.hub', compact('user', 'vendorApplication', 'marketplaceReady'));
     }
 
     public function profile()

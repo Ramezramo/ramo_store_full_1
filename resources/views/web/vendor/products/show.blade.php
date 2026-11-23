@@ -74,9 +74,6 @@
 
 /* ── Category chips ───────────────────────────────────── */
 .cat-chip{background:#f3f4f6;border-radius:8px;padding:4px 10px;font-size:12px;display:inline-block;margin:2px}
-.cat-grid-check{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px}
-.cat-check-label{display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:4px 6px;border-radius:6px}
-.cat-check-label:hover{background:#f9fafb}
 
 /* ── Alert ────────────────────────────────────────────── */
 .vs-alert-ok{background:#dcfce7;border:1px solid #bbf7d0;color:#166534;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;margin-bottom:16px}
@@ -101,15 +98,15 @@
 .img-drop:hover{border-color:var(--orange);color:var(--orange)}
 .img-drop.has-file{border-color:var(--green);color:var(--green)}
 </style>
+<link rel="stylesheet" href="{{ asset('css/vendor-product-mobile.css') }}?v={{ filemtime(public_path('css/vendor-product-mobile.css')) }}">
 @endpush
 
 @section('content')
 
 @php
-  $imgBase   = \Illuminate\Support\Facades\Storage::url('');
+  $mediaUrl  = fn ($path) => \App\Constants\AppConstants::imageUrl($path) ?? asset('images/product-placeholder.svg');
   $sectionUrl = route('vendor.products.update-section', $product->id);
-  $thumb      = $images['thumbnail'] ?? null;
-  $thumbUrl   = $thumb ? $imgBase . ltrim($thumb, '/') : null;
+  $thumbUrl   = \App\Constants\AppConstants::productThumbnailUrl($images);
   $mainVar    = $dbVariations->first();
   $priceRange = $dbVariations->count()
     ? ['min' => $dbVariations->min('price'), 'max' => $dbVariations->max('price')]
@@ -118,6 +115,7 @@
   $discountPct = (float)($product->discount_percentage ?? 0);
 @endphp
 
+<div class="vendor-product-detail">
 {{-- ── SUCCESS FLASH ─────────────────────────────────── --}}
 @if(session('success'))
   <div class="vs-alert-ok">
@@ -126,21 +124,25 @@
   </div>
 @endif
 
+@if(old('_section') && $errors->any())
+  <div class="vs-alert vs-alert-error" role="alert">{{ $errors->first() }}</div>
+@endif
+
 {{-- ── PAGE HEADER ───────────────────────────────────── --}}
 <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-  <a href="{{ route('vendor.products') }}" style="color:var(--mid);font-size:13px">← Products</a>
+  <a href="{{ route('vendor.products') }}" class="product-back-link">← Products</a>
 </div>
 
 <div class="ph-wrap">
   @if($thumbUrl)
-    <img src="{{ $thumbUrl }}" class="ph-thumb" alt="">
+    <img src="{{ $thumbUrl }}" class="ph-thumb" alt="" onerror="this.onerror=null;this.src='{{ asset('images/product-placeholder.svg') }}'">
   @else
     <div class="ph-thumb-ph">
       <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
     </div>
   @endif
   <div class="ph-meta">
-    <div class="ph-name">{{ $product->name }}</div>
+    <h1 class="ph-name">{{ $product->name }}</h1>
     <div class="ph-badges">
       <span class="badge badge-{{ $product->status }}">{{ ucfirst($product->status) }}</span>
       <span class="badge badge-{{ $product->acceptance_status ?? 'pending' }}">{{ ucfirst($product->acceptance_status ?? 'Pending review') }}</span>
@@ -203,7 +205,7 @@
       @if($product->description)
         <div class="dr" style="align-items:flex-start">
           <span class="dr-label">Description</span>
-          <span class="dr-value" style="max-height:80px;overflow:hidden;text-overflow:ellipsis">{{ Str::limit(strip_tags($product->description), 200) }}</span>
+          <span class="dr-value">{{ Str::limit(strip_tags($product->description), 200) }}</span>
         </div>
       @endif
     </div>
@@ -465,12 +467,14 @@
 @php
   // Group variations by color for display
   $colorGroups = [];
+  $hasCustomOptions = false;
   foreach ($dbVariations as $dv) {
     $attrs = $dv->attributes ?? [];
+    $hasCustomOptions = $hasCustomOptions || (bool) array_diff(array_keys($attrs), ['Color', 'Size', '_color_code']);
     $color = $attrs['Color'] ?? 'Default';
-    $size  = $attrs['Size'] ?? (implode(' / ', array_filter($attrs, fn($k) => strtolower($k) !== 'color', ARRAY_FILTER_USE_KEY)) ?: 'Default');
+    $size  = $attrs['Size'] ?? 'Default';
     if (!isset($colorGroups[$color])) $colorGroups[$color] = [];
-    $colorGroups[$color][] = ['size' => $size, 'price' => $dv->price, 'reg' => $dv->regular_price, 'sale' => $dv->sale_price, 'stock' => $dv->stock_quantity, 'main' => $dv->main_variation, 'stock_status' => $dv->stock_status ?? 'instock', 'status' => $dv->status ?? 'publish', 'model_number' => $dv->model_number ?? ''];
+    $colorGroups[$color][] = ['id' => $dv->id, 'size' => $size, 'price' => $dv->price, 'reg' => $dv->regular_price, 'sale' => $dv->sale_price, 'stock' => $dv->stock_quantity, 'main' => $dv->main_variation, 'stock_status' => $dv->stock_status ?? 'instock', 'status' => $dv->status ?? 'publish', 'model_number' => $dv->model_number ?? ''];
   }
   $editColorRows4 = [];
   foreach ($colorGroups as $colorName => $rows) {
@@ -488,7 +492,14 @@
         $salePriceMap4[$r['size']] = $dvSale4;
       }
     }
-    $editColorRows4[] = ['name' => $colorName, 'sizes' => $sizes, 'price_map' => $priceMap, 'sale_price_map' => $salePriceMap4, 'stock' => $stockMap, 'stock_status_map' => $stockStatusMap4, 'status_map' => $statusMap4, 'model_number_map' => $modelNumberMap4, 'sale_price' => '', 'images' => []];
+    $editColorRows4[] = ['name' => $colorName, 'sizes' => $sizes, 'price_map' => $priceMap, 'sale_price_map' => $salePriceMap4, 'stock' => $stockMap, 'stock_status_map' => $stockStatusMap4, 'status_map' => $statusMap4, 'model_number_map' => $modelNumberMap4, 'sale_price' => '', 'existing_variations' => array_column($rows, 'id', 'size')];
+  }
+  if (old('_section') === 'variations' && is_array(old('colors'))) {
+    $editColorRows4 = [];
+    foreach (array_filter(old('colors'), 'is_array') as $index => $row) {
+      $row['image_urls'] = old('variation_image_urls')[$index] ?? '';
+      $editColorRows4[] = $row;
+    }
   }
 @endphp
 <div class="dc" id="dc-variations">
@@ -501,10 +512,14 @@
         @if(count($colorGroups) > 0) · {{ count($colorGroups) }} color{{ count($colorGroups) !== 1 ? 's' : '' }} @endif
       </span>
     </div>
+    @if($hasCustomOptions)
+      <a class="dc-edit-btn" href="{{ route('vendor.products.edit', $product->id) }}#section-pricing">Edit</a>
+    @else
     <button class="dc-edit-btn" onclick="openSection('variations')">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       Edit
     </button>
+    @endif
   </div>
   <div class="dc-body">
 
@@ -512,7 +527,7 @@
       @if($dbVariations->isEmpty())
         <span style="color:var(--mid);font-size:13px">No variations defined.</span>
       @else
-        <table class="var-table">
+        <table class="var-table seller-variation-table" role="table" aria-label="Product variations">
           <thead>
             <tr>
               <th>Color</th><th>Size / Option</th><th>Model Number</th>
@@ -520,7 +535,7 @@
               <th>Stock Status</th><th>Availability</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody role="rowgroup">
             @foreach($dbVariations as $dv)
               @php
                 $dvAttrs = $dv->attributes ?? [];
@@ -529,21 +544,21 @@
                 $dvStockStatus = $dv->stock_status ?? 'instock';
                 $dvStatus      = $dv->status ?? 'publish';
               @endphp
-              <tr>
-                <td>
+              <tr role="row">
+                <td data-label="Color" role="cell">
                   {{ $dvColor }}
                   @if($dv->main_variation)<span class="main-chip">main</span>@endif
                 </td>
-                <td>{{ $dvSize }}</td>
-                <td>{{ $dv->model_number ?: '—' }}</td>
-                <td>{{ number_format($dv->regular_price,2) }}</td>
-                <td style="{{ $dv->sale_price && $dv->sale_price < $dv->regular_price ? 'color:var(--red);font-weight:600' : '' }}">
+                <td data-label="Size / option" role="cell">{{ $dvSize }}</td>
+                <td data-label="Model number" role="cell">{{ $dv->model_number ?: '—' }}</td>
+                <td data-label="Regular price" role="cell">{{ number_format($dv->regular_price,2) }}</td>
+                <td data-label="Sale / price" role="cell" style="{{ $dv->sale_price && $dv->sale_price < $dv->regular_price ? 'color:var(--red);font-weight:600' : '' }}">
                   {{ $dv->sale_price ? number_format($dv->sale_price,2) : number_format($dv->price,2) }}
                 </td>
-                <td style="color:{{ $dv->stock_quantity > 10 ? 'var(--green)' : ($dv->stock_quantity > 0 ? 'var(--yellow)' : 'var(--red)') }};font-weight:600">
+                <td data-label="Stock" role="cell" style="color:{{ $dv->stock_quantity > 10 ? 'var(--green)' : ($dv->stock_quantity > 0 ? 'var(--yellow)' : 'var(--red)') }};font-weight:600">
                   {{ $dv->stock_quantity }}
                 </td>
-                <td>
+                <td data-label="Stock status" role="cell">
                   @if($dvStockStatus === 'instock')
                     <span class="badge" style="background:#dcfce7;color:#166534">In Stock</span>
                   @elseif($dvStockStatus === 'outofstock')
@@ -552,7 +567,7 @@
                     <span class="badge" style="background:#fef9c3;color:#854d0e">On Backorder</span>
                   @endif
                 </td>
-                <td>
+                <td data-label="Availability" role="cell">
                   @if($dvStatus === 'publish')
                     <span class="badge" style="background:#dcfce7;color:#166534">Active</span>
                   @else
@@ -624,7 +639,11 @@
      SECTION 4b — VARIATION IMAGES
 ════════════════════════════════════════════════════════════════ --}}
 @if($dbVariations->isNotEmpty())
-@php $varImgCount = $dbVariations->sum(fn($v) => count($v->images ?? [])); @endphp
+@php
+  $varImgCount = $dbVariations->sum(fn($v) => count($v->images ?? []));
+  $variationImageLabel = fn ($variation) => collect($variation->attributes ?? [])
+    ->except('_color_code')->map(fn ($value, $name) => $name . ': ' . $value)->implode(' / ') ?: 'Default';
+@endphp
 <div class="dc" id="dc-varimages">
   <div class="dc-head">
     <div class="dc-title">
@@ -640,27 +659,26 @@
   <div class="dc-body">
 
     <div id="view-varimages">
-      @php $hasAnyVarImg = false; $seenVarColors = []; @endphp
+      @php
+        $hasAnyVarImg = false;
+      @endphp
       @foreach($dbVariations as $dv)
         @php
-          $dvA = $dv->attributes ?? [];
-          $dvColor = $dvA['Color'] ?? 'Default';
-          $dvSize  = $dvA['Size']  ?? '';
           $dvImgs  = $dv->images ?? [];
           if (empty($dvImgs)) continue;
           $hasAnyVarImg = true;
         @endphp
         <div class="dr" style="align-items:flex-start;margin-bottom:8px">
-          <span class="dr-label" style="font-weight:600">{{ $dvColor }}{{ $dvSize ? ' / '.$dvSize : '' }}</span>
+          <span class="dr-label" style="font-weight:600">{{ $variationImageLabel($dv) }}</span>
           <div class="img-grid" style="margin-top:0">
             @foreach($dvImgs as $vImg)
-              <img src="{{ $imgBase . ltrim($vImg, '/') }}" class="img-thumb" alt="" onerror="this.style.display='none'">
+              <img src="{{ $mediaUrl($vImg) }}" class="img-thumb" alt="" loading="lazy" onerror="this.style.display='none'">
             @endforeach
           </div>
         </div>
       @endforeach
       @if(!$hasAnyVarImg)
-        <span style="color:var(--mid);font-size:13px">No variation images yet — click Edit to upload per color.</span>
+        <span style="color:var(--mid);font-size:13px">No variation images yet.</span>
       @endif
     </div>
 
@@ -670,10 +688,7 @@
       </div>
       @foreach($dbVariations as $dv)
         @php
-          $dvA     = $dv->attributes ?? [];
-          $dvColor = $dvA['Color'] ?? 'Default';
-          $dvSize  = $dvA['Size']  ?? '';
-          $dvLabel = $dvColor . ($dvSize ? ' / '.$dvSize : '');
+          $dvLabel = $variationImageLabel($dv);
           $dvImgs  = $dv->images ?? [];
         @endphp
         <div class="color-row" style="margin-bottom:14px">
@@ -687,7 +702,7 @@
               <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px">
                 @foreach($dvImgs as $vImg)
                   <label style="position:relative;cursor:pointer" title="Check to delete">
-                    <img src="{{ $imgBase . ltrim($vImg, '/') }}"
+                    <img src="{{ $mediaUrl($vImg) }}" loading="lazy"
                          style="width:72px;height:72px;border-radius:8px;object-fit:cover;border:2px solid var(--light);display:block"
                          onerror="this.style.opacity='.25'">
                     <input type="checkbox" name="delete_images[]" value="{{ $vImg }}"
@@ -714,6 +729,7 @@
               <input type="file" id="vi-file-{{ $dv->id }}" name="new_images[]"
                      accept="image/jpeg,image/png,image/webp" multiple style="display:none"
                      onchange="this.previousElementSibling.classList.add('has-file');this.previousElementSibling.querySelector('span').textContent='✓ '+this.files.length+' file(s) selected'">
+              @include('web.vendor.products.image-link-field', ['id' => 'vi-urls-'.$dv->id, 'name' => 'new_image_urls', 'label' => 'Variation image URLs', 'multiple' => true, 'useOld' => (int) old('variation_id') === (int) $dv->id])
             </div>
             <div style="display:flex;gap:8px">
               <button type="submit" class="dc-save-btn">
@@ -878,32 +894,10 @@
       @endif
     </div>
     <div id="edit-categories" style="display:none">
-      @php
-        $topLevel = $categories->where('parent', 0)->values();
-        $children = $categories->where('parent', '!=', 0)->groupBy('parent');
-      @endphp
       <form method="POST" action="{{ $sectionUrl }}">
         @csrf
         <input type="hidden" name="_section" value="categories">
-        <div class="cat-grid-check">
-          @foreach($topLevel as $parent)
-            <div>
-              <div style="font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">{{ $parent->name }}</div>
-              <label class="cat-check-label">
-                <input type="checkbox" name="categories[]" value="{{ $parent->id }}"
-                       {{ in_array($parent->id, $selectedCats) ? 'checked' : '' }}>
-                {{ $parent->name }}
-              </label>
-              @foreach($children->get($parent->id, collect()) as $child)
-                <label class="cat-check-label" style="padding-left:14px">
-                  <input type="checkbox" name="categories[]" value="{{ $child->id }}"
-                         {{ in_array($child->id, $selectedCats) ? 'checked' : '' }}>
-                  {{ $child->name }}
-                </label>
-              @endforeach
-            </div>
-          @endforeach
-        </div>
+        @include('web.vendor.products.category-picker')
         <div class="if-actions">
           <button type="submit" class="dc-save-btn">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
@@ -936,13 +930,13 @@
     <div id="view-images">
       @php
         $allOthers = array_merge($images['others'] ?? [], $images['other_images'] ?? []);
-        $naturals  = $images['natural'] ?? $images['natural_images'] ?? [];
+        $naturals  = array_merge($images['natural'] ?? [], $images['natural_images'] ?? []);
       @endphp
 
       @if(!empty($images['thumbnail']))
         <div class="dr" style="align-items:flex-start;margin-bottom:12px">
           <span class="dr-label">Thumbnail</span>
-          <img src="{{ $imgBase . ltrim($images['thumbnail'],'/') }}" class="img-thumb"
+          <img src="{{ $mediaUrl($images['thumbnail']) }}" class="img-thumb"
                style="width:80px;height:80px" alt="" onerror="this.style.opacity='.25'">
         </div>
       @endif
@@ -954,7 +948,7 @@
           </div>
           <div class="img-grid">
             @foreach($allOthers as $oi)
-              <img src="{{ $imgBase . ltrim($oi,'/') }}" class="img-thumb" alt=""
+              <img src="{{ $mediaUrl($oi) }}" class="img-thumb" alt="" loading="lazy"
                    onerror="this.style.opacity='.2'">
             @endforeach
           </div>
@@ -968,7 +962,7 @@
           </div>
           <div class="img-grid">
             @foreach($naturals as $ni)
-              <img src="{{ $imgBase . ltrim($ni,'/') }}" class="img-thumb" alt=""
+              <img src="{{ $mediaUrl($ni) }}" class="img-thumb" alt="" loading="lazy"
                    onerror="this.style.opacity='.2'">
             @endforeach
           </div>
@@ -976,7 +970,7 @@
       @endif
 
       @if(empty($images['thumbnail']) && empty($allOthers) && empty($naturals))
-        <span style="color:var(--mid);font-size:13px">No images uploaded yet — click Edit to add.</span>
+        <span style="color:var(--mid);font-size:13px">No product images yet.</span>
       @endif
     </div>
 
@@ -1008,7 +1002,7 @@
           @if(!empty($images['thumbnail']))
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
               <div style="position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;border:1.5px solid var(--light)">
-                <img src="{{ $imgBase . ltrim($images['thumbnail'],'/') }}"
+                <img src="{{ $mediaUrl($images['thumbnail']) }}"
                      style="width:100%;height:100%;object-fit:cover" alt=""
                      onerror="this.style.opacity='.2'">
               </div>
@@ -1025,6 +1019,7 @@
           <input type="file" id="si-thumb" name="thumbnail" accept="image/jpeg,image/png,image/webp" style="display:none"
                  onchange="siPreview(this,'si-thumb-label','si-thumb-preview')">
           <div id="si-thumb-preview" style="display:none;margin-top:8px"></div>
+          @include('web.vendor.products.image-link-field', ['id' => 'si-thumb-url', 'name' => 'thumbnail_url', 'label' => 'Thumbnail URL'])
         </div>
 
         <hr class="img-section-divider">
@@ -1038,7 +1033,7 @@
             <div class="img-del-grid">
               @foreach($allOthersEdit as $oi)
                 <div class="img-del-item">
-                  <img src="{{ $imgBase . ltrim($oi,'/') }}" alt="" onerror="this.style.opacity='.2'">
+                  <img src="{{ $mediaUrl($oi) }}" alt="" loading="lazy" onerror="this.style.opacity='.2'">
                   <input type="checkbox" name="delete_other_images[]" value="{{ $oi }}" title="Delete this image">
                 </div>
               @endforeach
@@ -1053,6 +1048,7 @@
                    onchange="siPreviewMulti(this,'si-gallery-label','si-gallery-preview')">
             <div id="si-gallery-preview" style="display:none;margin-top:8px"></div>
           </div>
+          @include('web.vendor.products.image-link-field', ['id' => 'si-gallery-urls', 'name' => 'other_image_urls', 'label' => 'Gallery image URLs', 'multiple' => true])
         </div>
 
         <hr class="img-section-divider">
@@ -1060,13 +1056,12 @@
         {{-- ── Natural / Lifestyle Images ── --}}
         <div class="if-group">
           <div class="img-section-title">🌿 Natural / Lifestyle Images</div>
-          @php $naturalsEdit = $images['natural'] ?? $images['natural_images'] ?? []; @endphp
-          @if(!empty($naturalsEdit))
+          @if(!empty($naturals))
             <div class="del-hint">Check images to delete them on save:</div>
             <div class="img-del-grid">
-              @foreach($naturalsEdit as $ni)
+              @foreach($naturals as $ni)
                 <div class="img-del-item">
-                  <img src="{{ $imgBase . ltrim($ni,'/') }}" alt="" onerror="this.style.opacity='.2'">
+                  <img src="{{ $mediaUrl($ni) }}" alt="" loading="lazy" onerror="this.style.opacity='.2'">
                   <input type="checkbox" name="delete_natural_images[]" value="{{ $ni }}" title="Delete this image">
                 </div>
               @endforeach
@@ -1081,6 +1076,7 @@
                    onchange="siPreviewMulti(this,'si-natural-label','si-natural-preview')">
             <div id="si-natural-preview" style="display:none;margin-top:8px"></div>
           </div>
+          @include('web.vendor.products.image-link-field', ['id' => 'si-lifestyle-urls', 'name' => 'natural_image_urls', 'label' => 'Lifestyle image URLs', 'multiple' => true])
         </div>
 
         <div class="if-actions">
@@ -1394,6 +1390,8 @@ function addColorRowShow(colorData) {
   const statusMap      = colorData?.status_map || {};
   const modelNumberMap = colorData?.model_number_map || {};
   const salePriceVal   = colorData?.sale_price || '';
+  const savedVariations = colorData?.existing_variations || {};
+  const imageLinks = typeof colorData?.image_urls === 'string' ? colorData.image_urls : '';
   const isFirst      = document.getElementById('color-rows-show').children.length === 0;
 
   const row = document.createElement('div');
@@ -1402,6 +1400,7 @@ function addColorRowShow(colorData) {
   row.dataset.colorIdx = idx;
 
   row.innerHTML = `
+    ${Object.entries(savedVariations).map(([size, id]) => `<input type="hidden" name="colors[${idx}][existing_variations][${showEscHtml(size)}]" value="${showEscHtml(id)}">`).join('')}
     <div class="color-row-header">
       <span class="color-row-badge">${isFirst ? '★ Main Color' : 'Color #'+(document.getElementById('color-rows-show').children.length+1)}</span>
       <div style="display:flex;gap:8px;align-items:center">
@@ -1419,6 +1418,12 @@ function addColorRowShow(colorData) {
       <input type="file" id="csimg-${idx}" name="variation_images[${idx}][]"
              accept="image/jpeg,image/png,image/webp" multiple style="display:none"
              onchange="this.previousElementSibling.classList.add('has-file');this.previousElementSibling.querySelector('span').textContent='✓ '+this.files.length+' image(s)'">
+      <details style="margin-top:10px" ${imageLinks ? 'open' : ''}>
+        <summary style="cursor:pointer;font-weight:600">Use image links</summary>
+        <label class="if-label" for="csurls-${idx}" style="margin-top:8px">Variation image URLs</label>
+        <textarea class="if-input" id="csurls-${idx}" name="variation_image_urls[${idx}]" rows="2" maxlength="65535"
+                  placeholder="One HTTPS image link per line">${showEscHtml(imageLinks)}</textarea>
+      </details>
     </div>
     <div class="if-group">
       <label class="if-label">Sizes <span style="color:var(--red)">*</span> — press Enter or comma to add</label>
@@ -1480,7 +1485,7 @@ function refreshPriceTableShow(idx) {
   const tags = document.querySelectorAll('#csstags-' + idx + ' .size-tag');
   if (tags.length === 0) { container.innerHTML = ''; return; }
   let html = `<label class="if-label" style="margin-top:10px">Per-Size Pricing & Stock</label>
-    <table class="price-table">
+    <table class="price-table seller-variation-table seller-variation-editor" role="table" aria-label="Pricing and stock by size">
       <thead><tr>
         <th>Size</th>
         <th>Model Number</th>
@@ -1491,7 +1496,7 @@ function refreshPriceTableShow(idx) {
         <th>Availability</th>
         <th style="background:#fff8f5;color:var(--orange)">Effective Price</th>
       </tr></thead>
-      <tbody>`;
+      <tbody role="rowgroup">`;
   tags.forEach(tag => {
     const s  = tag.dataset.size;
     const d  = (showSizeData[idx]||{})[s] || {};
@@ -1502,34 +1507,34 @@ function refreshPriceTableShow(idx) {
     const safePrice = showEscHtml(d.price || '');
     const safeSalePrice = showEscHtml(d.salePrice || '');
     const safeStock = showEscHtml(d.stock || 0);
-    html += `<tr>
-      <td><strong>${safeSize}</strong><input type="hidden" name="colors[${idx}][sizes][]" value="${safeSize}"></td>
-      <td><input type="text" name="colors[${idx}][model_number_map][${safeSize}]" value="${safeModelNumber}" maxlength="120" placeholder="Optional" class="price-table" style="width:130px"></td>
-      <td><input type="number" name="colors[${idx}][price_map][${safeSize}]"
+    html += `<tr role="row">
+      <td role="cell" class="seller-variation-name"><strong>${safeSize}</strong><input type="hidden" name="colors[${idx}][sizes][]" value="${safeSize}"></td>
+      <td role="cell" data-label="Model number"><input type="text" aria-label="Model number" name="colors[${idx}][model_number_map][${safeSize}]" value="${safeModelNumber}" maxlength="120" placeholder="Optional" class="price-table" style="width:130px"></td>
+      <td role="cell" data-label="Regular price (EGP)"><input type="number" aria-label="Regular price (EGP)" name="colors[${idx}][price_map][${safeSize}]"
                  value="${safePrice}" step="0.01" min="0" placeholder="0.00"
                  data-role="regular" data-size="${safeSize}"
                  class="price-table" style="width:95px"></td>
-      <td><input type="number" name="colors[${idx}][sale_price_map][${safeSize}]"
+      <td role="cell" data-label="Sale price (EGP)"><input type="number" aria-label="Sale price (EGP)" name="colors[${idx}][sale_price_map][${safeSize}]"
                  value="${safeSalePrice}" step="0.01" min="0" placeholder="leave blank"
                  data-role="sale" data-size="${safeSize}"
                  class="price-table" style="width:95px"></td>
-      <td><input type="number" name="colors[${idx}][stock][${safeSize}]"
+      <td role="cell" data-label="Stock quantity"><input type="number" aria-label="Stock quantity" name="colors[${idx}][stock][${safeSize}]"
                  value="${safeStock}" min="0" placeholder="0"
                  class="price-table" style="width:75px"></td>
-      <td>
-        <select name="colors[${idx}][stock_status_map][${safeSize}]" class="price-table" style="font-size:12px">
+      <td role="cell" data-label="Stock status">
+        <select aria-label="Stock status" name="colors[${idx}][stock_status_map][${safeSize}]" class="price-table" style="font-size:12px">
           <option value="instock"     ${ss==='instock'     ? 'selected' : ''}>In Stock</option>
           <option value="outofstock"  ${ss==='outofstock'  ? 'selected' : ''}>Out of Stock</option>
           <option value="onbackorder" ${ss==='onbackorder' ? 'selected' : ''}>On Backorder</option>
         </select>
       </td>
-      <td>
-        <select name="colors[${idx}][status_map][${safeSize}]" class="price-table" style="font-size:12px">
+      <td role="cell" data-label="Availability">
+        <select aria-label="Availability" name="colors[${idx}][status_map][${safeSize}]" class="price-table" style="font-size:12px">
           <option value="publish" ${st==='publish' ? 'selected' : ''}>Active</option>
           <option value="draft"   ${st==='draft'   ? 'selected' : ''}>Disabled</option>
         </select>
       </td>
-      <td class="eff-price-cell" data-size-key="${safeSize}" style="font-weight:600;font-size:13px">—</td>
+      <td role="cell" class="eff-price-cell" data-label="Effective price" data-size-key="${safeSize}" style="font-weight:600;font-size:13px">—</td>
     </tr>`;
   });
   html += '</tbody></table>';
@@ -1548,9 +1553,11 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // Auto-open section from URL ?section=
-  const sp = new URLSearchParams(window.location.search).get('section');
-  if (sp) { openSection(sp); }
+  const lastSection = @json(old('_section'));
+  const sp = new URLSearchParams(window.location.search).get('section') || (lastSection === 'var_images' ? 'varimages' : lastSection);
+  if (sp && document.getElementById('edit-' + sp)) openSection(sp);
 });
 </script>
 
+</div>
 @endsection

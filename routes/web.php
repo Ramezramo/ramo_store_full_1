@@ -124,8 +124,9 @@ Route::middleware('auth')->prefix('account')->group(function () {
 
 Route::middleware('auth')->post('/reviews', [ReviewController::class, 'webStore'])->name('review.store');
 Route::middleware('auth')->delete('/reviews/{id}', [ReviewController::class, 'destroy'])->name('review.destroy');
-Route::post('/reviews/{id}/helpful', [ReviewController::class, 'helpful'])->name('review.helpful');
+Route::post('/reviews/{id}/helpful', [ReviewController::class, 'helpful'])->middleware(\App\Http\Middleware\InvalidateStorefrontData::class)->name('review.helpful');
 Route::get('/search', [SearchController::class, 'index'])->middleware('throttle:search')->name('search');
+Route::get('/search/suggestions', [SearchController::class, 'suggestions'])->middleware('throttle:search')->name('search.suggestions');
 
 use App\Http\Controllers\Web\OrderTrackingController;
 Route::get('/track', [OrderTrackingController::class, 'index'])->name('order.track');
@@ -144,7 +145,7 @@ Route::middleware('auth')->group(function () {
 Route::get('/vendor-login', [VendorWebController::class, 'showLogin'])->name('vendor.login');
 Route::post('/vendor-login', [VendorWebController::class, 'login'])->name('vendor.login.submit');
 Route::post('/vendor-logout', [VendorWebController::class, 'logout'])->name('vendor.logout');
-Route::middleware('vendor.web.auth')->group(function () {
+Route::middleware(['vendor.web.auth', \App\Http\Middleware\InvalidateStorefrontData::class])->group(function () {
     Route::post('/seller/admin-workspace/exit', [AdminDashboardController::class, 'closeVendorWorkspace'])->name('vendor.workspace.exit');
     Route::get('/seller/dashboard', [VendorWebController::class, 'dashboard'])->name('vendor.dashboard');
     Route::get('/seller/store-profile', [VendorWebController::class, 'showStoreProfile'])->name('vendor.store.profile');
@@ -175,7 +176,7 @@ Route::get('/admin/login', [AuthWebController::class, 'showAdminLogin'])->name('
 Route::post('/admin/login', [AuthWebController::class, 'adminLogin'])->name('admin.login.post');
 use App\Http\Controllers\Admin\AdminCategoryBrandController;
 use App\Http\Controllers\Admin\ReferralAdminController;
-Route::prefix('admin')->middleware(['auth', 'admin.auth', \App\Http\Middleware\RefreshAdminSidebarCounts::class])->group(function () {
+Route::prefix('admin')->middleware(['auth', 'admin.auth', \App\Http\Middleware\InvalidateStorefrontData::class, \App\Http\Middleware\RefreshAdminSidebarCounts::class])->group(function () {
     Route::post('/vendors/{id}/workspace', [AdminDashboardController::class, 'openVendorWorkspace'])->name('admin.vendors.workspace');
     Route::get('/', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/users', [AdminDashboardController::class, 'users'])->name('admin.users');

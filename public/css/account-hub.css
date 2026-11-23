@@ -116,6 +116,13 @@
   text-align: start;
 }
 
+button.acc-hub-item {
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  font: inherit;
+}
+
 .acc-hub-links > * + * {
   border-block-start: 1px solid var(--c-light);
 }
@@ -180,8 +187,6 @@
 }
 
 .acc-hub-signout {
-  border: 0;
-  background: transparent;
   color: #a62b2b;
 }
 

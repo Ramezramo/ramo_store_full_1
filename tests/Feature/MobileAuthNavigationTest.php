@@ -13,8 +13,8 @@ class MobileAuthNavigationTest extends TestCase
             ->assertDontSee('class="mobile-auth-screen"', false)
             ->assertSee('class="mobile-auth-login"', false)
             ->assertSee('id="mob-nav"', false)
-            ->assertSee('body.mobile-auth-login.auth-input-focused #mob-nav{display:none !important}', false)
-            ->assertSee('function syncAuthInputState()', false);
+            ->assertSee('body.mobile-auth-login.auth-keyboard-open #mob-nav{display:none !important}', false)
+            ->assertSee('function syncKeyboardLayout()', false);
 
         $this->get(route('auth.otp-verify'))
             ->assertOk()

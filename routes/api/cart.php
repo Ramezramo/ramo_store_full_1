@@ -23,7 +23,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // ── Reviews (write) ──
-    Route::post('reviews', [ReviewController::class, 'store'])->middleware('throttle:5,1'); // POST /api/reviews
+    Route::post('reviews', [ReviewController::class, 'store'])->middleware(\App\Http\Middleware\InvalidateStorefrontData::class)->middleware('throttle:5,1'); // POST /api/reviews
 });
 
 // ── Reviews (read — public) ──

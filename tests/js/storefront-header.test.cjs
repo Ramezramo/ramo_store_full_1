@@ -74,14 +74,11 @@ function headerFixture({ hostInert = false, navInert = false, overflow = '', hei
   const trigger = new Element('button');
   trigger.id = 'nav-hamburger';
   trigger.setAttribute('aria-expanded', 'false');
-  const searchToggle = new Element('button');
-  searchToggle.setAttribute('aria-expanded', 'false');
-  const searchInput = new Element('input');
-  searchInput.value = '';
+  const searchLink = new Element('a');
+  searchLink.href = '/search';
   const logo = new Element('a');
   logo.href = '/';
-  header.append(trigger, searchToggle, searchInput, logo);
-  header.querySelector = selector => selector === '.header-search-toggle' ? searchToggle : selector === 'input[name="q"]' ? searchInput : null;
+  header.append(trigger, searchLink, logo);
   const menu = new Element();
   menu.setAttribute('aria-hidden', 'true');
   const panel = new Element();
@@ -142,7 +139,7 @@ function headerFixture({ hostInert = false, navInert = false, overflow = '', hei
   }
   runInNewContext(source, { window, document, ResizeObserver, requestAnimationFrame: callback => animationFrames.push(callback) });
   return {
-    document, window, header, menu, panel, trigger, searchToggle, searchInput, logo, close, shop, last, host, nav,
+    document, window, header, menu, panel, trigger, searchLink, logo, close, shop, last, host, nav,
     cachedView, inactiveView, horizontalWidget, bottomTrigger, navLinks,
     api: window.RamoHeader, observers,
     flushAnimationFrames() { animationFrames.splice(0).forEach(callback => callback()); },
@@ -234,7 +231,7 @@ test('Tab wraps around visible enabled drawer controls in both directions', () =
 test('focus that escapes an open drawer returns to its first control', () => {
   const app = headerFixture();
   app.api.setOpen(true);
-  app.searchToggle.focus();
+  app.searchLink.focus();
   assert.equal(app.document.activeElement, app.close);
   app.shop.focus();
   assert.equal(app.document.activeElement, app.shop);
@@ -255,10 +252,10 @@ test('a late opening frame cannot steal focus after the drawer closes', () => {
   app.close.rejectFocus = true;
   app.api.setOpen(true);
   app.api.setOpen(false);
-  app.searchToggle.focus();
+  app.searchLink.focus();
   app.close.rejectFocus = false;
   app.flushAnimationFrames();
-  assert.equal(app.document.activeElement, app.searchToggle);
+  assert.equal(app.document.activeElement, app.searchLink);
 });
 
 test('cached navigation and browser history close settings without moving focus', () => {
@@ -277,55 +274,15 @@ test('cached navigation and browser history close settings without moving focus'
   }
 });
 
-test('mobile search opens inline, preserves the query, and Escape returns focus', () => {
+test('the search link closes the drawer without moving focus', () => {
   const app = headerFixture();
-  app.searchInput.value = 'orange shirt';
-  app.searchToggle.emit('click');
-  assert.equal(app.header.classList.contains('is-search-open'), true);
-  assert.equal(app.searchToggle.getAttribute('aria-expanded'), 'true');
-  assert.equal(app.document.activeElement, app.searchInput);
-  assert.equal(app.searchInput.focusCalls.at(-1).preventScroll, true);
-  const event = app.document.emit('keydown', { key: 'Escape' });
-  assert.equal(event.defaultPrevented, true);
-  assert.equal(app.header.classList.contains('is-search-open'), false);
-  assert.equal(app.searchToggle.getAttribute('aria-expanded'), 'false');
-  assert.equal(app.document.activeElement, app.searchToggle);
-  assert.equal(app.searchInput.value, 'orange shirt');
-  app.api.setSearchOpen(true);
-  assert.equal(app.searchInput.value, 'orange shirt');
-});
-
-test('outside clicks and navigation collapse search without taking focus or clearing its query', () => {
-  for (const [target, event] of [['document', 'catalog:shown'], ['window', 'popstate'], ['window', 'pageshow'], ['document', 'click']]) {
-    const app = headerFixture();
-    app.searchInput.value = 'قميص';
-    app.api.setSearchOpen(true);
-    const focused = app.document.activeElement;
-    app[target].emit(event, { target: app.host });
-    assert.equal(app.header.classList.contains('is-search-open'), false);
-    assert.equal(app.searchInput.value, 'قميص');
-    assert.equal(app.document.activeElement, focused);
-    assert.equal(app.searchToggle.focusCalls.length, 0);
-  }
-});
-
-test('opening settings collapses search and header navigation closes settings', () => {
-  const app = headerFixture();
-  app.api.setSearchOpen(true);
-  app.document.emit('click', { target: app.searchInput });
-  assert.equal(app.header.classList.contains('is-search-open'), true);
   app.api.setOpen(true);
-  assert.equal(app.header.classList.contains('is-search-open'), false);
-  assert.equal(app.document.activeElement, app.close);
-  app.header.emit('click', { target: app.logo });
+  const focused = app.document.activeElement;
+  app.header.emit('click', { target: app.searchLink });
   assert.equal(app.menu.inert, true);
-  assert.equal(app.trigger.focusCalls.length, 0);
-  app.api.setOpen(true);
-  app.header.emit('submit');
-  assert.equal(app.menu.inert, true);
+  assert.equal(app.document.activeElement, focused);
   assert.equal(app.trigger.focusCalls.length, 0);
 });
-
 test('glass starts only after the window has scrolled more than 24 pixels', () => {
   for (const [windowScroll, expected] of [[0, false], [24, false], [25, true], [500, true]]) {
     const app = headerFixture({ windowScroll });
