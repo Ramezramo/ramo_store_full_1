@@ -1282,9 +1282,9 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
 <svg width="0" height="0" style="position:absolute;pointer-events:none" aria-hidden="true" focusable="false">
   <defs>
     <filter id="liquid-glass" x="0" y="0" width="100%" height="100%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.006 0.010" numOctaves="2" seed="3" result="noise"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.012" numOctaves="2" seed="3" result="noise"/>
       <feGaussianBlur in="noise" stdDeviation="3" result="softNoise"/>
-      <feDisplacementMap in="SourceGraphic" in2="softNoise" scale="18" xChannelSelector="R" yChannelSelector="G"/>
+      <feDisplacementMap in="SourceGraphic" in2="softNoise" scale="45" xChannelSelector="R" yChannelSelector="G"/>
     </filter>
   </defs>
 </svg>
