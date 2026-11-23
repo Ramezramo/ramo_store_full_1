@@ -1,4 +1,9 @@
 (() => {
+  const browser = window.navigator;
+  if (browser && /Chrome\//.test(browser.userAgent) && !/iPhone|iPad|iPod/.test(browser.userAgent)
+      && !(browser.platform === 'MacIntel' && browser.maxTouchPoints > 1)) {
+    document.documentElement.classList.add('refract');
+  }
   const header = document.querySelector('.storefront-header');
   const menu = document.getElementById('nav-mobile-menu');
   const trigger = document.getElementById('nav-hamburger');

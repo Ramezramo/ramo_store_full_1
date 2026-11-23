@@ -1,14 +1,58 @@
 /* Shared search-first storefront header. */
 :root{--storefront-header-height:81px}
+.nav-glass {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 9999px;
+  background: rgba(255,255,255,.07);
+  -webkit-backdrop-filter: blur(8px) saturate(180%) brightness(1.15);
+  backdrop-filter: blur(8px) saturate(180%) brightness(1.15);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.55), inset 0 -1px 0 rgba(255,255,255,.15),
+    inset 1px 0 0 rgba(255,255,255,.2), inset -1px 0 0 rgba(255,255,255,.2),
+    inset 0 0 24px rgba(255,255,255,.08), 0 8px 28px rgba(0,0,0,.22);
+}
+.nav-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255,255,255,.35) 0%, transparent 35%, transparent 65%, rgba(255,255,255,.15) 100%);
+}
+.refract .nav-glass {
+  -webkit-backdrop-filter: blur(4px) url(#liquid-glass) saturate(180%) brightness(1.15);
+  backdrop-filter: blur(4px) url(#liquid-glass) saturate(180%) brightness(1.15);
+}
+.storefront-header .nav-glass { display: none; inset: 4px 6px; }
 .nav.storefront-header{background:#fff;backdrop-filter:none;-webkit-backdrop-filter:none;border-bottom:1px solid #ebebeb;box-shadow:none;flex:none;transition:background .2s,backdrop-filter .2s,border-color .2s}
+/* Show the capsule at the existing scroll threshold. */
 .nav.storefront-header.is-scrolled:not(.is-menu-open),
 body:has(#storefront-content > ramo-home-hero[data-scrolled], .catalog-view[data-catalog-active="1"] > ramo-home-hero[data-scrolled])
 > .nav.storefront-header:not(.is-menu-open) {
-  background: rgb(255 255 255 / 60%);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom-color: rgb(17 17 17 / 6%);
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: white;
+
+  & .nav-inner {
+    position: relative;
+    isolation: isolate;
+    padding-inline: clamp(22px, 3vw, 38px);
+  }
+  & .nav-glass { display: block; }
+  & .nav-inner { text-shadow: 0 1px 2px rgba(0,0,0,.35); }
+  & .nav-inner svg { filter: drop-shadow(0 1px 2px rgba(0,0,0,.35)); }
+  & :is(.nav-logo, .nav-logo span, .nav-actions .nav-icon-btn, .nav-links a, .header-search-link, .nav-user-btn) { color: white; }
+  & :is(.nav-hamburger, .header-search-link, .nav-user-btn, .nav-links a.active) {
+    border-color: #ffffff40;
+    background: transparent;
+  }
+  & .nav-hamburger span { background: white; }
+  & :is(.nav-icon-btn, .nav-links a, .header-search-link, .nav-user-btn, .nav-hamburger):hover { background: #ffffff24; }
 }
+
 /* Keep content at the same initial position, then let it scroll behind the bar.
    Equal padding and overlap also preserve cached scroll distances. */
 html.catalog-keep-alive #storefront-content{margin-block-start:calc(-1 * var(--storefront-header-height))}
@@ -103,11 +147,6 @@ html.catalog-keep-alive .catalog-transient-loading--product{padding-block-start:
 }
 
 /* Home and Shop share one header. Only the visible Home panel can style it. */
-body:has(#storefront-content > .timeline-widgets, .catalog-view[data-catalog-active="1"] > .timeline-widgets) > .nav.storefront-header {
-  background: #fff;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
 body:has(#storefront-content > ramo-home-hero, .catalog-view[data-catalog-active="1"] > ramo-home-hero) > .nav.storefront-header {
   position: fixed;
   inset: 0 0 auto;
@@ -130,7 +169,7 @@ body:has(#storefront-content > ramo-home-hero:not([data-scrolled]), .catalog-vie
   & :is(.nav-logo, .nav-logo span, .nav-links a, .nav-user-btn, .nav-icon-btn, .nav-hamburger, .header-search-link) { color: currentColor; }
   & .nav-hamburger span { background: currentColor; }
   & :is(.nav-hamburger, .header-search-link, .nav-user-btn, .nav-links a.active) {
-    background: rgb(0 0 0 / 18%);
+    background: transparent;
     border-color: rgb(255 255 255 / 48%);
   }
   & :is(.header-search-link, .nav-icon-btn, .nav-user-btn, .nav-links a):hover { background: rgb(255 255 255 / 18%); }
@@ -197,3 +236,31 @@ ramo-home-hero::before {
 }
 @media (min-width: 769px) { ramo-home-hero { min-height: clamp(440px,77vh,850px); } }
 @media (prefers-reduced-motion: reduce) { body:has(ramo-home-hero) > .nav.storefront-header { transition: none !important; } }
+
+@media (max-width: 768px) {
+  #mob-nav {
+    inset-inline: 6px;
+    width: auto;
+    bottom: calc(var(--mobile-nav-viewport-offset, 0px) + 4px);
+    height: calc(var(--mobile-nav-height) - 8px) !important;
+    min-height: 0 !important;
+    border: 0;
+    border-radius: 9999px;
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+    isolation: isolate;
+  }
+  #mob-nav > :is(a, button),
+  #mob-nav > :is(.on, .is-opening, [aria-expanded="true"]) {
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,.35);
+  }
+  #mob-nav .mn-icon svg { filter: drop-shadow(0 1px 2px rgba(0,0,0,.35)); }
+  #mob-nav > :is(.on, .is-opening, [aria-expanded="true"]) .mn-icon,
+  #mob-nav > :is(a, button):active .mn-icon {
+    background: rgba(255,255,255,.22);
+    border-radius: 9999px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.7), inset 0 0 12px rgba(255,255,255,.15), 0 2px 8px rgba(0,0,0,.15);
+  }
+}

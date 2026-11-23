@@ -1279,9 +1279,20 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
 </head>
 <body class="{{ trim(($suppressMobileNav ? 'mobile-auth-screen ' : '') . ($isLoginPage ? 'mobile-auth-login ' : '') . ($isAccountPage ? 'account-page' : '')) }}">
 
+<svg width="0" height="0" style="position:absolute;pointer-events:none" aria-hidden="true" focusable="false">
+  <defs>
+    <filter id="liquid-glass" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.012" numOctaves="2" seed="3" result="noise"/>
+      <feGaussianBlur in="noise" stdDeviation="3" result="softNoise"/>
+      <feDisplacementMap in="SourceGraphic" in2="softNoise" scale="45" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+</svg>
+
 <!-- NAV -->
 <nav class="nav storefront-header{{ $headerIsArabic ? ' nav--rtl' : '' }}" aria-label="{{ $headerIsArabic ? 'التنقل الرئيسي' : 'Main navigation' }}" dir="{{ $headerIsArabic ? 'rtl' : 'ltr' }}">
   <div class="nav-inner">
+    <span class="nav-glass" aria-hidden="true"></span>
     <button type="button" class="nav-hamburger" id="nav-hamburger" onclick="toggleMobileMenu(this)" aria-label="{{ $mobileMenuLabel }}" aria-controls="nav-mobile-menu" aria-expanded="false" aria-haspopup="dialog">
       <span></span><span></span><span></span>
       <svg class="header-settings-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 3-.6 2.4-2 .9L4 5.6l-2 3.5 1.8 1.7v2.4L2 14.9l2 3.5 2.4-.7 2 .9L9 21h6l.6-2.4 2-.9 2.4.7 2-3.5-1.8-1.7v-2.4L22 9.1l-2-3.5-2.4.7-2-.9L15 3z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -1520,6 +1531,7 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
 <!-- MOBILE BOTTOM NAV -->
 <nav id="mob-nav" class="{{ $headerIsArabic ? 'mob-nav--rtl' : '' }}" style="display:none" dir="{{ $headerIsArabic ? 'rtl' : 'ltr' }}"
      aria-label="{{ $headerIsArabic ? 'التنقل السفلي' : 'Bottom navigation' }}">
+  <span class="nav-glass" aria-hidden="true"></span>
   <a href="{{ route('home') }}" @if(request()->routeIs('home')) class="on" aria-current="page" @endif>
     <span class="mn-icon">
       <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="m3 10 9-7 9 7M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 20v-6h4v6"/></svg>
