@@ -261,12 +261,47 @@ class WebsitePagesTest extends TestCase
         $this->assertAuthenticatedAs($this->customer);
     }
 
+    public function test_storefront_state_reads_one_customer_and_counts_distinct_cart_options(): void
+    {
+        $this->post('/login', ['email' => $this->customer->email, 'password' => 'test-only-password'])
+            ->assertSessionHasNoErrors();
+        $this->assertAuthenticatedAs($this->customer);
+        $this->app['auth']->forgetGuards();
+
+        foreach ([null, $this->variation] as $option) {
+            DB::table('cart_items')->insert(['user_id' => $this->customer->id, 'product_id' => $this->product,
+                'variation_id' => $option, 'qty' => 2, 'created_at' => now(), 'updated_at' => now()]);
+        }
+        DB::table('wishlists')->insert(['user_id' => $this->customer->id, 'product_id' => $this->product, 'created_at' => now()]);
+
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+        $state = $this->getJson(route('storefront.state'))->assertOk();
+        $queries = collect(DB::getQueryLog())->pluck('query');
+        DB::disableQueryLog();
+
+        $this->assertCount(1, $queries->filter(fn ($sql) => str_contains($sql, 'from "users"')));
+        $this->assertFalse($queries->contains(fn ($sql) => str_contains($sql, 'for update')));
+        $state->assertJsonPath('cart.count', 1)
+            ->assertJsonPath('wishlist.product_ids', [$this->product])
+            ->assertJsonPath('wishlist.count', 1);
+        $this->assertSame($this->getJson(route('account.notifications.unread'))->json('unread'), $state->json('unread'));
+        $this->assertSame($this->getJson(route('cart.count', ['product_id' => $this->product]))->json('count'), $state->json('cart.count'));
+    }
+
+    public function test_guest_storefront_state_uses_the_current_session(): void
+    {
+        $this->withSession(['ramo_wishlist' => [$this->product]])->getJson(route('storefront.state'))
+            ->assertOk()->assertExactJson(['cart' => ['count' => 0],
+                'wishlist' => ['product_ids' => [$this->product], 'count' => 1], 'unread' => 0]);
+    }
+
     public function test_every_browser_page_has_a_case(): void
     {
         $covered = array_column(iterator_to_array(self::pages()), 1);
         // These web routes serve data, files, language changes or authentication callbacks.
         $nonPages = ['health', 'sitemap', 'home.sections', 'home.products', 'language.switch',
-            'cart.count', 'wishlist.state', 'search.suggestions', 'account.notifications.unread',
+            'storefront.state', 'cart.count', 'wishlist.state', 'search.suggestions', 'account.notifications.unread',
             'vendor.products.search', 'admin.products.search', 'admin.vendor-applications.identity',
             'auth.google', 'auth.google.callback', 'email.verify', 'sanctum.csrf-cookie'];
         $missing = [];

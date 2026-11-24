@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Services\ShopPriceRangeService;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,14 +21,11 @@ class SearchController extends Controller
 
         $locale = strtolower((string) session('locale', 'en'));
         $query = $this->searchableProducts();
-        $this->matchProductName($query, $q);
+        $this->matchSearchText($query, $q);
 
-        $suggestions = $query->orderByRaw(
-            'CASE WHEN p.name ILIKE ? THEN 0 WHEN p.name ILIKE ? THEN 1 ELSE 2 END',
-            [$this->escapeSearchTerm($q), $this->escapeSearchTerm($q) . '%']
-        )
-            ->orderByDesc('p.id')
-            ->limit(6)
+        $this->prioritizeProductNames($query, $q);
+        $suggestions = $query->orderByDesc('p.id')
+            ->limit(5)
             ->get(['p.id', 'p.name', 'p.translations'])
             ->map(fn ($product) => [
                 'name' => $this->localizeSearchProductText($product, $locale)->tl_display_name,
@@ -56,14 +54,7 @@ class SearchController extends Controller
 
         $perPage = 12;
 
-        // Global price range for products that are actually sellable on the storefront.
-        $priceRange = DB::table('product_variations as pv')
-            ->join('products_data as p', 'p.id', '=', 'pv.product_id')
-            ->where('p.status', 'publish')
-            ->where('p.acceptance_status', 'approved')
-            ->where('pv.regular_price', '>', 0)
-            ->selectRaw('MIN(CAST(pv.price AS DECIMAL)) as min_price, MAX(CAST(pv.price AS DECIMAL)) as max_price')
-            ->first();
+        $priceRange = app(ShopPriceRangeService::class)->forCategories([]);
 
         // Base query. Discovery surfaces must never leak a draft, rejected, or
         // unpriced product even when it remains in a legacy search index.
@@ -85,7 +76,7 @@ class SearchController extends Controller
             );
 
         if ($q !== '') {
-            $this->matchProductName($query, $q);
+            $this->matchSearchText($query, $q);
         }
 
         // Category filter
@@ -121,10 +112,7 @@ class SearchController extends Controller
             case 'name_desc':  $query->orderBy('p.name', 'desc');                 break;
             default:
                 if ($q !== '') {
-                    $query->orderByRaw(
-                        'CASE WHEN p.name ILIKE ? THEN 0 WHEN p.name ILIKE ? THEN 1 ELSE 2 END',
-                        [$this->escapeSearchTerm($q), '%' . $this->escapeSearchTerm($q) . '%']
-                    );
+                    $this->prioritizeProductNames($query, $q);
                 }
                 $query->orderBy('p.id', 'desc');
         }
@@ -189,28 +177,30 @@ class SearchController extends Controller
             });
     }
 
-    private function escapeSearchTerm(string $q): string
+    private function prioritizeProductNames(Builder $query, string $q): void
     {
-        return addcslashes($q, '\\%_');
+        $namePattern = addcslashes($q, '\\%_');
+
+        $query->orderByRaw(<<<'SQL'
+            CASE
+                WHEN p.name ILIKE ? THEN 0
+                WHEN p.name ILIKE ? THEN 1
+                WHEN p.name ILIKE ? THEN 2
+                ELSE 3
+            END
+        SQL, [$namePattern, $namePattern . '%', '%' . $namePattern . '%']);
     }
 
-    private function matchProductName(Builder $query, string $q): void
+    private function matchSearchText(Builder $query, string $q): void
     {
-        // Match product identity, including localized names, without incidental mentions in descriptions.
-        $needle = '%' . $this->escapeSearchTerm($q) . '%';
-        $query->where(function ($sub) use ($needle) {
-            $sub->where('p.name', 'ILIKE', $needle)
-                ->orWhere('p.slug', 'ILIKE', $needle)
-                ->orWhereRaw(<<<'SQL'
-                    EXISTS (
-                        SELECT 1
-                        FROM jsonb_array_elements(
-                            COALESCE(NULLIF(p.translations, '')::jsonb, '[]'::jsonb)
-                        ) AS translation
-                        WHERE COALESCE(translation->>'name', '') ILIKE ?
-                    )
-                SQL, [$needle]);
-        });
+        // Tokenize with the same dictionary as the index. Quote each lexeme
+        // before adding the prefix operator so user input stays literal.
+        $query->whereRaw(<<<'SQL'
+            to_tsvector('simple', COALESCE(NULLIF(BTRIM(p.search_text), ''), p.name, '')) @@ (
+                SELECT string_agg(quote_literal(word) || ':*', ' & ')::tsquery
+                FROM unnest(tsvector_to_array(to_tsvector('simple', CAST(? AS text)))) AS words(word)
+            )
+        SQL, [mb_substr($q, 0, 120)]);
     }
 
     private function localizeSearchProductText($product, string $locale)

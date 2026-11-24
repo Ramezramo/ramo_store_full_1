@@ -210,6 +210,9 @@
       : { cart: 'Your Cart', notifications: 'Notifications', account: 'My Account', page: 'Opening page', product: 'Product', productLoading: 'Loading product details…', home: 'Home', shop: 'Shop', breadcrumb: 'Breadcrumb', loading: 'Loading…', slow: 'This is taking longer than expected.', retry: 'Try again' };
     const loading = document.createElement('section');
     loading.className = 'catalog-transient-loading';
+    if (url.pathname === '/' || /^\/shop\/?$/.test(url.pathname)) {
+      loading.setAttribute('data-catalog-glass', '');
+    }
     loading.setAttribute('role', 'status');
     loading.setAttribute('aria-live', 'polite');
     const heading = document.createElement('h1');

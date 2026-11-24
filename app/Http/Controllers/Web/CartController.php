@@ -639,10 +639,11 @@ class CartController extends Controller
     public function count(Request $request)
     {
         $validated = $request->validate(['product_id' => 'sometimes|integer|min:1']);
-        $cart = $this->getCart();
-        $data = ['count' => count($cart)];
         if (isset($validated['product_id'])) {
-            $data['quantities'] = $this->cartVariationQuantities($cart, (int) $validated['product_id']);
+            $cart = $this->getCart();
+            $data = ['count' => count($cart), 'quantities' => $this->cartVariationQuantities($cart, (int) $validated['product_id'])];
+        } else {
+            $data = ['count' => $this->cartLineCount()];
         }
 
         return response()->json($data)->header('Cache-Control', 'private, no-store');

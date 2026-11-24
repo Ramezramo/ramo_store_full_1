@@ -12,6 +12,7 @@ use App\Http\Controllers\Web\WishlistController;
 use App\Http\Controllers\Web\AccountController;
 use App\Http\Controllers\Web\OrderNotificationController;
 use App\Http\Controllers\Web\SearchController;
+use App\Http\Controllers\Web\StorefrontStateController;
 use App\Http\Controllers\Admin\ConfigAdminController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminTimelineController;
@@ -31,6 +32,7 @@ use App\Http\Controllers\Admin\ImageGalleryController;
 
 Route::get('/health', HealthController::class)->name('health');
 Route::get('/', [WebController::class, 'home'])->name('home');
+Route::get('/storefront/state', StorefrontStateController::class)->block(30, 30)->name('storefront.state');
 Route::get('/home/sections', [WebController::class, 'homeSections'])->name('home.sections');
 Route::get('/home/products', [WebController::class, 'homeProducts'])->name('home.products');
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');

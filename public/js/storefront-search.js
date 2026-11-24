@@ -1,9 +1,10 @@
 (() => {
   const draftKey = 'ramo-header-search-draft';
   const forms = new WeakMap();
+  const headerForm = document.querySelector('.header-search-form');
   let currentForm;
 
-  function bind(form, input) {
+  function bind(form, input, limit) {
     const suggestions = form.querySelector('[data-suggestions-url]');
     let timer;
     let activeRequest;
@@ -32,7 +33,7 @@
           const products = await response.json();
           if (request.signal.aborted || input.value.trim() !== query || !products.length) return;
 
-          const items = products.map(product => {
+          const items = products.slice(0, limit ?? products.length).map(product => {
             const item = document.createElement('li');
             const link = document.createElement('a');
             link.href = product.url;
@@ -54,36 +55,58 @@
       try { sessionStorage.setItem(draftKey, input.value); } catch {}
       suggest();
     });
+    input.addEventListener('focus', () => {
+      if (suggestions.hidden) suggest();
+    });
     form.addEventListener('submit', closeSuggestions);
     form.addEventListener('focusout', event => {
       if (event.relatedTarget && !form.contains(event.relatedTarget)) closeSuggestions();
     });
     form.addEventListener('keydown', event => {
-      if (event.key !== 'Escape' || suggestions.hidden) return;
-      event.preventDefault();
-      if (suggestions.contains(document.activeElement)) input.focus({ preventScroll: true });
-      closeSuggestions();
+      if (suggestions.hidden) return;
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        if (suggestions.contains(document.activeElement)) input.focus({ preventScroll: true });
+        closeSuggestions();
+      } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        const links = [...suggestions.querySelectorAll('a')];
+        const index = links.indexOf(document.activeElement);
+        if (index < 0 && document.activeElement !== input) return;
+        event.preventDefault();
+        if (event.key === 'ArrowDown') links[Math.min(index + 1, links.length - 1)]?.focus();
+        else if (index > 0) links[index - 1].focus();
+        else if (index === 0) input.focus({ preventScroll: true });
+        else links.at(-1)?.focus();
+      }
     });
 
     return closeSuggestions;
+  }
+
+  function prepare(form, limit) {
+    const input = form.querySelector('input[name="q"]');
+    if (!input.defaultValue) {
+      try { input.value = sessionStorage.getItem(draftKey) ?? input.value; } catch {}
+    }
+    if (!forms.has(form)) forms.set(form, bind(form, input, limit));
   }
 
   function activate(scope) {
     const form = scope.querySelector('[data-storefront-search-form]');
     if (form !== currentForm) forms.get(currentForm)?.();
     currentForm = form;
-    if (!form) return;
-
-    const input = form.querySelector('input[name="q"]');
-    if (!input.defaultValue) {
-      try { input.value = sessionStorage.getItem(draftKey) ?? input.value; } catch {}
-    }
-    if (!forms.has(form)) forms.set(form, bind(form, input));
+    if (form) prepare(form);
   }
 
-  document.addEventListener('catalog:shown', event => activate(event.detail.element));
+  if (headerForm) prepare(headerForm, 5);
+  document.addEventListener('catalog:shown', event => {
+    forms.get(headerForm)?.();
+    activate(event.detail.element);
+  });
   document.addEventListener('click', event => {
-    if (currentForm && !currentForm.contains(event.target)) forms.get(currentForm)?.();
+    for (const form of [headerForm, currentForm]) {
+      if (form && !form.contains(event.target)) forms.get(form)?.();
+    }
   }, true);
   activate(document);
 })();

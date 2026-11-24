@@ -7,6 +7,18 @@ use Illuminate\Support\Facades\DB;
 
 trait WishlistTrait
 {
+    protected function wishlistState(): array
+    {
+        $ids = collect($this->getWishlistIds())
+            ->filter(fn ($id) => filter_var($id, FILTER_VALIDATE_INT) !== false && (int) $id > 0)
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        return ['product_ids' => $ids, 'count' => count($ids)];
+    }
+
     protected function getWishlistIds(): array
     {
         if (Auth::check()) {

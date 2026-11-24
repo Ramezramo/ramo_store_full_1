@@ -78,15 +78,8 @@ class WishlistController extends Controller
      */
     public function state()
     {
-        $ids = collect($this->getWishlistIds())
-            ->filter(fn ($id) => filter_var($id, FILTER_VALIDATE_INT) !== false && (int) $id > 0)
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->values()
-            ->all();
-
         return response()
-            ->json(['product_ids' => $ids, 'count' => count($ids)])
+            ->json($this->wishlistState())
             ->header('Cache-Control', 'no-store, private');
     }
 

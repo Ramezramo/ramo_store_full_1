@@ -1295,7 +1295,6 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
     <span class="nav-glass" aria-hidden="true"></span>
     <button type="button" class="nav-hamburger" id="nav-hamburger" onclick="toggleMobileMenu(this)" aria-label="{{ $mobileMenuLabel }}" aria-controls="nav-mobile-menu" aria-expanded="false" aria-haspopup="dialog">
       <span></span><span></span><span></span>
-      <svg class="header-settings-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 3-.6 2.4-2 .9L4 5.6l-2 3.5 1.8 1.7v2.4L2 14.9l2 3.5 2.4-.7 2 .9L9 21h6l.6-2.4 2-.9 2.4.7 2-3.5-1.8-1.7v-2.4L22 9.1l-2-3.5-2.4.7-2-.9L15 3z"/><circle cx="12" cy="12" r="3"/></svg>
     </button>
     <a href="{{ route('home') }}" class="nav-logo">Ramo<span>Store</span></a>
     <div class="nav-links">
@@ -1304,6 +1303,19 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
       <a href="{{ route('offers') }}" class="{{ request()->routeIs('offers') ? 'active' : '' }}">{{ $headerOffersLabel }}</a>
       <a href="{{ route('order.track') }}" class="{{ request()->routeIs('order.track*') ? 'active' : '' }}">{{ $headerTrackOrderLabel }}</a>
     </div>
+    <form action="{{ route('search') }}" method="GET" class="search-form header-search-form" role="search">
+      <div class="search-field">
+        <span class="nav-glass" aria-hidden="true"></span>
+        <button type="submit" aria-label="{{ $headerSearchActionLabel }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="7"/><path d="m16 16 5 5"/></svg>
+        </button>
+        <input type="search" name="q" dir="auto" aria-label="{{ $headerSearchActionLabel }}"
+               placeholder="{{ $headerSearchActionLabel }}" autocomplete="off" enterkeyhint="search"
+               required pattern=".*\S.*" maxlength="120">
+      </div>
+      <ul class="search-suggestions" data-suggestions-url="{{ route('search.suggestions', [], false) }}"
+          aria-label="{{ $headerIsArabic ? 'منتجات مقترحة' : 'Suggested products' }}" hidden></ul>
+    </form>
     <a class="header-search-link" href="{{ route('search') }}" aria-label="{{ $headerSearchActionLabel }}" @if(request()->routeIs('search')) aria-current="page" @endif>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="7"/><path d="m16 16 5 5"/></svg>
       <span>{{ $headerSearchActionLabel }}</span>
@@ -1551,12 +1563,6 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
     </span>
     <span class="mn-label">{{ $mobileCartLabel }}</span>
   </a>
-  <button type="button" id="mobile-menu-trigger" onclick="toggleMobileMenu(this)" aria-label="{{ $mobileMenuLabel }}" aria-controls="nav-mobile-menu" aria-expanded="false" aria-haspopup="dialog">
-    <span class="mn-icon">
-      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 6.5h16M4 12h16M4 17.5h16"/></svg>
-    </span>
-    <span class="mn-label">{{ $mobileMenuLabel }}</span>
-  </button>
   @auth
   <a href="{{ route('account.hub') }}" @if(request()->routeIs('account.*')) class="on" aria-current="page" @endif>
     <span class="mn-icon">
@@ -1574,6 +1580,15 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
   @endauth
 </nav>
 
+<script>
+function fetchStorefrontJson(url) {
+  return fetch(url, { cache: 'no-store', headers: { Accept: 'application/json' } })
+    .then(response => response.ok ? response.json() : null)
+    .catch(() => null);
+}
+// One authenticated request supplies all three badges on a full page load.
+const initialStorefrontState = fetchStorefrontJson(@json(route('storefront.state', [], false)));
+</script>
 @auth
 <script>
 (() => {
@@ -1603,7 +1618,7 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
     });
   }
 
-  async function refreshUnreadCount() {
+  async function refreshUnreadCount(initial = false) {
     if (document.hidden || loading) return;
     if (snapshot && Date.now() < snapshot.expiresAt) {
       showUnreadCount(snapshot.unread);
@@ -1612,12 +1627,9 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
     loading = true;
     const version = readVersion;
     try {
-      const response = await fetch(@json(route('account.notifications.unread')), {
-        cache: 'no-store', headers: { Accept: 'application/json' },
-      });
-      if (!response.ok) return;
-      const { unread } = await response.json();
-      if (version === readVersion) rememberUnreadCount(unread);
+      const state = initial === true ? await initialStorefrontState
+        : await fetchStorefrontJson(@json(route('account.notifications.unread', [], false)));
+      if (version === readVersion && Number.isInteger(state?.unread)) rememberUnreadCount(state.unread);
     } catch {
       // The inbox link remains available if the unread count cannot be loaded.
     } finally {
@@ -1625,7 +1637,7 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
     }
   }
 
-  refreshUnreadCount();
+  refreshUnreadCount(true);
   document.addEventListener('notifications:read', event => {
     readVersion++;
     rememberUnreadCount(event.detail);
@@ -1696,17 +1708,23 @@ if ('serviceWorker' in navigator) {
 // Whatever the page shipped with for the cart badge count may be a stale
 // cached copy — always reconcile it against the live count right after paint.
 (function () {
-  function refreshCartBadgeFromServer() {
-  fetch('/cart/count', { cache: 'no-store', headers: { 'Accept': 'application/json' } })
-    .then((r) => (r.ok ? r.json() : null))
-    .then((data) => {
-      if (data && typeof data.count === 'number') updateCartBadge(data.count);
-    })
-    .catch(() => {});
+  let cartRefreshVersion = 0;
+  async function refreshCartBadgeFromServer(initial = false) {
+    const version = ++cartRefreshVersion;
+    const data = initial === true ? (await initialStorefrontState)?.cart
+      : await fetchStorefrontJson(@json(route('cart.count', [], false)));
+    if (version === cartRefreshVersion && Number.isInteger(data?.count)) updateCartBadge(data.count);
   }
-  refreshCartBadgeFromServer();
+  refreshCartBadgeFromServer(true);
   window.addEventListener('pageshow', event => { if (event.persisted) refreshCartBadgeFromServer(); });
-  window.addEventListener('cart:updated', refreshCartBadgeFromServer);
+  window.addEventListener('cart:updated', event => {
+    if (Number.isInteger(event.detail?.count)) {
+      ++cartRefreshVersion;
+      updateCartBadge(event.detail.count);
+    } else {
+      refreshCartBadgeFromServer();
+    }
+  });
   document.addEventListener('catalog:shown', refreshCartBadgeFromServer);
 })();
 
@@ -2355,7 +2373,7 @@ let wishlistStateRequest = null;
 let wishlistState = null;
 let wishlistStateExpiresAt = 0;
 
-function refreshWishlistState() {
+function refreshWishlistState(initial = false) {
   if (wishlistState && Date.now() < wishlistStateExpiresAt) {
     renderWishlistState(wishlistState.product_ids, wishlistState.count);
     return;
@@ -2363,11 +2381,9 @@ function refreshWishlistState() {
   if (wishlistStateRequest) return wishlistStateRequest;
 
   const requestVersion = wishlistStateVersion;
-  const request = fetch('/wishlist/state', {
-    headers: {'Accept': 'application/json'},
-    cache: 'no-store'
-  })
-    .then((response) => (response.ok ? response.json() : null))
+  const source = initial === true ? initialStorefrontState.then(state => state?.wishlist)
+    : fetchStorefrontJson(@json(route('wishlist.state', [], false)));
+  const request = source
     .then((data) => {
       if (data && requestVersion === wishlistStateVersion && wishlistStateRequest === request) {
         wishlistState = data;
@@ -2412,7 +2428,7 @@ async function toggleWishlist(btn, productId) {
   } catch(e) {}
 }
 
-refreshWishlistState();
+refreshWishlistState(true);
 
 // Render a neutral local shell immediately while the browser requests the real page.
 (function () {

@@ -26,6 +26,26 @@ trait CartTrait
         return \App\Services\CartRules::canonicalize(session('ramo_cart', []));
     }
 
+    protected function cartLineCount(): int
+    {
+        if (! Auth::check() || session('ramo_cart', []) !== []) {
+            // Preserve the guest-to-account merge and its transaction on first login.
+            return count($this->getCart());
+        }
+
+        // A legacy line with no option and a line with the main option count as one.
+        $lines = DB::table('cart_items as ci')
+            ->join('products_data as p', 'p.id', '=', 'ci.product_id')
+            ->where('ci.user_id', Auth::id())
+            ->select('ci.product_id')
+            ->selectRaw('COALESCE(NULLIF(ci.variation_id, 0), (
+                SELECT MIN(v.id) FROM product_variations v
+                WHERE v.product_id = ci.product_id AND v.main_variation = true
+            ), 0) AS option_id')->distinct();
+
+        return DB::query()->fromSub($lines, 'cart_lines')->count();
+    }
+
     protected function cartVariationQuantities(array $cart, int $productId): array
     {
         $quantities = [];

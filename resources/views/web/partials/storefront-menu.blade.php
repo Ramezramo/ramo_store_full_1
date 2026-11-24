@@ -1,6 +1,7 @@
 <div class="nav-mobile-menu storefront-drawer{{ $headerIsArabic ? ' nav-mobile-menu--rtl' : '' }}" id="nav-mobile-menu" dir="{{ $headerIsArabic ? 'rtl' : 'ltr' }}" aria-hidden="true" inert>
   <div class="nav-mobile-backdrop" onclick="closeMobileMenu()" aria-hidden="true"></div>
   <div class="nav-mobile-panel" role="dialog" aria-modal="true" aria-label="{{ $mobileMenuLabel }}" tabindex="-1">
+    <span class="nav-glass" aria-hidden="true"></span>
     <div class="header-drawer-heading">
       <strong>{{ $headerIsArabic ? 'اكتشف رامو' : 'Explore Ramo' }}</strong>
       <button type="button" class="header-drawer-close" onclick="closeMobileMenu()" aria-label="{{ $headerIsArabic ? 'اقفل القائمة' : 'Close menu' }}">
@@ -9,11 +10,13 @@
     </div>
     <div class="nav-mobile-links">
       <div class="header-menu-label">{{ $headerIsArabic ? 'تسوّق واكتشف' : 'Shop & discover' }}</div>
-      <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}">@include('web.partials.header-icon', ['icon' => 'home']) {{ $mobileHomeLabel }}</a>
-      <a href="{{ route('shop') }}" class="{{ request()->routeIs('shop') ? 'active' : '' }}">@include('web.partials.header-icon', ['icon' => 'shop']) {{ $mobileShopLabel }}</a>
-      <a href="{{ route('offers') }}" class="{{ request()->routeIs('offers') ? 'active' : '' }}">@include('web.partials.header-icon', ['icon' => 'offers']) {{ $mobileOffersLabel }}</a>
-      <a href="{{ route('wishlist') }}" class="{{ request()->routeIs('wishlist') ? 'active' : '' }}">@include('web.partials.header-icon', ['icon' => 'heart']) {{ $mobileWishlistLabel }}</a>
-      <a href="{{ route('order.track') }}" class="{{ request()->routeIs('order.track*') ? 'active' : '' }}">@include('web.partials.header-icon', ['icon' => 'package']) {{ $mobileTrackOrderLabel }}</a>
+      <div class="header-drawer-shortcuts">
+        <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}">@include('web.partials.header-icon', ['icon' => 'home']) {{ $mobileHomeLabel }}</a>
+        <a href="{{ route('shop') }}" class="{{ request()->routeIs('shop') ? 'active' : '' }}">@include('web.partials.header-icon', ['icon' => 'shop']) {{ $mobileShopLabel }}</a>
+        <a href="{{ route('offers') }}" class="{{ request()->routeIs('offers') ? 'active' : '' }}">@include('web.partials.header-icon', ['icon' => 'offers']) {{ $mobileOffersLabel }}</a>
+        <a href="{{ route('wishlist') }}" class="{{ request()->routeIs('wishlist') ? 'active' : '' }}">@include('web.partials.header-icon', ['icon' => 'heart']) {{ $mobileWishlistLabel }}</a>
+        <a href="{{ route('order.track') }}" class="{{ request()->routeIs('order.track*') ? 'active' : '' }}">@include('web.partials.header-icon', ['icon' => 'package']) {{ $mobileTrackOrderLabel }}</a>
+      </div>
       <hr class="nav-mobile-divider">
       <div class="header-menu-label">{{ $headerIsArabic ? 'حسابك' : 'Your account' }}</div>
       @auth
