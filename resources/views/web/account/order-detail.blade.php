@@ -106,7 +106,7 @@
 <div class="odx-heading">
   <div>
     <h1>{{ $isAr ? 'تفاصيل الطلب' : 'Order details' }}</h1>
-    <p>{{ $isAr ? 'رقم الطلب' : 'Order' }} #{{ $order->id }} · {{ $isAr ? \Carbon\Carbon::parse($order->date_created)->locale('ar')->translatedFormat('j F Y، g:i A') : \Carbon\Carbon::parse($order->date_created)->format('M d, Y · h:i A') }}</p>
+    <p>{{ $isAr ? 'رقم الطلب' : 'Order' }} #{{ $order->id }} · {{ \App\Support\StorefrontDate::format($order->date_created) }}</p>
   </div>
   <a href="{{ route('account.orders') }}" class="btn btn-outline" style="font-size:12px;padding:9px 13px">{{ $isAr ? 'كل الطلبات' : 'All orders' }}</a>
 </div>
@@ -136,6 +136,11 @@
     <div class="odx-fact"><span class="odx-fact-label">{{ $isAr ? 'الدفع' : 'Payment' }}</span><span class="odx-fact-value">{{ $order->payment_method_title ?: ($isAr ? 'غير محدد' : 'Not specified') }}</span></div>
     <div class="odx-fact"><span class="odx-fact-label">{{ $isAr ? 'إجمالي الطلب' : 'Order total' }}</span><span class="odx-fact-value" style="color:var(--odx-accent)">{{ number_format($order->final_total, 2) }} EGP</span></div>
   </div>
+  @if($order->payment_method === 'cod')
+    <p style="margin-top:12px;font-size:13px">{{ $order->payment_status === 'pending_collection'
+      ? ($isAr ? 'الدفع عند الاستلام — في انتظار تحصيل المبلغ.' : 'Cash on delivery — awaiting collection.')
+      : ($order->set_paid ? ($isAr ? 'تم تحصيل المبلغ.' : 'Payment collected.') : ($isAr ? 'لم يتم تحصيل المبلغ.' : 'Payment not collected.')) }}</p>
+  @endif
   @if($order->customer_note)
     <div style="margin-top:12px;padding:11px 13px;border-radius:11px;background:#fffaf6;color:#5f514b;font-size:13px;line-height:1.6"><strong>{{ $isAr ? 'ملاحظتك:' : 'Your note:' }}</strong> {{ $order->customer_note }}</div>
   @endif
@@ -153,7 +158,7 @@
       <div style="font-size:13px;color:#6b7280;margin-top:4px">
         {{ $isAr ? 'الحالة:' : 'Status:' }}
         <strong style="color:{{ $order->payment_status === 'confirmed' ? '#15803d' : ($order->payment_status === 'rejected' ? '#b91c1c' : '#b45309') }}">
-          {{ $isAr ? match(strtolower($order->payment_status ?? 'pending_payment')) { 'confirmed' => 'تم التأكيد', 'pending_payment' => 'في انتظار الدفع', 'pending_verification' => 'الإيصال في انتظار المراجعة', 'rejected' => 'اترفض', 'expired' => 'انتهت المهلة', 'failed' => 'فشل', default => 'في الانتظار' } : ucwords(str_replace('_', ' ', $order->payment_status ?? 'pending_payment')) }}
+          {{ $isAr ? match(strtolower($order->payment_status ?? 'pending_payment')) { 'pending_collection' => 'في انتظار التحصيل عند الاستلام', 'confirmed' => 'تم التأكيد', 'pending_payment' => 'في انتظار الدفع', 'pending_verification' => 'الإيصال في انتظار المراجعة', 'rejected' => 'اترفض', 'expired' => 'انتهت المهلة', 'failed' => 'فشل', default => 'في الانتظار' } : ucwords(str_replace('_', ' ', $order->payment_status ?? 'pending_payment')) }}
         </strong>
       </div>
     </div>
@@ -388,7 +393,7 @@
                 @if(!empty($item['product_info']['sku']))<span class="odx-product-tag">SKU: {{ $item['product_info']['sku'] }}</span>@endif
                 @if(!empty($item['model_number']))<span class="odx-product-tag">{{ $isAr ? 'موديل' : 'Model' }}: {{ $item['model_number'] }}</span>@endif
                 @if(!empty($item['attributes']) && is_array($item['attributes']))
-                  @foreach($item['attributes'] as $k => $v)<span class="odx-product-tag">{{ $k }}: {{ $v }}</span>@endforeach
+                  @foreach(\App\Support\ProductAttributes::visible($item['attributes'] ?? []) as $k => $v)<span class="odx-product-tag">{{ $k }}: {{ $v }}</span>@endforeach
                 @endif
               </div>
             </div>
@@ -418,7 +423,7 @@
                   <strong style="color:{{ $msg->is_vendor_response ? '#e85d26' : '#111827' }}">
                     {{ $msg->is_vendor_response ? ($msg->vendor_shop_name ?: ($isAr ? 'البائع' : 'Vendor')) : ($isAr ? 'إنت' : 'You') }}
                   </strong>
-                  <span style="color:#6b7280">{{ \Carbon\Carbon::parse($msg->created_at)->format('d M Y, g:i A') }}</span>
+                  <span style="color:#6b7280">{{ \App\Support\StorefrontDate::format($msg->created_at) }}</span>
                 </div>
                 <div style="font-size:13px;line-height:1.7;color:#111827">{{ $msg->message }}</div>
                 @if($msg->is_vendor_response)
@@ -472,7 +477,7 @@
             @if(!empty($item['product_info']['sku']))<span class="odx-product-tag">SKU: {{ $item['product_info']['sku'] }}</span>@endif
             @if(!empty($item['model_number']))<span class="odx-product-tag">{{ $isAr ? 'موديل' : 'Model' }}: {{ $item['model_number'] }}</span>@endif
             @if(!empty($item['attributes']) && is_array($item['attributes']))
-              @foreach($item['attributes'] as $k => $v)<span class="odx-product-tag">{{ $k }}: {{ $v }}</span>@endforeach
+              @foreach(\App\Support\ProductAttributes::visible($item['attributes'] ?? []) as $k => $v)<span class="odx-product-tag">{{ $k }}: {{ $v }}</span>@endforeach
             @endif
           </div>
         </div>

@@ -28,6 +28,11 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
+        RateLimiter::for('vendor-product-write', function (Request $request) {
+            $vendor = app(\App\Services\VendorWorkspace::class)->vendor();
+            return Limit::perMinute(60)->by('vendor-product:'.($vendor?->id ?? $request->ip()));
+        });
+
         $this->routes(function () {
             Route::middleware('api')
                 ->prefix('api')

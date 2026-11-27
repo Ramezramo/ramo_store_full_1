@@ -77,11 +77,11 @@
       $codFee = (float) ($codFeeLine['total'] ?? 0);
     @endphp
     <div class="od-row"><span class="od-label">{{ $isAr ? 'حالة الطلب' : 'Status' }}</span><span class="status-badge status-{{ $displayOrderStatus }}">{{ $displayOrderLabel }}</span></div>
-    @if(\App\Helpers\PaymentConfig::isManualMethod($order->payment_method ?? null))
-      <div class="od-row"><span class="od-label">{{ $isAr ? 'حالة الدفع' : 'Payment status' }}</span><span class="status-badge" style="background:{{ $order->payment_status === 'expired' ? '#fef2f2;color:#991b1b' : '#fff7ed;color:#9a3412' }}">{{ $isAr ? match(strtolower($order->payment_status ?? 'pending_payment')) { 'confirmed' => 'تم التأكيد', 'pending_verification' => 'في انتظار مراجعة الإيصال', 'expired' => 'انتهت المهلة', 'rejected' => 'الإيصال مرفوض', 'failed' => 'فشل', default => 'في انتظار الدفع' } : ucwords(str_replace('_', ' ', $order->payment_status ?? 'pending_payment')) }}</span></div>
+    @if(\App\Helpers\PaymentConfig::isManualMethod($order->payment_method ?? null) || $order->payment_method === 'cod')
+      <div class="od-row"><span class="od-label">{{ $isAr ? 'حالة الدفع' : 'Payment status' }}</span><span class="status-badge" style="background:{{ $order->payment_status === 'expired' ? '#fef2f2;color:#991b1b' : '#fff7ed;color:#9a3412' }}">{{ $isAr ? match(strtolower($order->payment_status ?? 'pending_payment')) { 'pending_collection' => 'في انتظار التحصيل عند الاستلام', 'confirmed' => 'تم التأكيد', 'pending_verification' => 'في انتظار مراجعة الإيصال', 'expired' => 'انتهت المهلة', 'rejected' => 'الإيصال مرفوض', 'failed' => 'فشل', default => 'في انتظار الدفع' } : ucwords(str_replace('_', ' ', $order->payment_status ?? 'pending_payment')) }}</span></div>
     @endif
     <div class="od-row"><span class="od-label">{{ $isAr ? 'طريقة الدفع' : 'Payment' }}</span><span>{{ $order->payment_method_title }}</span></div>
-    <div class="od-row"><span class="od-label">{{ $isAr ? 'التاريخ' : 'Date' }}</span><span>{{ $isAr ? \Carbon\Carbon::parse($order->date_created)->locale('ar')->translatedFormat('j F Y، g:i A') : \Carbon\Carbon::parse($order->date_created)->format('M d, Y h:i A') }}</span></div>
+    <div class="od-row"><span class="od-label">{{ $isAr ? 'التاريخ' : 'Date' }}</span><span>{{ \App\Support\StorefrontDate::format($order->date_created) }}</span></div>
     @if(($order->payment_method ?? null) === 'cod' && $codFee > 0)
       <div class="od-row"><span class="od-label">{{ $isAr ? 'رسوم الدفع عند الاستلام' : 'Cash on Delivery fee' }}</span><span>{{ number_format($codFee, 2) }} EGP</span></div>
     @endif
@@ -207,7 +207,7 @@
           <div class="order-item-info">
             <span class="order-item-name">{{ $item['name'] }}</span>
             @if(!empty($item['model_number']))<span class="order-item-attr">{{ $isAr ? 'رقم الموديل' : 'Model number' }}: {{ $item['model_number'] }}</span>@endif
-            @if(!empty($item['attributes']))<span class="order-item-attr">@foreach($item['attributes'] as $k=>$v) {{ $k }}: {{ $v }} @endforeach</span>@endif
+            @if(!empty($item['attributes']))<span class="order-item-attr">@foreach(\App\Support\ProductAttributes::visible($item['attributes'] ?? []) as $k => $v) {{ $k }}: {{ $v }} @endforeach</span>@endif
           </div>
           <span class="order-item-qty">× {{ $item['quantity'] }}</span>
           <span class="order-item-price">{{ number_format($item['subtotal'],2) }} EGP</span>
@@ -228,7 +228,7 @@
           <div class="order-item-info">
             <span class="order-item-name">{{ $item['name'] }}</span>
             @if(!empty($item['model_number']))<span class="order-item-attr">{{ $isAr ? 'رقم الموديل' : 'Model number' }}: {{ $item['model_number'] }}</span>@endif
-            @if(!empty($item['attributes']))<span class="order-item-attr">@foreach($item['attributes'] as $k=>$v) {{ $k }}: {{ $v }} @endforeach</span>@endif
+            @if(!empty($item['attributes']))<span class="order-item-attr">@foreach(\App\Support\ProductAttributes::visible($item['attributes'] ?? []) as $k => $v) {{ $k }}: {{ $v }} @endforeach</span>@endif
           </div>
           <span class="order-item-qty">× {{ $item['quantity'] }}</span>
           <span class="order-item-price">{{ number_format($item['subtotal'],2) }} EGP</span>

@@ -162,13 +162,13 @@ Route::middleware(['vendor.web.auth', \App\Http\Middleware\InvalidateStorefrontD
     Route::get('/seller/products', [VendorProductController::class, 'index'])->name('vendor.products');
     Route::get('/seller/products/create', [VendorProductController::class, 'create'])->name('vendor.products.create');
     Route::get('/seller/products/search-json', [VendorProductController::class, 'searchJson'])->name('vendor.products.search');
-    Route::post('/seller/products/bulk-price', [VendorProductController::class, 'bulkPrice'])->name('vendor.products.bulk-price');
-    Route::post('/seller/products', [VendorProductController::class, 'store'])->name('vendor.products.store');
+    Route::post('/seller/products/bulk-price', [VendorProductController::class, 'bulkPrice'])->middleware('throttle:vendor-product-write')->name('vendor.products.bulk-price');
+    Route::post('/seller/products', [VendorProductController::class, 'store'])->middleware('throttle:vendor-product-write')->name('vendor.products.store');
     Route::get('/seller/products/{id}', [VendorProductController::class, 'show'])->name('vendor.products.show');
     Route::get('/seller/products/{id}/edit', [VendorProductController::class, 'edit'])->name('vendor.products.edit');
-    Route::post('/seller/products/{id}', [VendorProductController::class, 'update'])->name('vendor.products.update');
-    Route::post('/seller/products/{id}/section', [VendorProductController::class, 'updateSection'])->name('vendor.products.update-section');
-    Route::delete('/seller/products/{id}', [VendorProductController::class, 'destroy'])->name('vendor.products.destroy');
+    Route::post('/seller/products/{id}', [VendorProductController::class, 'update'])->middleware('throttle:vendor-product-write')->name('vendor.products.update');
+    Route::post('/seller/products/{id}/section', [VendorProductController::class, 'updateSection'])->middleware('throttle:vendor-product-write')->name('vendor.products.update-section');
+    Route::delete('/seller/products/{id}', [VendorProductController::class, 'destroy'])->middleware('throttle:vendor-product-write')->name('vendor.products.destroy');
     Route::get('/seller/requests', [CategoryBrandRequestController::class, 'index'])->name('vendor.requests');
     Route::get('/seller/requests/create', [CategoryBrandRequestController::class, 'create'])->name('vendor.requests.create');
     Route::post('/seller/requests', [CategoryBrandRequestController::class, 'store'])->name('vendor.requests.store');

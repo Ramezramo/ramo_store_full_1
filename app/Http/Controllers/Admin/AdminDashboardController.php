@@ -201,7 +201,7 @@ class AdminDashboardController extends Controller
             ->get();
 
         $vendorStatuses = $subOrders->map(fn ($sub) => $statusService->normalizeVendorStatus($sub->vendor_status ?? $sub->status))->all();
-        $computedStatus = $order->general_order_status ?? $statusService->compute($order->payment_status ?? null, $vendorStatuses);
+        $computedStatus = $order->general_order_status ?? $statusService->compute($order->payment_status ?? null, $vendorStatuses, $order->payment_method);
         $vendorStatusCounts = collect($vendorStatuses)->countBy();
 
         $paymentReceipts = \App\Http\Controllers\Web\PaymentReceiptController::history($id);
@@ -286,8 +286,9 @@ class AdminDashboardController extends Controller
             return back()->with('error', 'Invalid store status.');
         }
 
-        $paymentStatus = DB::table('orders')->where('id', $orderId)->value('payment_status');
-        if ($status !== 'cancelled' && $paymentStatus !== 'confirmed') {
+        $paymentOrder = DB::table('orders')->where('id', $orderId)->first(['payment_status', 'payment_method']);
+        abort_unless($paymentOrder, 404);
+        if ($status !== 'cancelled' && ! \App\Services\OrderStatusService::allowsFulfillment($paymentOrder->payment_status, $paymentOrder->payment_method)) {
             return back()->with('error', 'This order cannot be processed until its payment is confirmed.');
         }
 

@@ -76,6 +76,7 @@ class CartReAddAvailabilityTest extends TestCase
             'images' => '[]',
             'status' => 'publish',
             'acceptance_status' => 'approved',
+            'purchasable' => true,
             'minimum_order_qty' => 1,
             'max_orders_per_person' => $maximum,
             'created_at' => $now,

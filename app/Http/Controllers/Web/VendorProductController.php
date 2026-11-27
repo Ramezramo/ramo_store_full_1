@@ -7,11 +7,61 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
 
 class VendorProductController extends Controller
 {
+    private array $uploadedPaths = [];
+    private array $detachedPaths = [];
+
+    private function persistProduct(callable $save)
+    {
+        $this->uploadedPaths = [];
+        $this->detachedPaths = [];
+        try {
+            return DB::transaction(function () use ($save) {
+                $response = $save();
+                $detached = array_unique($this->detachedPaths);
+                DB::afterCommit(function () use ($detached) {
+                    foreach ($detached as $path) {
+                        try {
+                            $this->deleteUnusedUpload($path);
+                        } catch (\Throwable $exception) {
+                            // Cleanup failure must not undo a committed save or delete its new images.
+                            report($exception);
+                        }
+                    }
+                });
+                return $response;
+            });
+        } catch (\Throwable $exception) {
+            foreach ($this->uploadedPaths as $path) {
+                Storage::disk('public')->delete($path);
+            }
+            throw $exception;
+        }
+    }
+
+    private function deleteUnusedUpload(string $path): void
+    {
+        if (! preg_match('#^products/(?:thumbnails|other_images|natural_images|variations/[a-zA-Z0-9_-]+)/[a-zA-Z0-9_.-]+$#D', $path)) {
+            return;
+        }
+        $plain = addcslashes($path, '%_\\\\');
+        $escaped = addcslashes(str_replace('/', '\\/', $path), '%_\\\\');
+        foreach (['products_data', 'product_variations'] as $table) {
+            if (DB::table($table)->where(function ($query) use ($plain, $escaped) {
+                $query->where('images', 'like', '%'.$plain.'%')
+                    ->orWhere('images', 'like', '%'.$escaped.'%');
+            })->exists()) return;
+        }
+        Storage::disk('public')->delete($path);
+    }
+
     private function normalizeProductAttributes($rawAttributes, $variations): array
     {
         $attributes = is_string($rawAttributes)
@@ -122,6 +172,11 @@ class VendorProductController extends Controller
     // ─────────────────────────────────────────────────────────────────────
     public function bulkPrice(Request $request)
     {
+        return $this->persistProduct(fn () => $this->bulkPriceProduct($request));
+    }
+
+    private function bulkPriceProduct(Request $request)
+    {
         $request->validate([
             'product_ids'   => 'required|array|min:1|max:500',
             'product_ids.*' => 'integer|min:1',
@@ -139,6 +194,7 @@ class VendorProductController extends Controller
         $ownedIds = DB::table('products_data')
             ->where('vendor_id', $vendor->id)
             ->whereIn('id', $ids)
+            ->orderBy('id')->lockForUpdate()
             ->pluck('id')
             ->toArray();
 
@@ -204,6 +260,9 @@ class VendorProductController extends Controller
                     DB::table('products_data')->where('id', $productId)->update(['updated_at' => $now]);
                     foreach ($vars as $v) {
                         $newReg  = max(1, round((float) $v->regular_price * $factor, 2));
+                        if (! is_finite($newReg) || $newReg > 99999999.99) {
+                            throw ValidationException::withMessages(['value' => 'The resulting price exceeds the supported maximum.']);
+                        }
                         $newSale = $discPct > 0
                             ? round($newReg * (1 - $discPct / 100), 2)
                             : $newReg;
@@ -264,13 +323,15 @@ class VendorProductController extends Controller
     // ─────────────────────────────────────────────────────────────────────
     public function store(Request $request)
     {
+        return $this->persistProduct(fn () => $this->storeProduct($request));
+    }
+
+    private function storeProduct(Request $request)
+    {
         $vendor        = $this->vendor();
         $hasVariations = $request->boolean('has_variations');
 
-        if ($hasVariations) {
-            $this->syncVariationSizes($request);
-        }
-        $request->validate($this->validationRules($hasVariations));
+        $this->validateProductInput($request);
 
         $slug        = $this->uniqueSlug(Str::slug($this->sanitizeProductText($request->input('name'))));
         $imagesJson  = $this->buildImagesJson($request);
@@ -279,7 +340,7 @@ class VendorProductController extends Controller
         $now = now();
         [$variations, $totalStock] = $this->buildVariations($request, $hasVariations);
         if ($hasVariations && $variations === []) {
-            return back()->withErrors(['colors' => 'Add at least one size for every variation before saving.'])->withInput();
+            throw ValidationException::withMessages(['colors' => 'Add at least one size for every variation before saving.']);
         }
 
         $translations       = $this->buildTranslations($request);
@@ -388,7 +449,10 @@ class VendorProductController extends Controller
         $selectedCats = DB::table('product_category')->where('product_id', $id)->pluck('category_id')->toArray();
         $relatedIds   = json_decode($product->related_ids ?? '[]', true) ?: [];
         $relatedProds = count($relatedIds)
-            ? DB::table('products_data')->whereIn('id', $relatedIds)->select('id', 'name')->get()
+            ? DB::table('products_data')->whereIn('id', $relatedIds)
+                ->where(fn ($query) => $query->where('vendor_id', $vendor->id)
+                    ->orWhere(fn ($public) => $public->where('status', 'publish')->where('acceptance_status', 'approved')))
+                ->select('id', 'name')->get()
             : collect();
         $images       = json_decode($product->images ?? '{}', true) ?: [];
         $translations = json_decode($product->translations ?? '[]', true) ?: [];
@@ -400,9 +464,9 @@ class VendorProductController extends Controller
         $unitAmount   = $unit ? ($unit[$unitType] ?? 1) : 1;
         $whatsappData = $whatsapp['whatsapp'] ?? [];
 
-        $allCoupons = DB::table('coupons')->where('status', 'publish')->orderBy('code')->get(['id', 'code', 'amount', 'discount_type']);
+        $allCoupons = DB::table('coupons')->where('vendor_id', $vendor->id)->where('status', 'publish')->orderBy('code')->get(['id', 'code', 'amount', 'discount_type']);
         $attachedCoupon = null;
-        foreach (DB::table('coupons')->where('status', 'publish')->get(['id', 'code', 'amount', 'discount_type', 'product_ids']) as $c) {
+        foreach (DB::table('coupons')->where('vendor_id', $vendor->id)->where('status', 'publish')->get(['id', 'code', 'amount', 'discount_type', 'product_ids']) as $c) {
             $cpids = json_decode($c->product_ids ?? '[]', true) ?? [];
             if (in_array($id, array_map('intval', $cpids))) { $attachedCoupon = $c; break; }
         }
@@ -421,27 +485,23 @@ class VendorProductController extends Controller
     // ─────────────────────────────────────────────────────────────────────
     public function updateSection(Request $request, int $id)
     {
+        return $this->persistProduct(fn () => $this->updateSectionProduct($request, $id));
+    }
+
+    private function updateSectionProduct(Request $request, int $id)
+    {
         $vendor  = $this->vendor();
-        $product = DB::table('products_data')->where('id', $id)->where('vendor_id', $vendor->id)->first();
+        $product = DB::table('products_data')->where('id', $id)->where('vendor_id', $vendor->id)->lockForUpdate()->first();
         if (! $product) abort(404);
 
+        $request->validate(['_section' => 'required|in:basic,translations,pricing,variations,attributes,tags,categories,images,var_images,whatsapp,related,coupon']);
         $section = $request->input('_section');
+        $this->validateProductInput($request, $id, $section);
         $now     = now();
 
         switch ($section) {
 
             case 'basic':
-                $request->validate([
-                    'name'             => 'required|string|max:500',
-                    'status'           => 'required|in:publish,draft',
-                    'sku'              => 'nullable|string|max:100',
-                    'brand_id'         => 'nullable|integer',
-                    'product_type'     => 'nullable|in:physical,digital',
-                    'unit'             => 'nullable|string|max:50',
-                    'unit_amount'      => 'nullable|numeric|min:0.01',
-                    'short_description'=> 'nullable|string|max:1000',
-                    'description'      => 'nullable|string',
-                ]);
                 $unitType   = $request->input('unit', 'piece');
                 $unitAmount = (float) $request->input('unit_amount', 1);
                 $productType = $request->input('product_type', 'physical');
@@ -472,11 +532,6 @@ class VendorProductController extends Controller
                 break;
 
             case 'pricing':
-                $request->validate([
-                    'discount_percentage'   => 'nullable|numeric|min:0|max:80.99',
-                    'minimum_order_qty'     => 'nullable|integer|min:1|max:100',
-                    'max_orders_per_person' => 'nullable|integer|min:0|max:100',
-                ]);
                 $discountPct = (float) $request->input('discount_percentage', 0);
                 DB::table('products_data')->where('id', $id)->update([
                     'discount_percentage'   => (string) $discountPct,
@@ -504,10 +559,9 @@ class VendorProductController extends Controller
 
             case 'variations':
                 $hasVariations = $request->boolean('has_variations');
-                $request->validate($this->variationImageRules());
                 [$variations, $totalStock] = $this->buildVariations($request, $hasVariations);
                 if ($variations === []) {
-                    return back()->withErrors(['colors' => 'Add at least one variation before saving.'])->withInput();
+                    throw ValidationException::withMessages(['colors' => 'Add at least one variation before saving.']);
                 }
                 $this->saveVariationRows($request, $id, $variations, $now, replace: true);
                 DB::table('products_data')->where('id', $id)->update([
@@ -542,7 +596,6 @@ class VendorProductController extends Controller
                 break;
 
             case 'images':
-                $request->validate($this->productImageRules());
                 $existingImages = json_decode($product->images ?? '{}', true) ?: [];
                 $imagesJson = $this->buildImagesJson($request, $existingImages);
                 DB::table('products_data')->where('id', $id)->update([
@@ -553,13 +606,6 @@ class VendorProductController extends Controller
                 break;
 
             case 'var_images':
-                $request->validate([
-                    'new_images' => 'nullable|array',
-                    'new_images.*' => 'nullable|image|mimes:jpeg,png,webp|max:5120',
-                    'new_image_urls' => $this->imageLinkRules(multiple: true),
-                    'delete_images' => 'nullable|array',
-                    'delete_images.*' => 'string|max:2048',
-                ]);
                 $varId = (int) $request->input('variation_id');
                 $variation = DB::table('product_variations')
                     ->where('id', $varId)
@@ -572,6 +618,8 @@ class VendorProductController extends Controller
                     : (array) ($variation->images ?? []);
 
                 // A file may also be used by other sizes. Detach it from this variation only.
+                $this->detachedPaths = array_merge($this->detachedPaths,
+                    array_values(array_intersect($varImgs, (array) $request->input('delete_images', []))));
                 $varImgs = array_diff($varImgs, (array) $request->input('delete_images', []));
                 $varImgs = array_merge($varImgs, $this->imageLinks($request->input('new_image_urls')));
 
@@ -589,6 +637,9 @@ class VendorProductController extends Controller
                     }
                 }
 
+                if (count(array_unique($varImgs)) > 30) {
+                    throw ValidationException::withMessages(['new_images' => 'Use at most 30 images per variation.']);
+                }
                 DB::table('product_variations')->where('id', $varId)->update([
                     'images'     => json_encode(array_values(array_unique($varImgs))),
                     'updated_at' => $now,
@@ -613,15 +664,19 @@ class VendorProductController extends Controller
 
             case 'coupon':
                 $couponId = (int) $request->input('coupon_id');
-                // Remove this product from all coupons first
-                foreach (DB::table('coupons')->get(['id', 'product_ids']) as $c) {
+                // A seller can manage only coupons belonging to their own store.
+                $coupons = DB::table('coupons')->where('vendor_id', $vendor->id)
+                    ->orderBy('id')->lockForUpdate()->get(['id', 'product_ids']);
+                foreach ($coupons as $c) {
                     $cpids = json_decode($c->product_ids ?? '[]', true) ?? [];
                     $cpids = array_values(array_filter(array_map('intval', $cpids), fn($p) => $p !== $id));
-                    DB::table('coupons')->where('id', $c->id)->update(['product_ids' => json_encode($cpids)]);
+                    if (in_array($id, array_map('intval', json_decode($c->product_ids ?? '[]', true) ?? []))) {
+                        DB::table('coupons')->where('id', $c->id)->where('vendor_id', $vendor->id)->update(['product_ids' => json_encode($cpids)]);
+                    }
                 }
                 // Add to the selected coupon
                 if ($couponId > 0) {
-                    $coupon = DB::table('coupons')->where('id', $couponId)->first();
+                    $coupon = DB::table('coupons')->where('id', $couponId)->where('vendor_id', $vendor->id)->first();
                     if ($coupon) {
                         $cpids = json_decode($coupon->product_ids ?? '[]', true) ?? [];
                         $cpids = array_values(array_map('intval', $cpids));
@@ -630,6 +685,21 @@ class VendorProductController extends Controller
                     }
                 }
                 break;
+        }
+
+        if (in_array($section, ['basic', 'pricing', 'variations'], true)) {
+            app(\App\Services\ShopPriceRangeService::class)->refreshGlobal();
+        }
+
+        if (in_array($section, ['basic', 'translations', 'attributes', 'tags', 'variations'], true)) {
+            $saved = DB::table('products_data')->where('id', $id)->first();
+            $colors = DB::table('product_variations')->where('product_id', $id)->pluck('attributes')
+                ->map(fn ($value) => implode(' ', array_filter((array) json_decode($value, true), 'is_scalar')))->implode(' ');
+            $search = new Request(['name' => $saved->name, 'description' => $saved->description,
+                'short_description' => $saved->short_description]);
+            $text = $this->buildSearchText($search, json_decode($saved->translations ?: '[]', true) ?: [],
+                json_decode($saved->attributes ?: '[]', true) ?: [], json_decode($saved->tags ?: '[]', true) ?: []);
+            DB::table('products_data')->where('id', $id)->update(['search_text' => trim($text.' '.strtolower($colors))]);
         }
 
         return redirect()->route('vendor.products.show', $id)
@@ -670,7 +740,10 @@ class VendorProductController extends Controller
         $selectedCats = DB::table('product_category')->where('product_id', $id)->pluck('category_id')->toArray();
         $relatedIds   = json_decode($product->related_ids ?? '[]', true) ?: [];
         $relatedProds = count($relatedIds)
-            ? DB::table('products_data')->whereIn('id', $relatedIds)->select('id', 'name')->get()
+            ? DB::table('products_data')->whereIn('id', $relatedIds)
+                ->where(fn ($query) => $query->where('vendor_id', $vendor->id)
+                    ->orWhere(fn ($public) => $public->where('status', 'publish')->where('acceptance_status', 'approved')))
+                ->select('id', 'name')->get()
             : collect();
         $images       = json_decode($product->images ?? '{}', true) ?: [];
         $translations = json_decode($product->translations ?? '[]', true) ?: [];
@@ -696,15 +769,17 @@ class VendorProductController extends Controller
     // ─────────────────────────────────────────────────────────────────────
     public function update(Request $request, int $id)
     {
+        return $this->persistProduct(fn () => $this->updateProduct($request, $id));
+    }
+
+    private function updateProduct(Request $request, int $id)
+    {
         $vendor  = $this->vendor();
-        $product = DB::table('products_data')->where('id', $id)->where('vendor_id', $vendor->id)->first();
+        $product = DB::table('products_data')->where('id', $id)->where('vendor_id', $vendor->id)->lockForUpdate()->first();
         if (! $product) abort(404);
 
         $hasVariations = $request->boolean('has_variations');
-        if ($hasVariations) {
-            $this->syncVariationSizes($request);
-        }
-        $request->validate($this->validationRules($hasVariations));
+        $this->validateProductInput($request, $id);
 
         $existingImages = json_decode($product->images ?? '{}', true) ?: [];
         $imagesJson  = $this->buildImagesJson($request, $existingImages);
@@ -713,7 +788,7 @@ class VendorProductController extends Controller
         $now = now();
         [$variations, $totalStock] = $this->buildVariations($request, $hasVariations);
         if ($hasVariations && $variations === []) {
-            return back()->withErrors(['colors' => 'Add at least one size for every variation before saving.'])->withInput();
+            throw ValidationException::withMessages(['colors' => 'Add at least one size for every variation before saving.']);
         }
 
         $translations       = $this->buildTranslations($request);
@@ -790,10 +865,19 @@ class VendorProductController extends Controller
     // ─────────────────────────────────────────────────────────────────────
     public function destroy(int $id)
     {
+        return $this->persistProduct(fn () => $this->destroyProduct($id));
+    }
+
+    private function destroyProduct(int $id)
+    {
         $vendor  = $this->vendor();
-        $product = DB::table('products_data')->where('id', $id)->where('vendor_id', $vendor->id)->first();
+        $product = DB::table('products_data')->where('id', $id)->where('vendor_id', $vendor->id)->lockForUpdate()->first();
         if (! $product) abort(404);
 
+        $this->deleteReplacedProductUploads(json_decode($product->images ?? '{}', true) ?: [], '{}');
+        foreach (DB::table('product_variations')->where('product_id', $id)->pluck('images') as $images) {
+            $this->detachedPaths = array_merge($this->detachedPaths, array_filter((array) json_decode($images ?: '[]', true), 'is_string'));
+        }
         DB::table('product_variations')->where('product_id', $id)->delete();
         DB::table('product_category')->where('product_id', $id)->delete();
         DB::table('products_data')->where('id', $id)->delete();
@@ -865,21 +949,174 @@ class VendorProductController extends Controller
         $request->merge(['colors' => $colors]);
     }
 
+    private function validateProductInput(Request $request, ?int $productId = null, ?string $section = null): void
+    {
+        $input = $request->all();
+        foreach (['name', 'description', 'short_description', 'sku', 'unit', 'tags_input', 'whatsapp_number'] as $field) {
+            if (isset($input[$field]) && is_string($input[$field])) {
+                $input[$field] = $this->sanitizeProductText($input[$field]);
+            }
+        }
+        foreach (['translations' => ['name', 'description', 'short_description'], 'prod_attributes' => ['name', 'values'],
+            'colors' => ['name', 'attribute_name']] as $group => $fields) {
+            if (! is_array($input[$group] ?? null)) continue;
+            foreach ($input[$group] as &$entry) {
+                if (! is_array($entry)) continue;
+                foreach ($fields as $field) {
+                    if (isset($entry[$field]) && is_string($entry[$field])) {
+                        $entry[$field] = $this->sanitizeProductText($entry[$field]);
+                    }
+                }
+            }
+            unset($entry);
+        }
+        foreach (['unit' => 'piece', 'unit_amount' => 1, 'product_type' => 'physical',
+            'minimum_order_qty' => 1, 'max_orders_per_person' => 0, 'discount_percentage' => 0,
+            'stock_status' => 'instock', 'variation_status' => 'publish'] as $field => $default) {
+            if (! isset($input[$field]) || $input[$field] === '') $input[$field] = $default;
+        }
+        $request->merge($input);
+
+        $files = [];
+        $uploadedFiles = $request->allFiles();
+        array_walk_recursive($uploadedFiles, function ($file) use (&$files) {
+            if ($file instanceof \Illuminate\Http\UploadedFile) $files[] = $file;
+        });
+        $uploadBytes = array_sum(array_map(fn ($file) => $file->getSize(), $files));
+        if (count($files) > 30 || $uploadBytes > 7 * 1024 * 1024) {
+            throw ValidationException::withMessages(['images' => 'Upload at most 30 files and 7 MB in total per save.']);
+        }
+
+        if ($section === null || $section === 'variations') {
+            // Check shape before normalization, so nested values return 422 instead of a PHP error.
+            $request->validate([
+                'has_variations' => 'nullable|boolean',
+                'colors' => 'nullable|array|max:50',
+                'colors.*' => 'array',
+                'colors.*.sizes' => 'nullable|array|max:50',
+                'colors.*.sizes.*' => 'string|max:25',
+                'colors.*.price_map' => 'nullable|array|max:50',
+                'colors.*.stock' => 'nullable|array|max:50',
+                'colors.*.sale_price_map' => 'nullable|array|max:50',
+                'colors.*.model_number_map' => 'nullable|array|max:50',
+            ]);
+            if ($request->boolean('has_variations')) $this->syncVariationSizes($request);
+        }
+
+        $rules = $this->validationRules($request->boolean('has_variations'));
+        $sectionFields = [
+            'basic' => ['name', 'status', 'sku', 'brand_id', 'product_type', 'unit', 'unit_amount', 'short_description', 'description'],
+            'translations' => ['translations'], 'pricing' => ['discount_percentage', 'minimum_order_qty', 'max_orders_per_person'],
+            'variations' => ['has_variations', 'colors', 'regular_price', 'sale_price', 'stock_quantity', 'stock_status',
+                'variation_status', 'discount_percentage', 'variation_images', 'variation_image_urls'],
+            'attributes' => ['prod_attributes'], 'tags' => ['tags_input'], 'categories' => ['categories'],
+            'images' => array_keys($this->productImageRules()), 'whatsapp' => ['whatsapp_available', 'whatsapp_number'],
+            'related' => ['related_ids'], 'var_images' => [], 'coupon' => [],
+        ];
+        if ($section !== null) {
+            $fields = $sectionFields[$section];
+            $rules = array_filter($rules, fn ($key) => in_array(Str::before($key, '.'), $fields, true), ARRAY_FILTER_USE_KEY);
+        }
+        if ($section === null || $section === 'variations') {
+            $rules['colors.*.existing_variations.*'] = [
+                'bail', 'integer', Rule::exists('product_variations', 'id')->where('product_id', $productId ?? 0),
+            ];
+        }
+        if ($section === 'var_images') {
+            $rules = [
+                'variation_id' => ['required', 'integer', Rule::exists('product_variations', 'id')->where('product_id', $productId)],
+                'new_images' => 'nullable|array|max:30', 'new_images.*' => $this->imageUploadRules(),
+                'new_image_urls' => $this->imageLinkRules(multiple: true),
+                'delete_images' => 'nullable|array|max:30', 'delete_images.*' => 'string|max:2048',
+            ];
+        }
+        if ($section === 'coupon') {
+            $vendorId = $this->vendor()->id;
+            $rules = ['coupon_id' => ['bail', 'nullable', 'integer', 'min:0', function ($attribute, $value, $fail) use ($vendorId) {
+                if ((int) $value > 0 && ! DB::table('coupons')->where('id', $value)->where('vendor_id', $vendorId)->exists()) {
+                    $fail('Select a coupon belonging to your store.');
+                }
+            }]];
+        }
+
+        $validator = Validator::make($request->all(), $rules);
+        $validator->after(function ($validator) use ($request, $productId, $section) {
+            if ($validator->errors()->isNotEmpty()) return;
+            if ($section === null || $section === 'variations') {
+                $optionCount = 0;
+                $stock = $request->boolean('has_variations') ? 0 : (int) $request->input('stock_quantity', 0);
+                foreach ((array) $request->input('colors', []) as $color) {
+                    if (! $request->boolean('has_variations')) break;
+                    $sizes = $color['sizes'];
+                    $optionCount += count($sizes);
+                    if (count(array_unique($sizes)) !== count($sizes)) {
+                        $validator->errors()->add('colors', 'Remove duplicate sizes within each option.');
+                    }
+                    foreach ($sizes as $size) {
+                        $stock += (int) ($color['stock'][$size] ?? 0);
+                    }
+                }
+                if ($optionCount > 500 || $stock > 2147483647) {
+                    $validator->errors()->add('colors', 'Use at most 500 variations and a total stock below 2,147,483,648.');
+                }
+            }
+            if ($section === null || $section === 'pricing') {
+                $min = (int) $request->input('minimum_order_qty', 1);
+                $max = (int) $request->input('max_orders_per_person', 0);
+                if ($max > 0 && $max < $min) {
+                    $validator->errors()->add('max_orders_per_person', 'The maximum quantity must be at least the minimum quantity.');
+                }
+            }
+            if (($section === null || $section === 'related') && $request->filled('related_ids')) {
+                $raw = $request->input('related_ids');
+                if (! preg_match('/^\s*\d+(?:\s*,\s*\d+)*\s*$/D', $raw)) {
+                    $validator->errors()->add('related_ids', 'Select valid related products.');
+                    return;
+                }
+                $ids = array_unique(array_map('intval', explode(',', $raw)));
+                $allowed = DB::table('products_data')->whereIn('id', $ids)
+                    ->where(fn ($query) => $query->where('vendor_id', $this->vendor()->id)
+                        ->orWhere(fn ($public) => $public->where('status', 'publish')->where('acceptance_status', 'approved')))
+                    ->when($productId, fn ($query) => $query->where('id', '!=', $productId))->count();
+                if (count($ids) > 30 || $allowed !== count($ids)) {
+                    $validator->errors()->add('related_ids', 'Select up to 30 products you own or that are publicly available.');
+                }
+            }
+        });
+        $validator->validate();
+    }
+
+    private function imageUploadRules(): array
+    {
+        return ['bail', 'nullable', 'image', 'mimes:jpeg,png,webp', 'max:5120',
+            'dimensions:max_width=8000,max_height=8000',
+            function ($attribute, $file, $fail) {
+                $dimensions = @getimagesize($file->getRealPath());
+                if (! $dimensions || $dimensions[0] * $dimensions[1] > 20000000) {
+                    $fail('Use an image up to 20 megapixels.');
+                }
+            }];
+    }
+
     private function validationRules(bool $hasVariations): array
     {
         $base = [
-            'name'                  => 'required|string|max:500',
+            'has_variations' => 'nullable|boolean',
+            'button_mode' => 'nullable|in:both,cart_only,details_only',
+            'stock_status' => 'nullable|in:instock,outofstock,onbackorder',
+            'variation_status' => 'nullable|in:publish,draft',
+            'name'                  => 'required|string|max:255',
             'save_action'           => 'nullable|in:save,save_and_view',
             'status'                => 'required|in:publish,draft',
             'short_description'     => 'nullable|string|max:1000',
-            'description'           => 'nullable|string',
+            'description'           => 'nullable|string|max:65535',
             'sku'                   => 'nullable|string|max:100',
             'unit'                  => 'nullable|string|max:50',
             'unit_amount'           => 'nullable|numeric|min:0.01|max:999999',
-            'brand_id'              => 'nullable|integer',
-            'categories'            => 'nullable|array',
-            'categories.*'          => 'integer',
-            'related_ids'           => 'nullable|string',
+            'brand_id'              => 'nullable|integer|exists:brands,id',
+            'categories'            => 'nullable|array|max:100',
+            'categories.*'          => 'integer|distinct|exists:categories2,id',
+            'related_ids'           => 'nullable|string|max:2048',
             'product_type'          => 'nullable|in:physical,digital',
             'discount_percentage'   => 'nullable|numeric|min:0|max:80.99',
             'minimum_order_qty'     => 'nullable|integer|min:1|max:100',
@@ -887,12 +1124,15 @@ class VendorProductController extends Controller
             'whatsapp_available'    => 'nullable|boolean',
             'whatsapp_number'       => 'nullable|string|max:20',
             // Translations
-            'translations'          => 'nullable|array',
-            'translations.*.locale' => 'required_with:translations|string|in:ar,fr,de,es,it',
-            'translations.*.name'   => 'required_with:translations|string|max:500',
-            'translations.*.description' => 'nullable|string',
+            'translations'          => 'nullable|array|max:5',
+            'translations.*' => 'array',
+            'translations.*.locale' => 'required_with:translations|string|distinct|in:ar,fr,de,es,it',
+            'translations.*.name'   => 'required_with:translations|string|max:255',
+            'translations.*.description' => 'nullable|string|max:65535',
+            'translations.*.short_description' => 'nullable|string|max:1000',
             // Attributes
-            'prod_attributes'             => 'nullable|array',
+            'prod_attributes'             => 'nullable|array|max:50',
+            'prod_attributes.*' => 'array',
             'prod_attributes.*.name'      => 'required_with:prod_attributes|string|max:100',
             'prod_attributes.*.values'    => 'required_with:prod_attributes|string|max:500',
             // Tags
@@ -901,28 +1141,32 @@ class VendorProductController extends Controller
         $base += $this->productImageRules();
 
         if (! $hasVariations) {
-            $base['regular_price']  = 'required|numeric|min:0';
-            $base['sale_price']     = 'nullable|numeric|min:0';
-            $base['stock_quantity'] = 'required|integer|min:0';
+            $base['regular_price']  = 'required|numeric|min:0|max:99999999.99';
+            $base['sale_price']     = 'nullable|numeric|min:0|max:99999999.99';
+            $base['stock_quantity'] = 'required|integer|min:0|max:2147483647';
         } else {
-            $base['colors']                          = 'required|array|min:1';
+            $base['colors']                          = 'required|array|min:1|max:50';
             $base['colors.*.type']                   = 'required|in:color,attribute';
             $base['colors.*.name']                   = 'required_if:colors.*.type,attribute|nullable|string|max:100';
             $base['colors.*.color_code']             = 'required_if:colors.*.type,color|nullable|regex:/^#[0-9a-fA-F]{6}$/';
             $base['colors.*.attribute_name']         = 'required_if:colors.*.type,attribute|nullable|string|max:50|not_in:Color,color,Size,size|regex:/^[^:_]+$/';
             $base['colors.*.main_variation']         = 'nullable|boolean';
-            $base['colors.*.sizes']                  = 'required|array|min:1';
+            $base['colors.*.sizes']                  = 'required|array|min:1|max:50';
             $base['colors.*.sizes.*']                = 'string|max:25';
             $base['colors.*.stock']                  = 'nullable|array';
-            $base['colors.*.stock.*']                = 'integer|min:0';
+            $base['colors.*.stock.*']                = 'integer|min:0|max:2147483647';
             $base['colors.*.price_map']              = 'required|array';
-            $base['colors.*.price_map.*']            = 'required|numeric|min:0.01';
+            $base['colors.*.price_map.*']            = 'required|numeric|min:0.01|max:99999999.99';
             $base['colors.*.model_number_map']        = 'nullable|array';
             $base['colors.*.model_number_map.*']      = 'nullable|string|max:120';
             $base['colors.*.sale_price_map']         = 'nullable|array';
-            $base['colors.*.sale_price_map.*']       = 'nullable|numeric|min:0';
-            $base['colors.*.regular_price']          = 'nullable|numeric|min:0';
-            $base['colors.*.sale_price']             = 'nullable|numeric|min:0';
+            $base['colors.*.sale_price_map.*']       = 'nullable|numeric|min:0|max:99999999.99';
+            $base['colors.*.regular_price']          = 'nullable|numeric|min:0|max:99999999.99';
+            $base['colors.*.sale_price']             = 'nullable|numeric|min:0|max:99999999.99';
+            $base['colors.*.status_map'] = 'nullable|array|max:50';
+            $base['colors.*.status_map.*'] = 'in:publish,draft';
+            $base['colors.*.stock_status_map'] = 'nullable|array|max:50';
+            $base['colors.*.stock_status_map.*'] = 'in:instock,outofstock,onbackorder';
             $base += $this->variationImageRules();
         }
 
@@ -1080,6 +1324,7 @@ class VendorProductController extends Controller
                 'locale'      => $locale,
                 'name'        => $name,
                 'description' => $this->sanitizeProductText($tr['description'] ?? ''),
+                'short_description' => $this->sanitizeProductText($tr['short_description'] ?? ''),
             ];
         }
         return $result;
@@ -1153,7 +1398,7 @@ class VendorProductController extends Controller
         }
 
         // Add color/size from variations
-        foreach ((array) $request->input('colors', []) as $color) {
+        foreach ($request->boolean('has_variations') ? (array) $request->input('colors', []) : [] as $color) {
             $parts[] = strtolower($this->sanitizeProductText($color['name'] ?? ''));
             foreach ((array) ($color['sizes'] ?? []) as $size) {
                 $parts[] = strtolower($this->sanitizeProductText($size));
@@ -1192,15 +1437,15 @@ class VendorProductController extends Controller
 
     private function productImageRules(): array
     {
-        $upload = 'nullable|image|mimes:jpeg,png,webp|max:5120';
+        $upload = $this->imageUploadRules();
 
         return [
             'thumbnail' => $upload,
             'thumbnail_url' => [...$this->imageLinkRules(), 'prohibits:thumbnail'],
-            'other_images' => 'nullable|array',
+            'other_images' => 'nullable|array|max:30',
             'other_images.*' => $upload,
             'other_image_urls' => $this->imageLinkRules(multiple: true),
-            'natural_images' => 'nullable|array',
+            'natural_images' => 'nullable|array|max:30',
             'natural_images.*' => $upload,
             'natural_image_urls' => $this->imageLinkRules(multiple: true),
             'delete_thumbnail' => 'nullable|boolean',
@@ -1214,14 +1459,14 @@ class VendorProductController extends Controller
     private function variationImageRules(): array
     {
         return [
-            'variation_images' => 'nullable|array',
-            'variation_images.*' => 'array',
-            'variation_images.*.*' => 'nullable|image|mimes:jpeg,png,webp|max:5120',
-            'variation_image_urls' => 'nullable|array',
+            'variation_images' => 'nullable|array|max:50',
+            'variation_images.*' => 'array|max:30',
+            'variation_images.*.*' => $this->imageUploadRules(),
+            'variation_image_urls' => 'nullable|array|max:50',
             'variation_image_urls.*' => $this->imageLinkRules(multiple: true),
-            'colors.*.existing_images' => 'nullable|array',
+            'colors.*.existing_images' => 'nullable|array|max:30',
             'colors.*.existing_images.*' => 'string|max:2048',
-            'colors.*.existing_variations' => 'nullable|array',
+            'colors.*.existing_variations' => 'nullable|array|max:50',
             'colors.*.existing_variations.*' => 'integer',
             'colors.*.retain_existing_images' => 'nullable|boolean',
         ];
@@ -1232,7 +1477,12 @@ class VendorProductController extends Controller
         return [
             'bail', 'nullable', 'string', $multiple ? 'max:65535' : 'max:2048',
             function ($attribute, string $value, $fail) use ($multiple): void {
-                foreach ($multiple ? $this->imageLinks($value) : [$value] as $link) {
+                $links = $multiple ? $this->imageLinks($value) : [$value];
+                if (count($links) > 30) {
+                    $fail('Use at most 30 image links.');
+                    return;
+                }
+                foreach ($links as $link) {
                     $parts = filter_var($link, FILTER_VALIDATE_URL) ? parse_url($link) : [];
                     $host = trim(strtolower($parts['host'] ?? ''), '[].');
                     $publicHost = filter_var($host, FILTER_VALIDATE_IP)
@@ -1259,6 +1509,11 @@ class VendorProductController extends Controller
     private function saveVariationRows(Request $request, int $productId, array $variations, $now, bool $replace = false): void
     {
         $existing = $replace ? DB::table('product_variations')->where('product_id', $productId)->get() : collect();
+        foreach ($existing as $row) {
+            foreach ((array) json_decode($row->images ?? '[]', true) as $path) {
+                if (is_string($path)) $this->detachedPaths[] = $path;
+            }
+        }
         $byId = $existing->keyBy('id');
         $byAttributes = $existing->keyBy(fn ($row) => $this->variationImageKey($row->attributes));
         $colors = (array) $request->input('colors', []);
@@ -1283,18 +1538,36 @@ class VendorProductController extends Controller
                 $added[$index] = $this->collectImages($files[$index] ?? [], $links[$index] ?? null, $folder);
             }
             unset($variation['_option_index'], $variation['_size']);
+            $imagePaths = array_values(array_unique(array_merge($current, $added[$index] ?? [])));
+            if (count($imagePaths) > 30) {
+                throw ValidationException::withMessages(['variation_images' => 'Use at most 30 images per variation.']);
+            }
             $rows[] = array_merge($variation, [
                 'product_id' => $productId,
                 'main_variation' => $i === 0,
-                'images' => json_encode(array_values(array_unique(array_merge($current, $added[$index] ?? [])))),
-                'created_at' => $now,
+                'images' => json_encode($imagePaths),
+                'id' => $source->id ?? null,
+                'created_at' => $source->created_at ?? $now,
                 'updated_at' => $now,
             ]);
         }
 
         DB::transaction(function () use ($replace, $productId, $rows): void {
-            if ($replace) DB::table('product_variations')->where('product_id', $productId)->delete();
-            foreach ($rows as $row) DB::table('product_variations')->insert($row);
+            $kept = [];
+            foreach ($rows as $row) {
+                $rowId = $row['id'];
+                unset($row['id']);
+                if ($rowId !== null) {
+                    if (in_array($rowId, $kept, true)) {
+                        throw ValidationException::withMessages(['colors' => 'Each existing variation may be used only once.']);
+                    }
+                    DB::table('product_variations')->where('product_id', $productId)->where('id', $rowId)->update($row);
+                    $kept[] = $rowId;
+                } else {
+                    $kept[] = DB::table('product_variations')->insertGetId($row);
+                }
+            }
+            if ($replace) DB::table('product_variations')->where('product_id', $productId)->whereNotIn('id', $kept)->delete();
         });
     }
 
@@ -1342,6 +1615,9 @@ class VendorProductController extends Controller
             if ($remove || $added) {
                 $kept = array_diff((array) ($images[$key] ?? []), $remove);
                 $images[$key] = array_values(array_unique(array_merge($kept, $added)));
+                if (count($images[$key]) > 30) {
+                    throw ValidationException::withMessages([$key => 'Use at most 30 images in each gallery.']);
+                }
             }
         }
 
@@ -1356,7 +1632,7 @@ class VendorProductController extends Controller
         );
         foreach (array_diff($paths($previous), $paths(json_decode($updated, true) ?: [])) as $path) {
             if (is_string($path) && preg_match('#^products/(thumbnails|other_images|natural_images)/[a-zA-Z0-9_.-]+$#D', $path)) {
-                Storage::disk('public')->delete($path);
+                $this->detachedPaths[] = $path;
             }
         }
     }
@@ -1368,13 +1644,17 @@ class VendorProductController extends Controller
 
         try {
             $manager = new ImageManager(new Driver());
-            $img     = $manager->read($file->getRealPath());
+            $img = $manager->read($file->getRealPath());
             if ($img->width() > $maxW || $img->height() > $maxH) {
                 $img->scaleDown($maxW, $maxH);
             }
-            Storage::disk('public')->put($path, $img->toJpeg(85)->toString());
-        } catch (\Throwable $e) {
-            Storage::disk('public')->putFileAs($dir, $file, $name);
+            $this->uploadedPaths[] = $path;
+            if (! Storage::disk('public')->put($path, $img->toJpeg(85)->toString())) {
+                throw new \RuntimeException('Image storage failed.');
+            }
+        } catch (\Throwable $exception) {
+            report($exception);
+            throw ValidationException::withMessages(['images' => 'The image could not be processed or saved. Please upload it again.']);
         }
 
         return $path;

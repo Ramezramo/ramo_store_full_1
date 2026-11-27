@@ -19,6 +19,8 @@ class PaymentSettlementController extends Controller
             $order = Order::whereKey($id)->lockForUpdate()->firstOrFail();
             if ($order->platform_payment_verified_at) return;
             $trial = clone $order;
+            $collectingCod = $order->payment_method === 'cod' && $order->payment_status === 'pending_collection';
+            if ($collectingCod) $trial->payment_status = 'confirmed';
             $trial->platform_payment_verified_at = now();
             $trial->platform_payment_verified_by = auth()->id();
             if ($issue = app(ReferralEligibility::class)->orderIssue($trial)) {
@@ -30,7 +32,9 @@ class PaymentSettlementController extends Controller
             $order->forceFill([
                 'platform_payment_verified_at' => now(), 'platform_payment_verified_by' => auth()->id(),
                 'payment_reviewed_at' => now(), 'payment_reviewed_by' => auth()->id(),
-                'date_paid' => $order->date_paid ?: now(), 'timeline' => $timeline,
+                'payment_status' => 'confirmed', 'set_paid' => true, 'needs_payment' => false,
+                'date_paid' => $order->date_paid ?: now(),
+                'date_paid_gmt' => $order->date_paid_gmt ?: now()->toDateTimeString(), 'timeline' => $timeline,
             ])->save();
             app(ReferralOrderLifecycle::class)->dispatchForTransition($id, $order->status, $order->status);
         });

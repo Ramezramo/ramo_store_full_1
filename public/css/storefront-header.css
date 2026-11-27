@@ -58,12 +58,12 @@ body:has(#storefront-content > :is(.shop-page, ramo-home-hero[data-scrolled]),
   & .nav-inner { text-shadow: var(--glass-text-shadow); }
   & .nav-inner svg { filter: var(--glass-icon-shadow); }
   & :is(.nav-logo, .nav-logo span, .nav-actions .nav-icon-btn, .nav-links a, .header-search-link, .nav-user-btn) { color: white; }
-  & :is(.nav-hamburger, .header-search-link, .nav-user-btn, .nav-links a.active) {
+  & :is(.nav-hamburger, .header-search-link, .nav-links a.active) {
     border-color: #ffffff40;
     background: transparent;
   }
   & .nav-hamburger span { background: white; filter: var(--glass-icon-shadow); }
-  & :is(.nav-icon-btn, .nav-links a, .header-search-link, .nav-user-btn, .nav-hamburger):hover { background: #ffffff24; }
+  & :is(.nav-icon-btn, .nav-links a, .header-search-link, .nav-hamburger):hover { background: #ffffff24; }
 }
 
 /* Keep content at the same initial position, then let it scroll behind the bar.
@@ -328,11 +328,11 @@ body:has(#storefront-content > ramo-home-hero:not([data-scrolled]), .catalog-vie
   & .nav-inner { text-shadow: var(--glass-text-shadow); }
   & .nav-inner svg, & .nav-hamburger span { filter: var(--glass-icon-shadow); }
   & .nav-hamburger span { background: currentColor; }
-  & :is(.nav-hamburger, .header-search-link, .nav-user-btn, .nav-links a.active) {
+  & :is(.nav-hamburger, .header-search-link, .nav-links a.active) {
     background: transparent;
     border-color: rgb(255 255 255 / 48%);
   }
-  & :is(.header-search-link, .nav-icon-btn, .nav-user-btn, .nav-links a):hover { background: rgb(255 255 255 / 18%); }
+  & :is(.header-search-link, .nav-icon-btn, .nav-links a):hover { background: rgb(255 255 255 / 18%); }
 }
 /* Give the search control its own contrast over the transparent header. */
 .nav.storefront-header.is-scrolled:not(.is-menu-open) .header-search-link,
@@ -450,4 +450,16 @@ ramo-home-hero::before {
     border-radius: 9999px;
     box-shadow: inset 0 1px 0 rgba(255,255,255,.7), inset 0 0 12px rgba(255,255,255,.15), 0 2px 8px rgba(0,0,0,.15);
   }
+}
+
+/* Outline the account controls without filling them in. */
+.storefront-header .nav-user-btn:is(.nav-signin-btn, .nav-account-btn) {
+  background-color: transparent;
+  border-color: rgb(115 115 115 / 55%);
+  box-shadow: 0 2px 5px rgb(0 0 0 / 24%);
+  text-shadow: inherit;
+  transition: background-color .18s ease, box-shadow .18s ease;
+}
+.storefront-header .nav-user-btn:is(.nav-signin-btn, .nav-account-btn):hover {
+  background-color: rgb(255 255 255 / 14%);
 }

@@ -459,7 +459,7 @@
             @endif
             @if(!empty($item['attrs']))
               <div class="ck-item-attrs">
-                @foreach($item['attrs'] as $k => $v)
+                @foreach(\App\Support\ProductAttributes::visible($item['attrs'] ?? []) as $k => $v)
                   <span>{{ $k }}: <strong>{{ $v }}</strong></span>
                 @endforeach
               </div>
@@ -513,7 +513,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const actionPayment = document.getElementById('checkout-action-payment');
   const paymentTiming = document.getElementById('checkout-payment-timing');
   const placeOrderButton = document.querySelector('.place-order-btn');
-  const formatEgp = (value) => Number(value).toFixed(2) + ' EGP';
+  const formatEgp = (value) => Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' EGP';
 
   const updatePayment = () => {
     const selected = paymentSelect.value;

@@ -83,8 +83,8 @@
       <h1 class="auth-title">{{ $loginRtl ? 'كمّل للوحة البائع' : 'Continue to your seller dashboard' }}</h1>
       <p class="auth-sub">{{ $loginRtl ? 'سجّل بحسابك على رامو ستور عشان ترجع للصفحة اللي فتحتها.' : 'Sign in with your Ramo Store account to return to the page you opened.' }}</p>
     @else
-      <h2 class="auth-title">{{ $loginRtl ? $loginCopy['welcome'] : 'Welcome back' }}</h2>
-      <p class="auth-sub">{{ $loginRtl ? $loginCopy['accountHint'] : 'Sign in to your account' }}</p>
+      <h2 class="auth-title">{{ $phoneEnabled ? ($loginRtl ? 'سجّل دخول أو اعمل حساب' : 'Sign in or create an account') : ($loginRtl ? $loginCopy['welcome'] : 'Welcome back') }}</h2>
+      <p class="auth-sub">{{ $phoneEnabled ? ($loginRtl ? 'اكتب رقم موبايلك. لو أول مرة، هتكمّل بيانات حسابك بعد تأكيد الكود.' : 'Enter your mobile number. New here? After verifying the code, you can complete your new account.') : ($loginRtl ? $loginCopy['accountHint'] : 'Sign in to your account') }}</p>
     @endif
 
     @if(!empty($referralInviterName))
@@ -174,9 +174,9 @@
     <a class="checkout-cart-link" href="{{ route('vendor.login') }}">{{ $loginRtl ? 'سجّل بحساب بائع منفصل' : 'Use a separate seller account' }}</a>
     @endif
 
-    @if(!$loginRtl && (!$fromCheckout || !$phoneEnabled))
+    @if(!$phoneEnabled)
     <p class="auth-register-copy" style="text-align:center;font-size:13px;color:#888;margin-top:18px">
-      Don't have an account? <a href="{{ route('register') }}" style="color:#1a1a1a;font-weight:600">Sign up</a>
+      {{ $loginRtl ? 'لسه معندكش حساب؟' : "Don't have an account?" }} <a href="{{ route('register') }}" style="color:#1a1a1a;font-weight:600">{{ $loginRtl ? 'اعمل حساب' : 'Sign up' }}</a>
     </p>
     @endif
   </div>

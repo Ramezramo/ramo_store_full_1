@@ -60,6 +60,16 @@ class Order extends Model
 
     protected $hidden = ['bacs_info', 'payment_url'];
 
+    public function getDatePaidGmtAttribute($value)
+    {
+        return filled($value) ? $this->asDateTime($value) : null;
+    }
+
+    public function getDateCompletedGmtAttribute($value)
+    {
+        return filled($value) ? $this->asDateTime($value) : null;
+    }
+
     // ✅ THIS IS THE KEY FIX - CAST ALL JSON FIELDS TO ARRAYS
     protected $casts = [
         'set_paid' => 'boolean',

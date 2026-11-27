@@ -35,7 +35,7 @@ class VendorShipmentService
             if (! in_array($target, $transitions[$current] ?? [], true)) {
                 throw ValidationException::withMessages(['status' => 'This shipment status transition is not allowed.']);
             }
-            if ($target !== 'cancelled' && $order->payment_status !== 'confirmed') {
+            if ($target !== 'cancelled' && ! OrderStatusService::allowsFulfillment($order->payment_status, $order->payment_method)) {
                 throw ValidationException::withMessages(['status' => 'Payment must be confirmed before processing this shipment.']);
             }
             $timeline = is_array($shipment->timeline) ? $shipment->timeline : [];

@@ -90,6 +90,11 @@ class CartController extends Controller
 
     public function index()
     {
+        return view('web.cart', $this->cartViewData());
+    }
+
+    private function cartViewData(): array
+    {
         $cart = $this->getCart();
 
         if (!empty($cart)) {
@@ -123,10 +128,24 @@ class CartController extends Controller
             ? DB::table('orders')->where('customer_id', Auth::id())->exists()
             : false;
         $total       = $afterDiscount + $shippingFee;
-        return view('web.cart', compact(
+        return compact(
             'cart', 'subtotal', 'discount', 'total', 'coupon', 'shippingFee',
             'freeShippingEnabled', 'freeShippingThreshold', 'hasPreviousOrders'
-        ));
+        );
+    }
+
+    private function cartFragmentResponse(array $response = [])
+    {
+        $data = $this->cartViewData();
+        return response()->json(array_merge($response, [
+            'success' => true,
+            'count' => count($data['cart']),
+            'cart_subtotal' => number_format($data['subtotal'], 2),
+            'cart_discount' => number_format($data['discount'], 2),
+            'cart_total' => number_format($data['total'], 2),
+            'shipping_fee' => $data['shippingFee'] > 0 ? number_format($data['shippingFee'], 2) : null,
+            'html' => view('web.partials.cart-content', $data)->render(),
+        ]))->header('Cache-Control', 'private, no-store');
     }
 
     private function refreshCartPricing(array $cart): array
@@ -278,7 +297,7 @@ class CartController extends Controller
                 'qty' => $newQuantity,
                 'image' => $imageUrl,
                 'stock' => $stock,
-                'attrs' => is_array($attrs) ? $attrs : [],
+                'attrs' => \App\Support\ProductAttributes::visible($attrs),
             ];
         }
 
@@ -360,7 +379,7 @@ class CartController extends Controller
                 $failed[] = [
                     'variation_id' => $variationId,
                     'qty' => (int) $item['qty'],
-                    'attributes' => $variation ? (json_decode($variation->attributes ?? '[]', true) ?: []) : [],
+                    'attributes' => \App\Support\ProductAttributes::visible($variation->attributes ?? []),
                     'message' => $result['message'],
                 ];
             }
@@ -513,7 +532,7 @@ class CartController extends Controller
             return redirect()->route('cart')->with('success', $this->localized('Quantity updated.', 'الكمية اتحدّثت.'));
         }
 
-        return response()->json($response);
+        return $this->cartFragmentResponse($response);
     }
 
     public function remove(Request $r, $rowId)
@@ -551,13 +570,14 @@ class CartController extends Controller
             return redirect()->route('cart')->with('success', $this->localized('Item removed.', 'المنتج اتشال من السلة.'));
         }
 
-        return response()->json($response);
+        return $this->cartFragmentResponse($response);
     }
 
-    public function clear()
+    public function clear(Request $request)
     {
         $this->saveCart([]);
         session()->forget('ramo_coupon');
+        if ($request->expectsJson()) return $this->cartFragmentResponse();
         return redirect()->route('cart')->with('success', $this->localized('Cart cleared.', 'السلة اتفضّت.'));
     }
 
@@ -627,12 +647,13 @@ class CartController extends Controller
             return redirect()->route('cart')->with('success', $this->localized('Coupon applied!', 'كود الخصم اتطبق!'));
         }
 
-        return response()->json(['success' => true, 'message' => $this->localized('Coupon applied!', 'كود الخصم اتطبق!'), 'reload' => true]);
+        return $this->cartFragmentResponse(['message' => $this->localized('Coupon applied!', 'كود الخصم اتطبق!')]);
     }
 
-    public function removeCoupon()
+    public function removeCoupon(Request $request)
     {
         session()->forget('ramo_coupon');
+        if ($request->expectsJson()) return $this->cartFragmentResponse();
         return redirect()->route('cart');
     }
 

@@ -110,7 +110,7 @@
       @foreach($orders as $order)
       <tr>
         <td><strong>#{{ $order->id }}</strong></td>
-        <td>{{ $isAr ? \Carbon\Carbon::parse($order->date_created)->locale('ar')->translatedFormat('j F Y') : \Carbon\Carbon::parse($order->date_created)->format('M d, Y') }}</td>
+        <td>{{ \App\Support\StorefrontDate::format($order->date_created, false) }}</td>
         <td><span class="status-badge status-{{ $order->status }}">{{ $isAr ? ($statusLabelsAr[$order->status] ?? app(\App\Services\OrderStatusService::class)->label($order->status)) : app(\App\Services\OrderStatusService::class)->label($order->status) }}</span></td>
         <td>{{ $order->payment_method_title }}@if($canPay($order))<br><small>{{ $isAr ? 'في انتظار الدفع' : 'Awaiting payment' }}</small>@endif</td>
         <td><strong>{{ number_format($order->final_total, 2) }} EGP</strong></td>
@@ -137,7 +137,7 @@
       <div class="order-mobile-card-header">
         <div>
           <div class="order-mobile-number">{{ $isAr ? 'طلب رقم' : 'Order #' }} #{{ $order->id }}</div>
-          <div class="order-mobile-date">{{ $isAr ? \Carbon\Carbon::parse($order->date_created)->locale('ar')->translatedFormat('j F Y') : \Carbon\Carbon::parse($order->date_created)->format('M d, Y') }}</div>
+          <div class="order-mobile-date">{{ \App\Support\StorefrontDate::format($order->date_created, false) }}</div>
         </div>
         <span class="status-badge status-{{ $order->status }}">{{ $isAr ? ($statusLabelsAr[$order->status] ?? app(\App\Services\OrderStatusService::class)->label($order->status)) : app(\App\Services\OrderStatusService::class)->label($order->status) }}</span>
       </div>

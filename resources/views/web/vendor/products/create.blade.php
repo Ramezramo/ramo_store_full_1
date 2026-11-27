@@ -311,7 +311,7 @@ textarea.vs-input{resize:vertical;min-height:100px}
     <input type="text" name="name" id="product-name"
            value="{{ old('name', $product->name ?? '') }}"
            class="vs-input {{ $errors->has('name') ? 'err' : '' }}"
-           placeholder="Enter product name in English" required maxlength="500">
+           placeholder="Enter product name in English" required maxlength="255">
     @error('name')<div class="vs-err">{{ $message }}</div>@enderror
   </div>
 
@@ -389,9 +389,9 @@ textarea.vs-input{resize:vertical;min-height:100px}
   <div class="lang-tab-bar" id="lang-tab-bar">
     <div class="lang-tab active" data-lang="en" onclick="switchLangTab('en')">🇬🇧 English (main)</div>
     @foreach($translations as $i => $tr)
-      <div class="lang-tab" data-lang="{{ $tr['locale'] }}" onclick="switchLangTab('{{ $tr['locale'] }}')">
+      <div class="lang-tab" data-lang="{{ $tr['locale'] }}" onclick="switchLangTab(this.dataset.lang)">
         <span>{{ strtoupper($tr['locale']) }}</span>
-        <button type="button" class="lt-remove" onclick="removeLangTab(event,'{{ $tr['locale'] }}')">×</button>
+        <button type="button" class="lt-remove" onclick="removeLangTab(event,this.closest('.lang-tab').dataset.lang)">×</button>
       </div>
     @endforeach
   </div>
@@ -424,7 +424,7 @@ textarea.vs-input{resize:vertical;min-height:100px}
           <label class="vs-label">Product Name ({{ strtoupper($tr['locale']) }}) <span style="color:var(--red)">*</span></label>
           <input type="text" name="translations[{{ $i }}][name]"
                  value="{{ old("translations.$i.name", $tr['name'] ?? '') }}"
-                 class="vs-input" placeholder="Product name in {{ strtoupper($tr['locale']) }}" maxlength="500">
+                 class="vs-input" placeholder="Product name in {{ strtoupper($tr['locale']) }}" maxlength="255">
         </div>
         <div class="vs-form-group">
           <label class="vs-label">Short Description ({{ strtoupper($tr['locale']) }})</label>
@@ -1842,7 +1842,7 @@ function addLangTab() {
     <div class="vs-form-group">
       <label class="vs-label">Product Name (${lang.toUpperCase()}) <span style="color:var(--red)">*</span></label>
       <input type="text" name="translations[${idx}][name]" class="vs-input"
-             placeholder="Product name in ${langNames[lang] || lang}" maxlength="500">
+             placeholder="Product name in ${langNames[lang] || lang}" maxlength="255">
     </div>
     <div class="vs-form-group">
       <label class="vs-label">Short Description (${lang.toUpperCase()})</label>

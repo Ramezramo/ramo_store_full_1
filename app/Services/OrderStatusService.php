@@ -8,6 +8,7 @@ class OrderStatusService
 {
     public const PAYMENT_STATUSES = [
         'pending_payment',
+        'pending_collection',
         'pending_verification',
         'confirmed',
         'rejected',
@@ -39,16 +40,16 @@ class OrderStatusService
     /**
      * Derive the customer-facing order status from payment and every shipment.
      *
-     * The order of these checks is intentional: payment always gates fulfillment,
+     * The order of these checks is intentional: prepaid orders require confirmation and COD permits collection on delivery,
      * and delivered/cancelled states are evaluated before shipped/processing.
      */
-    public function compute(?string $paymentStatus, array $vendorStatuses): string
+    public function compute(?string $paymentStatus, array $vendorStatuses, ?string $paymentMethod = null): string
     {
         if (in_array($paymentStatus, ['expired', 'refunded'], true)) {
             return 'cancelled';
         }
 
-        if ($paymentStatus !== 'confirmed') {
+        if (! self::allowsFulfillment($paymentStatus, $paymentMethod)) {
             return 'pending';
         }
 
@@ -118,7 +119,7 @@ class OrderStatusService
             ->map(fn ($status) => $this->normalizeVendorStatus($status))
             ->all();
 
-        $computed = $this->compute($order->payment_status, $vendorStatuses);
+        $computed = $this->compute($order->payment_status, $vendorStatuses, $order->payment_method);
         $now = now();
 
         $update = [
@@ -131,7 +132,7 @@ class OrderStatusService
         $orderOverride = DB::table('orders')
             ->where('id', $orderId)
             ->value('general_order_status_override');
-        $newStatus = $order->payment_status !== 'confirmed' ? $computed : ($orderOverride ?: $computed);
+        $newStatus = ! self::allowsFulfillment($order->payment_status, $order->payment_method) ? $computed : ($orderOverride ?: $computed);
         $update['status'] = $newStatus;
         if ($computed === 'completed' && empty($order->date_completed)) {
             $update['date_completed'] = $now;
@@ -146,6 +147,12 @@ class OrderStatusService
 
         return $computed;
         });
+    }
+
+    public static function allowsFulfillment(?string $paymentStatus, ?string $paymentMethod): bool
+    {
+        return $paymentStatus === 'confirmed'
+            || ($paymentMethod === 'cod' && $paymentStatus === 'pending_collection');
     }
 
     public function normalizeVendorStatus(?string $status): ?string

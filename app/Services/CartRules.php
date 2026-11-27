@@ -53,6 +53,7 @@ class CartRules
         $variations = DB::table('product_variations')->whereIn('product_id', $products)->orderBy('id')->get()->keyBy('id');
         $result = [];
         foreach ($cart as $key => $item) {
+            $item['attrs'] = \App\Support\ProductAttributes::visible($item['attrs'] ?? []);
             $productId = (int) ($item['product_id'] ?? 0);
             $variation = ! empty($item['variation_id']) ? $variations->get((int) $item['variation_id'])
                 : $variations->first(fn ($v) => (int) $v->product_id === $productId && $v->main_variation);

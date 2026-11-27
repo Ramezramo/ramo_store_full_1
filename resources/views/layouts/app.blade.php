@@ -1438,7 +1438,7 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
           $__accountDisplayName = Str::limit($__au->first_name ?: $__au->name, 12);
         @endphp
         <div class="nav-portal" id="account-portal">
-          <button class="nav-user-btn" onclick="togglePortal('account-portal',event)" style="padding:7px 12px">
+          <button class="nav-user-btn nav-account-btn" onclick="togglePortal('account-portal',event)" style="padding:7px 12px">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             {{ $__accountDisplayName }}
             <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1467,7 +1467,7 @@ button.cart-button-pending:disabled{opacity:1!important;cursor:progress!importan
           </div>
         </div>
       @else
-        <a href="{{ route('login') }}" class="nav-user-btn">{{ $headerSignInLabel }}</a>
+        <a href="{{ route('login') }}" class="nav-user-btn nav-signin-btn">{{ $headerSignInLabel }}</a>
       @endauth
     </div>
   </div>
@@ -1876,7 +1876,7 @@ function showBulkAddFailures(data) {
 
   const messages = failures.map((failed) => {
     const attrs = failed.attributes && typeof failed.attributes === 'object'
-      ? Object.entries(failed.attributes).map(([k, v]) => `${k}: ${v}`).join(', ')
+      ? Object.entries(failed.attributes).filter(([key]) => !key.trim().startsWith('_')).map(([k, v]) => `${k}: ${v}`).join(', ')
       : '';
     return attrs ? `${attrs}: ${failed.message || STOREFRONT_COPY.addError}` : (failed.message || STOREFRONT_COPY.addError);
   });
@@ -1914,7 +1914,7 @@ function openAtcDrawer({ image, oldPrice, varLabel, items, count, cartTotal, row
 
   (items || []).slice().reverse().forEach(item => {
     const isNew = (rowId && item.rowId === rowId) || rowIds.includes(item.rowId);
-    const attrs = item.attrs && typeof item.attrs === 'object' ? Object.entries(item.attrs).map(([k,v]) => `${k}: ${v}`).join(', ') : (varLabel && isNew ? varLabel : '');
+    const attrs = item.attrs && typeof item.attrs === 'object' ? Object.entries(item.attrs).filter(([key]) => !key.trim().startsWith('_')).map(([k,v]) => `${k}: ${v}`).join(', ') : (varLabel && isNew ? varLabel : '');
     const metaParts = [];
     if (item.sku) metaParts.push(STOREFRONT_COPY.sku + ': ' + item.sku);
     if (attrs) metaParts.push(attrs);

@@ -223,7 +223,7 @@
         <div class="if-grid" style="margin-bottom:12px">
           <div class="if-group">
             <label class="if-label">Product Name <span style="color:var(--red)">*</span></label>
-            <input type="text" name="name" class="if-input" value="{{ old('name', $product->name) }}" required maxlength="500">
+            <input type="text" name="name" class="if-input" value="{{ old('name', $product->name) }}" required maxlength="255">
           </div>
           <div class="if-group">
             <label class="if-label">SKU</label>
@@ -346,7 +346,7 @@
               <input type="hidden" name="translations[{{ $i }}][locale]" value="{{ $tr['locale'] }}">
               <div class="if-group">
                 <label class="if-label">Name</label>
-                <input type="text" name="translations[{{ $i }}][name]" class="if-input" value="{{ $tr['name'] }}" required maxlength="500">
+                <input type="text" name="translations[{{ $i }}][name]" class="if-input" value="{{ $tr['name'] }}" required maxlength="255">
               </div>
               <div class="if-group">
                 <label class="if-label">Description</label>
@@ -1306,7 +1306,7 @@ function addTrRow() {
     <input type="hidden" name="translations[${trIdx}][locale]" value="${loc}">
     <div class="if-group">
       <label class="if-label">Name</label>
-      <input type="text" name="translations[${trIdx}][name]" class="if-input" required maxlength="500">
+      <input type="text" name="translations[${trIdx}][name]" class="if-input" required maxlength="255">
     </div>
     <div class="if-group">
       <label class="if-label">Description</label>

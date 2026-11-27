@@ -381,7 +381,7 @@ class CheckoutController extends Controller
                         'model_number' => $variation->model_number ?? null,
                         'price'        => $livePrice,
                         'qty'          => $quantity,
-                        'attrs'        => is_array($variationAttributes) ? $variationAttributes : [],
+                        'attrs'        => \App\Support\ProductAttributes::visible($variationAttributes),
                     ];
                 }
 
@@ -476,9 +476,9 @@ class CheckoutController extends Controller
                 $orderId = DB::table('orders')->insertGetId([
                     'customer_id'          => Auth::id(),
                     'status'               => 'pending',
-                    // COD can proceed as an order; every other configured method
-                    // currently uses manual transfer instructions and receipt review.
-                    'payment_status'       => $r->payment_method === 'cod' ? 'confirmed' : 'pending_payment',
+                    // COD can be fulfilled before collection, but it is not paid yet.
+                    // Manual transfers still require payment confirmation before fulfillment.
+                    'payment_status'       => $r->payment_method === 'cod' ? 'pending_collection' : 'pending_payment',
                     'payment_due_at'       => $paymentDueAt,
                     'currency'             => 'EGP',
                     'currency_symbol'      => 'ج.م',
@@ -487,7 +487,7 @@ class CheckoutController extends Controller
                     'billing'              => json_encode($billing),
                     'shipping'             => json_encode($billing),
                     'line_items'           => json_encode($lineItems),
-                    'original_total'       => (int) round($subtotal),
+                    'original_total'       => round($subtotal, 2),
                     'final_total'          => $total,
                     'discount_total'       => $discount,
                     'coupon_code'          => $appliedCoupon['code'] ?? null,
@@ -509,9 +509,9 @@ class CheckoutController extends Controller
                     'updated_at'           => $now,
                     'payment_url'          => '',
                     'is_editable'          => true,
-                    'needs_payment'        => $r->payment_method !== 'cod',
+                    'needs_payment'        => true,
                     'needs_processing'     => true,
-                    'set_paid'             => $r->payment_method === 'cod',
+                    'set_paid'             => false,
                     'number'               => 0,
                     'timeline'             => '[]',
                     'created_via'          => 'website',
